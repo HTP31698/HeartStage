@@ -15,12 +15,31 @@ public static class DreamEnergyGiftService
     private static bool _isSending = false;
     private static bool _isClaiming = false;
 
+    // 🔹 서버 기준 오늘 날짜 캐시 (YYYYMMDD)
+    private static int _lastServerToday = 0;
+    public static int LastServerToday => _lastServerToday;
+
+    // 오늘 누구한테 보냈는지 캐시
     private static HashSet<string> _sentTodayCache = new HashSet<string>();
     private static int _sentTodayCacheDate = 0;
 
+    // 전체 받지 않은 선물 개수 캐시
     private static int _pendingGiftCount = 0;
     private static bool _pendingGiftCountLoaded = false;
 
+    // 친구별 받지 않은 선물 개수 캐시
+    private static Dictionary<string, int> _pendingGiftsByFriend = new();
+
+    /// <summary>
+    /// 받을 선물 관련 캐시 전체 리셋
+    /// </summary>
+    private static void ResetPendingGiftCache()
+    {
+        _pendingGiftCount = 0;
+        _pendingGiftCountLoaded = true;
+        _pendingGiftsByFriend.Clear();
+        Debug.Log("[DreamEnergyGiftService] pending gift cache reset");
+    }
 
     private static string GetMyUid()
     {
@@ -38,7 +57,7 @@ public static class DreamEnergyGiftService
     {
         try
         {
-            var offsetRef = FirebaseDatabase.DefaultInstance.GetReference(". info/serverTimeOffset");
+            var offsetRef = FirebaseDatabase.DefaultInstance.GetReference(".info/serverTimeOffset");
             var snapshot = await offsetRef.GetValueAsync();
 
             long offsetMs = 0;
@@ -48,18 +67,32 @@ public static class DreamEnergyGiftService
             }
 
             var serverTime = DateTime.UtcNow.AddMilliseconds(offsetMs);
-            return serverTime.Year * 10000 + serverTime.Month * 100 + serverTime.Day;
+
+            int ymd = serverTime.Year * 10000 + serverTime.Month * 100 + serverTime.Day;
+
+            // 🔹 서버 기준 오늘 날짜 캐시
+            _lastServerToday = ymd;
+
+            return ymd;
         }
         catch (Exception e)
         {
             Debug.LogWarning($"[DreamEnergyGiftService] 서버 시간 가져오기 실패, 로컬 시간 사용: {e.Message}");
-            return GetTodayYmd();
+
+            // 실패 시에도 일관된 기준을 위해 캐시에 저장
+            int fallback = GetTodayYmd();
+            _lastServerToday = fallback;
+            return fallback;
         }
     }
-
     public static bool HasSentTodayCached(string friendUid)
     {
-        int today = GetTodayYmd();
+        // 🔹 서버 기준 오늘 날짜를 기준으로만 판단
+        int today = _lastServerToday;
+
+        // 아직 서버 날짜 동기화가 안 되었으면 캐시를 신뢰하지 않는다.
+        if (today == 0)
+            return false;
 
         if (_sentTodayCacheDate != today)
             return false;
@@ -70,6 +103,11 @@ public static class DreamEnergyGiftService
     public static int GetPendingGiftCountCached()
     {
         return _pendingGiftCountLoaded ? _pendingGiftCount : 0;
+    }
+
+    public static int GetPendingGiftCountFromFriend(string fromUid)
+    {
+        return _pendingGiftsByFriend.TryGetValue(fromUid, out int count) ? count : 0;
     }
 
     public static async UniTask<int> GetPendingGiftCountAsync()
@@ -89,8 +127,7 @@ public static class DreamEnergyGiftService
 
             if (!snap.Exists)
             {
-                _pendingGiftCount = 0;
-                _pendingGiftCountLoaded = true;
+                ResetPendingGiftCache();
                 return 0;
             }
 
@@ -115,6 +152,77 @@ public static class DreamEnergyGiftService
         {
             Debug.LogError($"[DreamEnergyGiftService] GetPendingGiftCountAsync Error: {e}");
             return 0;
+        }
+    }
+
+    /// <summary>
+    /// 친구별 받기 가능 개수 캐시 갱신
+    /// </summary>
+    public static async UniTask RefreshPendingGiftsByFriendAsync()
+    {
+        string myUid = GetMyUid();
+        if (string.IsNullOrEmpty(myUid))
+            return;
+
+        _pendingGiftsByFriend.Clear();
+
+        try
+        {
+            long thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeMilliseconds();
+
+            var snap = await Root.Child("dreamGifts").Child(myUid)
+                .OrderByChild("createdAt")
+                .StartAt(thirtyDaysAgo)
+                .GetValueAsync();
+
+            if (!snap.Exists)
+            {
+                Debug.Log("[DreamEnergyGiftService] dreamGifts 데이터 없음");
+                _pendingGiftCount = 0;
+                _pendingGiftCountLoaded = true;
+                return;
+            }
+
+            int totalCount = 0;
+
+            foreach (var child in snap.Children)
+            {
+                bool claimed = false;
+                if (child.Child("claimed").Value is bool c)
+                    claimed = c;
+
+                string fromUid = child.Child("fromUid").Value?.ToString();
+                Debug.Log($"[DEBUG] 선물 key={child.Key}, fromUid={fromUid}, claimed={claimed}");
+
+                if (claimed)
+                    continue;
+
+                if (string.IsNullOrEmpty(fromUid))
+                {
+                    Debug.LogWarning($"[DEBUG] fromUid가 없는 선물 발견: {child.Key}");
+                    continue;
+                }
+
+                if (!_pendingGiftsByFriend.ContainsKey(fromUid))
+                    _pendingGiftsByFriend[fromUid] = 0;
+
+                _pendingGiftsByFriend[fromUid]++;
+                totalCount++;
+            }
+
+            _pendingGiftCount = totalCount;
+            _pendingGiftCountLoaded = true;
+
+            Debug.Log($"[DreamEnergyGiftService] 친구별 선물 캐시 갱신: {_pendingGiftsByFriend.Count}명에게서 총 {totalCount}개");
+
+            foreach (var kvp in _pendingGiftsByFriend)
+            {
+                Debug.Log($"[DEBUG] 캐시: {kvp.Key} = {kvp.Value}개");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[DreamEnergyGiftService] RefreshPendingGiftsByFriendAsync Error: {e}");
         }
     }
 
@@ -152,6 +260,7 @@ public static class DreamEnergyGiftService
             {
                 Debug.Log($"[DreamEnergyGiftService] 오늘 이미 {friendUid}에게 선물을 보냈습니다.");
                 _sentTodayCache.Add(friendUid);
+                _sentTodayCacheDate = today;
                 return false;
             }
 
@@ -200,7 +309,7 @@ public static class DreamEnergyGiftService
                     return TransactionResult.Success(mutableData);
                 }
 
-                if (savedCount >= data.dreamSendDailyLimit)
+                if (savedCount >= data.dreamSendDailyLimit) // SaveDataV1 필드 사용 :contentReference[oaicite:0]{index=0}
                 {
                     Debug.Log($"[DreamEnergyGiftService] 일일 한도 도달: {savedCount}/{data.dreamSendDailyLimit}");
                     transactionSuccess = false;
@@ -258,6 +367,32 @@ public static class DreamEnergyGiftService
         }
     }
 
+    /// <summary>
+    /// 친구 목록 전체에게 드림 에너지를 한 번에 보내기
+    /// </summary>
+    public static async UniTask<int> TrySendDreamEnergyToAllFriendsAsync(IReadOnlyList<string> friendUids)
+    {
+        if (friendUids == null || friendUids.Count == 0)
+            return 0;
+
+        int successCount = 0;
+
+        foreach (var friendUid in friendUids)
+        {
+            if (string.IsNullOrEmpty(friendUid))
+                continue;
+
+            if (HasSentTodayCached(friendUid))
+                continue;
+
+            bool success = await TrySendDreamEnergyAsync(friendUid);
+            if (success)
+                successCount++;
+        }
+
+        return successCount;
+    }
+
     public static async UniTask<int> ClaimAllGiftsAsync()
     {
         if (_isClaiming)
@@ -288,7 +423,7 @@ public static class DreamEnergyGiftService
             if (!snap.Exists)
             {
                 Debug.Log("[DreamEnergyGiftService] 받을 선물이 없습니다.");
-                _pendingGiftCount = 0;
+                ResetPendingGiftCache();
                 return 0;
             }
 
@@ -334,14 +469,14 @@ public static class DreamEnergyGiftService
                 if (updates.Count > 0)
                     await Root.UpdateChildrenAsync(updates);
 
-                _pendingGiftCount = 0;
+                ResetPendingGiftCache();
 
                 Debug.Log($"[DreamEnergyGiftService] 드림 에너지 수령 완료: +{totalReceived}");
             }
             else
             {
                 Debug.Log("[DreamEnergyGiftService] 받을 수 있는 선물이 없습니다.");
-                _pendingGiftCount = 0;
+                ResetPendingGiftCache();
             }
 
             return totalReceived;
@@ -492,10 +627,10 @@ public static class DreamEnergyGiftService
             }
 
             var updates = new Dictionary<string, object>();
+            int changedCount = 0;
 
             foreach (var child in snap.Children)
             {
-                // fromUid가 일치하는 것만 처리
                 string giftFromUid = child.Child("fromUid").Value?.ToString();
                 if (giftFromUid != fromUid)
                     continue;
@@ -511,6 +646,7 @@ public static class DreamEnergyGiftService
                 if (!claimed && amount > 0)
                 {
                     totalReceived += amount;
+                    changedCount++;
                     updates[$"dreamGifts/{myUid}/{child.Key}/claimed"] = true;
                 }
             }
@@ -536,11 +672,10 @@ public static class DreamEnergyGiftService
                 if (updates.Count > 0)
                     await Root.UpdateChildrenAsync(updates);
 
-                // 캐시 갱신
                 if (_pendingGiftsByFriend.ContainsKey(fromUid))
                     _pendingGiftsByFriend[fromUid] = 0;
 
-                _pendingGiftCount = Math.Max(0, _pendingGiftCount - updates.Count);
+                _pendingGiftCount = Math.Max(0, _pendingGiftCount - changedCount);
 
                 Debug.Log($"[DreamEnergyGiftService] {fromUid}에게 받은 선물 수령 완료: +{totalReceived}");
             }
@@ -559,89 +694,6 @@ public static class DreamEnergyGiftService
         finally
         {
             _isClaiming = false;
-        }
-    }
-
-    /// <summary>
-    /// 특정 친구에게 받을 선물이 있는지 확인 (캐시용)
-    /// </summary>
-    private static Dictionary<string, int> _pendingGiftsByFriend = new();
-
-    public static int GetPendingGiftCountFromFriend(string fromUid)
-    {
-        return _pendingGiftsByFriend.TryGetValue(fromUid, out int count) ? count : 0;
-    }
-
-    /// <summary>
-    /// 친구별 받을 선물 수 캐시 갱신
-    /// </summary>
-    public static async UniTask RefreshPendingGiftsByFriendAsync()
-    {
-        string myUid = GetMyUid();
-        if (string.IsNullOrEmpty(myUid))
-            return;
-
-        _pendingGiftsByFriend.Clear();
-
-        try
-        {
-            long thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeMilliseconds();
-
-            var snap = await Root.Child("dreamGifts").Child(myUid)
-                .OrderByChild("createdAt")
-                .StartAt(thirtyDaysAgo)
-                .GetValueAsync();
-
-            if (!snap.Exists)
-            {
-                Debug.Log("[DreamEnergyGiftService] dreamGifts 데이터 없음");  // ← 추가
-                _pendingGiftCount = 0;
-                _pendingGiftCountLoaded = true;
-                return;
-            }
-
-            int totalCount = 0;
-
-            foreach (var child in snap.Children)
-            {
-                bool claimed = false;
-                if (child.Child("claimed").Value is bool c)
-                    claimed = c;
-
-                // 디버그 추가
-                string fromUid = child.Child("fromUid").Value?.ToString();
-                Debug.Log($"[DEBUG] 선물 key={child.Key}, fromUid={fromUid}, claimed={claimed}");
-
-                if (claimed)
-                    continue;
-
-                if (string.IsNullOrEmpty(fromUid))
-                {
-                    Debug.LogWarning($"[DEBUG] fromUid가 없는 선물 발견: {child.Key}");  // ← 이거 찍히면 문제!
-                    continue;
-                }
-
-                if (!_pendingGiftsByFriend.ContainsKey(fromUid))
-                    _pendingGiftsByFriend[fromUid] = 0;
-
-                _pendingGiftsByFriend[fromUid]++;
-                totalCount++;
-            }
-
-            _pendingGiftCount = totalCount;
-            _pendingGiftCountLoaded = true;
-
-            Debug.Log($"[DreamEnergyGiftService] 친구별 선물 캐시 갱신: {_pendingGiftsByFriend.Count}명에게서 총 {totalCount}개");
-
-            // 캐시 내용 출력
-            foreach (var kvp in _pendingGiftsByFriend)
-            {
-                Debug.Log($"[DEBUG] 캐시: {kvp.Key} = {kvp.Value}개");
-            }
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[DreamEnergyGiftService] RefreshPendingGiftsByFriendAsync Error: {e}");
         }
     }
 }

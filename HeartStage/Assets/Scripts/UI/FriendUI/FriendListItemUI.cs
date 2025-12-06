@@ -183,6 +183,14 @@ public class FriendListItemUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 모두 보내기 / 모두 받기 후 외부에서 버튼 상태 다시 계산할 때 호출
+    /// </summary>
+    public void RefreshButtonsFromOutside()
+    {
+        UpdateButtonStates();
+    }
+
     private bool CanSendGift()
     {
         if (SaveLoadManager.Data is not SaveDataV1 data)
@@ -200,7 +208,12 @@ public class FriendListItemUI : MonoBehaviour
 
     private int GetTodayYmd()
     {
-        var now = DateTime.Now;
+        // 🔹 가능한 한 서버 기준 날짜 사용
+        int serverToday = DreamEnergyGiftService.LastServerToday;
+        if (serverToday != 0)
+            return serverToday;
+
+        var now = System.DateTime.Now;
         return now.Year * 10000 + now.Month * 100 + now.Day;
     }
 
@@ -247,7 +260,6 @@ public class FriendListItemUI : MonoBehaviour
 
         try
         {
-            // 이 친구에게 받은 선물만 수령
             int received = await DreamEnergyGiftService.ClaimGiftFromFriendAsync(_friendUid)
                 .AttachExternalCancellation(_cts.Token);
 
