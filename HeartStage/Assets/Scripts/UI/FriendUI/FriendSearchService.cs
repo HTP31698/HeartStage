@@ -12,6 +12,9 @@ public class PublicProfileSummary
     public string profileIconKey;
     public int fanAmount;
     public int equippedTitleId;
+
+    // 🔹 추가
+    public long lastLoginUnixMillis;
 }
 
 public static class FriendSearchService
@@ -73,13 +76,18 @@ public static class FriendSearchService
                 if (child.Child("equippedTitleId").Value is long t)
                     titleId = (int)t;
 
+                long lastLogin = 0;
+                if (child.Child("lastLoginUnixMillis").Value is long ll)
+                    lastLogin = ll;
+
                 all.Add(new PublicProfileSummary
                 {
                     uid = uid,
                     nickname = nickname,
                     profileIconKey = icon,
                     fanAmount = fanAmount,
-                    equippedTitleId = titleId
+                    equippedTitleId = titleId,
+                    lastLoginUnixMillis = lastLogin
                 });
             }
         }
@@ -138,13 +146,18 @@ public static class FriendSearchService
             if (child.Child("equippedTitleId").Value is long t)
                 titleId = (int)t;
 
+            long lastLogin = 0;
+            if (child.Child("lastLoginUnixMillis").Value is long ll)
+                lastLogin = ll;
+
             result.Add(new PublicProfileSummary
             {
                 uid = uid,
                 nickname = nick,
                 profileIconKey = icon,
                 fanAmount = fanAmount,
-                equippedTitleId = titleId
+                equippedTitleId = titleId,
+                lastLoginUnixMillis = lastLogin
             });
         }
 

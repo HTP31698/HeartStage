@@ -26,6 +26,8 @@ public class FriendAddItemUI : MonoBehaviour
     private CancellationTokenSource _cts;
     private MessageWindow _messageWindow;
 
+    private const string DEFAULT_ICON_KEY = "hanaicon";
+
     private void OnDestroy()
     {
         _cts?.Cancel();
@@ -41,34 +43,34 @@ public class FriendAddItemUI : MonoBehaviour
         _cts?.Dispose();
         _cts = new CancellationTokenSource();
 
+        // 닉네임
         if (nicknameText != null)
             nicknameText.text = GetDisplayNickname(profileData.nickname, profileData.uid);
 
+        // 레벨(팬 수 기준)
         if (fanAmountText != null)
             fanAmountText.text = $"팬: {CalculateLevel(profileData.fanAmount)}";
 
+        // 🔹 최근 접속 시간 (네가 준 포맷 그대로)
         if (lastLoginText != null)
-            lastLoginText.text = "최근 접속 시간\n방금 전";
-
-        if (iconImage != null)
         {
-            var sprite = ResourceManager.Instance.Get<Sprite>(profileData.profileIconKey);
-            if (sprite != null)
-                iconImage.sprite = sprite;
+            if (_profileData != null && _profileData.lastLoginUnixMillis > 0)
+                SetLastLoginTime(_profileData.lastLoginUnixMillis);
             else
-            {
-                var defaultSprite = ResourceManager.Instance.Get<Sprite>("ProfileIcon_Default");
-                if (defaultSprite != null)
-                    iconImage.sprite = defaultSprite;
-            }
+                lastLoginText.text = "방금 전";
         }
 
+        // 🔹 아이콘 (GetSprite 사용)
+        SetProfileIconSafe(_profileData.profileIconKey);
+
+        // 아이콘 클릭 → 프로필
         if (iconButton != null)
         {
             iconButton.onClick.RemoveAllListeners();
             iconButton.onClick.AddListener(OnClickIcon);
         }
 
+        // 친구 신청 버튼
         if (requestButton != null)
         {
             requestButton.onClick.RemoveAllListeners();
@@ -122,20 +124,21 @@ public class FriendAddItemUI : MonoBehaviour
                 if (FriendAddWindow.Instance != null)
                     FriendAddWindow.Instance.OnFriendRequestSent();
 
-                // 성공 메시지
                 _messageWindow?.OpenSuccess("친구 신청", $"{displayName}님에게\n친구 신청을 보냈습니다!");
             }
             else
             {
                 requestButton.interactable = true;
 
-                // 실패 메시지 (이미 친구이거나 이미 요청을 보낸 경우)
-                _messageWindow?.OpenFail("친구 신청 실패", $"{displayName}님에게 이미 친구 신청을 보냈거나\n이미 친구 상태입니다.");
+                _messageWindow?.OpenFail(
+                    "친구 신청 실패",
+                    $"{displayName}님에게 이미 친구 신청을 보냈거나\n이미 친구 상태입니다."
+                );
             }
         }
         catch (OperationCanceledException)
         {
-            // 정상적인 취소
+            // 취소는 무시
         }
         catch (Exception e)
         {
@@ -146,6 +149,7 @@ public class FriendAddItemUI : MonoBehaviour
         }
     }
 
+    // 🔹 네가 요구한 포맷 그대로
     public void SetLastLoginTime(long unixMillis)
     {
         if (lastLoginText == null)
@@ -167,6 +171,40 @@ public class FriendAddItemUI : MonoBehaviour
         else
             timeText = lastLogin.ToString("yyyy-MM-dd");
 
-        lastLoginText.text = $"최근 접속 시간\n{timeText}";
+        lastLoginText.text = $"{timeText}";
+    }
+
+    /// <summary>
+    /// ResourceManager.GetSprite를 사용하는 안전한 아이콘 세팅
+    /// </summary>
+    private void SetProfileIconSafe(string profileIconKey)
+    {
+        if (iconImage == null)
+            return;
+
+        Sprite finalSprite = null;
+
+        if (ResourceManager.Instance != null)
+        {
+            // 1) 기본 아이콘부터
+            finalSprite = ResourceManager.Instance.GetSprite(DEFAULT_ICON_KEY);
+
+            // 2) 프로필 아이콘 키가 있으면 덮어쓰기
+            if (!string.IsNullOrEmpty(profileIconKey))
+            {
+                var profileSprite = ResourceManager.Instance.GetSprite(profileIconKey);
+                if (profileSprite != null)
+                {
+                    finalSprite = profileSprite;
+                }
+                else
+                {
+                    Debug.LogWarning($"[FriendAddItemUI] 프로필 아이콘 스프라이트를 찾을 수 없습니다. key={profileIconKey}");
+                }
+            }
+        }
+
+        iconImage.sprite = finalSprite;
+        iconImage.enabled = (finalSprite != null);
     }
 }

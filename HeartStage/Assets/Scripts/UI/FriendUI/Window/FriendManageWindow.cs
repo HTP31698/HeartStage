@@ -139,6 +139,12 @@ public class FriendManageWindow : MonoBehaviour
         if (loadingPanel != null)
             loadingPanel.SetActive(true);
 
+        GameObject contentGO = contentRoot != null ? contentRoot.gameObject : null;
+        bool prevContentActive = contentGO != null && contentGO.activeSelf;
+
+        if (contentGO != null)
+            contentGO.SetActive(false);   // 🔹 리스트 영역 숨기고 시작
+
         try
         {
             ClearList();
@@ -149,6 +155,7 @@ public class FriendManageWindow : MonoBehaviour
             // 헤더는 캐시에서
             RefreshHeader();
 
+            // 탭에 따라 아이템 생성 (이때도 아직 contentRoot는 비활성이라 화면에 안 보임)
             switch (_currentTab)
             {
                 case TabType.Received:
@@ -168,8 +175,12 @@ public class FriendManageWindow : MonoBehaviour
         }
         finally
         {
+            if (contentGO != null)
+                contentGO.SetActive(prevContentActive);  // 완성된 상태로 한 번에 보여줌
+
             if (loadingPanel != null)
                 loadingPanel.SetActive(false);
+
             _isRefreshing = false;
         }
     }

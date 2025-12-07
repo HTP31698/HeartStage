@@ -25,6 +25,24 @@ public class FriendListItemUI : MonoBehaviour
     private CancellationTokenSource _cts;
     private MessageWindow _messageWindow;
 
+    public string FriendUid => _friendUid;
+
+    /// <summary>
+    /// 정렬/우선순위 계산용 - 이 친구에게 받을 선물이 몇 개인지 반환
+    /// </summary>
+    public int GetPendingGiftCountForSorting()
+    {
+        return DreamEnergyGiftService.GetPendingGiftCountFromFriend(_friendUid);
+    }
+
+    /// <summary>
+    /// 정렬/우선순위 계산용 - 오늘 이 친구에게 선물을 보낼 수 있는지 여부
+    /// </summary>
+    public bool CanSendGiftForSorting()
+    {
+        return CanSendGift();
+    }
+
     private void Awake()
     {
         if (iconImage == null)
@@ -230,7 +248,13 @@ public class FriendListItemUI : MonoBehaviour
             if (success)
             {
                 if (FriendListWindow.Instance != null)
+                {
                     FriendListWindow.Instance.RefreshHeader();
+                    FriendListWindow.Instance.ResortByGiftState();
+                }
+
+                // 내 버튼 상태도 즉시 갱신
+                UpdateButtonStates();
 
                 _messageWindow?.OpenSuccess("선물 전송", $"{_displayNickname}님에게\n드림 에너지를 보냈습니다!");
             }
@@ -253,6 +277,7 @@ public class FriendListItemUI : MonoBehaviour
         }
     }
 
+
     private async UniTaskVoid OnClickReceiveAsync()
     {
         if (receiveEnergyButton != null)
@@ -269,7 +294,10 @@ public class FriendListItemUI : MonoBehaviour
                     LobbyManager.Instance.MoneyUISet();
 
                 if (FriendListWindow.Instance != null)
+                {
                     FriendListWindow.Instance.RefreshHeader();
+                    FriendListWindow.Instance.ResortByGiftState();
+                }
 
                 _messageWindow?.OpenSuccess("선물 수령", $"{_displayNickname}님에게서\n드림 에너지 +{received} 획득!");
             }
@@ -291,4 +319,5 @@ public class FriendListItemUI : MonoBehaviour
             _messageWindow?.OpenFail("오류", "선물 수령 중 오류가 발생했습니다.");
         }
     }
+
 }

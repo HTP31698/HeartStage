@@ -119,6 +119,9 @@ public class FriendListWindow : MonoBehaviour
             _spawned.Add(item);
         }
 
+        // 받기 > 보내기 > 나머지 순으로 정렬
+        SortItemsByGiftState();
+
         _isPrewarmed = false;
         _cachedFriendUids = null;
 
@@ -189,11 +192,16 @@ public class FriendListWindow : MonoBehaviour
         if (loadingPanel != null)
             loadingPanel.SetActive(true);
 
+        GameObject contentGO = contentRoot != null ? contentRoot.gameObject : null;
+        bool prevContentActive = contentGO != null && contentGO.activeSelf;
+
+        if (contentGO != null)
+            contentGO.SetActive(false);   // 🔹 리스트 영역 숨기고 시작
+
         try
         {
             ClearList();
 
-            // 재접속 후에도 항상 서버 기준으로 동기화
             await UniTask.WhenAll(
                 FriendService.RefreshAllCacheAsync(),
                 DreamEnergyGiftService.RefreshPendingGiftsByFriendAsync(),
@@ -210,6 +218,9 @@ public class FriendListWindow : MonoBehaviour
                 item.Setup(friendUid, messageWindow);
                 _spawned.Add(item);
             }
+
+            // 드림 에너지 상태 기준 정렬 (받기 > 보내기 > 나머지)
+            SortItemsByGiftState();
         }
         catch (System.Exception e)
         {
@@ -217,8 +228,12 @@ public class FriendListWindow : MonoBehaviour
         }
         finally
         {
+            if (contentGO != null)
+                contentGO.SetActive(prevContentActive);  // 🔹 완성된 상태로 한 번에 보여줌
+
             if (loadingPanel != null)
                 loadingPanel.SetActive(false);
+
             _isRefreshing = false;
         }
     }
@@ -293,6 +308,8 @@ public class FriendListWindow : MonoBehaviour
                         item.RefreshButtonsFromOutside();
                 }
 
+                SortItemsByGiftState();
+
                 if (messageWindow != null)
                     messageWindow.OpenSuccess("선물 수령", $"드림 에너지 +{gained} 획득!");
             }
@@ -344,11 +361,14 @@ public class FriendListWindow : MonoBehaviour
                 RefreshHeader();
 
                 // 보내기 버튼 상태 갱신
-                foreach (var item in _spawned)
+              foreach (var item in _spawned)
                 {
                     if (item != null)
                         item.RefreshButtonsFromOutside();
                 }
+
+                // 받기 > 보내기 > 나머지 순으로 재정렬
+                SortItemsByGiftState();
 
                 if (messageWindow != null)
                 {
@@ -424,4 +444,66 @@ public class FriendListWindow : MonoBehaviour
             Debug.LogError("[FriendListWindow] FriendManageWindow가 연결되지 않았습니다!", this);
         }
     }
+
+    /// <summary>
+    /// 드림 에너지 상태 기준으로 정렬:
+    /// 1) 받을 선물이 있는 친구
+    /// 2) 오늘 보낼 수 있는 친구
+    /// 3) 그 외
+    /// </summary>
+    private void SortItemsByGiftState()
+    {
+        if (_spawned == null || _spawned.Count == 0)
+            return;
+
+        // 혹시 남아 있을 수 있는 null 슬롯 제거
+        _spawned.RemoveAll(item => item == null);
+
+        // 상태 기반으로 정렬
+        _spawned.Sort((a, b) =>
+        {
+            int groupA = GetGiftStateGroup(a);
+            int groupB = GetGiftStateGroup(b);
+
+            if (groupA != groupB)
+                return groupA.CompareTo(groupB);
+
+            // 같은 그룹이면 UID 기준으로 안정적인 정렬
+            return System.String.CompareOrdinal(a.FriendUid, b.FriendUid);
+        });
+
+        // 정렬 결과를 Hierarchy 순서에 반영
+        for (int i = 0; i < _spawned.Count; i++)
+        {
+            if (_spawned[i] != null)
+                _spawned[i].transform.SetSiblingIndex(i);
+        }
+    }
+
+    /// <summary>
+    /// 정렬 그룹: 0=받기 가능, 1=보내기 가능, 2=나머지
+    /// </summary>
+    private int GetGiftStateGroup(FriendListItemUI item)
+    {
+        if (item == null)
+            return 2;
+
+        int pending = item.GetPendingGiftCountForSorting();
+        if (pending > 0)
+            return 0;
+
+        if (item.CanSendGiftForSorting())
+            return 1;
+
+        return 2;
+    }
+
+    /// <summary>
+    /// 외부(FriendListItemUI 등)에서 정렬 다시 시키고 싶을 때 호출
+    /// </summary>
+    public void ResortByGiftState()
+    {
+        SortItemsByGiftState();
+    }
+
 }
