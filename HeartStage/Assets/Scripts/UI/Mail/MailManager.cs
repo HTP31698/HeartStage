@@ -17,6 +17,7 @@ public class MailManager : MonoBehaviour
     // 메일 관련 이벤트
     public event Action<List<MailData>> OnMailsLoaded;    // 메일 목록 로드 완료 시
     public event Action<MailData> OnMailReceived;         // 새 메일 수신 시
+    public event Action OnMailReadStatusChanged;         // 메일 읽음 상태 변경 시
 
     [SerializeField] private Button mailTextButton;
     private void Awake()
@@ -373,6 +374,9 @@ public class MailManager : MonoBehaviour
         try
         {
             await db.Child("mails").Child(userId).Child(mailId).Child("isRead").SetValueAsync(true);
+            
+            // 읽음 상태 변경 이벤트 발생
+            OnMailReadStatusChanged?.Invoke();
         }
         catch { }
     }
