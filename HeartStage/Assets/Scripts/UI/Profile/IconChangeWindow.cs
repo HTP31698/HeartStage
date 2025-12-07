@@ -118,7 +118,6 @@ public class IconChangeWindow : MonoBehaviour
                     continue;
 
                 var sprite = ResourceManager.Instance.GetSprite(key);
-                Debug.Log($"[IconChangeWindow] key={key}, sprite={(sprite == null ? "NULL" : "OK")}");
 
                 if (sprite == null)
                     continue;

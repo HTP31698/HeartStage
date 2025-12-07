@@ -87,21 +87,11 @@ public class MailManager : MonoBehaviour
             if (!IsAuthManagerValid()) return;
 
             string userId = AuthManager.Instance.UserId;
-            Debug.Log($"[메일 확인] 유저 ID: {userId}");
 
             var mails = await GetUserMailsAsync(userId);
-            Debug.Log($"[메일 확인] 총 메일 수: {mails.Count}");
 
             // 읽지 않은 메일이 있으면 알림
             var unreadMails = mails.Where(m => !m.isRead).ToList();
-            if (unreadMails.Count > 0)
-            {
-                Debug.Log($"오프라인 중 받은 메일 {unreadMails.Count}개 발견");
-                foreach (var mail in unreadMails)
-                {
-                    Debug.Log($"- 메일: {mail.title} (발송자: {mail.senderName})");
-                }
-            }
         }
         catch 
         {

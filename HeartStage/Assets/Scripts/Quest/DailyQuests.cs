@@ -122,7 +122,6 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
         RefreshAllItemStatesFromSave();
 
         IsInitialized = true;
-        Debug.Log($"[DailyQuests] UI Initialized. progress={State.progress}, completed={State.completedQuestIds.Count}");
     }
 
     #region DailyQuestState 구조 보정

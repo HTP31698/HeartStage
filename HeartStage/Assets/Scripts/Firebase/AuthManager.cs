@@ -132,8 +132,6 @@ public class AuthManager : MonoBehaviour
         auth.StateChanged += OnAuthStateChanged;
         currentUser = auth.CurrentUser;
         isInitialized = true;
-
-        Debug.Log("[Auth] 초기화 완료");
     }
 
     public bool IsNetworkAvailable()
@@ -534,13 +532,7 @@ public class AuthManager : MonoBehaviour
         {
             bool signedIn = auth.CurrentUser != null;
 
-            if (!signedIn && currentUser != null)
-                Debug.Log("[Auth] 로그아웃 감지");
-
             currentUser = auth.CurrentUser;
-
-            if (signedIn)
-                Debug.Log($"[Auth] 로그인 감지: {UserId}");
         }
     }
 }

@@ -125,8 +125,6 @@ public class FriendListWindow : MonoBehaviour
         _isPrewarmed = false;
         _cachedFriendUids = null;
 
-        Debug.Log($"[FriendListWindow] 캐시 데이터로 표시 완료: {_spawned.Count}명");
-
         // 🔹 캐시로 먼저 보여준 뒤, 서버 기준으로 선물 상태를 다시 동기화
         RefreshGiftStateAndButtonsAsync().Forget();
     }
@@ -176,7 +174,6 @@ public class FriendListWindow : MonoBehaviour
             await DreamEnergyGiftService.SyncCounterFromServerAsync();
 
             _isPrewarmed = true;
-            Debug.Log($"[FriendListWindow] Prewarm 완료: 친구 {_cachedFriendUids.Count}명");
         }
         catch (System.Exception e)
         {

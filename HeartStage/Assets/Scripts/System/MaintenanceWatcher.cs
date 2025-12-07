@@ -88,7 +88,6 @@ public class MaintenanceWatcher : MonoBehaviour
             return;
 
         bool isNow = IsMaintenanceNow(m);
-        Debug.Log($"[MaintenanceWatcher] HandleMaintenanceChanged in {scene.name}: active={m.active}, isNow={isNow}");
 
         // 지금은 점검 시간이 아님 → 팝업 있으면 닫고 타임스케일 복구
         if (!isNow)

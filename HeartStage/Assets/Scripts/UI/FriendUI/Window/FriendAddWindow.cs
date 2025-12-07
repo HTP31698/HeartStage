@@ -123,7 +123,6 @@ public class FriendAddWindow : MonoBehaviour
             _cachedSentCount = requestCounts.sent;
 
             _isPrewarmed = true;
-            Debug.Log($"[FriendAddWindow] Prewarm 완료: 추천 {_cachedCandidates.Count}명, 받은 요청 {_cachedReceivedCount}개, 보낸 요청 {_cachedSentCount}개");
         }
         catch (System.Exception e)
         {

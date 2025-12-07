@@ -32,7 +32,6 @@ public class CloudSaveManager : MonoBehaviour
     {
         string path = AuthManager.Instance.GetUserDataPath("saveData");
         await db.Child(path).SetRawJsonValueAsync(json);
-        Debug.Log($"[CloudSave] 저장 완료: {path}");
     }
 
     // 서버에서 로드
@@ -43,11 +42,8 @@ public class CloudSaveManager : MonoBehaviour
 
         if (snapshot.Exists)
         {
-            Debug.Log($"[CloudSave] 로드 완료: {path}");
             return snapshot.GetRawJsonValue();
         }
-
-        Debug.Log($"[CloudSave] 데이터 없음: {path}");
         return null;
     }
 }

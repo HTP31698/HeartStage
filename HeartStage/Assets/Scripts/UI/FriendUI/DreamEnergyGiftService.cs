@@ -146,7 +146,6 @@ public static class DreamEnergyGiftService
             _pendingGiftCount = count;
             _pendingGiftCountLoaded = true;
 
-            Debug.Log($"[DreamEnergyGiftService] 받을 수 있는 선물: {count}개");
             return count;
         }
         catch (Exception e)
@@ -193,7 +192,6 @@ public static class DreamEnergyGiftService
                     claimed = c;
 
                 string fromUid = child.Child("fromUid").Value?.ToString();
-                Debug.Log($"[DEBUG] 선물 key={child.Key}, fromUid={fromUid}, claimed={claimed}");
 
                 if (claimed)
                     continue;
@@ -213,13 +211,6 @@ public static class DreamEnergyGiftService
 
             _pendingGiftCount = totalCount;
             _pendingGiftCountLoaded = true;
-
-            Debug.Log($"[DreamEnergyGiftService] 친구별 선물 캐시 갱신: {_pendingGiftsByFriend.Count}명에게서 총 {totalCount}개");
-
-            foreach (var kvp in _pendingGiftsByFriend)
-            {
-                Debug.Log($"[DEBUG] 캐시: {kvp.Key} = {kvp.Value}개");
-            }
         }
         catch (Exception e)
         {
@@ -548,7 +539,6 @@ public static class DreamEnergyGiftService
 
             await GetPendingGiftCountAsync();
 
-            Debug.Log($"[DreamEnergyGiftService] 동기화 완료 - 오늘 보낸 수: {data.dreamSendTodayCount}, 보낸 친구: {_sentTodayCache.Count}명, 받을 선물: {_pendingGiftCount}개");
         }
         catch (Exception e)
         {
@@ -607,10 +597,6 @@ public static class DreamEnergyGiftService
             {
                 await Root.UpdateChildrenAsync(updates);
                 Debug.Log($"[DreamEnergyGiftService] 하루 기준 초과한 선물/보낸 로그 정리 완료 ({updates.Count}개 항목)");
-            }
-            else
-            {
-                Debug.Log("[DreamEnergyGiftService] 정리할 오래된 선물/로그 없음");
             }
         }
         catch (Exception e)

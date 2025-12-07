@@ -18,12 +18,114 @@ public class PublicProfileData
     public int achievementCompletedCount;
     public int bestFanMeetingSeconds;
     public int specialStageBestSeconds;
+    public long lastLoginUnixMillis;
 }
 
 public static partial class PublicProfileService
 {
     private static DatabaseReference Root => FirebaseDatabase.DefaultInstance.RootReference;
     private static FirebaseAuth Auth => FirebaseAuth.DefaultInstance;
+
+    // 탈퇴 유저 캐시 (조회했는데 없던 uid)
+    private static HashSet<string> _deletedUserCache = new();
+
+    /// <summary>
+    /// 탈퇴 유저 캐시 초기화 (로그인 시 호출 권장)
+    /// </summary>
+    public static void ClearDeletedUserCache()
+    {
+        _deletedUserCache.Clear();
+    }
+
+    /// <summary>
+    /// 해당 uid가 탈퇴한 유저인지 (캐시 기준)
+    /// </summary>
+    public static bool IsDeletedUserCached(string uid)
+    {
+        return _deletedUserCache.Contains(uid);
+    }
+
+    /// <summary>
+    /// 해당 uid의 프로필이 존재하는지 체크 (탈퇴 여부 확인용)
+    /// </summary>
+    public static async UniTask<bool> ExistsAsync(string uid)
+    {
+        if (string.IsNullOrEmpty(uid))
+            return false;
+
+        // 캐시에서 탈퇴 유저로 확인된 경우
+        if (_deletedUserCache.Contains(uid))
+            return false;
+
+        try
+        {
+            var snap = await Root.Child("publicProfiles").Child(uid).GetValueAsync();
+            bool exists = snap.Exists;
+
+            if (!exists)
+            {
+                _deletedUserCache.Add(uid);
+                Debug.Log($"[PublicProfileService] 탈퇴 유저 감지: {uid}");
+            }
+
+            return exists;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[PublicProfileService] ExistsAsync Error: {e}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 여러 uid 중 존재하는 것만 필터링
+    /// </summary>
+    public static async UniTask<List<string>> FilterExistingUidsAsync(List<string> uids)
+    {
+        var result = new List<string>();
+        if (uids == null || uids.Count == 0)
+            return result;
+
+        var tasks = new List<UniTask<(string uid, bool exists)>>();
+
+        foreach (var uid in uids)
+        {
+            // 캐시에서 이미 탈퇴로 확인된 유저는 스킵
+            if (_deletedUserCache.Contains(uid))
+                continue;
+
+            tasks.Add(CheckExistsAsync(uid));
+        }
+
+        var results = await UniTask.WhenAll(tasks);
+
+        foreach (var (uid, exists) in results)
+        {
+            if (exists)
+            {
+                result.Add(uid);
+            }
+            else
+            {
+                _deletedUserCache.Add(uid);
+            }
+        }
+
+        return result;
+    }
+
+    private static async UniTask<(string uid, bool exists)> CheckExistsAsync(string uid)
+    {
+        try
+        {
+            var snap = await Root.Child("publicProfiles").Child(uid).GetValueAsync();
+            return (uid, snap.Exists);
+        }
+        catch
+        {
+            return (uid, false);
+        }
+    }
 
     public static async UniTask UpdateMyPublicProfileAsync(
        SaveDataV1 data,
@@ -58,18 +160,24 @@ public static partial class PublicProfileService
             .Child("publicProfiles")
             .Child(uid)
             .UpdateChildrenAsync(dict);
-
-        Debug.Log($"[PublicProfileService] 프로필 업데이트: {effectiveNickname}, 아이콘: {iconKey}");
     }
 
     public static async UniTask<PublicProfileData> GetPublicProfileAsync(string uid)
     {
         try
         {
+            // 캐시에서 탈퇴 유저로 확인된 경우
+            if (_deletedUserCache.Contains(uid))
+            {
+                Debug.Log($"[PublicProfileService] 캐시된 탈퇴 유저: {uid}");
+                return null;
+            }
+
             var snap = await Root.Child("publicProfiles").Child(uid).GetValueAsync();
             if (!snap.Exists)
             {
-                Debug.LogWarning($"[PublicProfileService] 프로필이 존재하지 않음: {uid}");
+                _deletedUserCache.Add(uid);
+                Debug.LogWarning($"[PublicProfileService] 프로필이 존재하지 않음 (탈퇴 유저): {uid}");
                 return null;
             }
 
@@ -77,8 +185,6 @@ public static partial class PublicProfileService
             data.uid = uid;
             data.nickname = snap.Child("nickname").Value?.ToString() ?? uid;
             data.statusMessage = snap.Child("statusMessage").Value?.ToString() ?? "";
-
-            // 그대로 가져온다.  변환 안 함.
             data.profileIconKey = snap.Child("profileIconId").Value?.ToString() ?? "hanaicon";
 
             if (snap.Child("fanAmount").Value is long fa)
@@ -95,8 +201,8 @@ public static partial class PublicProfileService
                 data.bestFanMeetingSeconds = (int)bf;
             if (snap.Child("specialStageBestSeconds").Value is long sp)
                 data.specialStageBestSeconds = (int)sp;
-
-            Debug.Log($"[PublicProfileService] 프로필 로드: {data.nickname}, 아이콘: {data.profileIconKey}");
+            if (snap.Child("lastLoginUnixMillis").Value is long ll)
+                data.lastLoginUnixMillis = ll;
 
             return data;
         }

@@ -10,13 +10,9 @@ public static class FriendService
     private static DatabaseReference Root => FirebaseDatabase.DefaultInstance.RootReference;
     private static FirebaseAuth Auth => FirebaseAuth.DefaultInstance;
 
-    // 최대 친구 수 제한
     public const int MAX_FRIEND_COUNT = 20;
-
-    // 최대 친구 요청 수 제한 (받은 + 보낸)
     public const int MAX_REQUEST_COUNT = 20;
 
-    // 동시성 제어
     private static bool _isProcessingRequest = false;
 
     // === 캐시 데이터 ===
@@ -37,8 +33,10 @@ public static class FriendService
         var user = Auth.CurrentUser;
         return user?.UserId;
     }
+
     /// <summary>
     /// 모든 친구 관련 데이터를 한 번에 로드하고 캐시
+    /// ★ 탈퇴 유저 자동 필터링 + 고아 데이터 정리
     /// </summary>
     public static async UniTask RefreshAllCacheAsync()
     {
@@ -48,11 +46,11 @@ public static class FriendService
 
         try
         {
-            // 병렬로 모두 로드
+            // 병렬로 모두 로드 (필터링 포함)
             var (friends, received, sent) = await UniTask.WhenAll(
-                GetMyFriendUidListAsync(syncLocal: true),
-                GetReceivedRequestsAsync(),
-                GetSentRequestsAsync()
+                GetMyFriendUidListAsync(syncLocal: true, filterDeleted: true),
+                GetReceivedRequestsAsync(filterDeleted: true),
+                GetSentRequestsAsync(filterDeleted: true)
             );
 
             _cachedFriendUids = friends;
@@ -67,31 +65,18 @@ public static class FriendService
             Debug.LogError($"[FriendService] RefreshAllCacheAsync Error: {e}");
         }
     }
-    /// <summary>
-    /// 캐시된 친구 목록 반환 (로드 없이)
-    /// </summary>
+
     public static List<string> GetCachedFriendUids() => new(_cachedFriendUids);
-
-    /// <summary>
-    /// 캐시된 받은 요청 목록 반환 (로드 없이)
-    /// </summary>
     public static List<string> GetCachedReceivedRequests() => new(_cachedReceivedRequests);
-
-    /// <summary>
-    /// 캐시된 보낸 요청 목록 반환 (로드 없이)
-    /// </summary>
     public static List<string> GetCachedSentRequests() => new(_cachedSentRequests);
 
-    /// <summary>
-    /// 캐시 무효화 (액션 후 호출)
-    /// </summary>
     public static void InvalidateCache()
     {
         _isCacheLoaded = false;
     }
+
     /// <summary>
-    /// 상대 uid로 친구 요청 보내기
-    /// friendRequests/targetUid/myUid = true
+    /// 친구 요청 보내기
     /// </summary>
     public static async UniTask<bool> SendFriendRequestAsync(string targetUid)
     {
@@ -108,9 +93,16 @@ public static class FriendService
             return false;
         }
 
+        // ★ 탈퇴 유저에게는 친구 요청 불가
+        bool targetExists = await PublicProfileService.ExistsAsync(targetUid);
+        if (!targetExists)
+        {
+            Debug.LogWarning("[FriendService] 탈퇴한 유저에게는 친구 요청을 보낼 수 없습니다.");
+            return false;
+        }
+
         try
         {
-            // 이미 친구인지 확인
             var myFriendRef = Root.Child("friends").Child(myUid).Child(targetUid);
             var snap = await myFriendRef.GetValueAsync();
             if (snap.Exists)
@@ -119,7 +111,6 @@ public static class FriendService
                 return false;
             }
 
-            // 이미 요청을 보냈는지 확인
             var requestRef = Root.Child("friendRequests").Child(targetUid).Child(myUid);
             var requestSnap = await requestRef.GetValueAsync();
             if (requestSnap.Exists)
@@ -128,7 +119,6 @@ public static class FriendService
                 return false;
             }
 
-            // 친구 요청 전송 (양쪽에 저장)
             var updates = new Dictionary<string, object>
             {
                 [$"friendRequests/{targetUid}/{myUid}"] = true,
@@ -148,10 +138,10 @@ public static class FriendService
     }
 
     /// <summary>
-    /// 내가 받은 친구 요청 목록(uid 리스트)
-    /// friendRequests/myUid/ 밑의 key들
+    /// 내가 받은 친구 요청 목록
+    /// ★ filterDeleted=true면 탈퇴 유저 제외 + 고아 데이터 정리
     /// </summary>
-    public static async UniTask<List<string>> GetReceivedRequestsAsync()
+    public static async UniTask<List<string>> GetReceivedRequestsAsync(bool filterDeleted = false)
     {
         string myUid = GetMyUid();
         var result = new List<string>();
@@ -163,10 +153,35 @@ public static class FriendService
             var snap = await Root.Child("friendRequests").Child(myUid).GetValueAsync();
             if (!snap.Exists) return result;
 
+            var allUids = new List<string>();
             foreach (var child in snap.Children)
             {
-                string fromUid = child.Key;
-                result.Add(fromUid);
+                allUids.Add(child.Key);
+            }
+
+            if (filterDeleted && allUids.Count > 0)
+            {
+                // 탈퇴 유저 필터링
+                var validUids = await PublicProfileService.FilterExistingUidsAsync(allUids);
+
+                // 탈퇴 유저 고아 데이터 정리
+                var deletedUids = new List<string>();
+                foreach (var uid in allUids)
+                {
+                    if (!validUids.Contains(uid))
+                        deletedUids.Add(uid);
+                }
+
+                if (deletedUids.Count > 0)
+                {
+                    await CleanupOrphanRequestsAsync(myUid, deletedUids, isReceived: true);
+                }
+
+                result = validUids;
+            }
+            else
+            {
+                result = allUids;
             }
 
             Debug.Log($"[FriendService] 받은 친구 요청: {result.Count}개");
@@ -180,7 +195,6 @@ public static class FriendService
 
     /// <summary>
     /// 친구 요청 수락
-    /// friends 양쪽 추가 + friendRequests 삭제 + sentRequests 삭제 + SaveData. friendUidList 추가
     /// </summary>
     public static async UniTask<bool> AcceptFriendRequestAsync(string fromUid)
     {
@@ -194,11 +208,19 @@ public static class FriendService
         if (string.IsNullOrEmpty(myUid) || string.IsNullOrEmpty(fromUid))
             return false;
 
+        // ★ 탈퇴 유저 요청은 수락 불가 (정리만)
+        bool exists = await PublicProfileService.ExistsAsync(fromUid);
+        if (!exists)
+        {
+            Debug.Log("[FriendService] 탈퇴한 유저의 요청입니다. 요청만 정리합니다.");
+            await CleanupOrphanRequestsAsync(myUid, new List<string> { fromUid }, isReceived: true);
+            return false;
+        }
+
         _isProcessingRequest = true;
 
         try
         {
-            // 1) 현재 친구 수 (서버 기준) 확인
             var friendSnap = await Root.Child("friends").Child(myUid).GetValueAsync();
             int currentCount = friendSnap.Exists ? (int)friendSnap.ChildrenCount : 0;
 
@@ -208,7 +230,6 @@ public static class FriendService
                 return false;
             }
 
-            // 2) 이미 친구인지 확인 (동시에 수락된 경우 등)
             if (friendSnap.Exists && friendSnap.HasChild(fromUid))
             {
                 Debug.Log("[FriendService] 이미 친구 상태입니다. 요청만 정리합니다.");
@@ -223,7 +244,6 @@ public static class FriendService
                 return true;
             }
 
-            // 3) 친구 양방향 추가 + 요청 삭제 + 상대방 sentRequests 삭제
             var updates = new Dictionary<string, object>
             {
                 [$"friends/{myUid}/{fromUid}"] = true,
@@ -233,11 +253,6 @@ public static class FriendService
             };
 
             await Root.UpdateChildrenAsync(updates);
-
-            // 🔹 SaveData.friendUidList는 여기서 직접 만지지 않는다.
-            //    나중에 UI 쪽에서 FriendService.RefreshAllCacheAsync()를 호출하면
-            //    내부에서 GetMyFriendUidListAsync(syncLocal:true)가 실행되면서
-            //    SaveData.friendUidList 가 서버 상태로 통째로 동기화된다.
 
             Debug.Log($"[FriendService] 친구 요청 수락 완료: {fromUid}");
             return true;
@@ -264,7 +279,6 @@ public static class FriendService
 
         try
         {
-            // 요청 삭제 + 상대방의 보낸 요청도 삭제
             var updates = new Dictionary<string, object>
             {
                 [$"friendRequests/{myUid}/{fromUid}"] = null,
@@ -284,9 +298,10 @@ public static class FriendService
     }
 
     /// <summary>
-    /// 내 친구 목록 가져오기 (서버 기준)
+    /// 내 친구 목록 가져오기
+    /// ★ filterDeleted=true면 탈퇴 유저 제외 + 고아 데이터 정리
     /// </summary>
-    public static async UniTask<List<string>> GetMyFriendUidListAsync(bool syncLocal = true)
+    public static async UniTask<List<string>> GetMyFriendUidListAsync(bool syncLocal = true, bool filterDeleted = false)
     {
         var result = new List<string>();
 
@@ -297,14 +312,41 @@ public static class FriendService
         try
         {
             var snap = await Root.Child("friends").Child(myUid).GetValueAsync();
+
+            var allUids = new List<string>();
             if (snap.Exists)
             {
                 foreach (var child in snap.Children)
                 {
                     string friendUid = child.Key;
                     if (!string.IsNullOrEmpty(friendUid))
-                        result.Add(friendUid);
+                        allUids.Add(friendUid);
                 }
+            }
+
+            if (filterDeleted && allUids.Count > 0)
+            {
+                // 탈퇴 유저 필터링
+                var validUids = await PublicProfileService.FilterExistingUidsAsync(allUids);
+
+                // 탈퇴 유저 고아 데이터 정리
+                var deletedUids = new List<string>();
+                foreach (var uid in allUids)
+                {
+                    if (!validUids.Contains(uid))
+                        deletedUids.Add(uid);
+                }
+
+                if (deletedUids.Count > 0)
+                {
+                    await CleanupOrphanFriendsAsync(myUid, deletedUids);
+                }
+
+                result = validUids;
+            }
+            else
+            {
+                result = allUids;
             }
 
             // 로컬 세이브와 동기화
@@ -312,9 +354,7 @@ public static class FriendService
             {
                 data.friendUidList.Clear();
                 data.friendUidList.AddRange(result);
-            }
-
-            Debug.Log($"[FriendService] 친구 목록 로드 완료: {result.Count}명");
+            } 
         }
         catch (Exception e)
         {
@@ -325,7 +365,7 @@ public static class FriendService
     }
 
     /// <summary>
-    /// 친구 삭제 (friends 양쪽 제거)
+    /// 친구 삭제
     /// </summary>
     public static async UniTask<bool> RemoveFriendAsync(string friendUid)
     {
@@ -343,10 +383,6 @@ public static class FriendService
 
             await Root.UpdateChildrenAsync(updates);
 
-            // 🔹 SaveData.friendUidList 직접 수정 안 함 (서버 → 캐시 → SaveData 미러 구조 유지)
-            //    이후 FriendService.RefreshAllCacheAsync()에서 서버 기준으로 다시 동기화됨.
-
-            // 🔹 이 친구와 주고받은 드림 에너지 관련 데이터 정리
             await DreamEnergyGiftService.CleanupGiftsWithFriendAsync(friendUid);
 
             Debug.Log($"[FriendService] 친구 삭제 + 선물 정리 완료: {friendUid}");
@@ -359,10 +395,6 @@ public static class FriendService
         }
     }
 
-
-    /// <summary>
-    /// 친구 수 체크 (로컬 기준)
-    /// </summary>
     public static bool CanAddMoreFriends()
     {
         if (SaveLoadManager.Data is not SaveDataV1 data)
@@ -373,8 +405,9 @@ public static class FriendService
 
     /// <summary>
     /// 내가 보낸 친구 요청 목록
+    /// ★ filterDeleted=true면 탈퇴 유저 제외 + 고아 데이터 정리
     /// </summary>
-    public static async UniTask<List<string>> GetSentRequestsAsync()
+    public static async UniTask<List<string>> GetSentRequestsAsync(bool filterDeleted = false)
     {
         string myUid = GetMyUid();
         var result = new List<string>();
@@ -386,10 +419,33 @@ public static class FriendService
             var snap = await Root.Child("sentRequests").Child(myUid).GetValueAsync();
             if (!snap.Exists) return result;
 
+            var allUids = new List<string>();
             foreach (var child in snap.Children)
             {
-                string toUid = child.Key;
-                result.Add(toUid);
+                allUids.Add(child.Key);
+            }
+
+            if (filterDeleted && allUids.Count > 0)
+            {
+                var validUids = await PublicProfileService.FilterExistingUidsAsync(allUids);
+
+                var deletedUids = new List<string>();
+                foreach (var uid in allUids)
+                {
+                    if (!validUids.Contains(uid))
+                        deletedUids.Add(uid);
+                }
+
+                if (deletedUids.Count > 0)
+                {
+                    await CleanupOrphanRequestsAsync(myUid, deletedUids, isReceived: false);
+                }
+
+                result = validUids;
+            }
+            else
+            {
+                result = allUids;
             }
 
             Debug.Log($"[FriendService] 보낸 친구 요청: {result.Count}개");
@@ -431,7 +487,7 @@ public static class FriendService
     }
 
     /// <summary>
-    /// 받은 요청 수 + 보낸 요청 수 합계 가져오기
+    /// 받은/보낸 요청 수 조회
     /// </summary>
     public static async UniTask<(int received, int sent)> GetRequestCountsAsync()
     {
@@ -447,13 +503,85 @@ public static class FriendService
             int receivedCount = receivedSnap.Exists ? (int)receivedSnap.ChildrenCount : 0;
             int sentCount = sentSnap.Exists ? (int)sentSnap.ChildrenCount : 0;
 
-            Debug.Log($"[FriendService] 요청 수 조회: 받은 {receivedCount}개, 보낸 {sentCount}개");
             return (receivedCount, sentCount);
         }
         catch (Exception e)
         {
             Debug.LogError($"[FriendService] GetRequestCountsAsync Error: {e}");
             return (0, 0);
+        }
+    }
+
+    // ========================================
+    // 고아 데이터 정리 메서드
+    // ========================================
+
+    /// <summary>
+    /// 탈퇴 유저의 친구 관계 데이터 정리
+    /// </summary>
+    private static async UniTask CleanupOrphanFriendsAsync(string myUid, List<string> deletedUids)
+    {
+        if (deletedUids == null || deletedUids.Count == 0)
+            return;
+
+        try
+        {
+            var updates = new Dictionary<string, object>();
+
+            foreach (var deletedUid in deletedUids)
+            {
+                // 내 친구 목록에서 제거
+                updates[$"friends/{myUid}/{deletedUid}"] = null;
+
+                // 선물 관련 데이터도 정리
+                // (DreamEnergyGiftService.CleanupGiftsWithFriendAsync는 상대방 데이터도 건드리므로
+                //  탈퇴 유저의 경우 내 쪽만 정리)
+                updates[$"dreamGifts/{myUid}"] = null; // 해당 친구에게서 받은 선물만 삭제하려면 별도 쿼리 필요
+            }
+
+            await Root.UpdateChildrenAsync(updates);
+
+            Debug.Log($"[FriendService] 탈퇴 유저 친구 관계 정리: {deletedUids.Count}명");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[FriendService] CleanupOrphanFriendsAsync Error: {e}");
+        }
+    }
+
+    /// <summary>
+    /// 탈퇴 유저의 친구 요청 데이터 정리
+    /// </summary>
+    private static async UniTask CleanupOrphanRequestsAsync(string myUid, List<string> deletedUids, bool isReceived)
+    {
+        if (deletedUids == null || deletedUids.Count == 0)
+            return;
+
+        try
+        {
+            var updates = new Dictionary<string, object>();
+
+            foreach (var deletedUid in deletedUids)
+            {
+                if (isReceived)
+                {
+                    // 받은 요청: friendRequests/{myUid}/{deletedUid} 삭제
+                    updates[$"friendRequests/{myUid}/{deletedUid}"] = null;
+                }
+                else
+                {
+                    // 보낸 요청: sentRequests/{myUid}/{deletedUid} 삭제
+                    updates[$"sentRequests/{myUid}/{deletedUid}"] = null;
+                }
+            }
+
+            await Root.UpdateChildrenAsync(updates);
+
+            Debug.Log($"[FriendService] 탈퇴 유저 요청 정리 ({(isReceived ? "받은" : "보낸")}): {deletedUids.Count}개");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[FriendService] CleanupOrphanRequestsAsync Error: {e}");
         }
     }
 }

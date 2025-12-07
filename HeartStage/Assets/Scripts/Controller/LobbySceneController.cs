@@ -104,7 +104,6 @@ public class LobbySceneController : MonoBehaviour
         int achievementCount = AchievementUtil.GetCompletedAchievementCount(data);
 
         await PublicProfileService.UpdateMyPublicProfileAsync(data, achievementCount);
-        Debug.Log("[Lobby] publicProfiles 동기화 완료");
     }
 
     private async UniTask SyncDreamEnergyCounterAsync()
@@ -116,8 +115,6 @@ public class LobbySceneController : MonoBehaviour
 
             // 🔹 그 다음 카운터 동기화 (서버 → 로컬 SaveData)
             await DreamEnergyGiftService.SyncCounterFromServerAsync();
-
-            Debug.Log("[Lobby] DreamEnergyGiftService 정리 + 카운터 동기화 완료");
         }
         catch (System.Exception e)
         {
@@ -134,7 +131,6 @@ public class LobbySceneController : MonoBehaviour
         var data = SaveLoadManager.Data as SaveDataV1;
         if (data == null || data.friendUidList == null || data.friendUidList.Count == 0)
         {
-            Debug.Log("[Lobby] 친구 목록이 비어있음.  프리로드 스킵");
             return;
         }
 
