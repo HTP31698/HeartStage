@@ -326,7 +326,6 @@ public static class FriendService
 
     /// <summary>
     /// 친구 삭제 (friends 양쪽 제거)
-    /// SaveData.friendUidList는 여기서 직접 제거하지 않는다.
     /// </summary>
     public static async UniTask<bool> RemoveFriendAsync(string friendUid)
     {
@@ -344,12 +343,13 @@ public static class FriendService
 
             await Root.UpdateChildrenAsync(updates);
 
-            // 🔹 여기서 SaveLoadManager.Data.friendUidList.Remove(...) 하지 않는다.
-            //    마찬가지로, 이후 FriendService.RefreshAllCacheAsync() 호출 시
-            //    GetMyFriendUidListAsync(syncLocal:true)가 서버 상태 기준으로
-            //    friendUidList 전체를 다시 덮어쓴다.
+            // 🔹 SaveData.friendUidList 직접 수정 안 함 (서버 → 캐시 → SaveData 미러 구조 유지)
+            //    이후 FriendService.RefreshAllCacheAsync()에서 서버 기준으로 다시 동기화됨.
 
-            Debug.Log($"[FriendService] 친구 삭제 완료: {friendUid}");
+            // 🔹 이 친구와 주고받은 드림 에너지 관련 데이터 정리
+            await DreamEnergyGiftService.CleanupGiftsWithFriendAsync(friendUid);
+
+            Debug.Log($"[FriendService] 친구 삭제 + 선물 정리 완료: {friendUid}");
             return true;
         }
         catch (Exception e)

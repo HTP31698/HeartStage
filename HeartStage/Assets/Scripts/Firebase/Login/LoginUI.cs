@@ -5,23 +5,16 @@ using UnityEngine.UI;
 
 public class LoginUI : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject loginPanel;
+    [SerializeField] private GameObject loginPanel;
 
-    [SerializeField]
-    private TMP_InputField emailInput;
-    [SerializeField]
-    private TMP_InputField passwdInput;
+    [SerializeField] private TMP_InputField emailInput;
+    [SerializeField] private TMP_InputField passwdInput;
 
-    [SerializeField]
-    private Button loginButton;
-    [SerializeField]
-    private Button signUpButton;
-    [SerializeField]
-    private Button anonymouslyLoginButton;
+    [SerializeField] private Button loginButton;
+    [SerializeField] private Button signUpButton;
+    [SerializeField] private Button anonymouslyLoginButton;
 
-    [SerializeField]
-    private TextMeshProUGUI errorText;
+    [SerializeField] private TextMeshProUGUI errorText;
 
     private void OnEnable()
     {
@@ -30,102 +23,111 @@ public class LoginUI : MonoBehaviour
 
     private async UniTaskVoid Start()
     {
-        // 로그인 준비 되기 전엔 버튼 막기
         SetButtonsInteractable(false);
 
         await UniTask.WaitUntil(() => AuthManager.Instance != null && AuthManager.Instance.IsInitialized);
 
         loginButton.onClick.AddListener(() => OnLoginButtonClicked().Forget());
         signUpButton.onClick.AddListener(() => OnSignUpButtonClicked().Forget());
-        anonymouslyLoginButton.onClick.AddListener(() => OnAnonyMouslyLoginButtonClicked().Forget());
+        anonymouslyLoginButton.onClick.AddListener(() => OnAnonymouslyLoginButtonClicked().Forget());
+
         SetButtonsInteractable(true);
         UpdateUI();
     }
 
-    // 로그인 시도
     private async UniTaskVoid OnLoginButtonClicked()
     {
-        string email = emailInput.text;
+        string email = emailInput.text.Trim();
         string password = passwdInput.text;
 
-        // 로그인 시도중엔 버튼 막기
-        SetButtonsInteractable(false);
-        var (success, error) = await AuthManager.Instance.SignInWithEmailAsync(email, password);
-        if (success)
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
         {
+            ShowError("이메일과 비밀번호를 입력해주세요.");
+            return;
+        }
 
+        SetButtonsInteractable(false);
+        ShowError(""); // 에러 메시지 초기화
+
+        var (result, error) = await AuthManager.Instance.SignInWithEmailAsync(email, password);
+
+        if (result == AuthManager.LoginResult.Success)
+        {
+            // 성공 - TitleSceneController가 알아서 다음 단계 진행
         }
         else
         {
-            ShowError("로그인 실패");
+            ShowError(GetLoginErrorMessage(result, error));
+            SetButtonsInteractable(true);
         }
 
-        SetButtonsInteractable(true);
         UpdateUI();
     }
 
-    // 회원 가입 시도
     private async UniTaskVoid OnSignUpButtonClicked()
     {
-        string email = emailInput.text;
+        string email = emailInput.text.Trim();
         string password = passwdInput.text;
 
-        // 회원가입 중엔 버튼 막기
-        SetButtonsInteractable(false);
-        var (success, error) = await AuthManager.Instance.CreateUserWithEmailAsync(email, password);
-        if (success)
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
         {
+            ShowError("이메일과 비밀번호를 입력해주세요.");
+            return;
+        }
 
+        if (password.Length < 6)
+        {
+            ShowError("비밀번호는 6자 이상이어야 합니다.");
+            return;
+        }
+
+        SetButtonsInteractable(false);
+        ShowError("");
+
+        var (result, error) = await AuthManager.Instance.CreateUserWithEmailAsync(email, password);
+
+        if (result == AuthManager.LoginResult.Success)
+        {
+            // 성공
         }
         else
         {
-            ShowError("회원가입 실패");
+            ShowError(GetLoginErrorMessage(result, error));
+            SetButtonsInteractable(true);
         }
 
-        SetButtonsInteractable(true);
         UpdateUI();
     }
 
-    // 익명 로그인 시도
-    private async UniTaskVoid OnAnonyMouslyLoginButtonClicked()
+    private async UniTaskVoid OnAnonymouslyLoginButtonClicked()
     {
-        // 익명 로그인 시도 중엔 버튼 막기
         SetButtonsInteractable(false);
-        var (success, error) = await AuthManager.Instance.SignInAnonymouslyAsync();
-        if (success)
-        {
+        ShowError("");
 
+        var (result, error) = await AuthManager.Instance.SignInAnonymouslyAsync();
+
+        if (result == AuthManager.LoginResult.Success)
+        {
+            // 성공
         }
         else
         {
-            ShowError("익명 로그인 실패");
+            ShowError(GetLoginErrorMessage(result, error));
+            SetButtonsInteractable(true);
         }
 
-        SetButtonsInteractable(true);
         UpdateUI();
     }
 
-    // UI 업데이트
     public void UpdateUI()
     {
         if (AuthManager.Instance == null || !AuthManager.Instance.IsInitialized)
             return;
 
         bool isLoggedIn = AuthManager.Instance.IsLoggedIn;
-        // 로그인 여부에 따라 로그인UI 뜨고 안뜨게 변경
         loginPanel.SetActive(!isLoggedIn);
-
-        if (isLoggedIn)
-        {
-
-        }
-        else
-        {
-
-        }
     }
 
-    // 버튼 상호작용 세팅
     private void SetButtonsInteractable(bool active)
     {
         loginButton.interactable = active;
@@ -133,9 +135,19 @@ public class LoginUI : MonoBehaviour
         anonymouslyLoginButton.interactable = active;
     }
 
-    // 에러 메세지 띄우기
     private void ShowError(string message)
     {
         errorText.text = message;
+    }
+
+    private string GetLoginErrorMessage(AuthManager.LoginResult result, string rawError)
+    {
+        return result switch
+        {
+            AuthManager.LoginResult.NetworkError => "네트워크 연결을 확인해주세요.",
+            AuthManager.LoginResult.InvalidCredentials => "이메일 또는 비밀번호가 올바르지 않습니다.",
+            AuthManager.LoginResult.TooManyRequests => "너무 많은 시도가 있었습니다. 잠시 후 다시 시도해주세요.",
+            _ => "로그인에 실패했습니다. 다시 시도해주세요."
+        };
     }
 }

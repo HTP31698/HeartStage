@@ -30,18 +30,24 @@ public class CloudSaveManager : MonoBehaviour
     // 서버에 저장
     public async UniTask SaveAsync(string userId, string json)
     {
-        await db.Child("users").Child(userId).Child("saveData").SetRawJsonValueAsync(json);
-        Debug.Log("클라우드 세이브 저장 완료");
+        string path = AuthManager.Instance.GetUserDataPath("saveData");
+        await db.Child(path).SetRawJsonValueAsync(json);
+        Debug.Log($"[CloudSave] 저장 완료: {path}");
     }
 
     // 서버에서 로드
     public async UniTask<string> LoadAsync(string userId)
     {
-        var snapshot = await db.Child("users").Child(userId).Child("saveData").GetValueAsync();
+        string path = AuthManager.Instance.GetUserDataPath("saveData");
+        var snapshot = await db.Child(path).GetValueAsync();
 
         if (snapshot.Exists)
+        {
+            Debug.Log($"[CloudSave] 로드 완료: {path}");
             return snapshot.GetRawJsonValue();
+        }
 
+        Debug.Log($"[CloudSave] 데이터 없음: {path}");
         return null;
     }
 }

@@ -8,29 +8,29 @@ using UnityEngine;
 public class TitleSceneController : MonoBehaviour
 {
     [Header("페이드 / 로고 / 배경")]
-    [SerializeField] private CanvasGroup fadeCanvas;          // 검은 패널 CanvasGroup + Image
-    [SerializeField] private GameObject logoRoot;             // Logo 오브젝트
-    [SerializeField] private CanvasGroup logoCanvasGroup;     // Logo에 달린 CanvasGroup
-    [SerializeField] private GameObject titleBackgroundRoot;  // 타이틀 배경 Root
+    [SerializeField] private CanvasGroup fadeCanvas;
+    [SerializeField] private GameObject logoRoot;
+    [SerializeField] private CanvasGroup logoCanvasGroup;
+    [SerializeField] private GameObject titleBackgroundRoot;
 
     [Header("하단 상태 텍스트 / Touch to Start")]
-    [SerializeField] private TextMeshProUGUI statusText;      // "로딩중...", "로그인이 필요합니다", "Touch to Start"
-    [SerializeField] private GameObject touchToStartPanel;    // "Touch to Start" 텍스트만 있는 패널
+    [SerializeField] private TextMeshProUGUI statusText;
+    [SerializeField] private GameObject touchToStartPanel;
 
-    [Header("로그인 UI 루트 (LoginUI 루트 오브젝트)")]
-    [SerializeField] private GameObject loginUIRoot;          // LoginUI 전체 루트
+    [Header("로그인 UI")]
+    [SerializeField] private GameObject loginUIRoot;
 
     [Header("씬 이동 설정")]
     [SerializeField] private SceneType lobbySceneType = SceneType.LobbyScene;
 
     [Header("인트로 연출 타이밍 (초)")]
-    [SerializeField] private float firstBlackDelay = 0.3f;  // 검은 화면만 보이는 시간
-    [SerializeField] private float logoFadeInTime = 0.4f;   // 로고가 서서히 나타나는 시간
-    [SerializeField] private float logoHoldTime = 0.6f;     // 로고가 완전히 보인 채로 유지되는 시간
-    [SerializeField] private float fadeOutTime = 0.5f;      // 검은 화면 + 로고 같이 사라지는 시간
+    [SerializeField] private float firstBlackDelay = 0.3f;
+    [SerializeField] private float logoFadeInTime = 0.4f;
+    [SerializeField] private float logoHoldTime = 0.6f;
+    [SerializeField] private float fadeOutTime = 0.5f;
 
     [Header("로딩 텍스트 ... 속도 (초)")]
-    [SerializeField] private float dotInterval = 0.4f;      // . 하나씩 늘어나는 간격
+    [SerializeField] private float dotInterval = 0.4f;
 
     [Header("점검 / 강제 업데이트 팝업")]
     [SerializeField] private GameObject maintenancePopupRoot;
@@ -39,11 +39,9 @@ public class TitleSceneController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI forceUpdateMessageText;
 
     [Header("스토어 URL (Android)")]
-    [SerializeField] private string androidStoreUrl; // 예: "https://play.google.com/store/apps/details?id=com.Company.HeartStage"
+    [SerializeField] private string androidStoreUrl;
 
     private bool _readyToStart = false;
-
-    // 상태 텍스트 애니메이션용
     private CancellationTokenSource _statusCts;
     private string _currentBaseStatus = string.Empty;
 
@@ -54,14 +52,13 @@ public class TitleSceneController : MonoBehaviour
         if (titleBackgroundRoot != null)
             titleBackgroundRoot.SetActive(true);
 
-        // 로고는 처음부터 켜두고 alpha = 0 으로 숨기기
         if (logoRoot != null)
             logoRoot.SetActive(true);
         if (logoCanvasGroup != null)
             logoCanvasGroup.alpha = 0f;
 
         if (fadeCanvas != null)
-            fadeCanvas.alpha = 1f; // 완전 검은 화면
+            fadeCanvas.alpha = 1f;
 
         if (statusText != null)
             statusText.text = string.Empty;
@@ -80,24 +77,13 @@ public class TitleSceneController : MonoBehaviour
 
     private async void Start()
     {
-        // 1) 인트로 연출: 검은 화면 → 로고 → 둘이 같이 페이드아웃
         await IntroSequenceAsync();
 
-        // 2) 인트로 끝난 시점에서 버전 체크
-        //    막혀야 하면 여기서 리턴해서 뒤 로직 안 타게 함.
         if (!CheckForceUpdateAndMaintenance())
-        {
             return;
-        }
 
-        // 3) 로그인 UI 켜기
-        //if (loginUIRoot != null)
-        //    loginUIRoot.SetActive(true);
-
-        // 4) 로딩/로그인/세이브/출석 처리
         await PostLoginFlowAsync();
 
-        // 5) 모든 준비 완료 → "Touch to Start" 표시 + 터치 대기
         ShowTouchToStart();
     }
 
@@ -122,50 +108,46 @@ public class TitleSceneController : MonoBehaviour
 
     #endregion
 
-    #region 1. 인트로 연출 (검은 화면 + 로고 같이 있다가 동시에 페이드아웃)
+    #region 인트로 연출
 
     private async UniTask IntroSequenceAsync()
     {
-        // 1) 검은 화면만 잠깐 유지
         if (firstBlackDelay > 0f)
             await UniTask.Delay(TimeSpan.FromSeconds(firstBlackDelay), DelayType.UnscaledDeltaTime);
 
-        // 2) 검은 화면 + 로고 붙어서 나오는 느낌
         float t = 0f;
         float fadeInDuration = Mathf.Max(0.01f, logoFadeInTime);
 
         if (logoCanvasGroup != null)
             logoCanvasGroup.alpha = 0f;
         if (fadeCanvas != null)
-            fadeCanvas.alpha = 1f; // 계속 검은 상태
+            fadeCanvas.alpha = 1f;
 
         while (t < fadeInDuration)
         {
             t += Time.unscaledDeltaTime;
-            float n = Mathf.Clamp01(t / fadeInDuration); // 0 -> 1
+            float n = Mathf.Clamp01(t / fadeInDuration);
 
             if (logoCanvasGroup != null)
-                logoCanvasGroup.alpha = n; // 로고만 서서히 보이게
+                logoCanvasGroup.alpha = n;
 
             await UniTask.Yield();
         }
 
         if (logoCanvasGroup != null)
-            logoCanvasGroup.alpha = 1f; // 완전히 보이게 고정
+            logoCanvasGroup.alpha = 1f;
 
-        // 3) 로고가 완전히 보인 채로 잠깐 유지
         if (logoHoldTime > 0f)
             await UniTask.Delay(TimeSpan.FromSeconds(logoHoldTime), DelayType.UnscaledDeltaTime);
 
-        // 4) 검은 화면 + 로고를 동시에 페이드아웃
         t = 0f;
         float fadeOutDuration = Mathf.Max(0.01f, fadeOutTime);
 
         while (t < fadeOutDuration)
         {
             t += Time.unscaledDeltaTime;
-            float n = Mathf.Clamp01(t / fadeOutDuration); // 0 -> 1
-            float inv = 1f - n;                           // 1 -> 0
+            float n = Mathf.Clamp01(t / fadeOutDuration);
+            float inv = 1f - n;
 
             if (fadeCanvas != null)
                 fadeCanvas.alpha = inv;
@@ -176,35 +158,43 @@ public class TitleSceneController : MonoBehaviour
         }
 
         if (fadeCanvas != null)
+        {
             fadeCanvas.alpha = 0f;
+            fadeCanvas.gameObject.SetActive(false);
+        }
+
         if (logoCanvasGroup != null)
             logoCanvasGroup.alpha = 0f;
     }
 
     #endregion
 
-    #region 2. 로그인 / 세이브 / 출석 처리
+    #region 로그인 / 세이브 / 출석
 
     private async UniTask PostLoginFlowAsync()
     {
-        // 1) AuthManager 준비될 때까지 "로딩중..." ... 애니메이션
         SetStatus("로딩중", animateDots: true);
 
         await UniTask.WaitUntil(() =>
             AuthManager.Instance != null &&
             AuthManager.Instance.IsInitialized);
 
-        // 2) 초기화는 됐는데 아직 로그인 안 되어 있으면 → 로그인 필요
-        if (!AuthManager.Instance.IsLoggedIn)
+        if (AuthManager.Instance.IsLoggedIn)
         {
+            Debug.Log("[Title] 이미 로그인됨");
+        }
+        else
+        {
+            await UniTask.DelayFrame(2);
+
             loginUIRoot.SetActive(true);
             SetStatus("로그인이 필요합니다", animateDots: false);
 
-            await UniTask.WaitUntil(() =>
-                AuthManager.Instance.IsLoggedIn);
+            await UniTask.WaitUntil(() => AuthManager.Instance.IsLoggedIn);
+
+            loginUIRoot.SetActive(false);
         }
 
-        // 3) 여기부터는 로그인 완료 상태
         SetStatus("유저 데이터 불러오는 중", animateDots: true);
         await LoadOrCreateSaveAsync();
 
@@ -218,7 +208,6 @@ public class TitleSceneController : MonoBehaviour
 
         if (!loaded)
         {
-            // 최초 접속 시 기본 세이브 생성
             var charTable = DataTableManager.CharacterTable;
 
             charTable.BuildDefaultSaveDictionaries(
@@ -234,7 +223,6 @@ public class TitleSceneController : MonoBehaviour
             foreach (var id in ownedBaseIds)
                 SaveLoadManager.Data.ownedIds.Add(id);
 
-            // 기본 자원 / 출석 처리
             ItemInvenHelper.AddItem(ItemID.DreamEnergy, 100);
             QuestManager.Instance.OnAttendance();
 
@@ -247,7 +235,6 @@ public class TitleSceneController : MonoBehaviour
         var now = FirebaseTime.GetServerTime();
         var last = SaveLoadManager.Data.LastLoginTime;
 
-        // 날짜가 바뀌었으면 출석 처리
         if (last.Date != now.Date)
         {
             QuestManager.Instance.OnAttendance();
@@ -259,7 +246,7 @@ public class TitleSceneController : MonoBehaviour
 
     #endregion
 
-    #region 3. Touch to Start & 씬 이동
+    #region Touch to Start & 씬 이동
 
     private void ShowTouchToStart()
     {
@@ -273,9 +260,6 @@ public class TitleSceneController : MonoBehaviour
 
     private async UniTaskVoid GoToLobby()
     {
-        // TODO: 터치 SFX 있으면 여기서 재생
-        // SFXManager.Instance.Play("ui_touch");
-
         await GameSceneManager.ChangeScene(lobbySceneType);
     }
 
@@ -299,7 +283,7 @@ public class TitleSceneController : MonoBehaviour
 
     #endregion
 
-    #region 4. 상태 텍스트 / ... 애니메이션
+    #region 상태 텍스트
 
     private void SetStatus(string baseText, bool animateDots)
     {
@@ -348,19 +332,13 @@ public class TitleSceneController : MonoBehaviour
 
     #endregion
 
-    #region 5. 점검 / 강제 업데이트 체크
+    #region 점검 / 강제 업데이트
 
-    /// <summary>
-    /// 인트로 직후 호출. 강제 업데이트 / 점검 중이면 팝업 띄우고 진행 막음.
-    /// true = 계속 진행, false = 여기서 멈춤.
-    /// </summary>
     private bool CheckForceUpdateAndMaintenance()
     {
-        // LiveConfigManager 초기화 실패했으면 그냥 진행 (최악의 경우)
         if (LiveConfigManager.Instance == null)
             return true;
 
-        // 1) 강제 업데이트 우선
         if (IsForceUpdateNeeded(out string updateMsg))
         {
             if (forceUpdatePopupRoot != null && forceUpdateMessageText != null)
@@ -373,23 +351,19 @@ public class TitleSceneController : MonoBehaviour
                 statusText.text = updateMsg;
             }
 
-            // 막아야 하므로 false
             return false;
         }
 
-        // 2) 점검 체크 (이미 점검 중이라면 뒤 로직 안 타게 컷)
         var m = LiveConfigManager.Instance.Maintenance;
         if (m != null)
         {
-            var now = FirebaseTime.GetServerTime();   // 서버 시간 기준
+            var now = FirebaseTime.GetServerTime();
             if (MaintenanceUtil.IsMaintenanceNow(m, now))
             {
-                // 메시지 구성
                 string msg = string.IsNullOrEmpty(m.message)
                     ? "현재 서버 점검 중입니다. 잠시 후 다시 접속해 주세요."
                     : m.message;
 
-                // 남은 시간 표시 옵션
                 if (m.showRemainTime && !string.IsNullOrEmpty(m.endAt))
                 {
                     if (DateTimeOffset.TryParse(m.endAt, out var end) && end > now)
@@ -400,7 +374,6 @@ public class TitleSceneController : MonoBehaviour
                     }
                 }
 
-                // 타이틀 전용 점검 팝업 띄우기
                 if (maintenancePopupRoot != null && maintenanceMessageText != null)
                 {
                     maintenanceMessageText.text = msg;
@@ -411,20 +384,16 @@ public class TitleSceneController : MonoBehaviour
                     statusText.text = msg;
                 }
 
-                // 여기서 흐름 끊기 → 로그인/로딩/Touch to Start 안 감
                 return false;
             }
         }
 
-        // 둘 다 아니면 계속 진행
         return true;
     }
-
 
     private bool IsForceUpdateNeeded(out string message)
     {
         var config = LiveConfigManager.Instance.AppConfig;
-
         int minVersion = config.minVersionCodeAndroid;
 
         if (minVersion <= 0 || ClientVersion.VersionCode >= minVersion)
@@ -439,14 +408,10 @@ public class TitleSceneController : MonoBehaviour
         return true;
     }
 
-
-    // 강제 업데이트 팝업 버튼용
     public void OnClickForceUpdate_OpenStore()
     {
         if (!string.IsNullOrEmpty(androidStoreUrl))
-        {
             Application.OpenURL(androidStoreUrl);
-        }
     }
 
     public void OnClickForceUpdate_Quit()
@@ -458,7 +423,6 @@ public class TitleSceneController : MonoBehaviour
 #endif
     }
 
-    // 점검 팝업 버튼용 (확인 누르면 종료)
     public void OnClickMaintenance_Quit()
     {
 #if UNITY_EDITOR
