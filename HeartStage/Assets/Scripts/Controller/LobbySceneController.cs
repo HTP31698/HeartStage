@@ -111,8 +111,13 @@ public class LobbySceneController : MonoBehaviour
     {
         try
         {
+            // 🔹 먼저 내 계정 기준으로 오래된 선물/로그 정리
+            await DreamEnergyGiftService.CleanupOldGiftsAsync();
+
+            // 🔹 그 다음 카운터 동기화 (서버 → 로컬 SaveData)
             await DreamEnergyGiftService.SyncCounterFromServerAsync();
-            Debug.Log("[Lobby] DreamEnergyGiftService 카운터 동기화 완료");
+
+            Debug.Log("[Lobby] DreamEnergyGiftService 정리 + 카운터 동기화 완료");
         }
         catch (System.Exception e)
         {

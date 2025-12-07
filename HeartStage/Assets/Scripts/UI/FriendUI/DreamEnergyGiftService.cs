@@ -118,11 +118,12 @@ public static class DreamEnergyGiftService
 
         try
         {
-            long thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeMilliseconds();
+            // 🔹 30일 → 1일로 축소
+            long oneDayAgo = DateTimeOffset.UtcNow.AddDays(-1).ToUnixTimeMilliseconds();
 
             var snap = await Root.Child("dreamGifts").Child(myUid)
                 .OrderByChild("createdAt")
-                .StartAt(thirtyDaysAgo)
+                .StartAt(oneDayAgo)
                 .GetValueAsync();
 
             if (!snap.Exists)
@@ -563,25 +564,53 @@ public static class DreamEnergyGiftService
 
         try
         {
-            long thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeMilliseconds();
+            // 🔹 24시간보다 오래된 선물은 삭제
+            long oneDayAgo = DateTimeOffset.UtcNow.AddDays(-1).ToUnixTimeMilliseconds();
 
             var snap = await Root.Child("dreamGifts").Child(myUid)
                 .OrderByChild("createdAt")
-                .EndAt(thirtyDaysAgo)
+                .EndAt(oneDayAgo)
                 .GetValueAsync();
 
-            if (!snap.Exists) return;
-
             var updates = new Dictionary<string, object>();
-            foreach (var child in snap.Children)
+
+            if (snap.Exists)
             {
-                updates[$"dreamGifts/{myUid}/{child.Key}"] = null;
+                foreach (var child in snap.Children)
+                {
+                    updates[$"dreamGifts/{myUid}/{child.Key}"] = null;
+                }
+            }
+
+            // 🔹 sentGiftsToday에서도 오늘 날짜가 아닌 것들은 전부 삭제
+            int today = await GetServerTodayYmdAsync();
+            string todayStr = today.ToString();
+
+            var sentSnap = await Root
+                .Child("sentGiftsToday")
+                .Child(myUid)
+                .GetValueAsync();
+
+            if (sentSnap.Exists)
+            {
+                foreach (var child in sentSnap.Children)
+                {
+                    string dateKey = child.Key;
+                    if (dateKey != todayStr)
+                    {
+                        updates[$"sentGiftsToday/{myUid}/{dateKey}"] = null;
+                    }
+                }
             }
 
             if (updates.Count > 0)
             {
                 await Root.UpdateChildrenAsync(updates);
-                Debug.Log($"[DreamEnergyGiftService] {updates.Count}개의 오래된 선물 삭제 완료");
+                Debug.Log($"[DreamEnergyGiftService] 하루 기준 초과한 선물/보낸 로그 정리 완료 ({updates.Count}개 항목)");
+            }
+            else
+            {
+                Debug.Log("[DreamEnergyGiftService] 정리할 오래된 선물/로그 없음");
             }
         }
         catch (Exception e)
@@ -589,6 +618,69 @@ public static class DreamEnergyGiftService
             Debug.LogError($"[DreamEnergyGiftService] CleanupOldGiftsAsync Error: {e}");
         }
     }
+
+    // 친구 삭제 시, 그 친구와 관련된 선물/로그 정리
+    public static async UniTask CleanupGiftsWithFriendAsync(string friendUid)
+    {
+        string myUid = GetMyUid();
+        if (string.IsNullOrEmpty(myUid) || string.IsNullOrEmpty(friendUid))
+            return;
+
+        try
+        {
+            var updates = new Dictionary<string, object>();
+
+            // 1) 내가 받은 선물 중, 해당 친구가 보낸 것 삭제
+            var myGiftSnap = await Root
+                .Child("dreamGifts")
+                .Child(myUid)
+                .OrderByChild("fromUid")
+                .EqualTo(friendUid)
+                .GetValueAsync();
+
+            if (myGiftSnap.Exists)
+            {
+                foreach (var child in myGiftSnap.Children)
+                {
+                    updates[$"dreamGifts/{myUid}/{child.Key}"] = null;
+                }
+            }
+
+            // 2) 내가 보낸 선물 중, 그 친구가 받은 것 삭제
+            var friendGiftSnap = await Root
+                .Child("dreamGifts")
+                .Child(friendUid)
+                .OrderByChild("fromUid")
+                .EqualTo(myUid)
+                .GetValueAsync();
+
+            if (friendGiftSnap.Exists)
+            {
+                foreach (var child in friendGiftSnap.Children)
+                {
+                    updates[$"dreamGifts/{friendUid}/{child.Key}"] = null;
+                }
+            }
+
+            // 3) sentGiftsToday 기록도 둘 사이 것만 정리 (카운트는 그대로 둠)
+            int today = await GetServerTodayYmdAsync();
+            string todayStr = today.ToString();
+
+            updates[$"sentGiftsToday/{myUid}/{todayStr}/{friendUid}"] = null;
+            updates[$"sentGiftsToday/{friendUid}/{todayStr}/{myUid}"] = null;
+
+            if (updates.Count > 0)
+            {
+                await Root.UpdateChildrenAsync(updates);
+                Debug.Log($"[DreamEnergyGiftService] 친구 삭제에 따라 {friendUid}와 관련된 선물/로그 정리 완료 ({updates.Count}개 항목)");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[DreamEnergyGiftService] CleanupGiftsWithFriendAsync Error: {e}");
+        }
+    }
+
 
     /// <summary>
     /// 특정 친구에게 받은 선물만 수령
