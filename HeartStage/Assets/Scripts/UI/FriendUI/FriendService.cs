@@ -198,44 +198,46 @@ public static class FriendService
 
         try
         {
-            if (SaveLoadManager.Data is not SaveDataV1 data)
-                return false;
+            // 1) 현재 친구 수 (서버 기준) 확인
+            var friendSnap = await Root.Child("friends").Child(myUid).GetValueAsync();
+            int currentCount = friendSnap.Exists ? (int)friendSnap.ChildrenCount : 0;
 
-            // 친구 수 한도 체크
-            if (data.friendUidList.Count >= MAX_FRIEND_COUNT)
+            if (currentCount >= MAX_FRIEND_COUNT)
             {
                 Debug.Log($"[FriendService] 친구 수가 최대치({MAX_FRIEND_COUNT}명)입니다.");
                 return false;
             }
 
-            // 이미 친구인지 확인
-            if (data.friendUidList.Contains(fromUid))
+            // 2) 이미 친구인지 확인 (동시에 수락된 경우 등)
+            if (friendSnap.Exists && friendSnap.HasChild(fromUid))
             {
-                Debug.Log("[FriendService] 이미 친구 상태입니다.");
-                // 요청은 삭제
+                Debug.Log("[FriendService] 이미 친구 상태입니다. 요청만 정리합니다.");
+
                 var cleanupUpdates = new Dictionary<string, object>
                 {
                     [$"friendRequests/{myUid}/{fromUid}"] = null,
                     [$"sentRequests/{fromUid}/{myUid}"] = null,
                 };
+
                 await Root.UpdateChildrenAsync(cleanupUpdates);
-                return false;
+                return true;
             }
 
-            // Firebase 업데이트 (friends 양방향 + 요청 삭제 + 보낸 요청도 삭제)
+            // 3) 친구 양방향 추가 + 요청 삭제 + 상대방 sentRequests 삭제
             var updates = new Dictionary<string, object>
             {
                 [$"friends/{myUid}/{fromUid}"] = true,
                 [$"friends/{fromUid}/{myUid}"] = true,
                 [$"friendRequests/{myUid}/{fromUid}"] = null,
-                [$"sentRequests/{fromUid}/{myUid}"] = null,  // 상대방의 보낸 요청도 삭제
+                [$"sentRequests/{fromUid}/{myUid}"] = null,
             };
 
             await Root.UpdateChildrenAsync(updates);
 
-            // 로컬 데이터 업데이트
-            data.friendUidList.Add(fromUid);
-            await SaveLoadManager.SaveToServer();
+            // 🔹 SaveData.friendUidList는 여기서 직접 만지지 않는다.
+            //    나중에 UI 쪽에서 FriendService.RefreshAllCacheAsync()를 호출하면
+            //    내부에서 GetMyFriendUidListAsync(syncLocal:true)가 실행되면서
+            //    SaveData.friendUidList 가 서버 상태로 통째로 동기화된다.
 
             Debug.Log($"[FriendService] 친구 요청 수락 완료: {fromUid}");
             return true;
@@ -323,7 +325,8 @@ public static class FriendService
     }
 
     /// <summary>
-    /// 친구 삭제 (friends 양쪽 제거 + SaveData.friendUidList에서 제거)
+    /// 친구 삭제 (friends 양쪽 제거)
+    /// SaveData.friendUidList는 여기서 직접 제거하지 않는다.
     /// </summary>
     public static async UniTask<bool> RemoveFriendAsync(string friendUid)
     {
@@ -341,11 +344,10 @@ public static class FriendService
 
             await Root.UpdateChildrenAsync(updates);
 
-            if (SaveLoadManager.Data is SaveDataV1 data)
-            {
-                data.friendUidList.Remove(friendUid);
-                await SaveLoadManager.SaveToServer();
-            }
+            // 🔹 여기서 SaveLoadManager.Data.friendUidList.Remove(...) 하지 않는다.
+            //    마찬가지로, 이후 FriendService.RefreshAllCacheAsync() 호출 시
+            //    GetMyFriendUidListAsync(syncLocal:true)가 서버 상태 기준으로
+            //    friendUidList 전체를 다시 덮어쓴다.
 
             Debug.Log($"[FriendService] 친구 삭제 완료: {friendUid}");
             return true;
@@ -356,6 +358,7 @@ public static class FriendService
             return false;
         }
     }
+
 
     /// <summary>
     /// 친구 수 체크 (로컬 기준)
