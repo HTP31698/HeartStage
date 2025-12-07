@@ -4,9 +4,9 @@ using System.Collections.Generic;
 
 public class FanManager : MonoBehaviour
 {
-    [SerializeField] private int fansPerWave = 4;
-    [SerializeField] private float moveSpeed = 2f;
-    private float fanSpacing = 1f; 
+    [SerializeField] private int finalWaveFanCount = 12; 
+    private float moveSpeed = 3f;
+    private float fanSpacing = 1f;
 
     private readonly string[] fanPrefabName =
     {
@@ -15,6 +15,8 @@ public class FanManager : MonoBehaviour
     };
 
     private List<GameObject> activeFans = new List<GameObject>();
+    private int totalWaveCount = 0; // 총 웨이브 수
+    private int currentWaveCount = 0; // 현재까지 클리어한 웨이브 수
 
     private void OnEnable()
     {
@@ -27,11 +29,38 @@ public class FanManager : MonoBehaviour
         MonsterSpawner.OnWaveCleared -= SpawanFansWaveClear;
     }
 
+    private void Start()
+    {
+        // 현재 스테이지의 총 웨이브 수 계산
+        CalculateTotalWaveCount();
+    }
+
+    private void CalculateTotalWaveCount()
+    {
+        if (StageManager.Instance == null) return;
+
+        var currentStageData = StageManager.Instance.GetCurrentStageData();
+        if (currentStageData == null) return;
+
+        // 현재 스테이지의 모든 웨이브 ID 가져오기
+        var stageWaveIds = DataTableManager.StageTable.GetWaveIds(currentStageData.stage_ID);
+        totalWaveCount = stageWaveIds.Count;
+    }
+
     private void SpawanFansWaveClear()
     {
-        for (int i = 0; i < fansPerWave; i++)
+        currentWaveCount++; // 웨이브 클리어 시 카운트 증가
+
+        // 마지막 웨이브인지 확인
+        bool isFinalWave = currentWaveCount >= totalWaveCount;
+
+        // 마지막 웨이브일 때만 팬 스폰
+        if (isFinalWave)
         {
-            SpawnFans(i);
+            for (int i = 0; i < finalWaveFanCount; i++)
+            {
+                SpawnFans(i % 4);
+            }
         }
     }
 
@@ -55,7 +84,7 @@ public class FanManager : MonoBehaviour
             fanBehavior = fan.AddComponent<FanBehavior>();
         }
 
-        // 현재 총 팬 수를 고려해서 위치 계산
+        //  위치 계산 
         int currentTotalFans = activeFans.Count;
         fanBehavior.SetupFan(fanIndex, moveSpeed, fanSpacing, currentTotalFans);
 
@@ -72,5 +101,8 @@ public class FanManager : MonoBehaviour
             }
         }
         activeFans.Clear();
+
+        // 팬 클리어 시 웨이브 카운트 초기화
+        currentWaveCount = 0;
     }
 }

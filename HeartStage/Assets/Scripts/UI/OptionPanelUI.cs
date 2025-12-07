@@ -21,7 +21,7 @@ public class OptionPanelUI : MonoBehaviour
         {
             MailManager.Instance.OnMailReceived += OnNewMailReceived;
             MailManager.Instance.OnMailsLoaded += OnMailsLoaded;
-            MailManager.Instance.OnMailReadStatusChanged += OnMailReadStatusChanged; // 새로 추가
+            MailManager.Instance.OnMailReadStatusChanged += OnMailReadStatusChanged;
         }
     }
 
@@ -32,7 +32,7 @@ public class OptionPanelUI : MonoBehaviour
         {
             MailManager.Instance.OnMailReceived -= OnNewMailReceived;
             MailManager.Instance.OnMailsLoaded -= OnMailsLoaded;
-            MailManager.Instance.OnMailReadStatusChanged -= OnMailReadStatusChanged; // 새로 추가
+            MailManager.Instance.OnMailReadStatusChanged -= OnMailReadStatusChanged;
         }
     }
 
@@ -46,8 +46,6 @@ public class OptionPanelUI : MonoBehaviour
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         WindowManager.Instance.OpenOverlay(WindowType.MailUI);
-
-        // 메일 UI를 열 때는 알림을 바로 숨기지 않음 (실제 읽음 상태에 따라 결정)
     }
 
     private void OnSettingButtonClicked()

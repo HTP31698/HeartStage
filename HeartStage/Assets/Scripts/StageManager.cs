@@ -184,11 +184,6 @@ public class StageManager : MonoBehaviour
         Time.timeScale = currentTimeScale;
     }
 
-    public void CompleteStage()
-    {
-        Clear();
-    }
-
     // 승리시 
     public void Clear()
     {
@@ -202,7 +197,7 @@ public class StageManager : MonoBehaviour
             windowManager.OpenOverlay(WindowType.VictoryDefeat);
         }
 
-        Time.timeScale = 0f;
+        Time.timeScale = 1f;
         GetReward();
     }
 
