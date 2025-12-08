@@ -1,13 +1,17 @@
-﻿using Cysharp.Threading.Tasks;
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 public class StageUI : MonoBehaviour
 {
     public TextMeshProUGUI waveCountText;
     public TextMeshProUGUI remainMonsterCountText;
+    public Button feverButton;
+
+    private void Start()
+    {
+        feverButton.onClick.AddListener(OnFeverButtonClicked);
+    }
 
     public void SetWaveCount(int stageNumber, int waveOrder)
     {
@@ -33,5 +37,10 @@ public class StageUI : MonoBehaviour
     public void SetReaminMonsterCount(int remainMonsterCount)
     {
         remainMonsterCountText.text = $"{remainMonsterCount}";
+    }
+
+    public void OnFeverButtonClicked()
+    {
+        StageManager.Instance.FeverStartAsync().Forget();
     }
 }

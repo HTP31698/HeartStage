@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 using UnityEngine.UI;
 
 public class StageManager : MonoBehaviour
@@ -36,6 +37,8 @@ public class StageManager : MonoBehaviour
     private float currentTimeScale = 1f;
 
     private int feverCount = 0;
+    private bool isFever = false;
+    public float feverDuration = 6.0f;
 
     // 스테이지 관련 추가 한 것
     [HideInInspector]
@@ -157,7 +160,7 @@ public class StageManager : MonoBehaviour
             {
                 slider.maxValue = stageData.level_max;
             }
-            feverText.text = $"피버타임 X{feverCount + 1}";
+            feverText.text = $"피버타임 X{feverCount}";
         }
     }
 
@@ -170,26 +173,47 @@ public class StageManager : MonoBehaviour
     // 경험치 얻기
     public void ExpGet(int value)
     {
-        if (feverCount == 3)
+        if (feverCount == 3 || isFever)
             return;
 
         feverSliders[feverCount].value += value;
         if (feverSliders[feverCount].maxValue == feverSliders[feverCount].value)
         {
             feverCount++;
-            if(feverCount < 3)
-            {
-                feverText.text = $"피버타임 X{feverCount + 1}";
-            }
+            feverText.text = $"피버타임 X{feverCount}";
         }
     }
 
-    // 레벨업 -> 피버 타임으로 변경
-    public void LevelUp()
+    // Fever 타임 시작
+    public async UniTaskVoid FeverStartAsync()
     {
-        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_LevelUp);
-        //Time.timeScale = 0f;
-        //LevelUpPanel.gameObject.SetActive(true);
+        if (isFever || feverCount <= 0)
+            return;
+
+        isFever = true;
+        feverText.text = $"피버타임 X{feverCount - 1}";
+
+        float amountToDecrease = feverSliders[0].maxValue; 
+        float decreaseSpeed = amountToDecrease / feverDuration;
+        int index = feverCount < 3 ? feverCount : 2; // fevercount가 3이면 index 2로
+        while (amountToDecrease > 0f)
+        {
+            float delta = decreaseSpeed * Time.deltaTime;
+            feverSliders[index].value -= delta;
+            amountToDecrease -= delta;
+
+            // 현재 슬라이더를 다 깎았다면 전으로 이동
+            if (feverSliders[index].value <= 0f)
+            {
+                feverSliders[index].value = 0f;
+                index--;
+            }
+
+            await UniTask.Yield();
+        }
+
+        feverCount--;
+        isFever = false;
     }
 
     // 원래 타임스케일 복원
@@ -259,13 +283,11 @@ public class StageManager : MonoBehaviour
         }
         // 팬 수 증가
         SaveLoadManager.Data.fanAmount += fanReward;
-
         SaveLoadManager.SaveToServer().Forget();
     }
 
     public void SetBackgroundByStageData(StageCSVData stageData)
     {
-
         if (stageData == null || string.IsNullOrEmpty(stageData.prefab) || stageData.prefab == "nan")
         {
             return;
@@ -343,6 +365,7 @@ public class StageManager : MonoBehaviour
             _ => stageDownPosition   // 기본값은 아래
         };
     }
+
     private Vector3 GetPositionByFencePosition(int stagePosition)
     {
         return stagePosition switch
@@ -353,16 +376,4 @@ public class StageManager : MonoBehaviour
             _ => fenceDownPosition   // 기본값은 아래
         };
     }
-
-
-#if UNITY_EDITOR
-    // 테스트 코드
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.V))
-        {
-            Clear();
-        }
-    }
-#endif
 }
