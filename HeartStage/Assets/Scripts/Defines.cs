@@ -71,6 +71,8 @@ public enum WindowType
     VictoryDefeat = 50, // 위에 추가해도 안바뀌게 큰 값으로 해두기
     CharacterInfo,
     LastStageNotice,
+    LosePanelUI,
+    VictoryPanelUI,
 }
 
 public enum SceneType

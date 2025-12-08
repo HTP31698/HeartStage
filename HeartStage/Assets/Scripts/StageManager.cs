@@ -27,8 +27,10 @@ public class StageManager : MonoBehaviour
     public StageUI StageUI;
     public LevelUpPanel LevelUpPanel;
     public Slider expSlider;
-    public VictoryDefeatPanel VictoryDefeatPanel;
-    [HideInInspector]
+
+    public VictoryPanel VictoryPanel;
+    public LosePanelUI LosePanelUI;
+
     public StageCSVData currentStageCSVData;
 
     private float currentTimeScale = 1f;
@@ -190,11 +192,9 @@ public class StageManager : MonoBehaviour
         // 클리어 퀘스트 알림
         QuestManager.Instance.OnStageClear();
 
-        VictoryDefeatPanel.isClear = true;
-
         if (windowManager != null)
         {
-            windowManager.OpenOverlay(WindowType.VictoryDefeat);
+            windowManager.OpenOverlay(WindowType.VictoryPanelUI);
         }
 
         Time.timeScale = 1f;
@@ -204,18 +204,9 @@ public class StageManager : MonoBehaviour
     // 패배시
     public void Defeat()
     {
-        VictoryDefeatPanel.isClear = false;
-
         if (windowManager != null)
         {
-            windowManager.OpenOverlay(WindowType.VictoryDefeat);
-        }
-        else
-        {
-            if (VictoryDefeatPanel != null)
-            {
-                VictoryDefeatPanel.gameObject.SetActive(true);
-            }
+            windowManager.OpenOverlay(WindowType.LosePanelUI);
         }
 
         Time.timeScale = 0f;
