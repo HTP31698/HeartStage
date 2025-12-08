@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using TMPro;
 using System.Text;
+using System.Collections.Generic;
 using UnityEngine.UI;
 
 public class StageWindow : GenericWindow
@@ -21,6 +22,12 @@ public class StageWindow : GenericWindow
 
     [Header("Field")]
     private StageTable stageTable;
+
+    [Header("Scroll")]
+    [SerializeField] private ScrollRect scrollRect;
+
+    // 스테이지 ID → 인덱스 맵핑 (스크롤 위치 계산용)
+    private Dictionary<int, int> _stageIdToIndex = new();
 
     private void Awake()
     {
@@ -90,6 +97,9 @@ public class StageWindow : GenericWindow
                 button.onClick.AddListener(() => OnStageInfoButtonClicked(capturedStageData));
             }
 
+            // 스테이지 ID → 인덱스 맵핑 저장 (스크롤 위치 계산용)
+            _stageIdToIndex[stageData.stage_ID] = index;
+
             index++;
         }
 
@@ -115,7 +125,44 @@ public class StageWindow : GenericWindow
     {
         base.Open();
         GenerateStages();
+
+        // 돌아가기로 로비에 온 경우 선택했던 스테이지로 스크롤
+        int selectedId = SaveLoadManager.Data?.selectedStageID ?? -1;
+        if (selectedId > 0)
+        {
+            ScrollToStage(selectedId);
+        }
     }
+
+    /// <summary>
+    /// 특정 스테이지 ID 위치로 스크롤
+    /// </summary>
+    public void ScrollToStage(int stageId)
+    {
+        if (scrollRect == null || !_stageIdToIndex.TryGetValue(stageId, out int index))
+            return;
+
+        // 해당 스테이지의 Y 위치 계산
+        float targetY = index * verticalSpacing + verticalPadding;
+
+        // Content 전체 높이
+        float contentHeight = contentParent.sizeDelta.y;
+        // Viewport 높이
+        float viewportHeight = scrollRect.viewport.rect.height;
+
+        // 스크롤 가능한 범위
+        float scrollableHeight = contentHeight - viewportHeight;
+        if (scrollableHeight <= 0)
+            return;
+
+        // normalizedPosition (0 = 맨 아래, 1 = 맨 위)
+        // targetY를 중앙에 두려면 약간 오프셋
+        float targetScroll = (targetY - viewportHeight * 0.5f) / scrollableHeight;
+        targetScroll = Mathf.Clamp01(targetScroll);
+
+        scrollRect.verticalNormalizedPosition = targetScroll;
+    }
+
     public override void Close()
     {
         base.Close();

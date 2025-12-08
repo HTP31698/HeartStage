@@ -52,11 +52,20 @@ public static class FriendSearchService
         }
 
         HashSet<string> myFriends = new();
+        HashSet<string> sentRequests = new();
+        HashSet<string> receivedRequests = new();
+
         if (SaveLoadManager.Data is SaveDataV1 data)
         {
             foreach (var uid in data.friendUidList)
                 myFriends.Add(uid);
         }
+
+        // 보낸/받은 요청 목록도 제외 (캐시에서 가져옴)
+        foreach (var uid in FriendService.GetCachedSentRequests())
+            sentRequests.Add(uid);
+        foreach (var uid in FriendService.GetCachedReceivedRequests())
+            receivedRequests.Add(uid);
 
         // 7일 전 타임스탬프 (이보다 오래된 유저는 제외)
         long activeThreshold = DateTimeOffset.UtcNow.AddDays(-ACTIVE_DAYS_THRESHOLD).ToUnixTimeMilliseconds();
@@ -74,6 +83,12 @@ public static class FriendSearchService
 
                 // 이미 친구 제외
                 if (myFriends.Contains(uid)) continue;
+
+                // 이미 보낸 요청 제외
+                if (sentRequests.Contains(uid)) continue;
+
+                // 받은 요청 제외 (별도 탭에서 처리)
+                if (receivedRequests.Contains(uid)) continue;
 
                 // 캐시된 탈퇴 유저 제외
                 if (PublicProfileService.IsDeletedUserCached(uid)) continue;
@@ -118,6 +133,7 @@ public static class FriendSearchService
             (all[i], all[j]) = (all[j], all[i]);
         }
 
+        // 필요한 수만큼 선택
         for (int i = 0; i < Mathf.Min(count, n); i++)
             result.Add(all[i]);
 

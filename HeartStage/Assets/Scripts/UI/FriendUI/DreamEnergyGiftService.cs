@@ -433,6 +433,13 @@ public static class DreamEnergyGiftService
 
                 if (!claimed && amount > 0)
                 {
+                    // ★ 일일 제한 체크
+                    if (data.dreamReceiveTodayCount + (totalReceived / GiftAmountPerSend) >= data.dreamReceiveDailyLimit)
+                    {
+                        Debug.Log($"[DreamEnergyGiftService] 일일 받기 한도({data.dreamReceiveDailyLimit}) 도달. 일부만 받거나 중단합니다.");
+                        break;
+                    }
+
                     totalReceived += amount;
                     updates[$"dreamGifts/{myUid}/{child.Key}/claimed"] = true;
                 }
@@ -459,7 +466,11 @@ public static class DreamEnergyGiftService
                 await SaveLoadManager.SaveToServer();
 
                 if (updates.Count > 0)
+                {
+                    // ★ 받은 횟수 증가
+                    data.dreamReceiveTodayCount += (totalReceived / GiftAmountPerSend);
                     await Root.UpdateChildrenAsync(updates);
+                }
 
                 ResetPendingGiftCache();
 
@@ -524,6 +535,13 @@ public static class DreamEnergyGiftService
                         data.dreamSendTodayCount = 0;
                     }
                 }
+            }
+
+            // ★ 받기 카운트 일일 초기화 체크
+            if (data.dreamLastReceiveDate != today)
+            {
+                data.dreamLastReceiveDate = today;
+                data.dreamReceiveTodayCount = 0;
             }
 
             _sentTodayCache.Clear();
@@ -648,17 +666,13 @@ public static class DreamEnergyGiftService
                 }
             }
 
-            // 3) sentGiftsToday 기록도 둘 사이 것만 정리 (카운트는 그대로 둠)
-            int today = await GetServerTodayYmdAsync();
-            string todayStr = today.ToString();
-
-            updates[$"sentGiftsToday/{myUid}/{todayStr}/{friendUid}"] = null;
-            updates[$"sentGiftsToday/{friendUid}/{todayStr}/{myUid}"] = null;
+            // ★ sentGiftsToday 기록은 삭제하지 않음!
+            // 친구 삭제 후 재추가해도 같은 날 다시 선물 보내는 악용 방지
 
             if (updates.Count > 0)
             {
                 await Root.UpdateChildrenAsync(updates);
-                Debug.Log($"[DreamEnergyGiftService] 친구 삭제에 따라 {friendUid}와 관련된 선물/로그 정리 완료 ({updates.Count}개 항목)");
+                Debug.Log($"[DreamEnergyGiftService] 친구 삭제에 따라 {friendUid}와 관련된 선물 정리 완료 ({updates.Count}개 항목)");
             }
         }
         catch (Exception e)
@@ -723,6 +737,13 @@ public static class DreamEnergyGiftService
 
                 if (!claimed && amount > 0)
                 {
+                    // ★ 일일 제한 체크
+                    if (data.dreamReceiveTodayCount + (totalReceived / GiftAmountPerSend) >= data.dreamReceiveDailyLimit)
+                    {
+                        Debug.Log($"[DreamEnergyGiftService] 일일 받기 한도({data.dreamReceiveDailyLimit}) 도달.");
+                        break;
+                    }
+
                     totalReceived += amount;
                     changedCount++;
                     updates[$"dreamGifts/{myUid}/{child.Key}/claimed"] = true;
@@ -748,10 +769,14 @@ public static class DreamEnergyGiftService
                 await SaveLoadManager.SaveToServer();
 
                 if (updates.Count > 0)
+                {
+                    // ★ 받은 횟수 증가
+                    data.dreamReceiveTodayCount += (totalReceived / GiftAmountPerSend);
                     await Root.UpdateChildrenAsync(updates);
+                }
 
                 if (_pendingGiftsByFriend.ContainsKey(fromUid))
-                    _pendingGiftsByFriend[fromUid] = 0;
+                    _pendingGiftsByFriend[fromUid] = Math.Max(0, _pendingGiftsByFriend[fromUid] - changedCount);
 
                 _pendingGiftCount = Math.Max(0, _pendingGiftCount - changedCount);
 

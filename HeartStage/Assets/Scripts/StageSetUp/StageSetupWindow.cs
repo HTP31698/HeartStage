@@ -13,6 +13,10 @@ public class StageSetupWindow : MonoBehaviour
     //스폰 자리
     public GameObject[] SpawnPos;
     public Button StartButton;
+    [Header("돌아가기 버튼")]
+    public Button BackButton;
+    [Header("전체 초기화 버튼")]
+    public Button ResetAllButton;
     public GameObject basePrefab;
 
     // 캐릭터 펜스 (싱글톤으로 사용)
@@ -108,6 +112,10 @@ public class StageSetupWindow : MonoBehaviour
 
         Time.timeScale = 0f;
         StartButton.onClick.AddListener(StartButtonClick);
+        if (BackButton != null)
+            BackButton.onClick.AddListener(BackButtonClick);
+        if (ResetAllButton != null)
+            ResetAllButton.onClick.AddListener(ResetAllButtonClick);
 
         // 데이터 준비 + 스테이지 적용
         await WaitAndApplyStage();
@@ -152,7 +160,48 @@ public class StageSetupWindow : MonoBehaviour
     private void OnDisable()
     {
         StartButton.onClick.RemoveListener(StartButtonClick);
+        if (BackButton != null)
+            BackButton.onClick.RemoveListener(BackButtonClick);
+        if (ResetAllButton != null)
+            ResetAllButton.onClick.RemoveListener(ResetAllButtonClick);
         DraggableSlot.OnAnySlotChanged -= HandleSlotChanged;
+    }
+
+    private void BackButtonClick()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+
+        // 돌아가기 플래그 설정 (로비에서 StageInfoWindow 자동 오픈용)
+        SaveLoadManager.Data.returnToStageInfo = true;
+
+        // 타임스케일 복원 후 로비로 이동
+        Time.timeScale = 1f;
+        LoadSceneManager.Instance.GoLobby();
+    }
+
+    /// <summary>
+    /// 배치된 모든 캐릭터를 슬롯에서 내림
+    /// </summary>
+    private void ResetAllButtonClick()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+        if (DraggableSlots == null) return;
+
+        for (int i = 0; i < DraggableSlots.Length; i++)
+        {
+            var slot = DraggableSlots[i];
+            if (slot == null || slot.characterData == null)
+                continue;
+
+            // 슬롯 비우고 DragMe 잠금 해제
+            slot.ClearSlotAndUnlockSource(slot.characterData);
+        }
+
+        // UI 갱신
+        RebuildPassiveTiles();
+        UpdateSynergyUI();
+        UpdateDeployCountUI();
     }
 
     private Dictionary<int, int> GetStagePos()

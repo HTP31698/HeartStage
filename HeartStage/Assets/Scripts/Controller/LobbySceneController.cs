@@ -26,6 +26,9 @@ public class LobbySceneController : MonoBehaviour
     {
         Time.timeScale = 1f;
 
+        // 0. 탈퇴 유저 캐시 초기화 (이전 세션에서 잘못 캐시된 유저 제거)
+        PublicProfileService.ClearDeletedUserCache();
+
         // 1. 퀘스트/기본 로직
         InitializeQuestManager();
 

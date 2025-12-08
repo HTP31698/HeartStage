@@ -5,6 +5,7 @@ public class LobbyUI : MonoBehaviour
 {
     [Header("Reference")]
     [SerializeField] private WindowManager windowManager;
+    [SerializeField] private StageInfoWindow stageInfoWindow;
 
     [Header("Button")]
     [SerializeField] private Button stageUiButton;
@@ -31,6 +32,38 @@ public class LobbyUI : MonoBehaviour
     {
         // 로비 처음 들어왔을 때 현재 프로필 아이콘으로 세팅
         RefreshProfileIcon();
+
+        // 셋업 윈도우에서 돌아온 경우 StageInfoWindow 자동 오픈
+        CheckReturnToStageInfo();
+    }
+
+    private void CheckReturnToStageInfo()
+    {
+        var saveData = SaveLoadManager.Data;
+        if (saveData == null || !saveData.returnToStageInfo)
+            return;
+
+        // 플래그 초기화
+        saveData.returnToStageInfo = false;
+
+        // 저장된 스테이지 ID로 StageInfoWindow 열기
+        int stageId = saveData.selectedStageID;
+        if (stageId <= 0)
+            return;
+
+        var stageData = DataTableManager.StageTable?.GetStage(stageId);
+        if (stageData == null)
+            return;
+
+        // 1) StageSelect 윈도우 먼저 열기
+        windowManager.Open(WindowType.StageSelect);
+
+        // 2) StageInfoWindow에 데이터 설정하고 오버레이로 열기
+        if (stageInfoWindow != null)
+        {
+            stageInfoWindow.SetStageData(stageData);
+            windowManager.OpenOverlay(WindowType.StageInfo);
+        }
     }
 
     private void OnShopUiButtonClicked()

@@ -80,6 +80,12 @@ public static class FriendService
     /// </summary>
     public static async UniTask<bool> SendFriendRequestAsync(string targetUid)
     {
+        if (_isProcessingRequest)
+        {
+            Debug.Log("[FriendService] 이미 요청 처리 중입니다.");
+            return false;
+        }
+
         string myUid = GetMyUid();
         if (string.IsNullOrEmpty(myUid) || string.IsNullOrEmpty(targetUid))
         {
@@ -101,8 +107,19 @@ public static class FriendService
             return false;
         }
 
+        _isProcessingRequest = true;
+
         try
         {
+            // ★ 보낸 요청 수 제한 체크
+            var sentSnap = await Root.Child("sentRequests").Child(myUid).GetValueAsync();
+            int sentCount = sentSnap.Exists ? (int)sentSnap.ChildrenCount : 0;
+            if (sentCount >= MAX_REQUEST_COUNT)
+            {
+                Debug.LogWarning($"[FriendService] 보낸 요청이 최대치({MAX_REQUEST_COUNT}개)입니다.");
+                return false;
+            }
+
             var myFriendRef = Root.Child("friends").Child(myUid).Child(targetUid);
             var snap = await myFriendRef.GetValueAsync();
             if (snap.Exists)
@@ -134,6 +151,10 @@ public static class FriendService
         {
             Debug.LogError($"[FriendService] SendFriendRequestAsync Error: {e}");
             return false;
+        }
+        finally
+        {
+            _isProcessingRequest = false;
         }
     }
 
@@ -532,11 +553,9 @@ public static class FriendService
             {
                 // 내 친구 목록에서 제거
                 updates[$"friends/{myUid}/{deletedUid}"] = null;
-
-                // 선물 관련 데이터도 정리
-                // (DreamEnergyGiftService.CleanupGiftsWithFriendAsync는 상대방 데이터도 건드리므로
-                //  탈퇴 유저의 경우 내 쪽만 정리)
-                updates[$"dreamGifts/{myUid}"] = null; // 해당 친구에게서 받은 선물만 삭제하려면 별도 쿼리 필요
+                
+                // ★ 선물 데이터는 건드리지 않음 (다른 친구에게서 받은 선물까지 삭제되는 버그 방지)
+                // 탈퇴 유저에게서 받은 선물은 자연스럽게 만료되거나, 별도 쿼리로 정리 가능
             }
 
             await Root.UpdateChildrenAsync(updates);

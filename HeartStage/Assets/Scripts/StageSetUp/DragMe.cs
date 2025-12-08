@@ -111,9 +111,8 @@ public class DragMe : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        // 슬롯에 올라간 상태면 드래그 금지
-        if (IsLocked)
-            return;
+        // IsLocked 체크는 OnDrag에서 세로 드래그 확정 시에만 수행  
+        // 가로 드래그(슬라이드)는 IsLocked 상태에서도 허용
 
         if (s_IsAnyDragActive && s_ActivePointerId != eventData.pointerId)
             return;
@@ -161,6 +160,10 @@ public class DragMe : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
                 // ===== 세로 드래그 확정 =====
                 m_Directions[id] = DragDirection.Vertical;
                 IsVerticalDrag = true;
+
+                // 슬롯에 올라간 상태면 세로 드래그(캐릭터 이동)는 금지
+                if (IsLocked)
+                    return;
 
                 // 여기서만 드래그 색 적용
                 _isDragging = true;

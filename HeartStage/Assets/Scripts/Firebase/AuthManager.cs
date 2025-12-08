@@ -8,9 +8,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// 실무용 인증 관리자
+/// Firebase 인증 관리자
 /// - anonymous/registered 분리 저장
-/// - 연동 유도는 로비/설정에서 처리
+/// - 앱 재시작 시 상태 자동 복원
+/// - 익명 로그아웃 시 Auth + RTDB 삭제
 /// </summary>
 public class AuthManager : MonoBehaviour
 {
@@ -71,9 +72,12 @@ public class AuthManager : MonoBehaviour
     public event Action<string> OnLoginFailed;
 
     // ========================================
-    // 경로
+    // 경로 (핵심!)
     // ========================================
 
+    /// <summary>
+    /// 현재 유저의 데이터 경로
+    /// </summary>
     public string UserPath
     {
         get
@@ -89,6 +93,9 @@ public class AuthManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 하위 경로 포함한 전체 경로 반환
+    /// </summary>
     public string GetUserDataPath(string subPath = null)
     {
         if (string.IsNullOrEmpty(subPath)) return UserPath;
@@ -110,7 +117,6 @@ public class AuthManager : MonoBehaviour
         instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // Firebase 초기화
         InitializeAuth();
     }
 
@@ -123,7 +129,7 @@ public class AuthManager : MonoBehaviour
             instance = null;
     }
 
-    public void InitializeAuth()
+    private void InitializeAuth()
     {
         if (isInitialized) return;
 
@@ -131,6 +137,25 @@ public class AuthManager : MonoBehaviour
         rootRef = FirebaseDatabase.DefaultInstance.RootReference;
         auth.StateChanged += OnAuthStateChanged;
         currentUser = auth.CurrentUser;
+
+        // 이미 로그인된 상태면 UserStatus 즉시 설정
+        if (currentUser != null)
+        {
+            if (currentUser.IsAnonymous)
+            {
+                CurrentUserStatus = UserStatus.Anonymous_Active;
+            }
+            else
+            {
+                CurrentUserStatus = UserStatus.Registered;
+            }
+            Debug.Log($"[Auth] 초기화 시 로그인 상태: {UserId}, Status={CurrentUserStatus}");
+        }
+        else
+        {
+            Debug.Log("[Auth] 초기화 완료 (로그인 안 됨)");
+        }
+
         isInitialized = true;
     }
 
@@ -158,10 +183,11 @@ public class AuthManager : MonoBehaviour
             AuthResult result = await auth.SignInAnonymouslyAsync().AsUniTask();
             currentUser = result.User;
 
+            // 상태 결정 (기존 데이터 있는지 확인)
             await DetermineUserStatusAsync();
             await UpdateLoginMetadataAsync();
 
-            Debug.Log($"[Auth] 익명 로그인 성공: {UserId}");
+            Debug.Log($"[Auth] 익명 로그인 성공: {UserId}, Status={CurrentUserStatus}");
             OnLoginSuccess?.Invoke();
             return (LoginResult.Success, null);
         }
@@ -189,6 +215,8 @@ public class AuthManager : MonoBehaviour
         {
             AuthResult result = await auth.SignInWithEmailAndPasswordAsync(email, passwd).AsUniTask();
             currentUser = result.User;
+
+            // 이메일 로그인은 무조건 Registered
             CurrentUserStatus = UserStatus.Registered;
 
             await UpdateLoginMetadataAsync();
@@ -219,6 +247,8 @@ public class AuthManager : MonoBehaviour
         {
             AuthResult result = await auth.CreateUserWithEmailAndPasswordAsync(email, passwd).AsUniTask();
             currentUser = result.User;
+
+            // ★ 회원가입은 무조건 Registered
             CurrentUserStatus = UserStatus.Registered;
 
             await UpdateLoginMetadataAsync();
@@ -265,7 +295,10 @@ public class AuthManager : MonoBehaviour
             AuthResult result = await currentUser.LinkWithCredentialAsync(credential).AsUniTask();
             currentUser = result.User;
 
+            // 데이터 마이그레이션: anonymous → registered
             await MigrateUserDataAsync(uid, oldBasePath, newBasePath);
+
+            // 만료 시간 제거
             await rootRef.Child($"{newBasePath}/{uid}/metadata/expireAt").RemoveValueAsync();
 
             CurrentUserStatus = UserStatus.Registered;
@@ -294,12 +327,9 @@ public class AuthManager : MonoBehaviour
     }
 
     // ========================================
-    // 계정 정보 조회 (로비/설정에서 사용)
+    // 계정 정보 조회 (설정 화면용)
     // ========================================
 
-    /// <summary>
-    /// 익명 계정 정보 조회 (설정 화면용)
-    /// </summary>
     public async UniTask<(int daysPlayed, int daysUntilDelete)> GetAccountInfoAsync()
     {
         if (currentUser == null || !currentUser.IsAnonymous)
@@ -357,6 +387,7 @@ public class AuthManager : MonoBehaviour
 
         if (isAnonymous)
         {
+            // ★ 익명이면 RTDB + Auth 둘 다 삭제
             await DeleteAnonymousUserDataAsync(uid, user);
         }
 
@@ -373,10 +404,14 @@ public class AuthManager : MonoBehaviour
     // 내부 메서드
     // ========================================
 
+    /// <summary>
+    /// 익명 유저의 기존 데이터 위치 확인 후 상태 결정
+    /// </summary>
     private async UniTask DetermineUserStatusAsync()
     {
         if (currentUser == null) return;
 
+        // ★ 이메일 계정이면 무조건 Registered
         if (!currentUser.IsAnonymous)
         {
             CurrentUserStatus = UserStatus.Registered;
@@ -388,6 +423,7 @@ public class AuthManager : MonoBehaviour
 
         try
         {
+            // active에 있는지 확인
             var activeSnapshot = await rootRef
                 .Child($"users/anonymous/active/{uid}")
                 .GetValueAsync()
@@ -400,6 +436,7 @@ public class AuthManager : MonoBehaviour
                 return;
             }
 
+            // cold에 있는지 확인 (복귀 유저)
             var coldSnapshot = await rootRef
                 .Child($"users/anonymous/cold/{uid}")
                 .GetValueAsync()
@@ -407,6 +444,7 @@ public class AuthManager : MonoBehaviour
 
             if (coldSnapshot.Exists)
             {
+                // cold → active로 이동
                 await MigrateUserDataAsync(uid, "users/anonymous/cold", "users/anonymous/active");
                 Debug.Log("[Auth] 복귀 유저: cold → active");
             }
@@ -416,10 +454,14 @@ public class AuthManager : MonoBehaviour
             Debug.LogWarning($"[Auth] 상태 확인 실패: {ex.Message}");
         }
 
+        // 신규 또는 복귀 → active
         CurrentUserStatus = UserStatus.Anonymous_Active;
         OnUserStatusChanged?.Invoke(CurrentUserStatus);
     }
 
+    /// <summary>
+    /// 로그인 시 메타데이터 업데이트
+    /// </summary>
     private async UniTask UpdateLoginMetadataAsync()
     {
         if (currentUser == null) return;
@@ -429,6 +471,7 @@ public class AuthManager : MonoBehaviour
             long nowTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             long expireTimestamp = DateTimeOffset.UtcNow.AddDays(DELETE_THRESHOLD_DAYS).ToUnixTimeMilliseconds();
 
+            // 기존 createdAt 확인
             var existingSnapshot = await rootRef
                 .Child($"{UserPath}/metadata/createdAt")
                 .GetValueAsync()
@@ -440,18 +483,20 @@ public class AuthManager : MonoBehaviour
                 [$"{UserPath}/metadata/isAnonymous"] = currentUser.IsAnonymous,
             };
 
+            // 최초 생성 시간 (없을 때만)
             if (!existingSnapshot.Exists)
             {
                 updates[$"{UserPath}/metadata/createdAt"] = nowTimestamp;
             }
 
+            // 익명만 만료 시간 갱신
             if (currentUser.IsAnonymous)
             {
                 updates[$"{UserPath}/metadata/expireAt"] = expireTimestamp;
             }
 
             await rootRef.UpdateChildrenAsync(updates);
-            Debug.Log("[Auth] 메타데이터 업데이트 완료");
+            Debug.Log($"[Auth] 메타데이터 업데이트 완료: {UserPath}");
         }
         catch (Exception ex)
         {
@@ -459,6 +504,9 @@ public class AuthManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 데이터 마이그레이션 (경로 이동)
+    /// </summary>
     private async UniTask MigrateUserDataAsync(string uid, string fromBasePath, string toBasePath)
     {
         try
@@ -481,14 +529,19 @@ public class AuthManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 익명 유저 RTDB + Auth 삭제
+    /// </summary>
     private async UniTask DeleteAnonymousUserDataAsync(string uid, FirebaseUser user)
     {
         try
         {
             var updates = new Dictionary<string, object>
             {
+                // 새 구조
                 [$"users/anonymous/active/{uid}"] = null,
                 [$"users/anonymous/cold/{uid}"] = null,
+                // 공용 데이터
                 [$"publicProfiles/{uid}"] = null,
                 [$"friends/{uid}"] = null,
                 [$"friendRequests/{uid}"] = null,
@@ -532,7 +585,29 @@ public class AuthManager : MonoBehaviour
         {
             bool signedIn = auth.CurrentUser != null;
 
+            if (!signedIn && currentUser != null)
+                Debug.Log("[Auth] 로그아웃 감지");
+
             currentUser = auth.CurrentUser;
+
+            // ★ 상태 변경 시에도 UserStatus 갱신
+            if (signedIn && currentUser != null)
+            {
+                if (currentUser.IsAnonymous)
+                {
+                    // 익명인데 상태가 Registered면 잘못된 것
+                    if (CurrentUserStatus == UserStatus.Registered)
+                    {
+                        CurrentUserStatus = UserStatus.Anonymous_Active;
+                    }
+                }
+                else
+                {
+                    CurrentUserStatus = UserStatus.Registered;
+                }
+
+                Debug.Log($"[Auth] 로그인 감지: {UserId}, Status={CurrentUserStatus}");
+            }
         }
     }
 }
