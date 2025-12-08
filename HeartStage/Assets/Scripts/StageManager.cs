@@ -1,5 +1,6 @@
 ﻿using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -26,12 +27,15 @@ public class StageManager : MonoBehaviour
 
     public StageUI StageUI;
     public LevelUpPanel LevelUpPanel;
-    public Slider expSlider;
+    public Slider[] feverSliders;
+    public TextMeshProUGUI feverText;
     public VictoryDefeatPanel VictoryDefeatPanel;
     [HideInInspector]
     public StageCSVData currentStageCSVData;
 
     private float currentTimeScale = 1f;
+
+    private int feverCount = 0;
 
     // 스테이지 관련 추가 한 것
     [HideInInspector]
@@ -149,7 +153,11 @@ public class StageManager : MonoBehaviour
             if (StageUI != null)
                 StageUI.SetWaveCount(stageNumber, waveOrder);
 
-            expSlider.maxValue = stageData.level_max;
+            foreach(var slider in feverSliders)
+            {
+                slider.maxValue = stageData.level_max;
+            }
+            feverText.text = $"피버타임 X{feverCount + 1}";
         }
     }
 
@@ -162,20 +170,26 @@ public class StageManager : MonoBehaviour
     // 경험치 얻기
     public void ExpGet(int value)
     {
-        expSlider.value += value;
-        if (expSlider.maxValue == expSlider.value)
+        if (feverCount == 3)
+            return;
+
+        feverSliders[feverCount].value += value;
+        if (feverSliders[feverCount].maxValue == feverSliders[feverCount].value)
         {
-            expSlider.value = 0f;
-            LevelUp();
+            feverCount++;
+            if(feverCount < 3)
+            {
+                feverText.text = $"피버타임 X{feverCount + 1}";
+            }
         }
     }
 
-    // 레벨업
+    // 레벨업 -> 피버 타임으로 변경
     public void LevelUp()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_LevelUp);
-        Time.timeScale = 0f;
-        LevelUpPanel.gameObject.SetActive(true);
+        //Time.timeScale = 0f;
+        //LevelUpPanel.gameObject.SetActive(true);
     }
 
     // 원래 타임스케일 복원
