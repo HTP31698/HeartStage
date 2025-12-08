@@ -99,4 +99,17 @@ public static class CharacterHelper
 
         SaveLoadManager.SaveToServer().Forget(); // 최종 1회 저장
     }
+
+    /// <summary>
+    /// 캐릭터 보유 여부 확인 (이름 기준)
+    /// </summary>
+    public static bool HasCharacter(int charId)
+    {
+        var row = DataTableManager.CharacterTable.Get(charId);
+        if (row == null) return false;
+
+        string name = row.char_name;
+        return UnlockedByName.TryGetValue(name, out bool unlocked) && unlocked;
+    }
+
 }

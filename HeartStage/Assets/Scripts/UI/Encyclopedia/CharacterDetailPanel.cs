@@ -70,7 +70,6 @@ public class CharacterDetailPanel : MonoBehaviour
             Clear();
             return;
         }
-
         _currentCharacterId = characterData.char_id;
 
         nameText.text = characterData.char_name;
@@ -231,14 +230,15 @@ public class CharacterDetailPanel : MonoBehaviour
         if (levelUpButton == null || levelUpCostText == null)
             return;
 
-        var lvdata = DataTableManager.LevelUpTable.Get(charId);
-        if (lvdata == null)
+        if (!CharacterHelper.HasCharacter(charId))
         {
-            levelUpCostText.text = "-최대 레벨-";
+            levelUpCostText.text = "-미보유 캐릭터-";
             levelUpButton.interactable = false;
             levelUpButton.onClick.RemoveAllListeners();
             return;
         }
+
+        var lvdata = DataTableManager.LevelUpTable.Get(charId);
 
         int currentPoint = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm);
         levelUpCostText.text = $"트레이닝 포인트: {currentPoint} / {lvdata.Lvup_ingrd_Itm_count}";
@@ -261,14 +261,15 @@ public class CharacterDetailPanel : MonoBehaviour
         if (rankUpButton == null || rankUpCostText == null)
             return;
 
-        var rankdata = DataTableManager.RankUpTable.Get(charId);
-        if (rankdata == null)
+        if (!CharacterHelper.HasCharacter(charId))
         {
-            rankUpCostText.text = "-최대 랭크-";
+            rankUpCostText.text = "-미보유 캐릭터-";
             rankUpButton.interactable = false;
             rankUpButton.onClick.RemoveAllListeners();
             return;
         }
+
+        var rankdata = DataTableManager.RankUpTable.Get(charId);
 
         int currentPoint = ItemInvenHelper.GetAmount(rankdata.Upgrade_ingrd_Itm1);
         rankUpCostText.text = $"{rankdata.Upgrade_ingrd_Itm1} 조각: {currentPoint} / {rankdata.Ingrd_Itm1_amount}";

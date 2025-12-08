@@ -13,6 +13,8 @@ public class StageSetupWindow : MonoBehaviour
     //스폰 자리
     public GameObject[] SpawnPos;
     public Button StartButton;
+    [Header("돌아가기 버튼")]
+    public Button BackButton;
     public GameObject basePrefab;
 
     // 캐릭터 펜스 (싱글톤으로 사용)
@@ -108,6 +110,8 @@ public class StageSetupWindow : MonoBehaviour
 
         Time.timeScale = 0f;
         StartButton.onClick.AddListener(StartButtonClick);
+        if (BackButton != null)
+            BackButton.onClick.AddListener(BackButtonClick);
 
         // 데이터 준비 + 스테이지 적용
         await WaitAndApplyStage();
@@ -152,7 +156,21 @@ public class StageSetupWindow : MonoBehaviour
     private void OnDisable()
     {
         StartButton.onClick.RemoveListener(StartButtonClick);
+        if (BackButton != null)
+            BackButton.onClick.RemoveListener(BackButtonClick);
         DraggableSlot.OnAnySlotChanged -= HandleSlotChanged;
+    }
+
+    private void BackButtonClick()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+
+        // 돌아가기 플래그 설정 (로비에서 StageInfoWindow 자동 오픈용)
+        SaveLoadManager.Data.returnToStageInfo = true;
+
+        // 타임스케일 복원 후 로비로 이동
+        Time.timeScale = 1f;
+        LoadSceneManager.Instance.GoLobby();
     }
 
     private Dictionary<int, int> GetStagePos()
