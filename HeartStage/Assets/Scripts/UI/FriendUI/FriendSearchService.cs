@@ -55,11 +55,9 @@ public static class FriendSearchService
         HashSet<string> sentRequests = new();
         HashSet<string> receivedRequests = new();
 
-        if (SaveLoadManager.Data is SaveDataV1 data)
-        {
-            foreach (var uid in data.friendUidList)
-                myFriends.Add(uid);
-        }
+        // ★ 로컬 캐시 대신 FriendService 캐시 사용 (탈퇴 유저 필터링된 최신 데이터)
+        foreach (var uid in FriendService.GetCachedFriendUids())
+            myFriends.Add(uid);
 
         // 보낸/받은 요청 목록도 제외 (캐시에서 가져옴)
         foreach (var uid in FriendService.GetCachedSentRequests())
@@ -71,6 +69,8 @@ public static class FriendSearchService
         long activeThreshold = DateTimeOffset.UtcNow.AddDays(-ACTIVE_DAYS_THRESHOLD).ToUnixTimeMilliseconds();
 
         List<PublicProfileSummary> all = new();
+
+        Debug.Log($"[FriendSearchService] publicProfiles 스냅샷 존재: {snap.Exists}, 자식 수: {(snap.Exists ? snap.ChildrenCount : 0)}");
 
         if (snap.Exists)
         {
@@ -97,9 +97,12 @@ public static class FriendSearchService
                 if (child.Child("lastLoginUnixMillis").Value is long ll)
                     lastLogin = ll;
 
-                // 7일 이상 미접속 유저 제외 (추천 친구로 부적합)
-                if (lastLogin < activeThreshold)
-                    continue;
+                // ★ 7일 필터 제거: 신규 유저도 표시되도록 수정
+                // lastLogin이 0이거나 유효하지 않으면 현재 시간으로 간주 (방금 가입한 유저)
+                if (lastLogin == 0)
+                {
+                    lastLogin = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                }
 
                 string nickname = child.Child("nickname").Value?.ToString() ?? uid;
                 string icon = child.Child("profileIconId").Value?.ToString() ?? "ProfileIcon_Default";
@@ -134,8 +137,24 @@ public static class FriendSearchService
         }
 
         // 필요한 수만큼 선택
-        for (int i = 0; i < Mathf.Min(count, n); i++)
-            result.Add(all[i]);
+        int selectCount = Mathf.Min(count, n);
+        var candidates = new List<PublicProfileSummary>();
+        for (int i = 0; i < selectCount; i++)
+            candidates.Add(all[i]);
+
+        // ★ 추가: 선택된 후보들의 실제 존재 여부 확인 (탈퇴 유저 최종 필터링)
+        if (candidates.Count > 0)
+        {
+            var uidsToCheck = candidates.ConvertAll(c => c.uid);
+            var validUids = await PublicProfileService.FilterExistingUidsAsync(uidsToCheck);
+            var validSet = new HashSet<string>(validUids);
+
+            foreach (var candidate in candidates)
+            {
+                if (validSet.Contains(candidate.uid))
+                    result.Add(candidate);
+            }
+        }
 
         return result;
     }

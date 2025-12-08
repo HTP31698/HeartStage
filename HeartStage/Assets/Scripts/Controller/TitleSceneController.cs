@@ -224,24 +224,64 @@ public class TitleSceneController : MonoBehaviour
                 SaveLoadManager.Data.ownedIds.Add(id);
 
             ItemInvenHelper.AddItem(ItemID.DreamEnergy, 100);
-            QuestManager.Instance.OnAttendance();
+
+            if (QuestManager.Instance != null)
+            {
+                QuestManager.Instance.OnAttendance();
+            }
+            else
+            {
+                Debug.LogError("[Title] QuestManager.Instance가 null입니다! 신규 유저 출석 체크 실패.");
+            }
 
             await SaveLoadManager.SaveToServer();
+        }
+
+        // ★ publicProfiles 생성/갱신 (신규/기존 유저 모두)
+        if (SaveLoadManager.Data is SaveDataV1 data)
+        {
+            int achievementCount = AchievementUtil.GetCompletedAchievementCount(data);
+            await PublicProfileService.UpdateMyPublicProfileAsync(data, achievementCount);
         }
     }
 
     private static async UniTask UpdateLastLoginTimeAsync()
     {
-        var now = FirebaseTime.GetServerTime();
-        var last = SaveLoadManager.Data.LastLoginTime;
-
-        if (last.Date != now.Date)
+        DateTime now;
+        try
         {
-            QuestManager.Instance.OnAttendance();
+            now = FirebaseTime.GetServerTime();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[Title] Firebase 서버 시간 가져오기 실패, 로컬 시간 사용: {e.Message}");
+            now = DateTime.Now;
+        }
+
+        var last = SaveLoadManager.Data.LastLoginTime;
+        bool isNewDay = last.Date != now.Date;
+
+        if (isNewDay)
+        {
+            Debug.Log($"[Title] 새로운 날 접속 감지: {last.Date:yyyy-MM-dd} → {now.Date:yyyy-MM-dd}");
+
+            if (QuestManager.Instance != null)
+            {
+                QuestManager.Instance.OnAttendance();
+            }
+            else
+            {
+                Debug.LogError("[Title] QuestManager.Instance가 null입니다! 출석 체크 실패.");
+            }
         }
 
         SaveLoadManager.Data.lastLoginBinary = now.ToBinary();
-        await SaveLoadManager.SaveToServer();
+
+        // ★ OnAttendance()에서 이미 저장했으면 중복 저장 방지
+        if (!isNewDay)
+        {
+            await SaveLoadManager.SaveToServer();
+        }
     }
 
     #endregion

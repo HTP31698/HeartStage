@@ -32,10 +32,97 @@ public class QuestManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    private void Update()
+    {
+        // ★ 주기적으로 Dirty 데이터 저장
+        if (_isDirty && Time.time - _lastSaveTime >= SAVE_INTERVAL)
+        {
+            SaveDailyStateIfDirty();
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        // ★ 앱 종료 시 즉시 저장
+        SaveDailyStateIfDirty();
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        // ★ 앱이 백그라운드로 가면 즉시 저장
+        if (pauseStatus)
+        {
+            SaveDailyStateIfDirty();
+        }
+    }
+
+    #endregion
+
+    #region 저장 최적화 메서드
+
+    /// <summary>
+    /// Dirty Flag를 설정하고 필요시 즉시 저장
+    /// </summary>
+    private void MarkDirty(bool forceSave = false)
+    {
+        _isDirty = true;
+
+        if (forceSave)
+        {
+            SaveDailyStateIfDirty();
+        }
+    }
+
+    /// <summary>
+    /// Dirty 상태라면 저장 실행
+    /// </summary>
+    private void SaveDailyStateIfDirty()
+    {
+        if (!_isDirty)
+            return;
+
+        SaveLoadManager.SaveToServer().Forget();
+        _isDirty = false;
+        _lastSaveTime = Time.time;
+
+        Debug.Log("[QuestManager] Daily Quest 상태 저장 완료");
+    }
+
+    /// <summary>
+    /// 외부에서 즉시 저장을 요청할 때 (씬 전환 등)
+    /// </summary>
+    public void ForceSave()
+    {
+        SaveDailyStateIfDirty();
+    }
+
+    /// <summary>
+    /// 디버깅용: 현재 출석 상태 출력
+    /// </summary>
+    [ContextMenu("Debug: Print Attendance Status")]
+    public void DebugPrintAttendanceStatus()
+    {
+        if (!_initializedDaily)
+        {
+            Debug.LogWarning("[QuestManager] Daily 퀘스트가 아직 초기화되지 않았습니다.");
+            return;
+        }
+
+        var state = DailyState;
+        Debug.Log($"=== QuestManager 출석 상태 ===");
+        Debug.Log($"Date: {state.date}");
+        Debug.Log($"AttendanceCount: {state.attendanceCount}");
+        Debug.Log($"AttendanceDailyQuestId (Inspector): {attendanceDailyQuestId}");
+        Debug.Log($"Progress: {state.progress}/100");
+        Debug.Log($"ClearedQuests: {string.Join(", ", state.clearedQuestIds ?? new List<int>())}");
+        Debug.Log($"CompletedQuests: {string.Join(", ", state.completedQuestIds ?? new List<int>())}");
+        Debug.Log($"================================");
+    }
+
     #endregion
 
     /// <summary>
-    /// 게임 전체에서 쓸 “이벤트 타입” 태그.
+    /// 게임 전체에서 쓸 "이벤트 타입" 태그.
     /// CSV랑 숫자를 맞추는 게 아니라, 코드 안에서만 어떤 이벤트인지 구분용으로 쓴다.
     /// </summary>
     public enum DailyQuestEventType
@@ -74,6 +161,11 @@ public class QuestManager : MonoBehaviour
     private readonly HashSet<int> _clearedDailyQuestIds = new HashSet<int>();
     private bool _initializedDaily;
 
+    // ★ 저장 최적화: Dirty Flag + 주기적 저장
+    private bool _isDirty = false;
+    private float _lastSaveTime = 0f;
+    private const float SAVE_INTERVAL = 10f; // 10초마다 저장 (조절 가능)
+
 
     /// <summary>
     /// BootStrap에서:
@@ -95,7 +187,20 @@ public class QuestManager : MonoBehaviour
         {
             if (SaveLoadManager.Data.dailyQuest == null)
                 SaveLoadManager.Data.dailyQuest = new DailyQuestState();
-            return SaveLoadManager.Data.dailyQuest;
+
+            var state = SaveLoadManager.Data.dailyQuest;
+
+            // ★ 필수 필드 null 체크 (신규 유저 또는 데이터 마이그레이션 시)
+            if (state.clearedQuestIds == null)
+                state.clearedQuestIds = new List<int>();
+
+            if (state.completedQuestIds == null)
+                state.completedQuestIds = new List<int>();
+
+            if (state.claimed == null || state.claimed.Length == 0)
+                state.claimed = new bool[5];
+
+            return state;
         }
     }
 
@@ -143,8 +248,9 @@ public class QuestManager : MonoBehaviour
         {
             now = FirebaseTime.GetServerTime();
         }
-        catch
+        catch (Exception e)
         {
+            Debug.LogWarning($"[QuestManager] Firebase 서버 시간 가져오기 실패, 로컬 시간 사용: {e.Message}");
             now = DateTime.Now;
         }
 
@@ -153,8 +259,8 @@ public class QuestManager : MonoBehaviour
         if (string.IsNullOrEmpty(state.date) || state.date != todayKey)
         {
             ResetDailyState(todayKey);
-            // 하루 초기화는 바로 저장해도 크게 부담 없음
-            SaveLoadManager.SaveToServer().Forget();
+            // 하루 초기화는 즉시 저장 (중요한 이벤트)
+            MarkDirty(forceSave: true);
         }
     }
 
@@ -244,7 +350,10 @@ public class QuestManager : MonoBehaviour
 
         var state = DailyState;
         state.attendanceCount++;
-        SaveLoadManager.SaveToServer().Forget();
+
+        Debug.Log($"[QuestManager] 출석 체크: attendanceCount = {state.attendanceCount}, date = {state.date}");
+
+        MarkDirty(forceSave: true); // 출석은 중요한 이벤트이므로 즉시 저장
 
         TryCompleteDailyById(attendanceDailyQuestId, DailyQuestEventType.Attendance, state.attendanceCount);
     }
@@ -256,7 +365,7 @@ public class QuestManager : MonoBehaviour
 
         var state = DailyState;
         state.clearStageCount++;
-        SaveLoadManager.SaveToServer().Forget();
+        MarkDirty(forceSave: true); // 스테이지 클리어는 중요한 이벤트이므로 즉시 저장
 
         TryCompleteDailyById(clearStageDailyQuestId, DailyQuestEventType.ClearStage, state.clearStageCount);
     }
@@ -269,8 +378,8 @@ public class QuestManager : MonoBehaviour
         var state = DailyState;
         state.monsterKillCount++;
 
-        // 필요하면 여기서 바로 저장 (너무 잦으면 나중에 묶어서 저장해도 됨)
-        SaveLoadManager.SaveToServer().Forget();
+        // ★ 몬스터 처치는 빈번하므로 Dirty만 표시 (주기적으로 저장됨)
+        MarkDirty();
 
         TryCompleteDailyById(monsterKillDailyQuestId, DailyQuestEventType.MonsterKill, state.monsterKillCount);
     }
@@ -283,7 +392,7 @@ public class QuestManager : MonoBehaviour
         var state = DailyState;
         // 1회 가챠면 1, 10연이면 10 올리고 싶으면 이렇게:
         state.gachaDrawCount += (count <= 0 ? 1 : count);
-        SaveLoadManager.SaveToServer().Forget();
+        MarkDirty(); // 가챠는 주기적으로 저장
 
         TryCompleteDailyById(gachaDrawDailyQuestId, DailyQuestEventType.GachaDraw, state.gachaDrawCount);
     }
@@ -295,7 +404,7 @@ public class QuestManager : MonoBehaviour
 
         var state = DailyState;
         state.shopPurchaseCount++;
-        SaveLoadManager.SaveToServer().Forget();
+        MarkDirty(); // 상점 구매는 주기적으로 저장
 
         TryCompleteDailyById(shopPurchaseDailyQuestId, DailyQuestEventType.ShopPurchase, state.shopPurchaseCount);
     }
@@ -368,7 +477,8 @@ public class QuestManager : MonoBehaviour
 
         // 여기서는 progress / completedQuestIds / 보상 전혀 건드리지 않는다.
 
-        SaveLoadManager.SaveToServer().Forget();
+        // 퀘스트 완료는 즉시 저장 (중요한 이벤트)
+        MarkDirty(forceSave: true);
 
         Debug.Log($"[QuestManager] Daily Quest 조건 충족: id={id}, info={quest.Quest_info}");
 
