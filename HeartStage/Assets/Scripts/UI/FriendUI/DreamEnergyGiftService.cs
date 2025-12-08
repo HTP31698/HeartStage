@@ -10,7 +10,7 @@ public static class DreamEnergyGiftService
     private static DatabaseReference Root => FirebaseDatabase.DefaultInstance.RootReference;
     private static FirebaseAuth Auth => FirebaseAuth.DefaultInstance;
 
-    public const int GiftAmountPerSend = 1;
+    public const int GiftAmountPerSend = 5;
 
     private static bool _isSending = false;
     private static bool _isClaiming = false;
@@ -463,13 +463,13 @@ public static class DreamEnergyGiftService
                     LobbyManager.Instance.MoneyUISet();
                 }
 
-                await SaveLoadManager.SaveToServer();
-
                 if (updates.Count > 0)
                 {
-                    // ★ 받은 횟수 증가
-                    data.dreamReceiveTodayCount += (totalReceived / GiftAmountPerSend);
                     await Root.UpdateChildrenAsync(updates);
+
+                    // ★ Firebase 업데이트 성공 후에만 받은 횟수 증가
+                    data.dreamReceiveTodayCount += (totalReceived / GiftAmountPerSend);
+                    await SaveLoadManager.SaveToServer();
                 }
 
                 ResetPendingGiftCache();
@@ -766,13 +766,13 @@ public static class DreamEnergyGiftService
                 if (LobbyManager.Instance != null)
                     LobbyManager.Instance.MoneyUISet();
 
-                await SaveLoadManager.SaveToServer();
-
                 if (updates.Count > 0)
                 {
-                    // ★ 받은 횟수 증가
-                    data.dreamReceiveTodayCount += (totalReceived / GiftAmountPerSend);
                     await Root.UpdateChildrenAsync(updates);
+
+                    // ★ Firebase 업데이트 성공 후에만 받은 횟수 증가
+                    data.dreamReceiveTodayCount += (totalReceived / GiftAmountPerSend);
+                    await SaveLoadManager.SaveToServer();
                 }
 
                 if (_pendingGiftsByFriend.ContainsKey(fromUid))

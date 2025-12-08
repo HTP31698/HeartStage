@@ -18,6 +18,7 @@ public class QuestItemUIBase : MonoBehaviour
 
     [Header("완료 상태 텍스트 & 색상")]
     [SerializeField] protected TextMeshProUGUI stateText;  // "미완료" / "완료" 표기용
+    [SerializeField] protected TextMeshProUGUI buttonText;  // 버튼 텍스트 ("받기" / "완료")
     [SerializeField] protected Color normalButtonColor = Color.white;          // 기본 색
     [SerializeField] protected Color completedButtonColor = new Color(0.7f, 0.7f, 0.7f); // 완료 후 약간 어두운 색
 
@@ -106,6 +107,23 @@ public class QuestItemUIBase : MonoBehaviour
             if (targetGraphic != null)
             {
                 targetGraphic.color = isCompleted ? completedButtonColor : normalButtonColor;
+            }
+        }
+
+        // 버튼 텍스트
+        if (buttonText != null)
+        {
+            if (isCompleted)
+            {
+                buttonText.text = "완료";
+            }
+            else if (isCleared)
+            {
+                buttonText.text = "받기";
+            }
+            else
+            {
+                buttonText.text = "받기";
             }
         }
 

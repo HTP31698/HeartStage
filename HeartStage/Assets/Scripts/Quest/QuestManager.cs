@@ -349,13 +349,13 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
-        state.attendanceCount++;
+        // ★ 카운트 증가는 보상 받을 때로 이동
+        // state.attendanceCount++; (삭제)
 
-        Debug.Log($"[QuestManager] 출석 체크: attendanceCount = {state.attendanceCount}, date = {state.date}");
+        Debug.Log($"[QuestManager] 출석 이벤트 발생: attendanceCount = {state.attendanceCount}, date = {state.date}");
 
-        MarkDirty(forceSave: true); // 출석은 중요한 이벤트이므로 즉시 저장
-
-        TryCompleteDailyById(attendanceDailyQuestId, DailyQuestEventType.Attendance, state.attendanceCount);
+        // ★ 현재 카운트 + 1로 조건 체크 (보상 받으면 증가 예정)
+        TryCompleteDailyById(attendanceDailyQuestId, DailyQuestEventType.Attendance, state.attendanceCount + 1);
     }
 
     // 스테이지 클리어 시점(StageManager 등)에서 호출
@@ -364,10 +364,10 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
-        state.clearStageCount++;
-        MarkDirty(forceSave: true); // 스테이지 클리어는 중요한 이벤트이므로 즉시 저장
+        // ★ 카운트 증가는 보상 받을 때로 이동
+        // state.clearStageCount++; (삭제)
 
-        TryCompleteDailyById(clearStageDailyQuestId, DailyQuestEventType.ClearStage, state.clearStageCount);
+        TryCompleteDailyById(clearStageDailyQuestId, DailyQuestEventType.ClearStage, state.clearStageCount + 1);
     }
 
     // 몬스터 사망 시점(Monster / MonsterHP 등)에서 호출
@@ -376,6 +376,7 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
+        // ★ 몬스터 처치는 누적 카운트이므로 즉시 증가 (보상과 무관)
         state.monsterKillCount++;
 
         // ★ 몬스터 처치는 빈번하므로 Dirty만 표시 (주기적으로 저장됨)
@@ -390,11 +391,10 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
-        // 1회 가챠면 1, 10연이면 10 올리고 싶으면 이렇게:
-        state.gachaDrawCount += (count <= 0 ? 1 : count);
-        MarkDirty(); // 가챠는 주기적으로 저장
+        // ★ 카운트 증가는 보상 받을 때로 이동
+        // state.gachaDrawCount += (count <= 0 ? 1 : count); (삭제)
 
-        TryCompleteDailyById(gachaDrawDailyQuestId, DailyQuestEventType.GachaDraw, state.gachaDrawCount);
+        TryCompleteDailyById(gachaDrawDailyQuestId, DailyQuestEventType.GachaDraw, state.gachaDrawCount + (count <= 0 ? 1 : count));
     }
 
     // 상점 구매 성공 시점에서 호출 (shopItemId: 상점 상품 id)
@@ -403,10 +403,10 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
-        state.shopPurchaseCount++;
-        MarkDirty(); // 상점 구매는 주기적으로 저장
+        // ★ 카운트 증가는 보상 받을 때로 이동
+        // state.shopPurchaseCount++; (삭제)
 
-        TryCompleteDailyById(shopPurchaseDailyQuestId, DailyQuestEventType.ShopPurchase, state.shopPurchaseCount);
+        TryCompleteDailyById(shopPurchaseDailyQuestId, DailyQuestEventType.ShopPurchase, state.shopPurchaseCount + 1);
     }
     #endregion
 

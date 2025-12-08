@@ -436,7 +436,7 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
     #region Daily 퀘스트 완료/클리어 처리 (QuestManager 이벤트 연동)
 
     /// <summary>
-    /// UI에서 "완료" 버튼 눌렀을 때 호출됨.
+    /// UI에서 "받기" 버튼 눌렀을 때 호출됨.
     /// - 조건은 이미 QuestManager 에서 만족된 상태라고 가정.
     /// - 여기서 보상 지급 + 진행도 증가 + completed 목록에 등록.
     /// </summary>
@@ -453,6 +453,30 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
         if (!alreadyCompleted)
         {
             State.completedQuestIds.Add(id);
+
+            // ★ 보상 받기 성공 시점에 카운트 증가
+            if (QuestManager.Instance != null)
+            {
+                var mgr = QuestManager.Instance;
+                // Quest_ID 기준으로 어떤 퀘스트인지 판별하여 카운트 증가
+                if (id == mgr.attendanceDailyQuestId)
+                {
+                    State.attendanceCount++;
+                }
+                else if (id == mgr.clearStageDailyQuestId)
+                {
+                    State.clearStageCount++;
+                }
+                else if (id == mgr.gachaDrawDailyQuestId)
+                {
+                    State.gachaDrawCount++;
+                }
+                else if (id == mgr.shopPurchaseDailyQuestId)
+                {
+                    State.shopPurchaseCount++;
+                }
+                // 몬스터는 이미 OnMonsterKilled에서 증가함
+            }
 
             // TODO: 여기서 퀘스트 개별 보상 지급(Quest_reward1~3) 처리
             // ex) ItemManager.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
