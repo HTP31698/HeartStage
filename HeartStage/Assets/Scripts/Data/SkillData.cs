@@ -18,6 +18,9 @@ public class SkillData : ScriptableObject
     public float skill_speed;
     public float skill_crt;
     public float skill_range;
+    public int skill_range_type;
+    public int skill_bull_amount;
+    public float skill_delay;
     public float skill_duration;
     public int summon_min;
     public int summon_max;
@@ -51,6 +54,9 @@ public class SkillData : ScriptableObject
         skill_speed = csvData.skill_speed;
         skill_crt = csvData.skill_crt;
         skill_range = csvData.skill_range;
+        skill_range_type = csvData.skill_range_type;
+        skill_bull_amount = csvData.skill_bull_amount;
+        skill_delay = csvData.skill_delay;
         skill_duration = csvData.skill_duration;
         summon_min = csvData.summon_min;
         summon_max = csvData.summon_max;
@@ -85,6 +91,9 @@ public class SkillData : ScriptableObject
         csvData.skill_speed = skill_speed;
         csvData.skill_crt = skill_crt;
         csvData.skill_range = skill_range;
+        csvData.skill_range_type = skill_range_type;
+        csvData.skill_bull_amount = skill_bull_amount;
+        csvData.skill_delay = skill_delay;
         csvData.skill_duration = skill_duration;
         csvData.summon_min = summon_min;
         csvData.summon_max = summon_max;
@@ -123,6 +132,9 @@ public class SkillCSVData
     public float skill_speed { get; set; }
     public float skill_crt { get; set; }
     public float skill_range { get; set; }
+    public int skill_range_type { get; set; }
+    public int skill_bull_amount { get; set; }
+    public float skill_delay { get; set; }
     public float skill_duration { get; set; }
     public int summon_min { get; set; }
     public int summon_max { get; set; }

@@ -5,6 +5,8 @@ public class CharacterSkillController : MonoBehaviour
     [HideInInspector]
     public int skillId;
 
+    public GameObject skillReadyEffect;
+
     private CharacterAttack characterAttack;
 
     private bool isReady = false;
@@ -18,14 +20,16 @@ public class CharacterSkillController : MonoBehaviour
     {
         isReady = true;
         characterAttack.animator.SetTrigger(CharacterAttack.HashSkillReady);
+        skillReadyEffect.SetActive(true);
     }
 
-    //private void Update()
-    //{
-    //    if(isReady && Input.GetKeyDown(KeyCode.Alpha1))
-    //    {
-    //        ActiveSkillManager.Instance.TryUseSkill(gameObject, skillId);
-    //        characterAttack.animator.SetTrigger(CharacterAttack.HashIdle);
-    //    }
-    //}
+    private void Update()
+    {
+        if (isReady && Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            ActiveSkillManager.Instance.TryUseSkill(gameObject, skillId);
+            characterAttack.animator.SetTrigger(CharacterAttack.HashIdle);
+            skillReadyEffect.SetActive(false);
+        }
+    }
 }
