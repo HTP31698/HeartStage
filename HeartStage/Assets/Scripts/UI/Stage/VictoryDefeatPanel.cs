@@ -9,14 +9,10 @@ public class VictoryDefeatPanel : GenericWindow
 
     public GameObject powerInfoWindow;
 
-    public TextMeshProUGUI clearOrFailText;
-    public TextMeshProUGUI currentStageText;
-    public TextMeshProUGUI clearWaveText;
     public TextMeshProUGUI addFansText;
     public TextMeshProUGUI lightStickCount;
     public TextMeshProUGUI heartStickCount;
     public TextMeshProUGUI trainingPoint;
-    public TextMeshProUGUI rightButtonText;
 
     public Button goStageChoiceButton;
     public Button nextStageOrRetryButton;
@@ -57,55 +53,55 @@ public class VictoryDefeatPanel : GenericWindow
         if (StageManager.Instance != null && StageManager.Instance.GetCurrentStageData() != null)
         {
             var currentStage = StageManager.Instance.GetCurrentStageData();
-            currentStageText.text = $"스테이지 {currentStage.stage_step1}-{currentStage.stage_step2}";
-            clearWaveText.text = $"{StageManager.Instance.WaveCount}";
+            //currentStageText.text = $"스테이지 {currentStage.stage_step1}-{currentStage.stage_step2}";
+            //clearWaveText.text = $"{StageManager.Instance.WaveCount}";
         }
 
         if (isClear)
         {
-            clearOrFailText.text = "Clear";
+            //clearOrFailText.text = "Clear";
 
             if (isTestScene)
             {
                 // ✅ 테스트 씬: 다음 스테이지로 안 나감, 그냥 재도전만
-                rightButtonText.text = "재도전";
+                //rightButtonText.text = "재도전";
                 nextStageOrRetryButton.onClick.AddListener(OnRetryTestStage);
 
-                clearWaveText.text = $"{StageManager.Instance.WaveCount}";
+                //clearWaveText.text = $"{StageManager.Instance.WaveCount}";
             }
             else
             {
                 // ✅ 원래 스테이지 씬 동작 유지
-                rightButtonText.text = "다음\n스테이지";
+                //rightButtonText.text = "다음\n스테이지";
                 nextStageOrRetryButton.onClick.AddListener(() => OnNextStageButtonClicked());
 
-                clearWaveText.text = $"{StageManager.Instance.WaveCount}";
+                //clearWaveText.text = $"{StageManager.Instance.WaveCount}";
             }
         }
         else
         {
-            clearOrFailText.text = "Fail";
+            //clearOrFailText.text = "Fail";
 
             if (isTestScene)
             {
                 // ✅ 테스트 씬: 재도전만 (씬 이동 없음)
-                rightButtonText.text = "재도전";
+                //rightButtonText.text = "재도전";
                 nextStageOrRetryButton.onClick.AddListener(OnRetryTestStage);
 
-                clearWaveText.text = $"{StageManager.Instance.WaveCount - 1}";
+                //clearWaveText.text = $"{StageManager.Instance.WaveCount - 1}";
             }
             else
             {
                 // ✅ 원래 스테이지 씬 동작 유지
-                rightButtonText.text = "재도전";
+                //rightButtonText.text = "재도전";
                 nextStageOrRetryButton.onClick.AddListener(LoadSceneManager.Instance.GoStage);
 
-                clearWaveText.text = $"{StageManager.Instance.WaveCount - 1}";
+                //clearWaveText.text = $"{StageManager.Instance.WaveCount - 1}";
             }
         }
 
         var stageData = StageManager.Instance.currentStageCSVData;
-        currentStageText.text = $"스테이지 {stageData.stage_step1}-{stageData.stage_step2}";
+        //currentStageText.text = $"스테이지 {stageData.stage_step1}-{stageData.stage_step2}";
         addFansText.text = $"{StageManager.Instance.fanReward}";
 
         // 획득 아이템 표시
