@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ActiveSkillManager : MonoBehaviour
 {
@@ -9,6 +10,10 @@ public class ActiveSkillManager : MonoBehaviour
     private Dictionary<GameObject, Dictionary<int, ISkillBehavior>> skillBehaviors = new Dictionary<GameObject, Dictionary<int, ISkillBehavior>>();
     private List<ActiveSkillTimer> activeTimers = new List<ActiveSkillTimer>();
 
+    [SerializeField] private Slider cooldownSliderPrefab;
+    [SerializeField] private Canvas mainCanvas;
+    [SerializeField] private Vector3 uiWorldOffset = new Vector3(0f, 2f, 0f);
+
     private void Awake()
     {
         if (Instance == null)
@@ -17,104 +22,99 @@ public class ActiveSkillManager : MonoBehaviour
         }
     }
 
-    // 스킬테이블 데이터 -> SO에 덮어쓰기
     private void Start()
     {
         skillDB = DataTableManager.SkillTable.GetAll();
-        foreach(var skill in skillDB)
+        foreach (var skill in skillDB)
         {
             skill.Value.UpdateData(DataTableManager.SkillTable.Get(skill.Value.skill_id));
         }
     }
 
-    // 등록된 스킬들 쿨타임 자동으로 관리
     private void Update()
     {
         for (int i = activeTimers.Count - 1; i >= 0; i--)
         {
             var timer = activeTimers[i];
 
-            // 캐스터가 없어졌으면 자동 해제
             if (timer == null || timer.Caster == null)
             {
+                if (timer != null) timer.Dispose();
                 activeTimers.RemoveAt(i);
                 continue;
             }
 
             timer.UpdateTimer(Time.deltaTime);
-
-            if (timer.IsReady())
-            {
-                UseSkill(timer);
-                timer.Reset();
-            }
         }
     }
 
-    // 스킬 사용하기
+    // 수동 스킬 발동 시 호출
+    public void TryUseSkill(GameObject caster, int skillId)
+    {
+        var timer = activeTimers.Find(t => t.Caster == caster && t.SkillData.skill_id == skillId);
+        if (timer == null) 
+            return;
+
+        if (timer.IsReady)
+        {
+            UseSkill(timer);      // 스킬 실행
+            timer.StartCooldown(); // 쿨타임 UI 다시 보이고 재시작
+        }
+    }
+
     private void UseSkill(ActiveSkillTimer timer)
     {
-        var data = timer.SkillData;
-        var caster = timer.Caster;
+        var skillId = timer.SkillData.skill_id;
 
-        if (skillBehaviors.TryGetValue(caster, out var skillDict) &&
-            skillDict.TryGetValue(data.skill_id, out var behavior))
+        if (skillBehaviors.TryGetValue(timer.Caster, out var skillDict) &&
+            skillDict.TryGetValue(skillId, out var behavior))
         {
             behavior.Execute();
         }
-        else
-        {
-
-        }
     }
 
-    // 사용할 스킬등록하기
     public void RegisterSkill(GameObject caster, int skillId)
     {
         if (skillDB.TryGetValue(skillId, out var data))
         {
-            activeTimers.Add(new ActiveSkillTimer(caster, data));
+            var existing = activeTimers.Find(t => t.Caster == caster && t.SkillData.skill_id == skillId);
+            if (existing != null)
+            {
+                existing.Reset();
+                return;
+            }
+
+            var timer = new ActiveSkillTimer(caster, data, cooldownSliderPrefab, mainCanvas, uiWorldOffset);
+            activeTimers.Add(timer);
         }
     }
 
-    // 캐스터 죽으면 스킬해제하기
     public void UnRegisterSkill(GameObject caster, int skillId)
     {
-        // 1️⃣ 타이머 해제
         var timer = activeTimers.Find(t => t.Caster == caster && t.SkillData.skill_id == skillId);
         if (timer != null)
         {
+            timer.Dispose();
             activeTimers.Remove(timer);
         }
 
-        // 2️⃣ Behavior 해제
         if (skillBehaviors.TryGetValue(caster, out var skillDict))
         {
-            if (skillDict.Remove(skillId))
-            {
-
-            }
-
-            // 3️⃣ 해당 캐릭터의 스킬이 더 이상 없으면 전체 제거
-            if (skillDict.Count == 0)
-            {
-                skillBehaviors.Remove(caster);
-            }
+            skillDict.Remove(skillId);
         }
     }
 
-    // 실제 스킬 스크립트 등록
     public void RegisterSkillBehavior(GameObject caster, int skillId, ISkillBehavior behavior)
     {
-        if (!skillBehaviors.TryGetValue(caster, out var skillDict))
+        if (!skillBehaviors.TryGetValue(caster, out var dict))
         {
-            skillDict = new Dictionary<int, ISkillBehavior>();
-            skillBehaviors.Add(caster, skillDict);
+            dict = new Dictionary<int, ISkillBehavior>();
+            skillBehaviors.Add(caster, dict);
         }
 
-        if (!skillDict.ContainsKey(skillId))
+        if (!dict.ContainsKey(skillId))
         {
-            skillDict.Add(skillId, behavior);
+            dict.Add(skillId, behavior);
         }
     }
 }
@@ -122,31 +122,61 @@ public class ActiveSkillManager : MonoBehaviour
 // 타이머 클래스
 public class ActiveSkillTimer
 {
+    private float currentTime;
+    private Vector3 offset;
+
     public SkillData SkillData { get; private set; }
     public GameObject Caster { get; private set; }
+    public CooldownUIHandler UI { get; private set; }
 
-    private float currentTime;
+    public bool IsReady => currentTime <= 0f;
 
-    public ActiveSkillTimer(GameObject caster, SkillData data)
+    public ActiveSkillTimer(GameObject caster, SkillData data, Slider prefab, Canvas canvas, Vector3 uiOffset)
     {
         Caster = caster;
         SkillData = data;
-        currentTime = data.skill_cool;
+        currentTime = SkillData.skill_cool;
+        offset = uiOffset;
+
+        UI = new CooldownUIHandler(caster, prefab, canvas, offset);
+        UI.InitMaxValue(data.skill_cool);
+        UI.Show();
+        UI.UpdateUI(currentTime);
     }
 
-    public void UpdateTimer(float deltaTime)
+    public void StartCooldown()
     {
-        if (currentTime > 0)
-            currentTime -= deltaTime;
+        currentTime = SkillData.skill_cool;
+        UI.Show();
+        UI.ResetSlider();
     }
 
-    public bool IsReady()
+    public void UpdateTimer(float delta)
     {
-        return currentTime <= 0f;
+        if (!IsReady)
+        {
+            currentTime -= delta;
+            UI.UpdateUI(currentTime);
+
+            if (IsReady)
+            {
+                currentTime = 0;
+                UI.Hide();  // 다 차면 숨김
+                
+                var skillController = Caster.GetComponent<CharacterSkillController>();
+                skillController.SkillReady();
+            }
+        }
     }
 
     public void Reset()
     {
-        currentTime = SkillData.skill_cool;
+        currentTime = 0;
+        UI.Hide();
+    }
+
+    public void Dispose()
+    {
+        UI.Dispose();
     }
 }

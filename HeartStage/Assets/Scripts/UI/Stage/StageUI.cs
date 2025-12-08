@@ -7,6 +7,7 @@ public class StageUI : MonoBehaviour
     public TextMeshProUGUI waveCountText;
     public TextMeshProUGUI remainMonsterCountText;
     public Button feverButton;
+    public GameObject feverEffects;
 
     private void Start()
     {

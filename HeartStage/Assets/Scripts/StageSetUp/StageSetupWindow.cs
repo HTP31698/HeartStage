@@ -276,8 +276,6 @@ public class StageSetupWindow : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[AddPassiveEffects] slot {slotIndex} 패시브 {effects.Count}개 적용");
-
         foreach (var e in effects)
         {
             EffectRegistry.Apply(obj, e.effectId, e.value, 99999f);

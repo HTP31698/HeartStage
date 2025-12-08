@@ -26,7 +26,7 @@ public class StageManager : MonoBehaviour
     private Vector3 fenceMid2Position = new Vector3(0f, -4f, 0f); //두번째 팬스 위치
     private Vector3 fenceDownPosition = new Vector3(0f, -3f, 0f);
 
-    public StageUI StageUI;
+    public StageUI stageUI;
     public LevelUpPanel LevelUpPanel;
     public Slider[] feverSliders;
     public TextMeshProUGUI feverText;
@@ -53,7 +53,7 @@ public class StageManager : MonoBehaviour
         set
         {
             waveCount = value;
-            StageUI.SetWaveCount(stageNumber, waveOrder);
+            stageUI.SetWaveCount(stageNumber, waveOrder);
         }
     }
 
@@ -64,7 +64,7 @@ public class StageManager : MonoBehaviour
         set
         {
             remainMonsterCount = value;
-            StageUI.SetReaminMonsterCount(remainMonsterCount);
+            stageUI.SetReaminMonsterCount(remainMonsterCount);
         }
     }
 
@@ -138,9 +138,9 @@ public class StageManager : MonoBehaviour
         waveOrder = wave;
         waveCount = wave; // 기존 호환성을 위해 유지
 
-        if (StageUI != null)
+        if (stageUI != null)
         {
-            StageUI.SetWaveCount(stageNumber, waveOrder);
+            stageUI.SetWaveCount(stageNumber, waveOrder);
         }
     }
 
@@ -153,8 +153,8 @@ public class StageManager : MonoBehaviour
             waveOrder = 1; // 스테이지 시작시 첫 번째 웨이브
             waveCount = 1;
 
-            if (StageUI != null)
-                StageUI.SetWaveCount(stageNumber, waveOrder);
+            if (stageUI != null)
+                stageUI.SetWaveCount(stageNumber, waveOrder);
 
             foreach(var slider in feverSliders)
             {
@@ -190,6 +190,7 @@ public class StageManager : MonoBehaviour
         if (isFever || feverCount <= 0)
             return;
 
+        stageUI.feverEffects.SetActive(true);
         isFever = true;
         feverText.text = $"피버타임 X{feverCount - 1}";
 
@@ -214,6 +215,7 @@ public class StageManager : MonoBehaviour
 
         feverCount--;
         isFever = false;
+        stageUI.feverEffects.SetActive(false);
     }
 
     // 원래 타임스케일 복원

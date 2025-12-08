@@ -5,6 +5,9 @@ using UnityEngine;
 
 public class CharacterAttack : MonoBehaviour
 {
+    public static readonly int HashSkillReady = Animator.StringToHash("SkillReady");
+    public static readonly int HashIdle = Animator.StringToHash("Idle");
+
     [HideInInspector]
     public int id = 11010101; // 테스트 id
 
@@ -17,6 +20,10 @@ public class CharacterAttack : MonoBehaviour
 
     private CircleCollider2D circleCollider;
     private SpriteRenderer spriteRenderer;
+    [HideInInspector]
+    public Animator animator;
+
+    private CharacterSkillController skillController;
 
     private void Awake()
     {
@@ -25,7 +32,9 @@ public class CharacterAttack : MonoBehaviour
 
     private void Start()
     {
+        skillController = GetComponent<CharacterSkillController>();
         Init();
+        animator = GetComponentInChildren<Animator>();
     }
 
     private void Init()
@@ -58,6 +67,7 @@ public class CharacterAttack : MonoBehaviour
         foreach (var skillId in skillList)
         {
             ScriptAttacher.AttachById(gameObject, skillId);
+            skillController.skillId = skillId;
         }
 
         // 야유 스킬에 자신을 등록
