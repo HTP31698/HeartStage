@@ -69,15 +69,8 @@ public class FriendAddWindow : MonoBehaviour
         if (root != null)
             root.SetActive(true);
 
-        // 캐시가 있으면 빠르게 표시, 없으면 서버에서 로드
-        if (_isPrewarmed && _cachedCandidates != null && _cachedCandidates.Count > 0)
-        {
-            ShowCachedData();
-        }
-        else
-        {
-            RefreshAsync().Forget();
-        }
+        // 항상 서버에서 최신 데이터 로드 (탈퇴 유저 필터링 보장)
+        RefreshAsync().Forget();
     }
 
     public void Close()
@@ -212,9 +205,8 @@ public class FriendAddWindow : MonoBehaviour
         {
             ClearList();
 
-            // 캐시가 없으면 갱신
-            if (!FriendService.IsCacheLoaded)
-                await FriendService.RefreshAllCacheAsync();
+            // 항상 서버에서 최신 데이터 동기화 (유령 친구 방지)
+            await FriendService.RefreshAllCacheAsync();
 
             // 헤더는 캐시에서
             RefreshHeader();

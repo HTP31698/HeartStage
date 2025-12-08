@@ -44,6 +44,7 @@ public class MessageWindow : MonoBehaviour
 
     private Action _onConfirm;
     private Action _onCancel;
+    private Action _onSingleClose;
 
     private void Awake()
     {
@@ -53,7 +54,7 @@ public class MessageWindow : MonoBehaviour
         if (singleButton != null)
         {
             singleButton.onClick.RemoveAllListeners();
-            singleButton.onClick.AddListener(Close);
+            singleButton.onClick.AddListener(OnClickSingleButton);
         }
 
         if (confirmButton != null)
@@ -90,24 +91,24 @@ public class MessageWindow : MonoBehaviour
             root.SetActive(true);
     }
 
-    public void Open(string title, string message, bool isSuccess)
+    public void Open(string title, string message, bool isSuccess, Action onClose = null)
     {
         SetTitle(title);
         SetMessage(message);
-        SetSingleButtonMode(isSuccess ? successColor : failColor);
+        SetSingleButtonMode(isSuccess ? successColor : failColor, onClose);
 
         if (root != null)
             root.SetActive(true);
     }
 
-    public void OpenFail(string title, string message)
+    public void OpenFail(string title, string message, Action onClose = null)
     {
-        Open(title, message, false);
+        Open(title, message, false, onClose);
     }
 
-    public void OpenSuccess(string title, string message)
+    public void OpenSuccess(string title, string message, Action onClose = null)
     {
-        Open(title, message, true);
+        Open(title, message, true, onClose);
     }
 
     #endregion
@@ -152,7 +153,7 @@ public class MessageWindow : MonoBehaviour
 
     #region 버튼 모드 설정
 
-    private void SetSingleButtonMode(Color buttonColor)
+    private void SetSingleButtonMode(Color buttonColor, Action onClose = null)
     {
         if (singleButton != null)
             singleButton.gameObject.SetActive(true);
@@ -165,6 +166,7 @@ public class MessageWindow : MonoBehaviour
 
         _onConfirm = null;
         _onCancel = null;
+        _onSingleClose = onClose;
     }
 
     private void SetTwoButtonMode(string confirmText, string cancelText)
@@ -232,6 +234,12 @@ public class MessageWindow : MonoBehaviour
     {
         Close();
         _onCancel?.Invoke();
+    }
+
+    private void OnClickSingleButton()
+    {
+        Close();
+        _onSingleClose?.Invoke();
     }
 
     #endregion

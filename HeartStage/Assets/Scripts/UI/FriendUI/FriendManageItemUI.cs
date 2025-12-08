@@ -263,8 +263,7 @@ public class FriendManageItemUI : MonoBehaviour
 
             if (success)
             {
-                _messageWindow?.OpenSuccess("친구 수락", $"{_nickname}님과 친구가 되었습니다!");
-                _onCompleted?.Invoke(); // 리스트 다시 갱신
+                _messageWindow?.OpenSuccess("친구 수락", $"{_nickname}님과 친구가 되었습니다!", _onCompleted);
             }
             else
             {
@@ -293,8 +292,7 @@ public class FriendManageItemUI : MonoBehaviour
 
             if (success)
             {
-                _messageWindow?.OpenSuccess("신청 거절", $"{_nickname}님의 친구 신청을\n거절했습니다.");
-                _onCompleted?.Invoke();
+                _messageWindow?.OpenSuccess("신청 거절", $"{_nickname}님의 친구 신청을\n거절했습니다.", _onCompleted);
             }
             else
             {
@@ -323,8 +321,7 @@ public class FriendManageItemUI : MonoBehaviour
 
             if (success)
             {
-                _messageWindow?.OpenSuccess("신청 취소", $"{_nickname}님에게 보낸\n친구 신청을 취소했습니다.");
-                _onCompleted?.Invoke();
+                _messageWindow?.OpenSuccess("신청 취소", $"{_nickname}님에게 보낸\n친구 신청을 취소했습니다.", _onCompleted);
             }
             else
             {
@@ -353,8 +350,7 @@ public class FriendManageItemUI : MonoBehaviour
 
             if (success)
             {
-                _messageWindow?.OpenSuccess("친구 삭제", $"{_nickname}님을\n친구 목록에서 삭제했습니다.");
-                _onCompleted?.Invoke();
+                _messageWindow?.OpenSuccess("친구 삭제", $"{_nickname}님을\n친구 목록에서 삭제했습니다.", _onCompleted);
             }
             else
             {

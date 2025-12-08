@@ -168,7 +168,7 @@ public class FriendListWindow : MonoBehaviour
 
         try
         {
-            _cachedFriendUids = await FriendService.GetMyFriendUidListAsync(syncLocal: true);
+            _cachedFriendUids = await FriendService.GetMyFriendUidListAsync(syncLocal: true, filterDeleted: true);
 
             // 오늘 보낸 수 / 보낸 친구 목록 / 받을 선물 수 서버에서 가져오기
             await DreamEnergyGiftService.SyncCounterFromServerAsync();

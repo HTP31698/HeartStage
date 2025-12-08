@@ -81,9 +81,13 @@ public class SaveDataV1 : SaveData
     // 드림 에너지 교환(선물) 관련
     public int dreamSendDailyLimit = 20;            // 하루 최대 선물 횟수
     public int dreamSendTodayCount = 0;             // 오늘 보낸 횟수
+    // 친구 관련 (내가 맺은 친구들의 uid 리스트)
     public int dreamLastSendDate = 0;               // yyyymmdd
 
-    // 친구 관련 (내가 맺은 친구들의 uid 리스트)
+    // 드림 에너지 받기 제한
+    public int dreamReceiveDailyLimit = 20;         // 하루 최대 받기 횟수
+    public int dreamReceiveTodayCount = 0;          // 오늘 받은 횟수
+    public int dreamLastReceiveDate = 0;            // yyyymmdd
     public List<string> friendUidList = new List<string>();
 
     // ================== 7. 공지 / 기타 ==================
