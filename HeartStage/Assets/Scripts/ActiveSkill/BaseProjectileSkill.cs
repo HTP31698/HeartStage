@@ -1,4 +1,5 @@
 ﻿using Cysharp.Threading.Tasks;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -55,6 +56,10 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         ActiveSkillManager.Instance.RegisterSkillBehavior(gameObject, skillData.skill_id, this);
         ActiveSkillManager.Instance.RegisterSkill(gameObject, skillData.skill_id);
 
+        // SkillController 등록
+        var skillController = gameObject.GetComponent<CharacterSkillController>();
+        skillController.skillId = skillData.skill_id;
+
         // 디버프 등록
         TryAddDebuff(skillData.skill_eff1, skillData.skill_eff1_val, skillData.skill_eff1_duration);
         TryAddDebuff(skillData.skill_eff2, skillData.skill_eff2_val, skillData.skill_eff2_duration);
@@ -67,7 +72,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             debuffList.Add((id, val, duration));
     }
 
-    public virtual void Execute()
+    private void Fire()
     {
         var obj = PoolManager.Instance.Get(poolId);
 
@@ -96,6 +101,24 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         // 장판 스킬 시
         if (skillData.skill_duration > 0f)
             AutoRelease(obj, skillData.skill_duration).Forget();
+
+        // 원형 즉발형 스킬 발동시
+        if (skillData.skill_duration == 0f && skillData.skill_range_type == 2)
+            AutoRelease(obj, 1f).Forget();
+    }
+
+    public virtual void Execute()
+    {
+        FireAsync(skillData.skill_bull_amount, skillData.skill_delay).Forget();
+    }
+
+    public async UniTaskVoid FireAsync(int count, float delay)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            Fire();
+            await UniTask.Delay(TimeSpan.FromSeconds(delay));
+        }
     }
 
     private async UniTaskVoid AutoRelease(GameObject go, float time)

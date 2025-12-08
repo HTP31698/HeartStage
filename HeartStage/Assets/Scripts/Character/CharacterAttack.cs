@@ -67,7 +67,6 @@ public class CharacterAttack : MonoBehaviour
         foreach (var skillId in skillList)
         {
             ScriptAttacher.AttachById(gameObject, skillId);
-            skillController.skillId = skillId;
         }
 
         // 야유 스킬에 자신을 등록
