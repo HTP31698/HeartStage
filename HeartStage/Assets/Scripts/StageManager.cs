@@ -30,7 +30,8 @@ public class StageManager : MonoBehaviour
     public LevelUpPanel LevelUpPanel;
     public Slider[] feverSliders;
     public TextMeshProUGUI feverText;
-    public VictoryDefeatPanel VictoryDefeatPanel;
+    public VictoryPanel VictoryPanel;
+    public LosePanelUI LosePanelUI;
     [HideInInspector]
     public StageCSVData currentStageCSVData;
 
@@ -224,43 +225,27 @@ public class StageManager : MonoBehaviour
         Time.timeScale = currentTimeScale;
     }
 
-    public void CompleteStage()
-    {
-        Clear();
-    }
-
     // 승리시 
     public void Clear()
     {
         // 클리어 퀘스트 알림
         QuestManager.Instance.OnStageClear();
 
-        VictoryDefeatPanel.isClear = true;
-
         if (windowManager != null)
         {
-            windowManager.OpenOverlay(WindowType.VictoryDefeat);
+            windowManager.OpenOverlay(WindowType.VictoryPanelUI);
         }
 
-        Time.timeScale = 0f;
+        Time.timeScale = 1f;
         GetReward();
     }
 
     // 패배시
     public void Defeat()
     {
-        VictoryDefeatPanel.isClear = false;
-
         if (windowManager != null)
         {
-            windowManager.OpenOverlay(WindowType.VictoryDefeat);
-        }
-        else
-        {
-            if (VictoryDefeatPanel != null)
-            {
-                VictoryDefeatPanel.gameObject.SetActive(true);
-            }
+            windowManager.OpenOverlay(WindowType.LosePanelUI);
         }
 
         Time.timeScale = 0f;

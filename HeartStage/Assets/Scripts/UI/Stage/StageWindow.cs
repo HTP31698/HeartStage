@@ -15,15 +15,11 @@ public class StageWindow : GenericWindow
     //[SerializeField] private Button closeButton;
     [SerializeField] private Button stageInfoButton;
 
-    [Header("Layout Settings")]
-    public float verticalSpacing = 400f; // 세로 간격
-    public float horizontalOffset = 300f; // 좌우 번갈이 거리
-    public int totalChapters = 5;         // 총 챕터 수
-    public int stagesPerChapter = 3;      // 챕터당 스테이지 수
-    public float verticalPadding = 100f;
+    private float verticalSpacing = 600f; // 세로 간격
+    private float horizontalOffset = 350f; // 좌우 번갈이 거리
+    private float verticalPadding = 100f; // 화면 상단 패딩
 
     [Header("Field")]
-    private StageCSVData stageCsvData;
     private StageTable stageTable;
 
     private void Awake()
@@ -35,8 +31,8 @@ public class StageWindow : GenericWindow
     [ContextMenu("DeleteChildren")]
     public void DeleteChildren()
     {
-        for (int i = contentParent.childCount - 1; i >= 0; i--)
-        {
+        for (int i = contentParent.childCount - 1; i >= 1; i--)
+        {            
             DestroyImmediate(contentParent.GetChild(i).gameObject);
         }
     }

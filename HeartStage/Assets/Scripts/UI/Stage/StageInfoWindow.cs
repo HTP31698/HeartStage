@@ -1,9 +1,10 @@
-﻿using System.Text;
+﻿using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
-using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 
 public class StageInfoWindow : GenericWindow
 {
@@ -22,6 +23,7 @@ public class StageInfoWindow : GenericWindow
     [SerializeField] private TextMeshProUGUI stageStepText;
     [SerializeField] private TextMeshProUGUI stageNameText;
     [SerializeField] private TextMeshProUGUI stagePositionText;
+    [SerializeField] private Image stageImage;
 
     [Header("Wave Progress Colors")]
     [SerializeField] private Color completedCircleColor = Color.yellow;
@@ -72,12 +74,43 @@ public class StageInfoWindow : GenericWindow
 
     public void SetStageData(StageCSVData stageData)
     {
+        Debug.Log($"SetStageData 호출: {stageData.stage_ID}, {stageData.stage_step1}");
+
         currentStageData = stageData;
         if (gameObject.activeInHierarchy)
         {
             UpdateText();
             UpdateWaveProgress();
         }
+
+        UpdateStageImage();
+    }
+
+    private void UpdateStageImage()
+    {
+        if (currentStageData == null)
+        {
+            return;
+        }
+
+        string imageName = string.Empty;
+
+        switch (currentStageData.stage_step1)
+        {
+            case 0:
+                imageName = "tutorialinfoimage";
+                break;
+            case 1:
+                imageName = "stage1infoimage";
+                break;
+            case 2:
+                imageName = "stage2infoimage";
+                break;
+            default:
+                break;
+        }
+
+        SetStageImage(stageImage, imageName);
     }
 
     private void UpdateText()
@@ -321,5 +354,18 @@ public class StageInfoWindow : GenericWindow
         SaveLoadManager.SaveToServer().Forget();
 
         Debug.Log($"모니터링용 스테이지 데이터 저장: Stage ID {currentStageData.stage_ID}");
+    }
+
+
+    private void SetStageImage(Image targetImage, string imageName)
+    {
+        Debug.Log($"SetStageImage: {imageName}");
+
+        if (targetImage == null || string.IsNullOrEmpty(imageName)) return;
+
+        var sprite = ResourceManager.Instance.GetSprite(imageName);
+        Debug.Log($"ResourceManager에서 불러온 Texture2D: {(sprite != null ? "성공" : "실패")}");
+
+        targetImage.sprite = sprite;
     }
 }

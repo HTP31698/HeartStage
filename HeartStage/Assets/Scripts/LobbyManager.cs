@@ -99,6 +99,7 @@ public class LobbyManager : MonoBehaviour
         ItemInvenHelper.AddItem(ItemID.LightStick, 5000);
         ItemInvenHelper.AddItem(ItemID.HeartStick, 1000);
         ItemInvenHelper.AddItem(ItemID.TrainingPoint, 100000);
+        ItemInvenHelper.AddItem(ItemID.DreamEnergy, 1000);
         ItemInvenHelper.AddItem(7110, 20);
         ItemInvenHelper.AddItem(7113, 20);
         ItemInvenHelper.AddItem(7114, 20);

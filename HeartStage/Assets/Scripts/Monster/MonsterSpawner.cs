@@ -370,7 +370,7 @@ public class MonsterSpawner : MonoBehaviour
     {
         if (StageManager.Instance != null)
         {
-            StageManager.Instance.CompleteStage();
+            StageManager.Instance.Clear();
         }
     }
 
