@@ -93,7 +93,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             debuffList
         );
 
-        // 지속형 스킬(HeartBomb 등)
+        // 장판 스킬 시
         if (skillData.skill_duration > 0f)
             AutoRelease(obj, skillData.skill_duration).Forget();
     }

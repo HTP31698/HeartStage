@@ -164,7 +164,7 @@ public class ActiveSkillTimer
                 UI.Hide();  // 다 차면 숨김
                 
                 var skillController = Caster.GetComponent<CharacterSkillController>();
-                skillController.SkillReady();
+                skillController?.SkillReady();
             }
         }
     }
