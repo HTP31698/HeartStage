@@ -522,5 +522,4 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             }
         }
     }
-
 }

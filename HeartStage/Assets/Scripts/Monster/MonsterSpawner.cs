@@ -80,6 +80,8 @@ public class MonsterSpawner : MonoBehaviour
         currentStageId = currentStageData.stage_ID;
 
         await InitializeAsync();
+
+        OnWaveCleared += ClearAllSummonedMonsters;
     }
 
     //초기화
@@ -591,6 +593,8 @@ public class MonsterSpawner : MonoBehaviour
     // 리소스 정리
     private void OnDestroy()
     {
+        OnWaveCleared -= ClearAllSummonedMonsters;
+
         ClearSpawnQueue();
 
         foreach (var pool in monsterPools.Values)
@@ -903,5 +907,26 @@ public class MonsterSpawner : MonoBehaviour
         {
             WindowManager.Instance.OpenOverlay(WindowType.BossAlert);
         }
+    }
+
+
+    // 보스 소환몬스터 정리
+    private void ClearAllSummonedMonsters()
+    {
+        var allMonsters = GameObject.FindGameObjectsWithTag(Tag.Monster);
+
+        foreach (var monster in allMonsters)
+        {
+            if (monster == null) continue;
+
+            var monsterBehavior = monster.GetComponent<MonsterBehavior>();
+            if (monsterBehavior != null && !monsterBehavior.isDead)
+            {
+                // 간단하게 모든 살아있는 몬스터를 죽이기
+                monsterBehavior.Die();
+            }
+        }
+
+        Debug.Log("웨이브 클리어: 모든 소환된 몬스터 정리 완료");
     }
 }
