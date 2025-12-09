@@ -13,6 +13,7 @@ public class ActiveSkillManager : MonoBehaviour
     [SerializeField] private Slider cooldownSliderPrefab;
     [SerializeField] private Canvas mainCanvas;
     [SerializeField] private Vector3 uiWorldOffset = new Vector3(0f, 2f, 0f);
+    [SerializeField] private ActiveSkillDesc activeSkillDesc;
 
     private void Awake()
     {
