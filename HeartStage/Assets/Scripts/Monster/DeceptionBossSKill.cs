@@ -13,6 +13,10 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
     private List<int> registeredSkillIds = new List<int>(); // 등록된 스킬 ID 목록 
     private MonsterSpawner monsterSpawner;
 
+    // 각 스킬별 개별 쿨타임 관리
+    private Dictionary<int, float> skillCooldowns = new Dictionary<int, float>();
+    private Dictionary<int, float> nextSkillTimes = new Dictionary<int, float>();
+
     public void SetSkillId(int skillId)
     {
         if (!registeredSkillIds.Contains(skillId))
@@ -57,6 +61,10 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
 
             skillDataDict[skillId] = skillData;
 
+            // 각 스킬의 쿨타임 설정
+            skillCooldowns[skillId] = skillData.skill_cool;
+            nextSkillTimes[skillId] = Time.time + skillData.skill_cool; // 초기 쿨타임 설정
+
             // 각 스킬의 소환 몬스터 데이터 로드
             await LoadMonsterDataForSkill(skillData);
         }
@@ -69,6 +77,31 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
         await InitializeAllPools();
 
         isInitialized = true;
+    }
+
+    // 자동 실행을 위한 Update 메서드 추가
+    private void Update()
+    {
+        if (!isInitialized)
+        {
+            return;
+        }
+
+        var bossAddScript = GetComponent<BossAddScript>();
+        if (bossAddScript == null || !bossAddScript.IsBossSpawned())
+        {
+            return;
+        }
+
+        // 각 스킬의 쿨타임을 개별적으로 체크
+        foreach (int skillId in registeredSkillIds)
+        {
+            if (Time.time >= nextSkillTimes[skillId])
+            {
+                ExecuteSingleSkill(skillId).Forget();
+                nextSkillTimes[skillId] = Time.time + skillCooldowns[skillId];
+            }
+        }
     }
 
     private async UniTask LoadMonsterDataForSkill(SkillCSVData skillData)

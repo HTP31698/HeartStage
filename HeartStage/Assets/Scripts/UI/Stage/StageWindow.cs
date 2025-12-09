@@ -89,6 +89,13 @@ public class StageWindow : GenericWindow
             if (text != null)
                 text.text = sb.ToString();
 
+            // StageChoosePrefab 컴포넌트 초기화 
+            var stageChoosePrefab = stageObj.GetComponent<StageChoosePrefab>();
+            if (stageChoosePrefab != null)
+            {
+                stageChoosePrefab.Initialize(stageData);
+            }
+
             var button = stageObj.GetComponent<Button>();
             if (button != null)
             {

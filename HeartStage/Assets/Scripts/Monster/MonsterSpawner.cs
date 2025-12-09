@@ -33,6 +33,8 @@ public class MonsterSpawner : MonoBehaviour
     private int currentStageId;
     [SerializeField] private int spawnedMonsterCount = 3;
 
+    private bool manualStart = false; // 수동 시작 플래그 
+
     public static System.Action OnWaveCleared; // 웨이브 클리어 이벤트 
 
     // 스테이지 & 웨이브 관리
@@ -80,6 +82,9 @@ public class MonsterSpawner : MonoBehaviour
         currentStageId = currentStageData.stage_ID;
 
         await InitializeAsync();
+
+        OnWaveCleared += ClearAllSummonedMonsters;
+        StageSetupWindow.OnStageStarted += OnStageStarted;
     }
 
     //초기화
@@ -91,11 +96,31 @@ public class MonsterSpawner : MonoBehaviour
 
             await LoadStageDataAndInitializePool();
             isInitialized = true;
-            await StartWaveProgression();
+            //await StartWaveProgression(); // 자동시작
         }
         catch
         {
         }
+    }
+
+    // 이벤트 핸들러 - 스테이지 시작
+    private void OnStageStarted()
+    {
+        if (!isInitialized)
+        {
+            Debug.LogWarning("[MonsterSpawner] 아직 초기화되지 않았습니다!");
+            return;
+        }
+
+        if (manualStart)
+        {
+            Debug.LogWarning("[MonsterSpawner] 이미 웨이브가 시작되었습니다!");
+            return;
+        }
+
+        manualStart = true;
+        StartWaveProgression().Forget();
+        Debug.Log("[MonsterSpawner] 스테이지 시작 이벤트 받음 - 웨이브 시작!");
     }
 
     //로딩 및 초기화
@@ -300,13 +325,25 @@ public class MonsterSpawner : MonoBehaviour
             (currentWaveData.EnemyID3, currentWaveData.EnemyCount3)
         };
 
+        bool bossWave = false;
+
         foreach (var (enemyId, enemyCount) in enemies)
         {
             if (enemyId > 0 && enemyCount > 0)
             {
                 var waveMonster = new WaveMonsterInfo(enemyId, enemyCount);
                 waveMonstersToSpawn.Add(waveMonster);
+
+                if (MonsterBehavior.IsBossMonster(enemyId))
+                {
+                    bossWave = true;
+                }
             }
+        }
+
+        if (bossWave)
+        {
+            ShowBossAlert();
         }
     }
 
@@ -579,6 +616,9 @@ public class MonsterSpawner : MonoBehaviour
     // 리소스 정리
     private void OnDestroy()
     {
+        OnWaveCleared -= ClearAllSummonedMonsters;
+        StageSetupWindow.OnStageStarted -= OnStageStarted; 
+
         ClearSpawnQueue();
 
         foreach (var pool in monsterPools.Values)
@@ -803,11 +843,19 @@ public class MonsterSpawner : MonoBehaviour
         var clearWaveList = SaveLoadManager.Data.clearWaveList;
         bool isFirstClear = false; // 최초 클리어 여부 
 
+        // 기존 리워드 ID로 최초 클리어 체크 (기존 시스템 호환성 유지)
         if (!clearWaveList.Contains(rewardData.reward_id))
         {
-            clearWaveList.Add(rewardData.reward_id);
+            clearWaveList.Add(rewardData.reward_id); // 기존 리워드 ID 저장
             ItemManager.Instance.AcquireItem(rewardData.first_clear, rewardData.first_clear_a);
             isFirstClear = true; // 최초 클리어
+        }
+
+        // 웨이브 ID도 추가로 저장 (스테이지 클리어 체크용)
+        int currentWaveId = stageWaveIds[currentWaveIndex];
+        if (!clearWaveList.Contains(currentWaveId))
+        {
+            clearWaveList.Add(currentWaveId);
         }
 
         // 팬 보상
@@ -875,5 +923,34 @@ public class MonsterSpawner : MonoBehaviour
         UpdateStageUI();
 
         Debug.Log("[MonsterSpawner] 현재 웨이브 스킵: 남은 몬스터 0 + 필드 몬스터 정리 완료");
+    }
+
+    private void ShowBossAlert()
+    {
+        if (WindowManager.Instance != null)
+        {
+            WindowManager.Instance.OpenOverlay(WindowType.BossAlert);
+        }
+    }
+
+
+    // 보스 소환몬스터 정리
+    private void ClearAllSummonedMonsters()
+    {
+        var allMonsters = GameObject.FindGameObjectsWithTag(Tag.Monster);
+
+        foreach (var monster in allMonsters)
+        {
+            if (monster == null) continue;
+
+            var monsterBehavior = monster.GetComponent<MonsterBehavior>();
+            if (monsterBehavior != null && !monsterBehavior.isDead)
+            {
+                // 간단하게 모든 살아있는 몬스터를 죽이기
+                monsterBehavior.Die();
+            }
+        }
+
+        Debug.Log("웨이브 클리어: 모든 소환된 몬스터 정리 완료");
     }
 }

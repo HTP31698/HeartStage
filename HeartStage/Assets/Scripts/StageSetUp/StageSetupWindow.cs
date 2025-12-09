@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class StageSetupWindow : MonoBehaviour
 {
+    public static System.Action OnStageStarted; // 이벤트
+
     //드래그 슬롯들
     public DraggableSlot[] DraggableSlots;
     //스테이지 자리 : (인덱스, 캐릭터ID)
@@ -110,7 +112,7 @@ public class StageSetupWindow : MonoBehaviour
 
         ReportStageProgress(0.1f);
 
-        Time.timeScale = 0f;
+        //Time.timeScale = 0f;
         StartButton.onClick.AddListener(StartButtonClick);
         if (BackButton != null)
             BackButton.onClick.AddListener(BackButtonClick);
@@ -278,6 +280,9 @@ public class StageSetupWindow : MonoBehaviour
 
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         StageManager.Instance.SetTimeScale(1f);
+
+        OnStageStarted?.Invoke(); // 이벤트 발생
+
         gameObject.SetActive(false);
     }
 
