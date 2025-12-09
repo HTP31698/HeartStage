@@ -816,11 +816,7 @@ public class MonsterSpawner : MonoBehaviour
         if (!clearWaveList.Contains(currentWaveId))
         {
             clearWaveList.Add(currentWaveId);
-            Debug.Log($"[MonsterSpawner] Added Wave ID {currentWaveId} to clearWaveList");
         }
-
-        // 디버그: 현재 clearWaveList 상태 출력
-        Debug.Log($"[MonsterSpawner] Current clearWaveList: [{string.Join(", ", clearWaveList)}]");
 
         // 팬 보상
         StageManager.Instance.fanReward += rewardData.user_fan_amount;

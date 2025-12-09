@@ -61,9 +61,6 @@ public class StageChoosePrefab : MonoBehaviour
 
         bool isStageCleared = IsStageCleared(stageData);
 
-        // 디버그 로그 추가
-        Debug.Log($"[StageChoosePrefab] Stage {stageData.stage_step1}-{stageData.stage_step2} (ID: {stageData.stage_ID}) - Cleared: {isStageCleared}");
-
         // 스테이지 클리어 상태에 따라 이미지 전환
         if (leftSpotImage != null)
             leftSpotImage.gameObject.SetActive(!isStageCleared);
@@ -87,19 +84,13 @@ public class StageChoosePrefab : MonoBehaviour
             return false;
         }
 
-        // 스테이지의 모든 웨이브가 클리어되었는지 확인
-        // 웨이브 ID는 stageData의 wave1_id, wave2_id, wave3_id, wave4_id 중 0이 아닌 것들
+        // 웨이브 ID
         int[] waveIds = {
             stageData.wave1_id,
             stageData.wave2_id,
             stageData.wave3_id,
             stageData.wave4_id
         };
-
-        // 디버그: clearWaveList 내용 출력
-        Debug.Log($"[StageChoosePrefab] ClearWaveList count: {saveData.clearWaveList.Count}");
-        Debug.Log($"[StageChoosePrefab] ClearWaveList contents: [{string.Join(", ", saveData.clearWaveList)}]");
-        Debug.Log($"[StageChoosePrefab] Stage {stageData.stage_ID} wave IDs: [{string.Join(", ", waveIds.Where(id => id > 0))}]");
 
         foreach (int waveId in waveIds)
         {
