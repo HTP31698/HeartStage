@@ -3,8 +3,7 @@ using UnityEngine;
 
 public class BossAlertUI : GenericWindow
 {
-    [Header("Alert Settings")]
-    [SerializeField] private float alertDuration = 3f;
+    private float alertDuration = 4.5f;
 
     [Header("Blink Effect")]
     [SerializeField] private float blinkSpeed = 0.3f; // 깜빡이는 속도 (초)
