@@ -98,7 +98,14 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             startPos = skillController.startPos;
             dir = Vector3.zero;
         }
-
+        
+        // 파티클 방향 회전
+        var particle = obj.GetComponentInChildren<ParticleSystem>();
+        if (dir != Vector3.zero)
+        {
+            particle.transform.rotation = Quaternion.LookRotation(Vector3.forward, dir);
+        }
+        //
         var proj = obj.GetComponent<CharacterProjectile>();
         if (proj == null)
         {

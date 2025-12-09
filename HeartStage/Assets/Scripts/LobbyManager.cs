@@ -103,6 +103,7 @@ public class LobbyManager : MonoBehaviour
         ItemInvenHelper.AddItem(7110, 20);
         ItemInvenHelper.AddItem(7113, 20);
         ItemInvenHelper.AddItem(7114, 20);
+        ItemInvenHelper.AddItem(7118, 10);
     }
     public void SaveReset()
     {
