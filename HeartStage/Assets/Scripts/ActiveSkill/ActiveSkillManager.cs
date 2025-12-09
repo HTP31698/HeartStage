@@ -118,6 +118,18 @@ public class ActiveSkillManager : MonoBehaviour
             dict.Add(skillId, behavior);
         }
     }
+
+    // 스킬 설명창 띄우기
+    public void ShowDesc(int skillId)
+    {
+        activeSkillDesc.ShowDesc(skillId);
+    }
+
+    // 스킬 설명창 닫기
+    public void CloseDesc()
+    {
+        activeSkillDesc.gameObject.SetActive(false);
+    }
 }
 
 // 타이머 클래스

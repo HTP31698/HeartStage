@@ -15,5 +15,6 @@ public class ActiveSkillDesc : MonoBehaviour
         skillIconImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
         skillNameText.text = skillData.skill_name;
         skillDescText.text = skillData.GetFormattedInfo();
+        gameObject.SetActive(true);
     }
 }

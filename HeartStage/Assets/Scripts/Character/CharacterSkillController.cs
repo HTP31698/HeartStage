@@ -17,6 +17,10 @@ public class CharacterSkillController : MonoBehaviour
 
     private Vector3 lastTouchPos;
 
+    private bool isDescShown = false;
+    private float longPressTimer = 0f;
+    private const float LONG_PRESS_TIME = 2f;
+
     private void Start()
     {
         characterAttack = GetComponent<CharacterAttack>();
@@ -41,6 +45,43 @@ public class CharacterSkillController : MonoBehaviour
         bool hasInput = TryGetTouchPosition(out Vector3 pos);
         bool isInside = StageArea.Instance.IsInside(pos);
 
+        // === 설명창 띄워진 상태 처리 ===
+        if (isDescShown)
+        {
+            // 손 뗄 때 → 설명창 닫기
+            if (Input.GetMouseButtonUp(0) || TouchEnded())
+            {
+                isDescShown = false;
+                longPressTimer = 0f;
+                ActiveSkillManager.Instance.CloseDesc();
+            }
+            return; // 설명창 있는 동안 아래 로직 정지
+        }
+
+        // === 롱프레스 로직 ===
+        if (hasInput && !isDragging && isInside)
+        {
+            longPressTimer += Time.deltaTime;
+            if (longPressTimer >= LONG_PRESS_TIME)
+            {
+                longPressTimer = 0f;
+                isDescShown = true;
+
+                // 스킬 범위 숨김
+                isRangeShown = false;
+                SkillRangeDisplayer.Instance.HideRange();
+
+                // 설명창 표시
+                ActiveSkillManager.Instance.ShowDesc(skillId);
+                return;
+            }
+        }
+        else
+        {
+            longPressTimer = 0f;
+        }
+
+        // 기존 로직
         if (hasInput)
         {
             lastTouchPos = pos;
@@ -78,6 +119,7 @@ public class CharacterSkillController : MonoBehaviour
                 isDragging = true;
                 isRangeShown = false;
                 SkillRangeDisplayer.Instance.HideRange();
+                longPressTimer = 0f;
             }
         }
 
