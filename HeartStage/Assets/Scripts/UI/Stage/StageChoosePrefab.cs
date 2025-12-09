@@ -80,7 +80,6 @@ public class StageChoosePrefab : MonoBehaviour
         var saveData = SaveLoadManager.Data as SaveDataV1;
         if (saveData == null || saveData.clearWaveList == null)
         {
-            Debug.Log($"[StageChoosePrefab] SaveData or clearWaveList is null");
             return false;
         }
 
@@ -97,7 +96,6 @@ public class StageChoosePrefab : MonoBehaviour
             if (waveId > 0)
             {
                 bool isCleared = saveData.clearWaveList.Contains(waveId);
-                Debug.Log($"[StageChoosePrefab] Wave {waveId} cleared: {isCleared}");
 
                 if (!isCleared)
                 {

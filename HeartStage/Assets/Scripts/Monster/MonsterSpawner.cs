@@ -902,7 +902,6 @@ public class MonsterSpawner : MonoBehaviour
         if (WindowManager.Instance != null)
         {
             WindowManager.Instance.OpenOverlay(WindowType.BossAlert);
-            Debug.Log("[MonsterSpawner] Boss Alert 표시!");
         }
     }
 }
