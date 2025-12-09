@@ -388,7 +388,9 @@ public class AuthManager : MonoBehaviour
         if (isAnonymous)
         {
             // ★ 익명이면 RTDB + Auth 둘 다 삭제
-            await DeleteAnonymousUserDataAsync(uid, user);
+            // 닉네임 데이터도 삭제하기 위해 미리 가져옴
+            string nickname = (SaveLoadManager.Data as SaveDataV1)?.nickname;
+            await DeleteAnonymousUserDataAsync(uid, user, nickname);
         }
 
         auth.SignOut();
@@ -538,7 +540,7 @@ public class AuthManager : MonoBehaviour
     /// <summary>
     /// 익명 유저 RTDB + Auth 삭제
     /// </summary>
-    private async UniTask DeleteAnonymousUserDataAsync(string uid, FirebaseUser user)
+    private async UniTask DeleteAnonymousUserDataAsync(string uid, FirebaseUser user, string nickname)
     {
         try
         {
@@ -555,10 +557,19 @@ public class AuthManager : MonoBehaviour
                 [$"dreamGifts/{uid}"] = null,
                 [$"sentGiftsToday/{uid}"] = null,
                 [$"userStats/{uid}"] = null,
+                // 닉네임 인덱스
+                [$"nicknameIndex/{uid}"] = null,
             };
 
             await rootRef.UpdateChildrenAsync(updates);
             Debug.Log("[Auth] 익명 유저 RTDB 데이터 삭제 완료");
+
+            // nicknameReservation 삭제 (닉네임이 있는 경우에만)
+            if (!string.IsNullOrWhiteSpace(nickname))
+            {
+                string normalizedNickname = nickname.Trim().ToLowerInvariant();
+                await DeleteNicknameReservationIfOwnedAsync(normalizedNickname, uid);
+            }
 
             await user.DeleteAsync();
             Debug.Log("[Auth] 익명 유저 Auth 계정 삭제 완료");
@@ -566,6 +577,33 @@ public class AuthManager : MonoBehaviour
         catch (Exception ex)
         {
             Debug.LogError($"[Auth] 익명 유저 삭제 실패: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// nicknameReservation에서 해당 uid 소유의 닉네임만 삭제
+    /// </summary>
+    private async UniTask DeleteNicknameReservationIfOwnedAsync(string normalizedNickname, string uid)
+    {
+        try
+        {
+            var nickRef = rootRef.Child("nicknameReservation").Child(normalizedNickname);
+            var snap = await nickRef.GetValueAsync().AsUniTask();
+
+            if (snap.Exists)
+            {
+                // 해당 닉네임의 uid가 현재 삭제하려는 유저인지 확인
+                var uidValue = snap.Child("uid").Value?.ToString();
+                if (uidValue == uid)
+                {
+                    await nickRef.RemoveValueAsync();
+                    Debug.Log($"[Auth] nicknameReservation 삭제 완료: {normalizedNickname}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[Auth] nicknameReservation 삭제 실패: {ex.Message}");
         }
     }
 
