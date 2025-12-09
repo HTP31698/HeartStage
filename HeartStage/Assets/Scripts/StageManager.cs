@@ -129,6 +129,11 @@ public class StageManager : MonoBehaviour
         currentTimeScale = timeScale;
     }
 
+    public void Pause()
+    {
+        Time.timeScale = 0f;
+    }
+
     private void OnDestroy()
     {
         SetTimeScale(1f);

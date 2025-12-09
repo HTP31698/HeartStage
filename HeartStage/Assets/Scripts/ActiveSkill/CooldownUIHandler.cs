@@ -7,18 +7,17 @@ public class CooldownUIHandler
     private Slider slider;
     private RectTransform sliderRect;
     private Canvas canvas;
-    private Camera uiCamera;
     private Vector3 worldOffset;
 
-    public CooldownUIHandler(GameObject caster, Slider sliderPrefab, Canvas canvas, Vector3 worldOffset = default, Camera uiCamera = null)
+    public CooldownUIHandler(GameObject caster, Slider sliderPrefab, Canvas canvas, Vector3 worldOffset = default)
     {
         this.caster = caster;
         this.canvas = canvas;
-        this.uiCamera = uiCamera;
         this.worldOffset = worldOffset == default ? new Vector3(0f, 2f, 0f) : worldOffset;
 
         slider = GameObject.Instantiate(sliderPrefab, canvas.transform);
         sliderRect = slider.GetComponent<RectTransform>();
+        sliderRect.SetAsFirstSibling();
     }
 
     public void InitMaxValue(float max)
@@ -68,11 +67,7 @@ public class CooldownUIHandler
 
         Show();
 
-        Vector2 localPoint;
-        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCamera, out localPoint);
-
-        sliderRect.anchoredPosition = localPoint;
+        sliderRect.position = screenPos;
     }
 
     public void Dispose()

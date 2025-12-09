@@ -78,7 +78,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
     {
         var obj = PoolManager.Instance.Get(poolId);
 
-        Vector3 startPos = transform.position; 
+        Vector3 startPos = transform.position;
         Vector3 dir = skillController.dir;
         // 직선형
         if (skillData.skill_range_type == 1)
@@ -87,13 +87,13 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             dir = skillController.dir;
         }
         // 원형
-        else if(skillData.skill_range_type == 2)
+        else if (skillData.skill_range_type == 2)
         {
             startPos = skillController.startPos;
             dir = Vector3.zero;
         }
         // 방사형(일단 원형이랑 똑같이)
-        else if(skillData.skill_range_type == 3)
+        else if (skillData.skill_range_type == 3)
         {
             startPos = skillController.startPos;
             dir = Vector3.zero;
@@ -125,6 +125,13 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         // 원형 즉발형 스킬 발동시
         if (skillData.skill_duration == 0f && (skillData.skill_range_type == 2 || skillData.skill_range_type == 3))
             AutoRelease(obj, 1f).Forget();
+
+        // 직선형 발동시
+        if (skillData.skill_range_type == 1)
+        {
+            var duration = skillData.skill_straight_range / skillData.skill_speed;
+            AutoRelease(obj, duration).Forget();
+        }
     }
 
     public virtual void Execute()

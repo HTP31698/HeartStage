@@ -32,6 +32,7 @@ namespace Ricimi
             gameObject.SetActive(true);
 
             var animator = GetComponent<Animator>();
+            animator.updateMode = AnimatorUpdateMode.UnscaledTime;
             animator.Play("Open", 0, 0f);
 
             AddBackground();
@@ -53,7 +54,7 @@ namespace Ricimi
 
         private IEnumerator CloseAfterAnimation()
         {
-            yield return new WaitForSeconds(destroyTime); // 애니메이션이 끝나는 시간
+            yield return new WaitForSecondsRealtime(destroyTime); // 애니메이션이 끝나는 시간
             Destroy(m_background);                        // 배경은 제거
             gameObject.SetActive(false);                  // 팝업은 삭제 X, 숨기기만
         }
