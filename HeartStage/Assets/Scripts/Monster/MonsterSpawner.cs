@@ -300,13 +300,25 @@ public class MonsterSpawner : MonoBehaviour
             (currentWaveData.EnemyID3, currentWaveData.EnemyCount3)
         };
 
+        bool bossWave = false;
+
         foreach (var (enemyId, enemyCount) in enemies)
         {
             if (enemyId > 0 && enemyCount > 0)
             {
                 var waveMonster = new WaveMonsterInfo(enemyId, enemyCount);
                 waveMonstersToSpawn.Add(waveMonster);
+
+                if (MonsterBehavior.IsBossMonster(enemyId))
+                {
+                    bossWave = true;
+                }
             }
+        }
+
+        if (bossWave)
+        {
+            ShowBossAlert();
         }
     }
 
@@ -883,5 +895,14 @@ public class MonsterSpawner : MonoBehaviour
         UpdateStageUI();
 
         Debug.Log("[MonsterSpawner] 현재 웨이브 스킵: 남은 몬스터 0 + 필드 몬스터 정리 완료");
+    }
+
+    private void ShowBossAlert()
+    {
+        if (WindowManager.Instance != null)
+        {
+            WindowManager.Instance.OpenOverlay(WindowType.BossAlert);
+            Debug.Log("[MonsterSpawner] Boss Alert 표시!");
+        }
     }
 }

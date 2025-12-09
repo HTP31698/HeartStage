@@ -73,6 +73,7 @@ public enum WindowType
     LastStageNotice,
     LosePanelUI,
     VictoryPanelUI,
+    BossAlert,
 }
 
 public enum SceneType
