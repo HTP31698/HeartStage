@@ -112,7 +112,7 @@ public class StageSetupWindow : MonoBehaviour
 
         ReportStageProgress(0.1f);
 
-        Time.timeScale = 0f;
+        //Time.timeScale = 0f;
         StartButton.onClick.AddListener(StartButtonClick);
         if (BackButton != null)
             BackButton.onClick.AddListener(BackButtonClick);

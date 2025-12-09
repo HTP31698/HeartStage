@@ -10,9 +10,6 @@ public class StageSceneController : MonoBehaviour
 
     private async void Awake()
     {
-        // 0) 일단 멈춰두고
-        Time.timeScale = 0f;
-
         // 1) 참조 들어올 때까지 (Awake/Start 순서 안전망)
         while (stageSetup == null || ownedSetup == null || monsterSpawner == null)
             await UniTask.Yield();
