@@ -397,6 +397,12 @@ public class AuthManager : MonoBehaviour
 
         SaveLoadManager.ResetData();
 
+        // 퀘스트 매니저 초기화 플래그 리셋 (새 계정 데이터로 다시 초기화되도록)
+        if (QuestManager.Instance != null)
+        {
+            QuestManager.Instance.ResetForAccountChange();
+        }
+
         SceneManager.LoadScene(0);
     }
 

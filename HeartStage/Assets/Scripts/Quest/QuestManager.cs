@@ -255,6 +255,25 @@ public class QuestManager : MonoBehaviour
         InitializeAchievementQuests();
     }
 
+    /// <summary>
+    /// 계정 변경 시 호출 (로그아웃 후 재로그인 등)
+    /// 초기화 플래그를 리셋하여 새 계정 데이터로 다시 초기화되도록 함
+    /// </summary>
+    public void ResetForAccountChange()
+    {
+        _initializedDaily = false;
+        _initializedWeekly = false;
+        _initializedAchievement = false;
+
+        _clearedDailyQuestIds.Clear();
+        _clearedWeeklyQuestIds.Clear();
+        _clearedAchievementQuestIds.Clear();
+
+        _isDirty = false;
+
+        Debug.Log("[QuestManager] 계정 변경으로 초기화 플래그 리셋");
+    }
+
     #region Daily 상태 접근자
 
     private DailyQuestState DailyState

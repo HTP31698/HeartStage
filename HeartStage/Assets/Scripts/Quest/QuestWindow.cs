@@ -13,9 +13,8 @@ public class QuestWindow : GenericWindow
 
     [Header("각 탭의 스크립트 (Daily/Weekly/업적)")]
     [SerializeField] private DailyQuests dailyQuestsComponent;
-    // TODO: 나중에 WeeklyQuests, AchievementQuests 스크립트 만들면 여기에도 추가
-    // [SerializeField] private WeeklyQuests weeklyQuestsComponent;
-    // [SerializeField] private AchievementQuests achievementQuestsComponent;
+    [SerializeField] private WeeklyQuests weeklyQuestsComponent;
+    [SerializeField] private ArchivementQuests achievementQuestsComponent;
 
     [Header("종료 버튼")]
     [SerializeField] private Button ExitButton;
@@ -56,6 +55,8 @@ public class QuestWindow : GenericWindow
         DailyButton.interactable = false;
         WeeklyButton.interactable = true;
         AchievementButton.interactable = true;
+
+        AllReceiveButton.gameObject.SetActive(true);
     }
 
     public void OpenWeeklyQuests()
@@ -67,6 +68,8 @@ public class QuestWindow : GenericWindow
         DailyButton.interactable = true;
         WeeklyButton.interactable = false;
         AchievementButton.interactable = true;
+
+        AllReceiveButton.gameObject.SetActive(true);
     }
 
     public void OpenAchievementQuests()
@@ -78,22 +81,27 @@ public class QuestWindow : GenericWindow
         DailyButton.interactable = true;
         WeeklyButton.interactable = true;
         AchievementButton.interactable = false;
+
+        // 업적 탭에서는 전체받기 버튼 숨김
+        AllReceiveButton.gameObject.SetActive(false);
     }
 
     public void AllReceiveButtonFunction()
     {
-        // 일단 Daily 탭부터 지원
         if (dailyQuests.activeSelf && dailyQuestsComponent != null)
         {
             dailyQuestsComponent.ClaimAllAvailableRewards();
         }
 
-        // TODO:
-        // if (weeklyQuests.activeSelf && weeklyQuestsComponent != null)
-        //     weeklyQuestsComponent.ClaimAllAvailableRewards();
-        //
-        // if (achievementQuests.activeSelf && achievementQuestsComponent != null)
-        //     achievementQuestsComponent.ClaimAllAvailableRewards();
+        if (weeklyQuests.activeSelf && weeklyQuestsComponent != null)
+        {
+            weeklyQuestsComponent.ClaimAllAvailableRewards();
+        }
+
+        if (achievementQuests.activeSelf && achievementQuestsComponent != null)
+        {
+            achievementQuestsComponent.ClaimAllAvailableRewards();
+        }
     }
 
     public void OnDisable()

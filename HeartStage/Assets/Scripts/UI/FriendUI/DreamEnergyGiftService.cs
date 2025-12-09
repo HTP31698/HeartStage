@@ -168,11 +168,11 @@ public static class DreamEnergyGiftService
 
         try
         {
-            long thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeMilliseconds();
+            long oneDayAgo = DateTimeOffset.UtcNow.AddDays(-1).ToUnixTimeMilliseconds();
 
             var snap = await Root.Child("dreamGifts").Child(myUid)
                 .OrderByChild("createdAt")
-                .StartAt(thirtyDaysAgo)
+                .StartAt(oneDayAgo)
                 .GetValueAsync();
 
             if (!snap.Exists)
@@ -338,11 +338,11 @@ public static class DreamEnergyGiftService
 
         try
         {
-            long thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeMilliseconds();
+            long oneDayAgo = DateTimeOffset.UtcNow.AddDays(-1).ToUnixTimeMilliseconds();
 
             var snap = await Root.Child("dreamGifts").Child(myUid)
                 .OrderByChild("createdAt")
-                .StartAt(thirtyDaysAgo)
+                .StartAt(oneDayAgo)
                 .GetValueAsync();
 
             if (!snap.Exists)
@@ -612,11 +612,11 @@ public static class DreamEnergyGiftService
 
         try
         {
-            long thirtyDaysAgo = DateTimeOffset.UtcNow.AddDays(-30).ToUnixTimeMilliseconds();
+            long oneDayAgo = DateTimeOffset.UtcNow.AddDays(-1).ToUnixTimeMilliseconds();
 
             var snap = await Root.Child("dreamGifts").Child(myUid)
                 .OrderByChild("createdAt")
-                .StartAt(thirtyDaysAgo)
+                .StartAt(oneDayAgo)
                 .GetValueAsync();
 
             if (!snap.Exists)
