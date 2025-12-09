@@ -803,12 +803,24 @@ public class MonsterSpawner : MonoBehaviour
         var clearWaveList = SaveLoadManager.Data.clearWaveList;
         bool isFirstClear = false; // 최초 클리어 여부 
 
+        // 기존 리워드 ID로 최초 클리어 체크 (기존 시스템 호환성 유지)
         if (!clearWaveList.Contains(rewardData.reward_id))
         {
-            clearWaveList.Add(rewardData.reward_id);
+            clearWaveList.Add(rewardData.reward_id); // 기존 리워드 ID 저장
             ItemManager.Instance.AcquireItem(rewardData.first_clear, rewardData.first_clear_a);
             isFirstClear = true; // 최초 클리어
         }
+
+        // 웨이브 ID도 추가로 저장 (스테이지 클리어 체크용)
+        int currentWaveId = stageWaveIds[currentWaveIndex];
+        if (!clearWaveList.Contains(currentWaveId))
+        {
+            clearWaveList.Add(currentWaveId);
+            Debug.Log($"[MonsterSpawner] Added Wave ID {currentWaveId} to clearWaveList");
+        }
+
+        // 디버그: 현재 clearWaveList 상태 출력
+        Debug.Log($"[MonsterSpawner] Current clearWaveList: [{string.Join(", ", clearWaveList)}]");
 
         // 팬 보상
         StageManager.Instance.fanReward += rewardData.user_fan_amount;
