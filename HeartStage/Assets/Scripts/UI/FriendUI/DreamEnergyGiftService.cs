@@ -256,70 +256,7 @@ public static class DreamEnergyGiftService
                 return false;
             }
 
-            var counterRef = Root.Child("userStats").Child(myUid).Child("dreamGiftCounter");
-
-            bool transactionSuccess = false;
-            int finalCount = 0;
-
-            await counterRef.RunTransaction(mutableData =>
-            {
-                if (mutableData.Value == null)
-                {
-                    mutableData.Value = new Dictionary<string, object>
-                    {
-                        ["date"] = today,
-                        ["count"] = 1
-                    };
-                    finalCount = 1;
-                    transactionSuccess = true;
-                    return TransactionResult.Success(mutableData);
-                }
-
-                var dict = mutableData.Value as Dictionary<string, object>;
-                if (dict == null)
-                {
-                    mutableData.Value = new Dictionary<string, object>
-                    {
-                        ["date"] = today,
-                        ["count"] = 1
-                    };
-                    finalCount = 1;
-                    transactionSuccess = true;
-                    return TransactionResult.Success(mutableData);
-                }
-
-                int savedDate = dict.ContainsKey("date") ? Convert.ToInt32(dict["date"]) : 0;
-                int savedCount = dict.ContainsKey("count") ? Convert.ToInt32(dict["count"]) : 0;
-
-                if (savedDate != today)
-                {
-                    dict["date"] = today;
-                    dict["count"] = 1;
-                    finalCount = 1;
-                    transactionSuccess = true;
-                    mutableData.Value = dict;
-                    return TransactionResult.Success(mutableData);
-                }
-
-                if (savedCount >= data.dreamSendDailyLimit) // SaveDataV1 필드 사용 :contentReference[oaicite:0]{index=0}
-                {
-                    Debug.Log($"[DreamEnergyGiftService] 일일 한도 도달: {savedCount}/{data.dreamSendDailyLimit}");
-                    transactionSuccess = false;
-                    return TransactionResult.Abort();
-                }
-
-                dict["count"] = savedCount + 1;
-                finalCount = savedCount + 1;
-                transactionSuccess = true;
-                mutableData.Value = dict;
-                return TransactionResult.Success(mutableData);
-            });
-
-            if (!transactionSuccess)
-            {
-                Debug.Log("[DreamEnergyGiftService] 오늘 보낼 수 있는 횟수를 모두 사용했습니다.");
-                return false;
-            }
+            // ★ 보내기 한도 체크 제거 - 무제한으로 보낼 수 있음
 
             string key = Root.Child("dreamGifts").Child(friendUid).Push().Key;
             long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -341,11 +278,7 @@ public static class DreamEnergyGiftService
             _sentTodayCache.Add(friendUid);
             _sentTodayCacheDate = today;
 
-            data.dreamLastSendDate = today;
-            data.dreamSendTodayCount = finalCount;
-            await SaveLoadManager.SaveToServer();
-
-            Debug.Log($"[DreamEnergyGiftService] 드림 에너지 선물 전송 완료: {friendUid} (오늘: {finalCount}회)");
+            Debug.Log($"[DreamEnergyGiftService] 드림 에너지 선물 전송 완료: {friendUid}");
             return true;
         }
         catch (Exception e)
@@ -508,34 +441,8 @@ public static class DreamEnergyGiftService
         {
             int today = await GetServerTodayYmdAsync();
 
-            var counterTask = Root.Child("userStats").Child(myUid).Child("dreamGiftCounter").GetValueAsync();
             var sentTodayTask = Root.Child("sentGiftsToday").Child(myUid).Child(today.ToString()).GetValueAsync();
-
-            await UniTask.WhenAll(counterTask.AsUniTask(), sentTodayTask.AsUniTask());
-
-            var counterSnap = counterTask.Result;
-            var sentTodaySnap = sentTodayTask.Result;
-
-            if (counterSnap.Exists)
-            {
-                var dict = counterSnap.Value as Dictionary<string, object>;
-                if (dict != null)
-                {
-                    int savedDate = dict.ContainsKey("date") ? Convert.ToInt32(dict["date"]) : 0;
-                    int savedCount = dict.ContainsKey("count") ? Convert.ToInt32(dict["count"]) : 0;
-
-                    if (savedDate == today)
-                    {
-                        data.dreamLastSendDate = today;
-                        data.dreamSendTodayCount = savedCount;
-                    }
-                    else
-                    {
-                        data.dreamLastSendDate = today;
-                        data.dreamSendTodayCount = 0;
-                    }
-                }
-            }
+            var sentTodaySnap = await sentTodayTask;
 
             // ★ 받기 카운트 일일 초기화 체크
             if (data.dreamLastReceiveDate != today)

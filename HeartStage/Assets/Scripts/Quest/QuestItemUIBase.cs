@@ -14,11 +14,13 @@ public class QuestItemUIBase : MonoBehaviour
     [SerializeField] protected TextMeshProUGUI InfoText;
     [SerializeField] protected Image iconImage;
     [SerializeField] protected Button completeButton;
-    [SerializeField] protected GameObject completedMark; // 완료 체크 표시용 (없으면 비워둬도 됨)
+
+    [Header("진행도 표시")]
+    [SerializeField] protected Slider progressSlider;      // 진행도 슬라이더 (없으면 비워둬도 됨)
+    [SerializeField] protected TextMeshProUGUI progressText; // "3/10" 형태 텍스트 (없으면 비워둬도 됨)
 
     [Header("완료 상태 텍스트 & 색상")]
-    [SerializeField] protected TextMeshProUGUI stateText;  // "미완료" / "완료" 표기용
-    [SerializeField] protected TextMeshProUGUI buttonText;  // 버튼 텍스트 ("받기" / "완료")
+    [SerializeField] protected TextMeshProUGUI stateText;  // 버튼 상태 텍스트 ("미완료" / "받기" / "완료")
     [SerializeField] protected Color normalButtonColor = Color.white;          // 기본 색
     [SerializeField] protected Color completedButtonColor = new Color(0.7f, 0.7f, 0.7f); // 완료 후 약간 어두운 색
 
@@ -32,6 +34,8 @@ public class QuestItemUIBase : MonoBehaviour
 
     protected bool isCleared;   // 조건 충족 여부
     protected bool isCompleted; // 보상 수령 여부
+    protected int currentProgress; // 현재 진행도
+    protected int requiredProgress; // 필요 진행도
 
     protected virtual void Awake()
     {
@@ -47,14 +51,32 @@ public class QuestItemUIBase : MonoBehaviour
     /// </summary>
     public virtual void Init(IQuestItemOwner owner, QuestData data, bool cleared, bool completed)
     {
+        Init(owner, data, cleared, completed, 0);
+    }
+
+    /// <summary>
+    /// 진행도 포함 초기화 (슬라이더 표시용)
+    /// </summary>
+    public virtual void Init(IQuestItemOwner owner, QuestData data, bool cleared, bool completed, int progress)
+    {
+        Init(owner, data, cleared, completed, progress, data.Quest_required);
+    }
+
+    /// <summary>
+    /// 진행도 + 필요량 지정 초기화 (1회성 퀘스트 등 특수 케이스용)
+    /// </summary>
+    public virtual void Init(IQuestItemOwner owner, QuestData data, bool cleared, bool completed, int progress, int required)
+    {
         this.owner = owner;
         this.questData = data;
         this.isCleared = cleared;
         this.isCompleted = completed;
+        this.currentProgress = progress;
+        this.requiredProgress = required;
 
-        // 텍스트
+        // 텍스트 ({Quest_required} 치환)
         if (InfoText != null)
-            InfoText.text = data.Quest_info;
+            InfoText.text = FormatQuestInfo(data.Quest_info, data.Quest_required);
 
         // 아이콘
         if (useIconAddressable && iconImage != null && !string.IsNullOrEmpty(data.Icon_image))
@@ -63,6 +85,36 @@ public class QuestItemUIBase : MonoBehaviour
         }
 
         ApplyVisualState();
+        UpdateProgressUI();
+    }
+
+    /// <summary>
+    /// 진행도만 업데이트 (실시간 갱신용)
+    /// </summary>
+    public virtual void SetProgress(int progress)
+    {
+        currentProgress = progress;
+        UpdateProgressUI();
+    }
+
+    /// <summary>
+    /// 슬라이더 및 진행도 텍스트 업데이트
+    /// </summary>
+    protected virtual void UpdateProgressUI()
+    {
+        // 완료된 퀘스트는 최대치로 표시
+        int displayProgress = isCompleted ? requiredProgress : Mathf.Min(currentProgress, requiredProgress);
+
+        if (progressSlider != null)
+        {
+            progressSlider.maxValue = requiredProgress;
+            progressSlider.value = displayProgress;
+        }
+
+        if (progressText != null)
+        {
+            progressText.text = $"{displayProgress}/{requiredProgress}";
+        }
     }
 
     /// <summary>
@@ -73,6 +125,7 @@ public class QuestItemUIBase : MonoBehaviour
         isCleared = cleared;
         isCompleted = completed;
         ApplyVisualState();
+        UpdateProgressUI();
     }
 
     /// <summary>
@@ -82,14 +135,11 @@ public class QuestItemUIBase : MonoBehaviour
     {
         isCompleted = completed;
         ApplyVisualState();
+        UpdateProgressUI();
     }
 
     protected virtual void ApplyVisualState()
     {
-        // 완료 마크
-        if (completedMark != null)
-            completedMark.SetActive(isCompleted);
-
         // 버튼 인터랙션 & 색상
         if (completeButton != null)
         {
@@ -110,28 +160,21 @@ public class QuestItemUIBase : MonoBehaviour
             }
         }
 
-        // 버튼 텍스트
-        if (buttonText != null)
+        // 상태 텍스트 (버튼 내부 또는 외부)
+        if (stateText != null)
         {
             if (isCompleted)
             {
-                buttonText.text = "완료";
+                stateText.text = "완료";
             }
             else if (isCleared)
             {
-                buttonText.text = "받기";
+                stateText.text = "받기";
             }
             else
             {
-                buttonText.text = "받기";
+                stateText.text = "미완료";
             }
-        }
-
-        // 상태 텍스트
-        if (stateText != null)
-        {
-            // 텍스트는 cleared 기준으로만 "완료"/"미완료" 표시
-            stateText.text = isCleared ? "완료" : "미완료";
         }
     }
 
@@ -147,6 +190,17 @@ public class QuestItemUIBase : MonoBehaviour
         {
             iconImage.sprite = handle.Result;
         }
+    }
+
+    /// <summary>
+    /// Quest_info 텍스트에서 {Quest_required}를 실제 값으로 치환
+    /// </summary>
+    private string FormatQuestInfo(string questInfo, int questRequired)
+    {
+        if (string.IsNullOrEmpty(questInfo))
+            return questInfo;
+
+        return questInfo.Replace("{Quest_required}", questRequired.ToString());
     }
 
     private void OnClickCompleteInternal()

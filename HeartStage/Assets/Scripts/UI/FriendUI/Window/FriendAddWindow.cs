@@ -75,6 +75,9 @@ public class FriendAddWindow : MonoBehaviour
 
     public void Close()
     {
+        // Firebase 실시간 동기화 중지
+        FriendSearchService.StopSync();
+
         if (root != null)
             root.SetActive(false);
 
@@ -85,6 +88,15 @@ public class FriendAddWindow : MonoBehaviour
     {
         if (root != null)
             root.SetActive(true);
+    }
+
+    public void Hide()
+    {
+        // 다른 창으로 이동할 때 동기화 중지
+        FriendSearchService.StopSync();
+
+        if (root != null)
+            root.SetActive(false);
     }
 
     private void ClearList()
@@ -106,6 +118,9 @@ public class FriendAddWindow : MonoBehaviour
 
         try
         {
+            // nicknameIndex 동기화 먼저 시작
+            await FriendSearchService.StartSyncAsync();
+
             var (candidates, requestCounts) = await UniTask.WhenAll(
                 FriendSearchService.GetRandomCandidatesAsync(randomCandidateCount),
                 FriendService.GetRequestCountsAsync()
@@ -116,11 +131,15 @@ public class FriendAddWindow : MonoBehaviour
             _cachedSentCount = requestCounts.sent;
 
             _isPrewarmed = true;
+
+            // 프리워밍 완료 후 동기화 중지 (창이 열릴 때 다시 시작됨)
+            FriendSearchService.StopSync();
         }
         catch (System.Exception e)
         {
             Debug.LogError($"[FriendAddWindow] PrewarmAsync Error: {e}");
             _isPrewarmed = false;
+            FriendSearchService.ResetSyncState();
         }
     }
 
@@ -205,8 +224,11 @@ public class FriendAddWindow : MonoBehaviour
         {
             ClearList();
 
-            // 항상 서버에서 최신 데이터 동기화 (유령 친구 방지)
-            await FriendService.RefreshAllCacheAsync();
+            // nicknameIndex 동기화 시작 + 친구 캐시 동기화 (병렬)
+            await UniTask.WhenAll(
+                FriendSearchService.StartSyncAsync(),
+                FriendService.RefreshAllCacheAsync()
+            );
 
             // 헤더는 캐시에서
             RefreshHeader();
@@ -226,6 +248,7 @@ public class FriendAddWindow : MonoBehaviour
         catch (System.Exception e)
         {
             Debug.LogError($"[FriendAddWindow] RefreshAsync Error: {e}");
+            FriendSearchService.ResetSyncState();
         }
         finally
         {

@@ -12,8 +12,8 @@ public class DailyQuestItemUI : QuestItemUIBase
 
     // DailyQuests에서 기존처럼 Init(this, ...) 를 호출할 수 있게
     // 오버로드 하나 래핑해두면 편하다.
-    public void Init(DailyQuests owner, QuestData data, bool cleared, bool completed)
+    public void Init(DailyQuests owner, QuestData data, bool cleared, bool completed, int progress)
     {
-        base.Init(owner, data, cleared, completed);
+        base.Init(owner, data, cleared, completed, progress);
     }
 }

@@ -17,8 +17,10 @@ public class QuestManager : MonoBehaviour
 
     public static QuestManager Instance { get; private set; }
 
-    // Daily 퀘스트 완료 이벤트
+    // 퀘스트 완료 이벤트
     public static event Action<QuestData> DailyQuestCompleted;
+    public static event Action<QuestData> WeeklyQuestCompleted;
+    public static event Action<QuestData> AchievementQuestCompleted;
 
     private void Awake()
     {
@@ -32,10 +34,19 @@ public class QuestManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    private void OnDisable()
+    {
+        // ★ 비활성화 시 저장 (에디터 Play Mode 중지 대비)
+        if (_isDirty)
+        {
+            SaveDailyStateIfDirty();
+        }
+    }
+
     private void Update()
     {
         // ★ 주기적으로 Dirty 데이터 저장
-        if (_isDirty && Time.time - _lastSaveTime >= SAVE_INTERVAL)
+        if (_isDirty && Time.time - _lastSaveTime >= saveInterval)
         {
             SaveDailyStateIfDirty();
         }
@@ -44,7 +55,18 @@ public class QuestManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         // ★ 앱 종료 시 즉시 저장
+#if UNITY_EDITOR
+        if (_isDirty)
+        {
+            // 에디터에서는 로컬에 동기 저장 (서버 저장은 async라 완료 보장 안됨)
+            SaveLoadManager.Save(0);
+            SaveLoadManager.SaveToServer().Forget();
+            _isDirty = false;
+            Debug.Log("[QuestManager] 에디터 종료 - 로컬 + 서버 저장 요청");
+        }
+#else
         SaveDailyStateIfDirty();
+#endif
     }
 
     private void OnApplicationPause(bool pauseStatus)
@@ -76,16 +98,24 @@ public class QuestManager : MonoBehaviour
     /// <summary>
     /// Dirty 상태라면 저장 실행
     /// </summary>
-    private void SaveDailyStateIfDirty()
+    private async void SaveDailyStateIfDirty()
     {
         if (!_isDirty)
             return;
 
-        SaveLoadManager.SaveToServer().Forget();
-        _isDirty = false;
-        _lastSaveTime = Time.time;
+        try
+        {
+            await SaveLoadManager.SaveToServer();
+            _isDirty = false;
+            _lastSaveTime = Time.time;
 
-        Debug.Log("[QuestManager] Daily Quest 상태 저장 완료");
+            Debug.Log("[QuestManager] Quest 상태 저장 완료");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[QuestManager] Quest 상태 저장 실패: {ex.Message}");
+            // 저장 실패 시 Dirty 플래그 유지하여 다음 주기에 재시도
+        }
     }
 
     /// <summary>
@@ -151,20 +181,65 @@ public class QuestManager : MonoBehaviour
     [Tooltip("상점 구매 1회 데일리 퀘스트 Quest_ID")]
     public int shopPurchaseDailyQuestId;
 
+    [Header("Weekly 퀘스트 ID 매핑 (QuestData.Quest_ID)")]
+    [Tooltip("주간 로그인 퀘스트 Quest_ID")]
+    public int weeklyLoginQuestId;
+
+    [Tooltip("주간 몬스터 처치 퀘스트 Quest_ID")]
+    public int weeklyMonsterKillQuestId;
+
+    [Tooltip("주간 상점 이용 퀘스트 Quest_ID")]
+    public int weeklyShopPurchaseQuestId;
+
+    [Tooltip("주간 보스 처치 퀘스트 Quest_ID")]
+    public int weeklyBossKillQuestId;
+
+    [Tooltip("주간 뽑기 퀘스트 Quest_ID")]
+    public int weeklyGachaDrawQuestId;
+
+    [Header("Achievement 퀘스트 ID 매핑 (QuestData.Quest_ID)")]
+    [Tooltip("팬수 100 달성 업적 Quest_ID")]
+    public int achievementFan100QuestId;
+
+    [Tooltip("팬수 1000 달성 업적 Quest_ID")]
+    public int achievementFan1000QuestId;
+
+    [Tooltip("팬수 10000 달성 업적 Quest_ID")]
+    public int achievementFan10000QuestId;
+
+    [Tooltip("튜토리얼 스테이지 최초 클리어 업적 Quest_ID")]
+    public int achievementTutorialClearQuestId;
+
+    [Tooltip("보스 최초 처치 업적 Quest_ID")]
+    public int achievementBossFirstKillQuestId;
+
     private QuestTable QuestTable => DataTableManager.Get<QuestTable>(DataTableIds.Quest);
     private QuestProgressTable QuestProgressTable => DataTableManager.Get<QuestProgressTable>(DataTableIds.QuestProgress);
     private QuestTypeTable QuestTypeTable => DataTableManager.Get<QuestTypeTable>(DataTableIds.QuestType);
 
 
-    private readonly List<QuestData> _dailyQuestList = new List<QuestData>();
+    // 메모리 최적화: 예상 퀘스트 수에 맞춰 초기 용량 설정
+    private readonly List<QuestData> _dailyQuestList = new List<QuestData>(8);
+    private readonly List<QuestData> _weeklyQuestList = new List<QuestData>(8);
+    private readonly List<QuestData> _achievementQuestList = new List<QuestData>(16);
+
     // 오늘 조건을 만족한 Daily 퀘스트 모음
-    private readonly HashSet<int> _clearedDailyQuestIds = new HashSet<int>();
+    private readonly HashSet<int> _clearedDailyQuestIds = new HashSet<int>(8);
+    private readonly HashSet<int> _clearedWeeklyQuestIds = new HashSet<int>(8);
+    private readonly HashSet<int> _clearedAchievementQuestIds = new HashSet<int>(16);
+
     private bool _initializedDaily;
+    private bool _initializedWeekly;
+    private bool _initializedAchievement;
 
     // ★ 저장 최적화: Dirty Flag + 주기적 저장
     private bool _isDirty = false;
     private float _lastSaveTime = 0f;
-    private const float SAVE_INTERVAL = 10f; // 10초마다 저장 (조절 가능)
+
+    [Header("저장 설정")]
+    [Tooltip("저장 간격 (초). 몬스터 처치 등 빈번한 이벤트 최적화용")]
+    [Range(5f, 60f)]
+    public float saveInterval = 15f;
 
 
     /// <summary>
@@ -176,7 +251,8 @@ public class QuestManager : MonoBehaviour
     public void Initialize()
     {
         InitializeDailyQuests();
-        // 나중에 Weekly / Achievement 도 여기서 같이 초기화하면 됨.
+        InitializeWeeklyQuests();
+        InitializeAchievementQuests();
     }
 
     #region Daily 상태 접근자
@@ -212,6 +288,156 @@ public class QuestManager : MonoBehaviour
 
     /// <summary>오늘 활성화된 Daily 퀘스트 정의 리스트 (UI에서 사용)</summary>
     public IReadOnlyList<QuestData> DailyQuests => _dailyQuestList;
+
+    /// <summary>
+    /// 특정 Daily 퀘스트의 현재 진행도 반환
+    /// </summary>
+    public int GetDailyQuestProgress(int questId)
+    {
+        if (questId == attendanceDailyQuestId)
+            return DailyState.attendanceCount;
+        if (questId == clearStageDailyQuestId)
+            return DailyState.clearStageCount;
+        if (questId == monsterKillDailyQuestId)
+            return DailyState.monsterKillCount;
+        if (questId == gachaDrawDailyQuestId)
+            return DailyState.gachaDrawCount;
+        if (questId == shopPurchaseDailyQuestId)
+            return DailyState.shopPurchaseCount;
+
+        return 0;
+    }
+
+    #endregion
+
+    #region Weekly 상태 접근자
+
+    private WeeklyQuestState WeeklyState
+    {
+        get
+        {
+            if (SaveLoadManager.Data.weeklyQuest == null)
+                SaveLoadManager.Data.weeklyQuest = new WeeklyQuestState();
+
+            var state = SaveLoadManager.Data.weeklyQuest;
+
+            if (state.clearedQuestIds == null)
+                state.clearedQuestIds = new List<int>();
+
+            if (state.completedQuestIds == null)
+                state.completedQuestIds = new List<int>();
+
+            if (state.claimed == null || state.claimed.Length == 0)
+                state.claimed = new bool[5];
+
+            return state;
+        }
+    }
+
+    /// <summary>이번 주 주간 진행도 (0~100)</summary>
+    public int WeeklyProgress => WeeklyState.progress;
+
+    /// <summary>해당 Quest_ID가 이번 주 "조건을 만족했는지?" (보상 수령 여부와 무관)</summary>
+    public bool IsWeeklyQuestCleared(int questId) => _clearedWeeklyQuestIds.Contains(questId);
+
+    /// <summary>이번 주 활성화된 Weekly 퀘스트 정의 리스트 (UI에서 사용)</summary>
+    public IReadOnlyList<QuestData> WeeklyQuests => _weeklyQuestList;
+
+    /// <summary>
+    /// 특정 Weekly 퀘스트의 현재 진행도 반환
+    /// </summary>
+    public int GetWeeklyQuestProgress(int questId)
+    {
+        if (questId == weeklyLoginQuestId)
+            return WeeklyState.loginCount;
+        if (questId == weeklyMonsterKillQuestId)
+            return WeeklyState.monsterKillCount;
+        if (questId == weeklyShopPurchaseQuestId)
+            return WeeklyState.shopPurchaseCount;
+        if (questId == weeklyBossKillQuestId)
+            return WeeklyState.bossKillCount;
+        if (questId == weeklyGachaDrawQuestId)
+            return WeeklyState.gachaDrawCount;
+
+        return 0;
+    }
+
+    #endregion
+
+    #region Achievement 상태 접근자
+
+    private AchievementQuestState AchievementState
+    {
+        get
+        {
+            if (SaveLoadManager.Data.achievementQuest == null)
+                SaveLoadManager.Data.achievementQuest = new AchievementQuestState();
+
+            var state = SaveLoadManager.Data.achievementQuest;
+
+            if (state.clearedQuestIds == null)
+                state.clearedQuestIds = new List<int>();
+
+            if (state.completedQuestIds == null)
+                state.completedQuestIds = new List<int>();
+
+            return state;
+        }
+    }
+
+    /// <summary>해당 Quest_ID가 "조건을 만족했는지?" (보상 수령 여부와 무관)</summary>
+    public bool IsAchievementQuestCleared(int questId) => _clearedAchievementQuestIds.Contains(questId);
+
+    /// <summary>활성화된 Achievement 퀘스트 정의 리스트 (UI에서 사용)</summary>
+    public IReadOnlyList<QuestData> AchievementQuests => _achievementQuestList;
+
+    /// <summary>
+    /// 특정 Achievement 퀘스트의 현재 진행도 반환
+    /// </summary>
+    public int GetAchievementQuestProgress(int questId)
+    {
+        // 팬수 관련 업적은 현재 팬수 반환
+        if (questId == achievementFan100QuestId ||
+            questId == achievementFan1000QuestId ||
+            questId == achievementFan10000QuestId)
+        {
+            return SaveLoadManager.Data.fanAmount;
+        }
+
+        // 튜토리얼/보스 업적은 완료 시 1, 미완료 시 0
+        if (questId == achievementTutorialClearQuestId ||
+            questId == achievementBossFirstKillQuestId)
+        {
+            return IsAchievementQuestCleared(questId) ? 1 : 0;
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// 특정 Achievement 퀘스트의 필요 진행도 반환 (UI 표시용)
+    /// 튜토리얼/보스 같은 1회성 퀘스트는 1 반환
+    /// </summary>
+    public int GetAchievementQuestRequired(int questId)
+    {
+        // 튜토리얼/보스 업적은 1회성이므로 1 반환
+        if (questId == achievementTutorialClearQuestId ||
+            questId == achievementBossFirstKillQuestId)
+        {
+            return 1;
+        }
+
+        // 그 외는 QuestTable에서 Quest_required 값 사용
+        var table = QuestTable;
+        if (table != null)
+        {
+            var quest = table.Get(questId);
+            if (quest != null)
+                return quest.Quest_required;
+        }
+
+        return 1;
+    }
 
     #endregion
 
@@ -340,6 +566,209 @@ public class QuestManager : MonoBehaviour
 
     #endregion
 
+    #region Weekly 초기화 / 리셋
+
+    private void InitializeWeeklyQuests()
+    {
+        if (_initializedWeekly)
+            return;
+
+        InitWeeklyStateAndWeek();
+        BuildWeeklyQuestList();
+        SyncWeeklyCompletedSet();
+
+        _initializedWeekly = true;
+    }
+
+    private void InitWeeklyStateAndWeek()
+    {
+        var state = WeeklyState;
+
+        if (state.claimed == null || state.claimed.Length == 0)
+            state.claimed = new bool[5];
+
+        if (state.clearedQuestIds == null)
+            state.clearedQuestIds = new List<int>();
+
+        if (state.completedQuestIds == null)
+            state.completedQuestIds = new List<int>();
+
+        // 주차 체크 (FirebaseTime → 실패시 로컬 시간)
+        DateTime now;
+        try
+        {
+            now = FirebaseTime.GetServerTime();
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[QuestManager] Firebase 서버 시간 가져오기 실패, 로컬 시간 사용: {e.Message}");
+            now = DateTime.Now;
+        }
+
+        string weekKey = GetWeekKey(now);
+
+        if (string.IsNullOrEmpty(state.weekKey) || state.weekKey != weekKey)
+        {
+            ResetWeeklyState(weekKey);
+            MarkDirty(forceSave: true);
+        }
+    }
+
+    private void ResetWeeklyState(string weekKey)
+    {
+        var state = WeeklyState;
+
+        state.weekKey = weekKey;
+        state.progress = 0;
+
+        if (state.claimed == null || state.claimed.Length == 0)
+            state.claimed = new bool[5];
+
+        Array.Clear(state.claimed, 0, state.claimed.Length);
+
+        state.clearedQuestIds.Clear();
+        state.completedQuestIds.Clear();
+        _clearedWeeklyQuestIds.Clear();
+
+        // 주간 카운터 리셋
+        state.loginCount = 0;
+        state.monsterKillCount = 0;
+        state.shopPurchaseCount = 0;
+        state.bossKillCount = 0;
+        state.gachaDrawCount = 0;
+        state.lastLoginDate = "";
+
+        Debug.Log($"[QuestManager] WeeklyQuest 리셋. weekKey={weekKey}");
+    }
+
+    private void BuildWeeklyQuestList()
+    {
+        _weeklyQuestList.Clear();
+
+        var table = QuestTable;
+        if (table == null)
+        {
+            Debug.LogError("[QuestManager] QuestTable 이 null 입니다.");
+            return;
+        }
+
+        foreach (QuestData q in table.GetByType(QuestType.Weekly))
+        {
+            if (q == null)
+                continue;
+
+            _weeklyQuestList.Add(q);
+        }
+
+        _weeklyQuestList.Sort((a, b) => a.Quest_ID.CompareTo(b.Quest_ID));
+    }
+
+    private void SyncWeeklyCompletedSet()
+    {
+        _clearedWeeklyQuestIds.Clear();
+
+        var state = WeeklyState;
+
+        if (state.clearedQuestIds == null)
+            state.clearedQuestIds = new List<int>();
+
+        foreach (int id in state.clearedQuestIds)
+        {
+            _clearedWeeklyQuestIds.Add(id);
+        }
+    }
+
+    private string GetWeekKey(DateTime time)
+    {
+        var cal = System.Globalization.CultureInfo.InvariantCulture.Calendar;
+        var weekRule = System.Globalization.CalendarWeekRule.FirstFourDayWeek;
+        var firstDayOfWeek = DayOfWeek.Monday;
+        int week = cal.GetWeekOfYear(time, weekRule, firstDayOfWeek);
+        return $"{time.Year}W{week:D2}";
+    }
+
+    private void EnsureWeeklyInitialized()
+    {
+        if (!_initializedWeekly)
+        {
+            InitializeWeeklyQuests();
+        }
+    }
+
+    #endregion
+
+    #region Achievement 초기화
+
+    private void InitializeAchievementQuests()
+    {
+        if (_initializedAchievement)
+            return;
+
+        InitAchievementState();
+        BuildAchievementQuestList();
+        SyncAchievementCompletedSet();
+
+        _initializedAchievement = true;
+    }
+
+    private void InitAchievementState()
+    {
+        var state = AchievementState;
+
+        if (state.clearedQuestIds == null)
+            state.clearedQuestIds = new List<int>();
+
+        if (state.completedQuestIds == null)
+            state.completedQuestIds = new List<int>();
+    }
+
+    private void BuildAchievementQuestList()
+    {
+        _achievementQuestList.Clear();
+
+        var table = QuestTable;
+        if (table == null)
+        {
+            Debug.LogError("[QuestManager] QuestTable 이 null 입니다.");
+            return;
+        }
+
+        foreach (QuestData q in table.GetByType(QuestType.Achievement))
+        {
+            if (q == null)
+                continue;
+
+            _achievementQuestList.Add(q);
+        }
+
+        _achievementQuestList.Sort((a, b) => a.Quest_ID.CompareTo(b.Quest_ID));
+    }
+
+    private void SyncAchievementCompletedSet()
+    {
+        _clearedAchievementQuestIds.Clear();
+
+        var state = AchievementState;
+
+        if (state.clearedQuestIds == null)
+            state.clearedQuestIds = new List<int>();
+
+        foreach (int id in state.clearedQuestIds)
+        {
+            _clearedAchievementQuestIds.Add(id);
+        }
+    }
+
+    private void EnsureAchievementInitialized()
+    {
+        if (!_initializedAchievement)
+        {
+            InitializeAchievementQuests();
+        }
+    }
+
+    #endregion
+
     #region 외부에서 호출할 이벤트 진입점 (Daily)
 
     // BootStrap.UpdateLastLoginTime() 쪽에서,
@@ -349,13 +778,15 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
-        // ★ 카운트 증가는 보상 받을 때로 이동
-        // state.attendanceCount++; (삭제)
+        state.attendanceCount++;
+        MarkDirty(forceSave: true); // 1회성 이벤트는 즉시 저장
 
         Debug.Log($"[QuestManager] 출석 이벤트 발생: attendanceCount = {state.attendanceCount}, date = {state.date}");
 
-        // ★ 현재 카운트 + 1로 조건 체크 (보상 받으면 증가 예정)
-        TryCompleteDailyById(attendanceDailyQuestId, DailyQuestEventType.Attendance, state.attendanceCount + 1);
+        TryCompleteDailyById(attendanceDailyQuestId, DailyQuestEventType.Attendance, state.attendanceCount);
+
+        // Weekly 로그인도 함께 체크
+        OnWeeklyLogin();
     }
 
     // 스테이지 클리어 시점(StageManager 등)에서 호출
@@ -364,10 +795,10 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
-        // ★ 카운트 증가는 보상 받을 때로 이동
-        // state.clearStageCount++; (삭제)
+        state.clearStageCount++;
+        MarkDirty(forceSave: true); // 1회성 이벤트는 즉시 저장
 
-        TryCompleteDailyById(clearStageDailyQuestId, DailyQuestEventType.ClearStage, state.clearStageCount + 1);
+        TryCompleteDailyById(clearStageDailyQuestId, DailyQuestEventType.ClearStage, state.clearStageCount);
     }
 
     // 몬스터 사망 시점(Monster / MonsterHP 등)에서 호출
@@ -383,6 +814,9 @@ public class QuestManager : MonoBehaviour
         MarkDirty();
 
         TryCompleteDailyById(monsterKillDailyQuestId, DailyQuestEventType.MonsterKill, state.monsterKillCount);
+
+        // Weekly 몬스터 처치도 함께 체크
+        OnWeeklyMonsterKill();
     }
 
     // 가챠 결과 확정 시점에서 호출 (count: 1회/10회 등)
@@ -391,10 +825,14 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
-        // ★ 카운트 증가는 보상 받을 때로 이동
-        // state.gachaDrawCount += (count <= 0 ? 1 : count); (삭제)
+        int addCount = count <= 0 ? 1 : count;
+        state.gachaDrawCount += addCount;
+        MarkDirty(forceSave: true); // 1회성 이벤트는 즉시 저장
 
-        TryCompleteDailyById(gachaDrawDailyQuestId, DailyQuestEventType.GachaDraw, state.gachaDrawCount + (count <= 0 ? 1 : count));
+        TryCompleteDailyById(gachaDrawDailyQuestId, DailyQuestEventType.GachaDraw, state.gachaDrawCount);
+
+        // Weekly 뽑기도 함께 체크
+        OnWeeklyGachaDraw(addCount);
     }
 
     // 상점 구매 성공 시점에서 호출 (shopItemId: 상점 상품 id)
@@ -403,10 +841,13 @@ public class QuestManager : MonoBehaviour
         EnsureDailyInitialized();
 
         var state = DailyState;
-        // ★ 카운트 증가는 보상 받을 때로 이동
-        // state.shopPurchaseCount++; (삭제)
+        state.shopPurchaseCount++;
+        MarkDirty(forceSave: true); // 1회성 이벤트는 즉시 저장
 
-        TryCompleteDailyById(shopPurchaseDailyQuestId, DailyQuestEventType.ShopPurchase, state.shopPurchaseCount + 1);
+        TryCompleteDailyById(shopPurchaseDailyQuestId, DailyQuestEventType.ShopPurchase, state.shopPurchaseCount);
+
+        // Weekly 상점 구매도 함께 체크
+        OnWeeklyShopPurchase();
     }
     #endregion
 
@@ -488,24 +929,291 @@ public class QuestManager : MonoBehaviour
 
     #endregion
 
-    #region 추후 확장용 TODO (Weekly / Achievement)
+    #region 외부에서 호출할 이벤트 진입점 (Weekly)
 
-    // 나중에 Weekly / Achievement 까지 확장할 때는:
-    // - SaveDataV1에 Weekly용 / 업적용 상태 구조를 추가하고
-    // - 아래처럼 QuestType 기준으로 그룹 상태를 나눠서 관리하면 된다.
-    //
-    // 예시의 스켈레톤만 남겨둔다. (지금은 컴파일 안 되게 주석 처리)
+    // Weekly 로그인 카운트 (OnAttendance에서 호출)
+    public void OnWeeklyLogin()
+    {
+        EnsureWeeklyInitialized();
 
-    /*
-    private WeeklyQuestState WeeklyState => SaveLoadManager.Data.weeklyQuest;
-    private AchievementQuestState AchievementState => SaveLoadManager.Data.achievementQuest;
+        var state = WeeklyState;
 
-    private void InitializeWeeklyQuests() { ... }
-    private void InitializeAchievementQuests() { ... }
+        // 오늘 날짜 가져오기
+        string today;
+        try
+        {
+            today = FirebaseTime.GetServerTime().ToString("yyyy-MM-dd");
+        }
+        catch
+        {
+            today = DateTime.Now.ToString("yyyy-MM-dd");
+        }
 
-    public void OnMonsterKilledForAchievement(int monsterId) { ... }
-    public void OnStageClearForWeekly(int stageId) { ... }
-    */
+        // 오늘 이미 로그인 카운트가 증가했으면 스킵
+        if (state.lastLoginDate == today)
+        {
+            return;
+        }
+
+        state.lastLoginDate = today;
+        state.loginCount++;
+        MarkDirty();
+
+        TryCompleteWeeklyById(weeklyLoginQuestId, state.loginCount);
+    }
+
+    // Weekly 몬스터 처치 (OnMonsterKilled에서 호출)
+    public void OnWeeklyMonsterKill()
+    {
+        EnsureWeeklyInitialized();
+
+        var state = WeeklyState;
+        state.monsterKillCount++;
+        MarkDirty();
+
+        TryCompleteWeeklyById(weeklyMonsterKillQuestId, state.monsterKillCount);
+    }
+
+    // Weekly 상점 구매 (OnShopPurchase에서 호출)
+    public void OnWeeklyShopPurchase()
+    {
+        EnsureWeeklyInitialized();
+
+        var state = WeeklyState;
+        state.shopPurchaseCount++;
+        MarkDirty();
+
+        TryCompleteWeeklyById(weeklyShopPurchaseQuestId, state.shopPurchaseCount);
+    }
+
+    // Weekly 보스 처치 (별도로 호출)
+    public void OnWeeklyBossKill(int monsterId)
+    {
+        EnsureWeeklyInitialized();
+
+        var state = WeeklyState;
+        state.bossKillCount++;
+        MarkDirty();
+
+        TryCompleteWeeklyById(weeklyBossKillQuestId, state.bossKillCount);
+    }
+
+    // Weekly 뽑기 (OnGachaDraw에서 호출)
+    public void OnWeeklyGachaDraw(int count = 1)
+    {
+        EnsureWeeklyInitialized();
+
+        var state = WeeklyState;
+        state.gachaDrawCount += count;
+        MarkDirty();
+
+        TryCompleteWeeklyById(weeklyGachaDrawQuestId, state.gachaDrawCount);
+    }
+
+    #endregion
+
+    #region Weekly 퀘스트 완료 처리
+
+    private void TryCompleteWeeklyById(int questId, int currentCount)
+    {
+        if (questId <= 0)
+        {
+            return; // Weekly는 선택적이므로 경고 없이 무시
+        }
+
+        var table = QuestTable;
+        if (table == null)
+        {
+            Debug.LogError("[QuestManager] QuestTable 이 null 입니다.");
+            return;
+        }
+
+        QuestData quest = table.Get(questId);
+        if (quest == null)
+        {
+            Debug.LogError($"[QuestManager] Quest_ID={questId} 를 QuestTable에서 찾을 수 없습니다. (Weekly)");
+            return;
+        }
+
+        if (quest.Quest_type != QuestType.Weekly)
+        {
+            Debug.LogWarning($"[QuestManager] Quest_ID={questId} 는 Quest_Type={quest.Quest_type} 입니다. Weekly가 아닙니다.");
+        }
+
+        int requiredCount = quest.Quest_required;
+
+        if (requiredCount <= 0)
+            requiredCount = 1;
+
+        if (currentCount < requiredCount)
+        {
+            Debug.Log($"[QuestManager] Weekly 진행도 {currentCount}/{requiredCount}");
+            return;
+        }
+
+        CompleteWeeklyQuestInternal(quest);
+    }
+
+    private void CompleteWeeklyQuestInternal(QuestData quest)
+    {
+        var state = WeeklyState;
+        int id = quest.Quest_ID;
+
+        if (_clearedWeeklyQuestIds.Contains(id))
+        {
+            return;
+        }
+
+        _clearedWeeklyQuestIds.Add(id);
+
+        if (!state.clearedQuestIds.Contains(id))
+            state.clearedQuestIds.Add(id);
+
+        MarkDirty(forceSave: true);
+
+        Debug.Log($"[QuestManager] Weekly Quest 조건 충족: id={id}, info={quest.Quest_info}");
+
+        WeeklyQuestCompleted?.Invoke(quest);
+    }
+
+    #endregion
+
+    #region 외부에서 호출할 이벤트 진입점 (Achievement)
+
+    // 팬 수 변경 시 호출
+    public void OnFanAmountChanged(int newFanAmount)
+    {
+        EnsureAchievementInitialized();
+
+        // 팬수 100 체크
+        if (achievementFan100QuestId > 0)
+        {
+            TryCompleteAchievementById(achievementFan100QuestId, newFanAmount);
+        }
+
+        // 팬수 1000 체크
+        if (achievementFan1000QuestId > 0)
+        {
+            TryCompleteAchievementById(achievementFan1000QuestId, newFanAmount);
+        }
+
+        // 팬수 10000 체크
+        if (achievementFan10000QuestId > 0)
+        {
+            TryCompleteAchievementById(achievementFan10000QuestId, newFanAmount);
+        }
+    }
+
+    // 스테이지 최초 클리어 시 호출
+    public void OnStageFirstClear(int stageId)
+    {
+        EnsureAchievementInitialized();
+
+        if (achievementTutorialClearQuestId <= 0)
+            return;
+
+        var table = QuestTable;
+        if (table == null)
+            return;
+
+        QuestData quest = table.Get(achievementTutorialClearQuestId);
+        if (quest == null)
+            return;
+
+        // CSV의 Quest_required에서 튜토리얼 스테이지 ID를 읽어서 매칭
+        if (quest.Quest_required == stageId)
+        {
+            TryCompleteAchievementById(achievementTutorialClearQuestId, 1);
+        }
+    }
+
+    // 보스 최초 처치 시 호출
+    public void OnBossFirstKill(int monsterId)
+    {
+        EnsureAchievementInitialized();
+
+        if (achievementBossFirstKillQuestId <= 0)
+            return;
+
+        var table = QuestTable;
+        if (table == null)
+            return;
+
+        QuestData quest = table.Get(achievementBossFirstKillQuestId);
+        if (quest == null)
+            return;
+
+        // CSV의 Quest_required에서 보스 몬스터 ID를 읽어서 매칭
+        if (quest.Quest_required == monsterId)
+        {
+            TryCompleteAchievementById(achievementBossFirstKillQuestId, 1);
+        }
+    }
+
+    #endregion
+
+    #region Achievement 퀘스트 완료 처리
+
+    private void TryCompleteAchievementById(int questId, int currentValue)
+    {
+        if (questId <= 0)
+        {
+            return;
+        }
+
+        var table = QuestTable;
+        if (table == null)
+        {
+            Debug.LogError("[QuestManager] QuestTable 이 null 입니다.");
+            return;
+        }
+
+        QuestData quest = table.Get(questId);
+        if (quest == null)
+        {
+            Debug.LogError($"[QuestManager] Quest_ID={questId} 를 QuestTable에서 찾을 수 없습니다. (Achievement)");
+            return;
+        }
+
+        if (quest.Quest_type != QuestType.Achievement)
+        {
+            Debug.LogWarning($"[QuestManager] Quest_ID={questId} 는 Quest_Type={quest.Quest_type} 입니다. Achievement가 아닙니다.");
+        }
+
+        int requiredValue = quest.Quest_required;
+
+        if (requiredValue <= 0)
+            requiredValue = 1;
+
+        if (currentValue < requiredValue)
+        {
+            return; // Achievement는 조용히 체크만
+        }
+
+        CompleteAchievementQuestInternal(quest);
+    }
+
+    private void CompleteAchievementQuestInternal(QuestData quest)
+    {
+        var state = AchievementState;
+        int id = quest.Quest_ID;
+
+        if (_clearedAchievementQuestIds.Contains(id))
+        {
+            return; // 이미 달성한 업적
+        }
+
+        _clearedAchievementQuestIds.Add(id);
+
+        if (!state.clearedQuestIds.Contains(id))
+            state.clearedQuestIds.Add(id);
+
+        MarkDirty(forceSave: true);
+
+        Debug.Log($"[QuestManager] Achievement Quest 조건 충족: id={id}, info={quest.Quest_info}");
+
+        AchievementQuestCompleted?.Invoke(quest);
+    }
 
     #endregion
 }

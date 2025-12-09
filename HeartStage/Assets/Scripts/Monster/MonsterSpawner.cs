@@ -801,13 +801,23 @@ public class MonsterSpawner : MonoBehaviour
 
         // 최초 보상 체크
         var clearWaveList = SaveLoadManager.Data.clearWaveList;
-        bool isFirstClear = false; // 최초 클리어 여부 
+        bool isFirstClear = false; // 최초 클리어 여부
 
         if (!clearWaveList.Contains(rewardData.reward_id))
         {
             clearWaveList.Add(rewardData.reward_id);
             ItemManager.Instance.AcquireItem(rewardData.first_clear, rewardData.first_clear_a);
             isFirstClear = true; // 최초 클리어
+
+            // 최초 클리어 시 Achievement 퀘스트 체크
+            if (QuestManager.Instance != null && StageManager.Instance != null)
+            {
+                var currentStageData = StageManager.Instance.GetCurrentStageData();
+                if (currentStageData != null)
+                {
+                    QuestManager.Instance.OnStageFirstClear(currentStageData.stage_ID);
+                }
+            }
         }
 
         // 팬 보상

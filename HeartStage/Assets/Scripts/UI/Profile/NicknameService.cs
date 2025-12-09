@@ -20,7 +20,7 @@ public static class NicknameService
     /// - 처음 설정인지 / 변경인지 판단
     /// - 변경인 경우 라이트 스틱 2000개 소모
     /// - Firebase에 중복 닉 체크 및 인덱스 갱신
-    /// - SaveData + 서버 세이브 + publicProfiles 동기화
+    /// - SaveData + 서버 세이브 + publicProfiles + nicknameIndex 동기화
     public static async UniTask<(bool ok, string errorMessage)> TryChangeNicknameAsync(string rawNickname)
     {
         // 1) 형식/금칙어 체크
@@ -56,7 +56,7 @@ public static class NicknameService
             }
         }
 
-        // 3) Firebase에서 중복 닉 체크 + 인덱스 등록
+        // 3) Firebase에서 중복 닉 체크 + nicknameReservation 등록
         bool reserved = await ReserveNicknameAsync(normalizedNew, uid);
         if (!reserved)
         {
@@ -68,20 +68,20 @@ public static class NicknameService
             return (false, "이미 사용 중인 닉네임입니다.");
         }
 
-        // 4) 이전 닉네임 인덱스 제거 (닉이 있었고, 값이 바뀐 경우)
+        // 4) 이전 닉네임 예약 제거 (닉이 있었고, 값이 바뀐 경우)
         if (!isFirstSet && !string.IsNullOrEmpty(normalizedOld) && normalizedOld != normalizedNew)
         {
-            await RemoveOldNicknameIndexAsync(normalizedOld, uid);
+            await RemoveOldNicknameReservationAsync(normalizedOld, uid);
         }
 
         // 5) SaveData에 반영
         data.nickname = trimmed;
 
-        // 6) 서버 세이브 + publicProfiles 동기화
+        // 6) 서버 세이브 + publicProfiles + nicknameIndex 동기화
         await SaveLoadManager.SaveToServer();
 
         int achievementCount = AchievementUtil.GetCompletedAchievementCount(data);
-        await PublicProfileService.UpdateMyPublicProfileAsync(data, achievementCount);
+        await PublicProfileService.UpdateMyPublicProfileWithIndexAsync(data, achievementCount);
 
         return (true, null);
     }
@@ -126,14 +126,15 @@ public static class NicknameService
         data.itemList[LightStickItemId] = current + amount;
     }
 
-    /// nicknameIndex/{normalized} 에서 해당 uid로 예약 시도.
+    /// nicknameReservation/{normalized} 에서 해당 uid로 예약 시도.
     /// 이미 다른 uid가 쓰고 있으면 false.
+    /// ★ 중복 체크 전용 노드 (친구 추천용 nicknameIndex와 분리)
     private static async UniTask<bool> ReserveNicknameAsync(string normalized, string uid)
     {
         if (string.IsNullOrEmpty(normalized))
             return false;
 
-        var nickRef = Root.Child("nicknameIndex").Child(normalized);
+        var nickRef = Root.Child("nicknameReservation").Child(normalized);
 
         bool duplicate = false;
 
@@ -196,13 +197,14 @@ public static class NicknameService
         return !duplicate;
     }
 
-    /// 예전 닉네임 인덱스 삭제 (해당 uid일 때만)
-    private static async UniTask RemoveOldNicknameIndexAsync(string normalizedOld, string uid)
+    /// 예전 닉네임 예약 삭제 (해당 uid일 때만)
+    /// ★ nicknameReservation 노드에서 삭제
+    private static async UniTask RemoveOldNicknameReservationAsync(string normalizedOld, string uid)
     {
         if (string.IsNullOrEmpty(normalizedOld))
             return;
 
-        var nickRef = Root.Child("nicknameIndex").Child(normalizedOld);
+        var nickRef = Root.Child("nicknameReservation").Child(normalizedOld);
 
         await nickRef.RunTransaction(mutable =>
         {

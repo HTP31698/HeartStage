@@ -225,11 +225,14 @@ public class StageManager : MonoBehaviour
         Time.timeScale = currentTimeScale;
     }
 
-    // 승리시 
+    // 승리시
     public void Clear()
     {
         // 클리어 퀘스트 알림
-        QuestManager.Instance.OnStageClear();
+        if (QuestManager.Instance != null && currentStageCSVData != null)
+        {
+            QuestManager.Instance.OnStageClear(currentStageCSVData.stage_ID);
+        }
 
         if (windowManager != null)
         {
@@ -270,6 +273,13 @@ public class StageManager : MonoBehaviour
         }
         // 팬 수 증가
         SaveLoadManager.Data.fanAmount += fanReward;
+
+        // 팬 수 변경 퀘스트 체크
+        if (QuestManager.Instance != null && fanReward > 0)
+        {
+            QuestManager.Instance.OnFanAmountChanged(SaveLoadManager.Data.fanAmount);
+        }
+
         SaveLoadManager.SaveToServer().Forget();
     }
 

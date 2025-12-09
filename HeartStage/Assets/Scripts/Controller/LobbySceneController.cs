@@ -109,7 +109,7 @@ public class LobbySceneController : MonoBehaviour
 
         int achievementCount = AchievementUtil.GetCompletedAchievementCount(data);
 
-        await PublicProfileService.UpdateMyPublicProfileAsync(data, achievementCount);
+        await PublicProfileService.UpdateMyPublicProfileWithIndexAsync(data, achievementCount);
     }
 
     private async UniTask SyncDreamEnergyCounterAsync()

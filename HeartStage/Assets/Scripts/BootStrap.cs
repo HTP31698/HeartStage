@@ -191,6 +191,9 @@ public class BootStrap : MonoBehaviour
         // 현재 시간을 마지막 접속 시간으로 저장
         SaveLoadManager.Data.lastLoginBinary = now.ToBinary();
         await SaveLoadManager.SaveToServer();
+
+        // ★ nicknameIndex 로그인 시간 업데이트 (닉네임 설정된 유저만)
+        await PublicProfileService.UpdateNicknameIndexLoginTimeAsync();
     }
 
     // 서버에서 세이브 로드, 없으면 기본 세이브 생성

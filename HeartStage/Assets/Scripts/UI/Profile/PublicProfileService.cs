@@ -212,4 +212,113 @@ public static partial class PublicProfileService
             return null;
         }
     }
+
+    // ========================================
+    // nicknameIndex 관리 (닉네임 설정된 유저만 친구 추천에 노출)
+    // ========================================
+
+    /// <summary>
+    /// 닉네임 설정 시 nicknameIndex에 등록
+    /// 닉네임이 유효하면 등록, 비어있거나 uid와 같으면 삭제
+    /// </summary>
+    public static async UniTask UpdateNicknameIndexAsync(string nickname)
+    {
+        var user = Auth.CurrentUser;
+        if (user == null) return;
+
+        string uid = user.UserId;
+        string effectiveNickname = nickname?.Trim();
+
+        // 닉네임이 없거나 uid와 같으면 인덱스에서 제거
+        if (string.IsNullOrEmpty(effectiveNickname) || effectiveNickname == uid)
+        {
+            await RemoveFromNicknameIndexAsync(uid);
+            return;
+        }
+
+        try
+        {
+            long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            var indexData = new Dictionary<string, object>
+            {
+                ["nickname"] = effectiveNickname,
+                ["lastLoginUnixMillis"] = now
+            };
+
+            await Root.Child("nicknameIndex").Child(uid).UpdateChildrenAsync(indexData);
+            Debug.Log($"[PublicProfileService] nicknameIndex 등록 완료: {uid} -> {effectiveNickname}");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[PublicProfileService] UpdateNicknameIndexAsync Error: {e}");
+        }
+    }
+
+    /// <summary>
+    /// nicknameIndex에서 제거 (탈퇴, 닉네임 삭제 시)
+    /// </summary>
+    public static async UniTask RemoveFromNicknameIndexAsync(string uid = null)
+    {
+        if (string.IsNullOrEmpty(uid))
+        {
+            var user = Auth.CurrentUser;
+            if (user == null) return;
+            uid = user.UserId;
+        }
+
+        try
+        {
+            await Root.Child("nicknameIndex").Child(uid).RemoveValueAsync();
+            Debug.Log($"[PublicProfileService] nicknameIndex 제거 완료: {uid}");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[PublicProfileService] RemoveFromNicknameIndexAsync Error: {e}");
+        }
+    }
+
+    /// <summary>
+    /// 로그인 시 lastLoginUnixMillis 업데이트 (nicknameIndex)
+    /// </summary>
+    public static async UniTask UpdateNicknameIndexLoginTimeAsync()
+    {
+        var user = Auth.CurrentUser;
+        if (user == null) return;
+
+        string uid = user.UserId;
+
+        try
+        {
+            // 먼저 해당 유저가 nicknameIndex에 있는지 확인
+            var snap = await Root.Child("nicknameIndex").Child(uid).GetValueAsync();
+            if (!snap.Exists)
+            {
+                // 인덱스에 없으면 업데이트 안 함 (닉네임 미설정 유저)
+                return;
+            }
+
+            long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            await Root.Child("nicknameIndex").Child(uid).Child("lastLoginUnixMillis").SetValueAsync(now);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[PublicProfileService] UpdateNicknameIndexLoginTimeAsync Error: {e}");
+        }
+    }
+
+    /// <summary>
+    /// publicProfiles 업데이트 시 nicknameIndex도 함께 업데이트
+    /// </summary>
+    public static async UniTask UpdateMyPublicProfileWithIndexAsync(
+        SaveDataV1 data,
+        int achievementCompletedCount)
+    {
+        // 기존 publicProfiles 업데이트
+        await UpdateMyPublicProfileAsync(data, achievementCompletedCount);
+
+        // nicknameIndex도 업데이트
+        string effectiveNickname = ProfileNameUtil.GetEffectiveNickname(data);
+        await UpdateNicknameIndexAsync(effectiveNickname);
+    }
 }
