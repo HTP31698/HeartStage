@@ -3,6 +3,8 @@ using UnityEngine.EventSystems;
 
 public class CharacterSkillController : MonoBehaviour
 {
+    public static CharacterSkillController current;
+
     [HideInInspector] public int skillId;
     public GameObject skillReadyEffect;
 
@@ -17,9 +19,11 @@ public class CharacterSkillController : MonoBehaviour
 
     private Vector3 lastTouchPos;
 
+    private bool isTouchingThisCharacter = false;
     private bool isDescShown = false;
     private float longPressTimer = 0f;
-    private const float LONG_PRESS_TIME = 2f;
+
+    private const float LONG_PRESS_TIME = 1.5f;
 
     private void Start()
     {
@@ -35,31 +39,92 @@ public class CharacterSkillController : MonoBehaviour
 
     private void Update()
     {
-        if (!isReady)
+        if (!isReady) 
             return;
 
-        // UI 클릭 중이면 입력 무시
-        if (IsPointerOverUI())
+        if (IsPointerOverUI() && !(Input.GetMouseButtonUp(0) || TouchEnded()))
+            return;
+
+        if (!IsCurrentController())
+            return;
+
+        if (CancelDragIfUIAppeared()) 
             return;
 
         bool hasInput = TryGetTouchPosition(out Vector3 pos);
         bool isInside = StageArea.Instance.IsInside(pos);
 
-        // === 설명창 띄워진 상태 처리 ===
-        if (isDescShown)
+        if (HandleDescriptionState())
+            return;
+
+        HandleLongPress(hasInput, isInside);
+
+        HandleDragging(hasInput, pos, isInside);
+
+        HandleDragStart(pos);
+
+        HandleDragEnd();
+    }
+
+    private bool IsCurrentController()
+    {
+        return current == null || current == this;
+    }
+
+    private bool CancelDragIfUIAppeared()
+    {
+        if (Input.GetMouseButtonUp(0) || TouchEnded())
+            return false;
+
+        if (!isDragging || !IsPointerOverUI())
+            return false;
+
+        isDragging = false;
+        isTouchingThisCharacter = false;
+        isRangeShown = false;
+
+        SkillRangeDisplayer.Instance.HideRange();
+
+        if (current == this)
+            current = null;
+
+        return true;
+    }
+
+    // 스킬 설명창 관리
+    private bool HandleDescriptionState()
+    {
+        if (!isDescShown)
+            return false;
+
+        // 설명창이 뜬 상태에서 UI 눌리면 바로 닫기
+        if (IsPointerOverUI())
         {
-            // 손 뗄 때 → 설명창 닫기
-            if (Input.GetMouseButtonUp(0) || TouchEnded())
-            {
-                isDescShown = false;
-                longPressTimer = 0f;
-                ActiveSkillManager.Instance.CloseDesc();
-            }
-            return; // 설명창 있는 동안 아래 로직 정지
+            isDescShown = false;
+            longPressTimer = 0f;
+
+            ActiveSkillManager.Instance.CloseDesc();
+            ResetDragState();
+            return true;
         }
 
-        // === 롱프레스 로직 ===
-        if (hasInput && !isDragging && isInside)
+        // 화면에서 손을 떼도 설명창 닫기
+        if (Input.GetMouseButtonUp(0) || TouchEnded())
+        {
+            isDescShown = false;
+            longPressTimer = 0f;
+
+            ActiveSkillManager.Instance.CloseDesc();
+            ResetDragState();
+        }
+
+        return true;
+    }
+
+    // 롱프레스
+    private void HandleLongPress(bool hasInput, bool isInside)
+    {
+        if (hasInput && isInside && isTouchingThisCharacter)
         {
             longPressTimer += Time.deltaTime;
             if (longPressTimer >= LONG_PRESS_TIME)
@@ -67,100 +132,122 @@ public class CharacterSkillController : MonoBehaviour
                 longPressTimer = 0f;
                 isDescShown = true;
 
-                // 스킬 범위 숨김
                 isRangeShown = false;
                 SkillRangeDisplayer.Instance.HideRange();
 
-                // 설명창 표시
                 ActiveSkillManager.Instance.ShowDesc(skillId);
-                return;
             }
         }
         else
         {
             longPressTimer = 0f;
         }
+    }
 
-        // 기존 로직
-        if (hasInput)
+    // 드래그 처리
+    private void HandleDragging(bool hasInput, Vector3 pos, bool isInside)
+    {
+        if (!hasInput) return;
+
+        lastTouchPos = pos;
+
+        if (!isDragging) return;
+
+        if (!isInside)
         {
-            lastTouchPos = pos;
-
-            if (isDragging)
+            if (!isRangeShown)
             {
-                // 무대 안이 아니면
-                if (!isInside)
-                {
-                    if (!isRangeShown)
-                    {
-                        isRangeShown = true;
-                        SkillRangeDisplayer.Instance.ShowRange(transform.position, skillId);
-                    }
-                    SkillRangeDisplayer.Instance.MoveRangeTo(transform.position, pos, skillId);
-                }
-                // 무대 안이면
-                else
-                {
-                    if (isRangeShown)
-                    {
-                        isRangeShown = false;
-                        SkillRangeDisplayer.Instance.HideRange();
-                    }
-                }
+                isRangeShown = true;
+                SkillRangeDisplayer.Instance.ShowRange(transform.position, skillId);
             }
+
+            SkillRangeDisplayer.Instance.MoveRangeTo(transform.position, pos, skillId);
         }
-
-        // 드래그 시작
-        if (Input.GetMouseButtonDown(0) || TouchBegan())
+        else
         {
-            // 캐릭터 근처여야 드래그 시작
-            if (Vector3.Distance(pos, transform.position) < 1f)
-            {
-                isDragging = true;
-                isRangeShown = false;
-                SkillRangeDisplayer.Instance.HideRange();
-                longPressTimer = 0f;
-            }
-        }
-
-        // 드래그 종료
-        if (Input.GetMouseButtonUp(0) || TouchEnded())
-        {
-            if (!isDragging)
-                return;
-
-            isDragging = false;
-
-            // 손 뗀 위치가 무대 안이면 스킬 취소
-            bool endInside = StageArea.Instance.IsInside(lastTouchPos);
-            if (endInside)
+            if (isRangeShown)
             {
                 isRangeShown = false;
                 SkillRangeDisplayer.Instance.HideRange();
-                return;
             }
+        }
+    }
 
-            // 무대 밖일 때만 스킬 사용 
-            isReady = false;
+    private void HandleDragStart(Vector3 pos)
+    {
+        if (!(Input.GetMouseButtonDown(0) || TouchBegan()))
+            return;
+
+        if (Vector3.Distance(pos, transform.position) < 0.7f)
+        {
+            current = this;
+            isTouchingThisCharacter = true;
+            isDragging = true;
+
+            isRangeShown = false;
             SkillRangeDisplayer.Instance.HideRange();
-
-            startPos = lastTouchPos;
-            dir = (lastTouchPos - transform.position).normalized;
-
-            ActiveSkillManager.Instance.TryUseSkill(gameObject, skillId);
-
-            ResetSkillState();
+            longPressTimer = 0f;
         }
+        else
+        {
+            isTouchingThisCharacter = false;
+        }
+    }
+
+    private void HandleDragEnd()
+    {
+        if (!(Input.GetMouseButtonUp(0) || TouchEnded()))
+            return;
+
+        if (current == this)
+            current = null;
+
+        if (!isDragging)
+            return;
+
+        isDragging = false;
+        isTouchingThisCharacter = false;
+
+        bool endInside = StageArea.Instance.IsInside(lastTouchPos);
+
+        if (endInside)
+        {
+            isRangeShown = false;
+            SkillRangeDisplayer.Instance.HideRange();
+            return;
+        }
+
+        // skill use
+        isReady = false;
+        SkillRangeDisplayer.Instance.HideRange();
+
+        startPos = lastTouchPos;
+        dir = (lastTouchPos - transform.position).normalized;
+
+        ActiveSkillManager.Instance.TryUseSkill(gameObject, skillId);
+
+        ResetSkillState();
+    }
+
+
+    // UTIL
+    private void ResetDragState()
+    {
+        isDragging = false;
+        isTouchingThisCharacter = false;
+        current = null;
     }
 
     private bool TouchBegan()
     {
-        return Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began;
+        return Input.touchCount > 0 &&
+               Input.GetTouch(0).phase == TouchPhase.Began;
     }
 
     private bool TouchEnded()
     {
-        return Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended;
+        return Input.touchCount > 0 &&
+               Input.GetTouch(0).phase == TouchPhase.Ended;
     }
 
     private bool TryGetTouchPosition(out Vector3 worldPos)
@@ -176,7 +263,7 @@ public class CharacterSkillController : MonoBehaviour
             return true;
         }
 
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButton(0) || Input.GetMouseButtonUp(0))
         {
             Vector3 screen = Input.mousePosition;
             screen.z = 10f;
@@ -191,22 +278,19 @@ public class CharacterSkillController : MonoBehaviour
     {
         isRangeShown = false;
         skillReadyEffect.SetActive(false);
+
         characterAttack.animator.SetTrigger(CharacterAttack.HashIdle);
         SkillRangeDisplayer.Instance.HideRange();
     }
 
     private bool IsPointerOverUI()
     {
-        // 마우스
         if (EventSystem.current.IsPointerOverGameObject())
             return true;
 
-        // 터치
-        if (Input.touchCount > 0)
-        {
-            if (EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
-                return true;
-        }
+        if (Input.touchCount > 0 &&
+            EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+            return true;
 
         return false;
     }
