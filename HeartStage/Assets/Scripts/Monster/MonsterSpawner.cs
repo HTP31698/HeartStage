@@ -33,6 +33,8 @@ public class MonsterSpawner : MonoBehaviour
     private int currentStageId;
     [SerializeField] private int spawnedMonsterCount = 3;
 
+    private bool manualStart = false; // 수동 시작 플래그 
+
     public static System.Action OnWaveCleared; // 웨이브 클리어 이벤트 
 
     // 스테이지 & 웨이브 관리
@@ -82,6 +84,7 @@ public class MonsterSpawner : MonoBehaviour
         await InitializeAsync();
 
         OnWaveCleared += ClearAllSummonedMonsters;
+        StageSetupWindow.OnStageStarted += OnStageStarted;
     }
 
     //초기화
@@ -93,11 +96,31 @@ public class MonsterSpawner : MonoBehaviour
 
             await LoadStageDataAndInitializePool();
             isInitialized = true;
-            await StartWaveProgression();
+            //await StartWaveProgression(); // 자동시작
         }
         catch
         {
         }
+    }
+
+    // 이벤트 핸들러 - 스테이지 시작
+    private void OnStageStarted()
+    {
+        if (!isInitialized)
+        {
+            Debug.LogWarning("[MonsterSpawner] 아직 초기화되지 않았습니다!");
+            return;
+        }
+
+        if (manualStart)
+        {
+            Debug.LogWarning("[MonsterSpawner] 이미 웨이브가 시작되었습니다!");
+            return;
+        }
+
+        manualStart = true;
+        StartWaveProgression().Forget();
+        Debug.Log("[MonsterSpawner] 스테이지 시작 이벤트 받음 - 웨이브 시작!");
     }
 
     //로딩 및 초기화
@@ -594,6 +617,7 @@ public class MonsterSpawner : MonoBehaviour
     private void OnDestroy()
     {
         OnWaveCleared -= ClearAllSummonedMonsters;
+        StageSetupWindow.OnStageStarted -= OnStageStarted; 
 
         ClearSpawnQueue();
 
