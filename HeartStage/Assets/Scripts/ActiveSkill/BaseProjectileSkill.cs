@@ -7,9 +7,9 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
 {
     protected SkillData skillData;
     protected GameObject prefab;
+    protected string prefabName = "baseActiveSkill";  // 리소스에서 가져올 프리팹 이름
 
     // 각각 독립적으로 설정 가능
-    protected string prefabName;  // 리소스에서 가져올 프리팹 이름
     protected string poolId;    // PoolManager에 등록할 고유 이름
     protected int skillId; // 스킬 ID
     protected string skillDataName;
@@ -18,6 +18,8 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
 
     protected List<(int id, float value, float duration)> debuffList =
         new List<(int, float, float)>();
+
+    private CharacterSkillController skillController;
 
     protected virtual void Start()
     {
@@ -30,7 +32,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         var clone = Instantiate(prefab);
         clone.SetActive(false);
 
-        // 콜라이더 설정 (스킬별로 override)
+        // 콜라이더 설정
         SetupCollider(clone);
 
         // 관통 여부
@@ -57,7 +59,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         ActiveSkillManager.Instance.RegisterSkill(gameObject, skillData.skill_id);
 
         // SkillController 등록
-        var skillController = gameObject.GetComponent<CharacterSkillController>();
+        skillController = gameObject.GetComponent<CharacterSkillController>();
         skillController.skillId = skillData.skill_id;
 
         // 디버프 등록
@@ -76,8 +78,26 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
     {
         var obj = PoolManager.Instance.Get(poolId);
 
-        Vector3 startPos = GetStartPosition();
-        Vector3 dir = GetDirection();
+        Vector3 startPos = transform.position; 
+        Vector3 dir = skillController.dir;
+        // 직선형
+        if (skillData.skill_range_type == 1)
+        {
+            startPos = transform.position;
+            dir = skillController.dir;
+        }
+        // 원형
+        else if(skillData.skill_range_type == 2)
+        {
+            startPos = skillController.startPos;
+            dir = Vector3.zero;
+        }
+        // 방사형(일단 원형이랑 똑같이)
+        else if(skillData.skill_range_type == 3)
+        {
+            startPos = skillController.startPos;
+            dir = Vector3.zero;
+        }
 
         var proj = obj.GetComponent<CharacterProjectile>();
         if (proj == null)
@@ -103,7 +123,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             AutoRelease(obj, skillData.skill_duration).Forget();
 
         // 원형 즉발형 스킬 발동시
-        if (skillData.skill_duration == 0f && skillData.skill_range_type == 2)
+        if (skillData.skill_duration == 0f && (skillData.skill_range_type == 2 || skillData.skill_range_type == 3))
             AutoRelease(obj, 1f).Forget();
     }
 
@@ -125,24 +145,63 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
     {
         await UniTask.WaitForSeconds(time);
 
-        if (go == null) 
-            return;         
+        if (go == null)
+            return;
         if (PoolManager.Instance == null)
-            return;         
-        if (string.IsNullOrEmpty(prefabName)) 
-            return;    
+            return;
+        if (string.IsNullOrEmpty(prefabName))
+            return;
 
         PoolManager.Instance.Release(prefabName, go);
     }
 
     // ========== 스킬별로 구현 ==========
-    protected abstract void SetupCollider(GameObject clone);
     protected abstract Vector3 GetStartPosition();
+
+    protected virtual void SetupCollider(GameObject clone)
+    {
+        var circleCollider = clone.GetComponent<CircleCollider2D>();
+        var boxCollider = clone.GetComponent<BoxCollider2D>();
+
+        // 직선형
+        if (skillData.skill_range_type == 1)
+        {
+            boxCollider.size = new Vector2(skillData.skill_range, boxCollider.size.y);
+            circleCollider.enabled = false;
+        }
+        // 원형
+        else if (skillData.skill_range_type == 2)
+        {
+            circleCollider.radius = skillData.skill_range;
+            boxCollider.enabled = false;
+        }
+        // 방사형(일단 원형이랑 똑같이 하기)
+        else if (skillData.skill_range_type == 3)
+        {
+            circleCollider.radius = skillData.skill_range;
+            boxCollider.enabled = false;
+        }
+    }
 
     protected virtual void SetupParticle(GameObject particle, GameObject clone)
     {
-        // 기본: skill_range만큼 비율 확대
-        particle.transform.localScale *= skillData.skill_range;
+        // 직선형
+        if (skillData.skill_range_type == 1)
+        {
+            var particleScale = particle.transform.localScale;
+            particleScale.x *= skillData.skill_range;
+            particle.transform.localScale = particleScale;
+        }
+        // 원형
+        else if (skillData.skill_range_type == 2)
+        {
+            particle.transform.localScale *= skillData.skill_range;
+        }
+        // 방사형(일단 원형이랑 똑같이 하기)
+        else if (skillData.skill_range_type == 3)
+        {
+            particle.transform.localScale *= skillData.skill_range;
+        }
     }
 
     protected virtual Vector3 GetDirection()

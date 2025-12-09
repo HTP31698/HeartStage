@@ -18,6 +18,7 @@ public class SkillData : ScriptableObject
     public float skill_speed;
     public float skill_crt;
     public float skill_range;
+    public float skill_straight_range;
     public int skill_range_type;
     public int skill_bull_amount;
     public float skill_delay;
@@ -54,6 +55,7 @@ public class SkillData : ScriptableObject
         skill_speed = csvData.skill_speed;
         skill_crt = csvData.skill_crt;
         skill_range = csvData.skill_range;
+        skill_straight_range = csvData.skill_straight_range;
         skill_range_type = csvData.skill_range_type;
         skill_bull_amount = csvData.skill_bull_amount;
         skill_delay = csvData.skill_delay;
@@ -91,6 +93,7 @@ public class SkillData : ScriptableObject
         csvData.skill_speed = skill_speed;
         csvData.skill_crt = skill_crt;
         csvData.skill_range = skill_range;
+        csvData.skill_straight_range = skill_straight_range;
         csvData.skill_range_type = skill_range_type;
         csvData.skill_bull_amount = skill_bull_amount;
         csvData.skill_delay = skill_delay;
@@ -132,6 +135,7 @@ public class SkillCSVData
     public float skill_speed { get; set; }
     public float skill_crt { get; set; }
     public float skill_range { get; set; }
+    public float skill_straight_range { get; set; }
     public int skill_range_type { get; set; }
     public int skill_bull_amount { get; set; }
     public float skill_delay { get; set; }

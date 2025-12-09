@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 using UnityEngine.UI;
 
 public class StageManager : MonoBehaviour
@@ -37,9 +36,12 @@ public class StageManager : MonoBehaviour
 
     private float currentTimeScale = 1f;
 
+    [HideInInspector]
+    public bool isFever = false;
     private int feverCount = 0;
-    private bool isFever = false;
+
     public float feverDuration = 6.0f;
+    public float feverValue = 0.9f; // 피버 타임시 액티브 스킬 쿨타임이 줄어드는 퍼센트 0.9 -> 90% 감소
 
     // 스테이지 관련 추가 한 것
     [HideInInspector]

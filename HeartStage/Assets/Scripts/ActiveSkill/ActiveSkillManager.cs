@@ -155,14 +155,21 @@ public class ActiveSkillTimer
     {
         if (!IsReady)
         {
-            currentTime -= delta;
+            float speedFactor = 1f;
+            // 피버타임 체크
+            if (StageManager.Instance.isFever)
+            {
+                float denom = 1f - Mathf.Clamp(StageManager.Instance.feverValue, 0f, 0.99f);
+                speedFactor = 1f / denom;
+            }
+            currentTime -= delta * speedFactor;
             UI.UpdateUI(currentTime);
 
             if (IsReady)
             {
                 currentTime = 0;
                 UI.Hide();  // 다 차면 숨김
-                
+
                 var skillController = Caster.GetComponent<CharacterSkillController>();
                 skillController?.SkillReady();
             }
