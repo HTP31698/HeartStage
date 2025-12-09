@@ -559,6 +559,8 @@ public class AuthManager : MonoBehaviour
                 [$"userStats/{uid}"] = null,
                 // 닉네임 인덱스
                 [$"nicknameIndex/{uid}"] = null,
+                // 우편함
+                [$"mails/{uid}"] = null,
             };
 
             await rootRef.UpdateChildrenAsync(updates);
