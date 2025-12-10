@@ -16,7 +16,7 @@ public class StageWindow : GenericWindow
     //[SerializeField] private Button closeButton;
     [SerializeField] private Button stageInfoButton;
 
-    private float verticalSpacing = 600f; // 세로 간격
+    private float verticalSpacing = 500f; // 세로 간격
     private float horizontalOffset = 350f; // 좌우 번갈이 거리
     private float verticalPadding = 100f; // 화면 상단 패딩
 
