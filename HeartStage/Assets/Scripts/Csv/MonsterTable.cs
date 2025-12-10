@@ -42,9 +42,6 @@ public class MonsterCSVData
     public int drop_count2 { get; set; }
     public string prefab1 { get; set; }
     public string prefab2 { get; set; }
-
-    // stage_num은 CSV에 없으므로 기본값을 반환하는 프로퍼티로만 유지
-    public int stage_num => 1; // 기본값 1 반환
 }
 
 public class MonsterTable : DataTable
