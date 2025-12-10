@@ -113,7 +113,7 @@ public class FriendAddItemUI : MonoBehaviour
 
         try
         {
-            bool success = await FriendService.SendFriendRequestAsync(_profileData.uid)
+            var (success, errorCode) = await FriendService.SendFriendRequestAsync(_profileData.uid)
                 .AttachExternalCancellation(_cts.Token);
 
             if (success)
@@ -128,17 +128,28 @@ public class FriendAddItemUI : MonoBehaviour
             }
             else
             {
-                requestButton.interactable = true;
+                // 에러 코드별로 상세한 메시지 제공
+                string errorTitle = "친구 신청 실패";
+                string errorMessage = GetErrorMessage(errorCode, displayName);
 
-                _messageWindow?.OpenFail(
-                    "친구 신청 실패",
-                    $"{displayName}님에게 이미 친구 신청을 보냈거나\n이미 친구 상태입니다."
-                );
+                // 일부 에러는 버튼을 다시 활성화하지 않음
+                if (errorCode == "ALREADY_SENT" || errorCode == "ALREADY_FRIEND" || errorCode == "ALREADY_PROCESSING")
+                {
+                    if (requestButtonText != null)
+                        requestButtonText.text = "신청\n완료";
+                }
+                else
+                {
+                    requestButton.interactable = true;
+                }
+
+                _messageWindow?.OpenFail(errorTitle, errorMessage);
             }
         }
         catch (OperationCanceledException)
         {
             // 취소는 무시
+            requestButton.interactable = true;
         }
         catch (Exception e)
         {
@@ -147,6 +158,22 @@ public class FriendAddItemUI : MonoBehaviour
 
             _messageWindow?.OpenFail("오류", "친구 신청 중 오류가 발생했습니다.");
         }
+    }
+
+    private string GetErrorMessage(string errorCode, string displayName)
+    {
+        return errorCode switch
+        {
+            "ALREADY_SENT" => $"{displayName}님에게\n이미 친구 신청을 보냈습니다.",
+            "ALREADY_FRIEND" => $"{displayName}님은\n이미 친구 상태입니다.",
+            "ALREADY_PROCESSING" => "잠시 후 다시 시도해주세요.",
+            "USER_DELETED" => $"{displayName}님은\n탈퇴한 유저입니다.",
+            "MAX_REQUEST_EXCEEDED" => $"친구 신청은 최대\n{FriendService.MAX_REQUEST_COUNT}개까지 가능합니다.",
+            "SELF_REQUEST" => "자기 자신에게는\n친구 신청을 보낼 수 없습니다.",
+            "INVALID_UID" => "유효하지 않은 사용자입니다.",
+            "EXCEPTION" => "친구 신청 중\n오류가 발생했습니다.",
+            _ => $"{displayName}님에게\n친구 신청을 보낼 수 없습니다."
+        };
     }
 
     // 🔹 네가 요구한 포맷 그대로

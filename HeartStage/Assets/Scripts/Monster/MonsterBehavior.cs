@@ -219,6 +219,19 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             monsterSpawner.OnMonsterDied(monsterData.id);
         }
 
+        // 퀘스트 체크: 몬스터 처치
+        if (QuestManager.Instance != null && monsterData != null)
+        {
+            QuestManager.Instance.OnMonsterKilled(monsterData.id);
+
+            // 보스 처치 체크 (mon_type == 2)
+            if (isBoss)
+            {
+                QuestManager.Instance.OnWeeklyBossKill(monsterData.id);
+                QuestManager.Instance.OnBossFirstKill(monsterData.id);
+            }
+        }
+
         isFading = true;
         fadeTimer = 0f;
 

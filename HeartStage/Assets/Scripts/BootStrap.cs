@@ -150,8 +150,18 @@ public class BootStrap : MonoBehaviour
         // 3) 서버 시간 초기화 + 세이브 로드 / 첫 세이브 생성 + 출석 처리
         FirebaseTime.Initialize();
 
-        await TryLoad();
-        await UpdateLastLoginTime();
+        bool isNewUser = await TryLoad();
+
+        // 신규 유저는 TryLoad()에서 출석 처리 완료되므로 스킵
+        if (!isNewUser)
+        {
+            await UpdateLastLoginTime();
+        }
+        else
+        {
+            // 신규 유저도 nicknameIndex 업데이트는 필요
+            await PublicProfileService.UpdateNicknameIndexLoginTimeAsync();
+        }
 
         // 4) 실제 씬 전환
 #if UNITY_EDITOR
@@ -181,20 +191,29 @@ public class BootStrap : MonoBehaviour
         DateTime now = FirebaseTime.GetServerTime();
         DateTime last = SaveLoadManager.Data.LastLoginTime;
 
+        // 현재 시간을 마지막 접속 시간으로 저장
+        SaveLoadManager.Data.lastLoginBinary = now.ToBinary();
+
         // 날짜만 비교 (시/분/초는 무시)
         if (last.Date != now.Date)
         {
             // 일일 로그인 보상 / 출석 퀘스트 처리
+            // OnAttendance() 내부에서 SaveToServer() 호출하므로 여기서 추가 저장 불필요
             QuestManager.Instance.OnAttendance();
         }
+        else
+        {
+            // 날짜가 같으면 lastLoginBinary만 저장
+            await SaveLoadManager.SaveToServer();
+        }
 
-        // 현재 시간을 마지막 접속 시간으로 저장
-        SaveLoadManager.Data.lastLoginBinary = now.ToBinary();
-        await SaveLoadManager.SaveToServer();
+        // ★ nicknameIndex 로그인 시간 업데이트 (닉네임 설정된 유저만)
+        await PublicProfileService.UpdateNicknameIndexLoginTimeAsync();
     }
 
     // 서버에서 세이브 로드, 없으면 기본 세이브 생성
-    private async UniTask TryLoad()
+    // 반환값: true = 신규 유저 (출석 처리 완료됨)
+    private async UniTask<bool> TryLoad()
     {
         bool loaded = await SaveLoadManager.LoadFromServer();
 
@@ -219,11 +238,16 @@ public class BootStrap : MonoBehaviour
             // 처음에 드림에너지 100개 지급
             ItemInvenHelper.AddItem(ItemID.DreamEnergy, 100);
 
+            // 신규 유저 첫 접속 시간 설정
+            SaveLoadManager.Data.lastLoginBinary = FirebaseTime.GetServerTime().ToBinary();
+
             // 첫 접속 시에도 출석 퀘스트 처리
+            // OnAttendance() 내부에서 SaveToServer() 호출하므로 여기서 추가 저장 불필요
             QuestManager.Instance.OnAttendance();
 
-            // 첫 저장은 확실하게 await
-            await SaveLoadManager.SaveToServer();
+            return true; // 신규 유저
         }
+
+        return false; // 기존 유저
     }
 }

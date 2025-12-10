@@ -72,6 +72,9 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
     private void OnDisable()
     {
         QuestManager.DailyQuestCompleted -= OnDailyQuestClearedExternally;
+
+        // ★ 탭 닫힐 때 저장
+        SaveDailyStateAsync().Forget();
     }
 
     #endregion
@@ -196,7 +199,12 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
         if (completed)
             cleared = true;
 
-        ui.Init(this, data, cleared, completed);
+        // 현재 진행도 가져오기
+        int progress = QuestManager.Instance != null
+            ? QuestManager.Instance.GetDailyQuestProgress(id)
+            : 0;
+
+        ui.Init(this, data, cleared, completed, progress);
     }
 
     /// <summary>
@@ -219,6 +227,12 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
 
             bool completed = State.completedQuestIds.Contains(id);
             bool cleared = completed || State.clearedQuestIds.Contains(id);
+
+            // 진행도 갱신
+            int progress = QuestManager.Instance != null
+                ? QuestManager.Instance.GetDailyQuestProgress(id)
+                : 0;
+            item.SetProgress(progress);
 
             item.SetState(cleared, completed);
         }
@@ -436,11 +450,11 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
     #region Daily 퀘스트 완료/클리어 처리 (QuestManager 이벤트 연동)
 
     /// <summary>
-    /// UI에서 "완료" 버튼 눌렀을 때 호출됨.
+    /// UI에서 "받기" 버튼 눌렀을 때 호출됨.
     /// - 조건은 이미 QuestManager 에서 만족된 상태라고 가정.
     /// - 여기서 보상 지급 + 진행도 증가 + completed 목록에 등록.
     /// </summary>
-    public async void OnQuestItemClickedComplete(QuestData questData, QuestItemUIBase itemUI)
+    public void OnQuestItemClickedComplete(QuestData questData, QuestItemUIBase itemUI)
     {
         if (questData == null || itemUI == null)
             return;
@@ -454,19 +468,13 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
         {
             State.completedQuestIds.Add(id);
 
-            // TODO: 여기서 퀘스트 개별 보상 지급(Quest_reward1~3) 처리
-            // ex) ItemManager.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+            // 퀘스트 개별 보상 지급 (Quest_reward1~3)
+            GiveQuestReward(questData);
 
-            if (questData.progress_type == (int)progressType &&
-                questData.progress_amount > 0)
-            {
-                AddProgress(questData.progress_amount);
-                // AddProgress 안에서 Save 호출
-            }
-            else
-            {
-                await SaveDailyStateAsync();
-            }
+            // 상단 진행도 게이지 증가 (progress_amount가 있으면 사용, 없으면 기본 20)
+            int progressAmount = questData.progress_amount > 0 ? questData.progress_amount : 20;
+            AddProgress(progressAmount);
+            // AddProgress 안에서 Save 호출
         }
 
         itemUI.SetState(cleared: true, completed: true);
@@ -497,10 +505,53 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
             bool completed = State.completedQuestIds != null &&
                              State.completedQuestIds.Contains(id);
 
+            // 진행도 갱신
+            int progress = QuestManager.Instance != null
+                ? QuestManager.Instance.GetDailyQuestProgress(id)
+                : 0;
+            ui.SetProgress(progress);
+
             ui.SetState(cleared: true, completed: completed);
         }
 
         SaveDailyStateAsync().Forget();
+    }
+
+    /// <summary>
+    /// 퀘스트 보상 지급
+    /// </summary>
+    private void GiveQuestReward(QuestData questData)
+    {
+        // 보상 UI 패널 찾기
+        var acquirePanel = FindFirstObjectByType<ItemAcquirePanel>();
+
+        if (questData.Quest_reward1 != 0 && questData.Quest_reward1_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+            Debug.Log($"[DailyQuests] Reward1 지급: Item {questData.Quest_reward1} x {questData.Quest_reward1_A}");
+
+            // UI 표시
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward1, questData.Quest_reward1_A);
+        }
+
+        if (questData.Quest_reward2 != 0 && questData.Quest_reward2_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
+            Debug.Log($"[DailyQuests] Reward2 지급: Item {questData.Quest_reward2} x {questData.Quest_reward2_A}");
+
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward2, questData.Quest_reward2_A);
+        }
+
+        if (questData.Quest_reward3 != 0 && questData.Quest_reward3_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
+            Debug.Log($"[DailyQuests] Reward3 지급: Item {questData.Quest_reward3} x {questData.Quest_reward3_A}");
+
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward3, questData.Quest_reward3_A);
+        }
     }
 
     #endregion

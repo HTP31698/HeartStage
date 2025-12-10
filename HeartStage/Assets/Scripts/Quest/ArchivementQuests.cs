@@ -30,6 +30,10 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
 
     private async void OnEnable()
     {
+        // Achievement 퀘스트 완료 이벤트 등록
+        QuestManager.AchievementQuestCompleted -= OnAchievementQuestClearedExternally;
+        QuestManager.AchievementQuestCompleted += OnAchievementQuestClearedExternally;
+
         if (!IsInitialized)
         {
             await InitializeAsync();
@@ -39,6 +43,11 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
             // 이미 초기화된 상태면, 세이브 기준으로 UI만 갱신
             RefreshAllItemStatesFromSave();
         }
+    }
+
+    private void OnDisable()
+    {
+        QuestManager.AchievementQuestCompleted -= OnAchievementQuestClearedExternally;
     }
 
     public async UniTask InitializeAsync()
@@ -115,8 +124,16 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
             bool cleared = completed ||
                            (State.clearedQuestIds != null && State.clearedQuestIds.Contains(id));
 
+            // 현재 진행도 및 필요량 가져오기
+            int progress = QuestManager.Instance != null
+                ? QuestManager.Instance.GetAchievementQuestProgress(id)
+                : 0;
+            int required = QuestManager.Instance != null
+                ? QuestManager.Instance.GetAchievementQuestRequired(id)
+                : data.Quest_required;
+
             var item = Instantiate(questItemPrefab, questListContent);
-            item.Init(this, data, cleared, completed);
+            item.Init(this, data, cleared, completed, progress, required);
 
             _questItems.Add(item);
         }
@@ -140,6 +157,12 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
             int id = item.QuestId;
             bool completed = State.completedQuestIds.Contains(id);
             bool cleared = completed || State.clearedQuestIds.Contains(id);
+
+            // 진행도 갱신
+            int progress = QuestManager.Instance != null
+                ? QuestManager.Instance.GetAchievementQuestProgress(id)
+                : 0;
+            item.SetProgress(progress);
 
             item.SetState(cleared, completed);
         }
@@ -233,15 +256,35 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
 
     private void GiveQuestReward(QuestData questData)
     {
-        // TODO: 실제 아이템 지급 시스템 연결 (Daily랑 같은 패턴으로)
+        // 보상 UI 패널 찾기
+        var acquirePanel = FindFirstObjectByType<ItemAcquirePanel>();
+
         if (questData.Quest_reward1 != 0 && questData.Quest_reward1_A > 0)
-            Debug.Log($"[ArchivementQuests] Reward1: {questData.Quest_reward1} x {questData.Quest_reward1_A}");
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+            Debug.Log($"[ArchivementQuests] Reward1 지급: Item {questData.Quest_reward1} x {questData.Quest_reward1_A}");
+
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward1, questData.Quest_reward1_A);
+        }
 
         if (questData.Quest_reward2 != 0 && questData.Quest_reward2_A > 0)
-            Debug.Log($"[ArchivementQuests] Reward2: {questData.Quest_reward2} x {questData.Quest_reward2_A}");
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
+            Debug.Log($"[ArchivementQuests] Reward2 지급: Item {questData.Quest_reward2} x {questData.Quest_reward2_A}");
+
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward2, questData.Quest_reward2_A);
+        }
 
         if (questData.Quest_reward3 != 0 && questData.Quest_reward3_A > 0)
-            Debug.Log($"[ArchivementQuests] Reward3: {questData.Quest_reward3} x {questData.Quest_reward3_A}");
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
+            Debug.Log($"[ArchivementQuests] Reward3 지급: Item {questData.Quest_reward3} x {questData.Quest_reward3_A}");
+
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward3, questData.Quest_reward3_A);
+        }
     }
 
     private async UniTask SaveAchievementStateAsync()

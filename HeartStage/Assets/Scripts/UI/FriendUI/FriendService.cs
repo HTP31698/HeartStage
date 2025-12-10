@@ -13,7 +13,8 @@ public static class FriendService
     public const int MAX_FRIEND_COUNT = 20;
     public const int MAX_REQUEST_COUNT = 20;
 
-    private static bool _isProcessingRequest = false;
+    // UID별로 처리 중인지 관리 (동시성 제어)
+    private static HashSet<string> _processingUids = new();
 
     // === 캐시 데이터 ===
     private static List<string> _cachedFriendUids = new();
@@ -78,62 +79,73 @@ public static class FriendService
     /// <summary>
     /// 친구 요청 보내기
     /// </summary>
-    public static async UniTask<bool> SendFriendRequestAsync(string targetUid)
+    public static async UniTask<(bool success, string errorCode)> SendFriendRequestAsync(string targetUid)
     {
-        if (_isProcessingRequest)
-        {
-            Debug.Log("[FriendService] 이미 요청 처리 중입니다.");
-            return false;
-        }
-
         string myUid = GetMyUid();
         if (string.IsNullOrEmpty(myUid) || string.IsNullOrEmpty(targetUid))
         {
             Debug.LogWarning("[FriendService] 유효하지 않은 UID입니다.");
-            return false;
+            return (false, "INVALID_UID");
         }
 
         if (myUid == targetUid)
         {
             Debug.LogWarning("[FriendService] 자기 자신에게 친구 요청을 보낼 수 없습니다.");
-            return false;
+            return (false, "SELF_REQUEST");
         }
 
-        // ★ 탈퇴 유저에게는 친구 요청 불가
-        bool targetExists = await PublicProfileService.ExistsAsync(targetUid);
-        if (!targetExists)
+        // UID별 동시성 제어
+        if (_processingUids.Contains(targetUid))
         {
-            Debug.LogWarning("[FriendService] 탈퇴한 유저에게는 친구 요청을 보낼 수 없습니다.");
-            return false;
+            Debug.Log($"[FriendService] {targetUid}에 대한 요청이 이미 처리 중입니다.");
+            return (false, "ALREADY_PROCESSING");
         }
 
-        _isProcessingRequest = true;
+        _processingUids.Add(targetUid);
 
         try
         {
+            // ★ 탈퇴 유저에게는 친구 요청 불가
+            bool targetExists = await PublicProfileService.ExistsAsync(targetUid);
+            if (!targetExists)
+            {
+                Debug.LogWarning("[FriendService] 탈퇴한 유저에게는 친구 요청을 보낼 수 없습니다.");
+                return (false, "USER_DELETED");
+            }
+
             // ★ 보낸 요청 수 제한 체크
             var sentSnap = await Root.Child("sentRequests").Child(myUid).GetValueAsync();
             int sentCount = sentSnap.Exists ? (int)sentSnap.ChildrenCount : 0;
             if (sentCount >= MAX_REQUEST_COUNT)
             {
                 Debug.LogWarning($"[FriendService] 보낸 요청이 최대치({MAX_REQUEST_COUNT}개)입니다.");
-                return false;
+                return (false, "MAX_REQUEST_EXCEEDED");
             }
 
+            // ★ 이미 친구인지 확인
             var myFriendRef = Root.Child("friends").Child(myUid).Child(targetUid);
-            var snap = await myFriendRef.GetValueAsync();
-            if (snap.Exists)
+            var friendSnap = await myFriendRef.GetValueAsync();
+            if (friendSnap.Exists)
             {
                 Debug.Log("[FriendService] 이미 친구 상태입니다.");
-                return false;
+                return (false, "ALREADY_FRIEND");
+            }
+
+            // ★ 이미 보낸 요청인지 확인 (sentRequests와 friendRequests 모두 확인)
+            var mySentRef = Root.Child("sentRequests").Child(myUid).Child(targetUid);
+            var mySentSnap = await mySentRef.GetValueAsync();
+            if (mySentSnap.Exists)
+            {
+                Debug.Log("[FriendService] 이미 친구 요청을 보냈습니다. (sentRequests)");
+                return (false, "ALREADY_SENT");
             }
 
             var requestRef = Root.Child("friendRequests").Child(targetUid).Child(myUid);
             var requestSnap = await requestRef.GetValueAsync();
             if (requestSnap.Exists)
             {
-                Debug.Log("[FriendService] 이미 친구 요청을 보냈습니다.");
-                return false;
+                Debug.Log("[FriendService] 이미 친구 요청을 보냈습니다. (friendRequests)");
+                return (false, "ALREADY_SENT");
             }
 
             var updates = new Dictionary<string, object>
@@ -144,17 +156,21 @@ public static class FriendService
 
             await Root.UpdateChildrenAsync(updates);
 
+            // 캐시에도 즉시 추가 (UI 반응성 향상)
+            if (!_cachedSentRequests.Contains(targetUid))
+                _cachedSentRequests.Add(targetUid);
+
             Debug.Log($"[FriendService] 친구 요청 전송 완료: {targetUid}");
-            return true;
+            return (true, "SUCCESS");
         }
         catch (Exception e)
         {
             Debug.LogError($"[FriendService] SendFriendRequestAsync Error: {e}");
-            return false;
+            return (false, "EXCEPTION");
         }
         finally
         {
-            _isProcessingRequest = false;
+            _processingUids.Remove(targetUid);
         }
     }
 
@@ -219,29 +235,30 @@ public static class FriendService
     /// </summary>
     public static async UniTask<bool> AcceptFriendRequestAsync(string fromUid)
     {
-        if (_isProcessingRequest)
-        {
-            Debug.Log("[FriendService] 이미 요청 처리 중입니다.");
-            return false;
-        }
-
         string myUid = GetMyUid();
         if (string.IsNullOrEmpty(myUid) || string.IsNullOrEmpty(fromUid))
             return false;
 
-        // ★ 탈퇴 유저 요청은 수락 불가 (정리만)
-        bool exists = await PublicProfileService.ExistsAsync(fromUid);
-        if (!exists)
+        // UID별 동시성 제어
+        if (_processingUids.Contains(fromUid))
         {
-            Debug.Log("[FriendService] 탈퇴한 유저의 요청입니다. 요청만 정리합니다.");
-            await CleanupOrphanRequestsAsync(myUid, new List<string> { fromUid }, isReceived: true);
+            Debug.Log($"[FriendService] {fromUid}에 대한 요청이 이미 처리 중입니다.");
             return false;
         }
 
-        _isProcessingRequest = true;
+        _processingUids.Add(fromUid);
 
         try
         {
+            // ★ 탈퇴 유저 요청은 수락 불가 (정리만)
+            bool exists = await PublicProfileService.ExistsAsync(fromUid);
+            if (!exists)
+            {
+                Debug.Log("[FriendService] 탈퇴한 유저의 요청입니다. 요청만 정리합니다.");
+                await CleanupOrphanRequestsAsync(myUid, new List<string> { fromUid }, isReceived: true);
+                return false;
+            }
+
             var friendSnap = await Root.Child("friends").Child(myUid).GetValueAsync();
             int currentCount = friendSnap.Exists ? (int)friendSnap.ChildrenCount : 0;
 
@@ -285,7 +302,7 @@ public static class FriendService
         }
         finally
         {
-            _isProcessingRequest = false;
+            _processingUids.Remove(fromUid);
         }
     }
 
@@ -418,10 +435,8 @@ public static class FriendService
 
     public static bool CanAddMoreFriends()
     {
-        if (SaveLoadManager.Data is not SaveDataV1 data)
-            return false;
-
-        return data.friendUidList.Count < MAX_FRIEND_COUNT;
+        // ★ 로컬 캐시 대신 FriendService 캐시 사용 (탈퇴 유저 필터링된 최신 데이터)
+        return CachedFriendCount < MAX_FRIEND_COUNT;
     }
 
     /// <summary>

@@ -421,26 +421,47 @@ public class MailManager : MonoBehaviour
     }
 
     // 게임에 등록된 모든 유저 ID 목록 가져오기
+    // 구조: users/anonymous/active/{uid}, users/anonymous/cold/{uid}, users/registered/{uid}
     public async UniTask<List<string>> GetAllUserIdsAsync()
     {
         try
         {
-            // users 노드에서 모든 유저 정보 조회
             var snapshot = await db.Child("users").GetValueAsync();
             var userIds = new List<string>();
 
             if (snapshot.Exists)
             {
-                foreach (var child in snapshot.Children)
+                foreach (var typeChild in snapshot.Children)
                 {
-                    userIds.Add(child.Key);  // 각 자식 노드의 키가 유저 ID
+                    // typeChild.Key = "anonymous" 또는 "registered"
+                    if (typeChild.Key == "anonymous")
+                    {
+                        // anonymous 하위에 active, cold가 있음
+                        foreach (var statusChild in typeChild.Children)
+                        {
+                            foreach (var userChild in statusChild.Children)
+                            {
+                                userIds.Add(userChild.Key);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // registered는 바로 uid가 자식
+                        foreach (var userChild in typeChild.Children)
+                        {
+                            userIds.Add(userChild.Key);
+                        }
+                    }
                 }
             }
 
+            Debug.Log($"[MailManager] 전체 유저 수: {userIds.Count}명");
             return userIds;
         }
-        catch 
+        catch (Exception ex)
         {
+            Debug.LogError($"[MailManager] GetAllUserIdsAsync 실패: {ex.Message}");
             return new List<string>();
         }
     }

@@ -62,7 +62,19 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
 
     private void OnEnable()
     {
+        // Weekly 퀘스트 완료 이벤트 등록
+        QuestManager.WeeklyQuestCompleted -= OnWeeklyQuestClearedExternally;
+        QuestManager.WeeklyQuestCompleted += OnWeeklyQuestClearedExternally;
+
         RefreshAllItemStatesFromSave();
+    }
+
+    private void OnDisable()
+    {
+        QuestManager.WeeklyQuestCompleted -= OnWeeklyQuestClearedExternally;
+
+        // ★ 탭 닫힐 때 저장
+        SaveWeeklyStateAsync().Forget();
     }
 
     public async UniTask InitializeAsync()
@@ -135,6 +147,14 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
         Array.Clear(State.claimed, 0, State.claimed.Length);
         State.clearedQuestIds.Clear();
         State.completedQuestIds.Clear();
+
+        // 주간 카운터 리셋 (QuestManager와 동기화)
+        State.loginCount = 0;
+        State.monsterKillCount = 0;
+        State.shopPurchaseCount = 0;
+        State.bossKillCount = 0;
+        State.gachaDrawCount = 0;
+        State.lastLoginDate = "";
     }
 
     private async UniTask SaveWeeklyStateAsync()
@@ -189,8 +209,13 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
             bool completed = State.completedQuestIds.Contains(id);
             bool cleared = completed || State.clearedQuestIds.Contains(id);
 
+            // 현재 진행도 가져오기
+            int progress = QuestManager.Instance != null
+                ? QuestManager.Instance.GetWeeklyQuestProgress(id)
+                : 0;
+
             var item = Instantiate(questItemPrefab, questListContent);
-            item.Init(this, data, cleared, completed);
+            item.Init(this, data, cleared, completed, progress);
 
             _questItems.Add(item);
         }
@@ -215,6 +240,12 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
 
             bool completed = State.completedQuestIds.Contains(id);
             bool cleared = completed || State.clearedQuestIds.Contains(id);
+
+            // 진행도 갱신
+            int progress = QuestManager.Instance != null
+                ? QuestManager.Instance.GetWeeklyQuestProgress(id)
+                : 0;
+            item.SetProgress(progress);
 
             item.SetState(cleared, completed);
         }
@@ -411,15 +442,67 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
 
     private void GiveProgressReward(QuestProgressData data)
     {
-        // TODO: 여기서 실제 아이템 지급
-        Debug.Log($"[WeeklyQuests] 진행도 보상 지급: {data.progress_reward_ID}");
+        // 진행도 보상 지급
+        if (data.reward1 != 0 && data.reward1_amount > 0)
+        {
+            ItemInvenHelper.AddItem(data.reward1, data.reward1_amount);
+            Debug.Log($"[WeeklyQuests] 진행도 보상 지급: Item {data.reward1} x {data.reward1_amount}");
+        }
+
+        if (data.reward2 != 0 && data.reward2_amount > 0)
+        {
+            ItemInvenHelper.AddItem(data.reward2, data.reward2_amount);
+            Debug.Log($"[WeeklyQuests] 진행도 보상 지급: Item {data.reward2} x {data.reward2_amount}");
+        }
+
+        if (data.reward3 != 0 && data.reward3_amount > 0)
+        {
+            ItemInvenHelper.AddItem(data.reward3, data.reward3_amount);
+            Debug.Log($"[WeeklyQuests] 진행도 보상 지급: Item {data.reward3} x {data.reward3_amount}");
+        }
+    }
+
+    /// <summary>
+    /// 퀘스트 개별 보상 지급
+    /// </summary>
+    private void GiveQuestReward(QuestData questData)
+    {
+        // 보상 UI 패널 찾기
+        var acquirePanel = FindFirstObjectByType<ItemAcquirePanel>();
+
+        if (questData.Quest_reward1 != 0 && questData.Quest_reward1_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+            Debug.Log($"[WeeklyQuests] Reward1 지급: Item {questData.Quest_reward1} x {questData.Quest_reward1_A}");
+
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward1, questData.Quest_reward1_A);
+        }
+
+        if (questData.Quest_reward2 != 0 && questData.Quest_reward2_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
+            Debug.Log($"[WeeklyQuests] Reward2 지급: Item {questData.Quest_reward2} x {questData.Quest_reward2_A}");
+
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward2, questData.Quest_reward2_A);
+        }
+
+        if (questData.Quest_reward3 != 0 && questData.Quest_reward3_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
+            Debug.Log($"[WeeklyQuests] Reward3 지급: Item {questData.Quest_reward3} x {questData.Quest_reward3_A}");
+
+            if (acquirePanel != null)
+                acquirePanel.Open(questData.Quest_reward3, questData.Quest_reward3_A);
+        }
     }
 
     #endregion
 
     #region IQuestItemOwner 구현
 
-    public async void OnQuestItemClickedComplete(QuestData questData, QuestItemUIBase itemUI)
+    public void OnQuestItemClickedComplete(QuestData questData, QuestItemUIBase itemUI)
     {
         if (questData == null || itemUI == null)
             return;
@@ -433,24 +516,61 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
         {
             State.completedQuestIds.Add(id);
 
-            // TODO: 개별 주간 퀘스트 보상 지급
-            // ex) ItemManager.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+            // 개별 주간 퀘스트 보상 지급
+            GiveQuestReward(questData);
 
-            if (questData.progress_type == (int)progressType &&
-                questData.progress_amount > 0)
-            {
-                AddProgress(questData.progress_amount);
-            }
-            else
-            {
-                await SaveWeeklyStateAsync();
-            }
+            // 상단 진행도 게이지 증가 (progress_amount가 있으면 사용, 없으면 기본 20)
+            int progressAmount = questData.progress_amount > 0 ? questData.progress_amount : 20;
+            AddProgress(progressAmount);
+            // AddProgress 안에서 Save 호출
         }
 
         itemUI.SetState(cleared: true, completed: true);
     }
 
     #endregion
+
+    /// <summary>
+    /// QuestManager에서 Weekly 퀘스트가 조건을 충족했을 때 호출되는 이벤트 핸들러
+    /// </summary>
+    public void OnWeeklyQuestClearedExternally(QuestData questData)
+    {
+        if (questData == null)
+            return;
+
+        // Weekly 타입만 받기
+        if (questData.Quest_type != QuestType.Weekly)
+            return;
+
+        int id = questData.Quest_ID;
+
+        if (State.clearedQuestIds == null)
+            State.clearedQuestIds = new List<int>();
+
+        if (!State.clearedQuestIds.Contains(id))
+            State.clearedQuestIds.Add(id);
+
+        // 이미 생성된 UI가 있으면 즉시 반영
+        var ui = _questItems.Find(x => x.QuestId == id);
+        if (ui != null)
+        {
+            bool completed = State.completedQuestIds != null &&
+                             State.completedQuestIds.Contains(id);
+
+            // 진행도 갱신
+            int progress = QuestManager.Instance != null
+                ? QuestManager.Instance.GetWeeklyQuestProgress(id)
+                : 0;
+            ui.SetProgress(progress);
+
+            ui.SetState(cleared: true, completed: completed);
+        }
+
+        // 저장 호출
+        SaveWeeklyStateAsync().Forget();
+
+        Debug.Log($"[WeeklyQuests] Weekly Quest 조건 충족: id={id}");
+    }
 
     private string GetWeekKey(DateTime time)
     {
@@ -479,4 +599,14 @@ public class WeeklyQuestState
 
     // 이번 주에 보상까지 받은 주간 퀘스트 ID 목록
     public List<int> completedQuestIds = new List<int>();
+
+    // 🔽 주간 카운터 추가
+    public int loginCount = 0;        // 주간 로그인 횟수
+    public int monsterKillCount = 0;  // 주간 몬스터 처치 수
+    public int shopPurchaseCount = 0; // 주간 상점 구매 횟수
+    public int bossKillCount = 0;     // 주간 보스 처치 수
+    public int gachaDrawCount = 0;    // 주간 뽑기 횟수
+
+    // 🔽 중복 방지용 마지막 로그인 날짜 (yyyy-MM-dd)
+    public string lastLoginDate = "";
 }

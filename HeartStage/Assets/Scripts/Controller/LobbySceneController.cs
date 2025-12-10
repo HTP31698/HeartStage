@@ -39,13 +39,16 @@ public class LobbySceneController : MonoBehaviour
         await SyncPublicProfileIfPossible();
         await SyncDreamEnergyCounterAsync();
 
-        // 4. 친구 프로필 프리로드 (추가!)
+        // 4. 서버에서 친구 목록 동기화 (탈퇴 유저 필터링 + 고아 데이터 정리)
+        await FriendService.RefreshAllCacheAsync();
+
+        // 5. 친구 프로필 프리로드 (서버 동기화된 최신 목록 기반)
         await PreloadFriendProfilesAsync();
 
-        // 5. UI 프리워밍 (실제 창들은 안 보이게)
+        // 6. UI 프리워밍 (실제 창들은 안 보이게)
         await PrewarmWindowsAsync();
 
-        // 6. 로딩바 마무리 & 로비 준비 알림
+        // 7. 로딩바 마무리 & 로비 준비 알림
         await FinishLoadingSequenceAsync();
     }
 
@@ -106,7 +109,7 @@ public class LobbySceneController : MonoBehaviour
 
         int achievementCount = AchievementUtil.GetCompletedAchievementCount(data);
 
-        await PublicProfileService.UpdateMyPublicProfileAsync(data, achievementCount);
+        await PublicProfileService.UpdateMyPublicProfileWithIndexAsync(data, achievementCount);
     }
 
     private async UniTask SyncDreamEnergyCounterAsync()
@@ -131,8 +134,9 @@ public class LobbySceneController : MonoBehaviour
 
     private async UniTask PreloadFriendProfilesAsync()
     {
-        var data = SaveLoadManager.Data as SaveDataV1;
-        if (data == null || data.friendUidList == null || data.friendUidList.Count == 0)
+        // ★ FriendService 캐시 사용 (서버에서 동기화된 최신 목록, 탈퇴 유저 필터링됨)
+        var friendUids = FriendService.GetCachedFriendUids();
+        if (friendUids == null || friendUids.Count == 0)
         {
             return;
         }
@@ -140,7 +144,7 @@ public class LobbySceneController : MonoBehaviour
         _friendProfileCache.Clear();
 
         var tasks = new List<UniTask<PublicProfileData>>();
-        foreach (var uid in data.friendUidList)
+        foreach (var uid in friendUids)
         {
             tasks.Add(PublicProfileService.GetPublicProfileAsync(uid));
         }
@@ -149,9 +153,9 @@ public class LobbySceneController : MonoBehaviour
         {
             var results = await UniTask.WhenAll(tasks);
 
-            for (int i = 0; i < data.friendUidList.Count; i++)
+            for (int i = 0; i < friendUids.Count; i++)
             {
-                var uid = data.friendUidList[i];
+                var uid = friendUids[i];
                 var profile = results[i];
 
                 if (profile != null)

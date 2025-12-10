@@ -29,9 +29,6 @@ public class MessageWindow : MonoBehaviour
     [SerializeField] private Image confirmButtonFrame;
     [SerializeField] private Image cancelButtonFrame;
 
-    [Header("윈도우 프레임")]
-    [SerializeField] private Image windowFrame;
-
     [Header("색상 설정")]
     [SerializeField] private Color successColor = Color.green;
     [SerializeField] private Color failColor = Color.red;
@@ -162,8 +159,6 @@ public class MessageWindow : MonoBehaviour
             twoButtonContainer.SetActive(false);
 
         ApplyButtonColor(singleButtonImage, singleButtonFrame, singleButtonLabel, buttonColor);
-        ApplyWindowFrameColor(buttonColor);
-
         _onConfirm = null;
         _onCancel = null;
         _onSingleClose = onClose;
@@ -185,7 +180,6 @@ public class MessageWindow : MonoBehaviour
 
         ApplyButtonColor(confirmButtonImage, confirmButtonFrame, confirmButtonLabel, confirmColor);
         ApplyButtonColor(cancelButtonImage, cancelButtonFrame, cancelButtonLabel, cancelColor);
-        ApplyWindowFrameColor(neutralColor);
     }
 
     private void ApplyButtonColor(Image buttonImage, Image buttonFrame, TextMeshProUGUI label, Color baseColor)
@@ -205,19 +199,6 @@ public class MessageWindow : MonoBehaviour
 
         if (label != null)
             label.color = Color.white;
-    }
-
-    private void ApplyWindowFrameColor(Color baseColor)
-    {
-        if (windowFrame != null)
-        {
-            windowFrame.color = new Color(
-                baseColor.r * frameDarkenFactor,
-                baseColor.g * frameDarkenFactor,
-                baseColor.b * frameDarkenFactor,
-                windowFrame.color.a
-            );
-        }
     }
 
     #endregion
