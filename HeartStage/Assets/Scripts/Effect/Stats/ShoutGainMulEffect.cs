@@ -26,7 +26,7 @@ public class ShoutGainMulEffect : EffectBase, IStatMulSource
     {
         if (stat == StatType.ShoutGainRate)
         {
-            float factor = 1f + magnitude; // +0.5 → 1.5배 빨리 참
+            float factor = magnitude; // magnitude 그대로 쓰는 공식
             factor = Mathf.Max(0f, factor);
             mul = factor;
             return true;
