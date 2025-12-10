@@ -678,6 +678,12 @@ public class MonsterSpawner : MonoBehaviour
 
                 // 몬스터 킬 퀘스트 알림
                 QuestManager.Instance.OnMonsterKilled(monsterId);
+
+                // ★ 보스 처치 퀘스트 알림 (보스인 경우에만)
+                if (MonsterBehavior.IsBossMonster(monsterId))
+                {
+                    QuestManager.Instance.OnBossKilled(monsterId);
+                }
                 break;
             }
         }

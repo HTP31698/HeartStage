@@ -17,4 +17,8 @@ public class QuestData
     public int progress_amount { get; set; }
     public int Title_ID { get; set; }
     public string Icon_image { get; set; }
+
+    // ★ 이벤트 매핑용 (CSV에서 자동 로드)
+    public QuestEventType Event_type { get; set; }
+    public int Target_ID { get; set; }
 }

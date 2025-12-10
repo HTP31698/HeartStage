@@ -1,0 +1,1997 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeartStage Quest Editor v3.0</title>
+    <style>
+        :root {
+            --primary: #e94560;
+            --primary-hover: #ff6b8a;
+            --bg-dark: #0d1117;
+            --bg-panel: #161b22;
+            --bg-card: #21262d;
+            --bg-input: #0d1117;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --text-bright: #f0f6fc;
+            --success: #238636;
+            --warning: #d29922;
+            --danger: #da3633;
+            --info: #58a6ff;
+            --achievement: #a371f7;
+            --daily: #58a6ff;
+            --weekly: #3fb950;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 메인 레이아웃 */
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 상단 헤더 */
+        .header {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-bright);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary), #ff8fa3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-item .count {
+            color: var(--text-bright);
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* 버튼 스타일 */
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-card);
+            color: var(--text);
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--bg-panel);
+            border-color: var(--text-muted);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .btn-success {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #2ea043;
+        }
+
+        .btn-danger {
+            background: transparent;
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* 메인 컨텐츠 */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 왼쪽 사이드바 */
+        .sidebar {
+            width: 320px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 12px 10px 36px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.15);
+        }
+
+        .search-box::before {
+            content: '🔍';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            opacity: 0.5;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab:hover {
+            border-color: var(--text-muted);
+            color: var(--text);
+        }
+
+        .filter-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .filter-tab .count {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        /* 퀘스트 목록 */
+        .quest-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .quest-group {
+            margin-bottom: 16px;
+        }
+
+        .quest-group-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .quest-group-header .badge {
+            background: var(--bg-card);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
+
+        .quest-item {
+            padding: 12px;
+            background: var(--bg-card);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .quest-item:hover {
+            background: var(--bg-input);
+            border-color: var(--border);
+        }
+
+        .quest-item.selected {
+            background: rgba(233, 69, 96, 0.1);
+            border-color: var(--primary);
+        }
+
+        .quest-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .quest-item-id {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        .quest-item-type {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .type-achievement { background: rgba(163, 113, 247, 0.2); color: var(--achievement); }
+        .type-daily { background: rgba(88, 166, 255, 0.2); color: var(--daily); }
+        .type-weekly { background: rgba(63, 185, 80, 0.2); color: var(--weekly); }
+
+        .quest-item-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-bright);
+            margin-bottom: 4px;
+        }
+
+        .quest-item-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .quest-item-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            color: var(--text-muted);
+        }
+
+        .tag.event {
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--info);
+        }
+
+        .tag.target {
+            background: rgba(210, 153, 34, 0.15);
+            color: var(--warning);
+        }
+
+        .tag.warning {
+            background: rgba(218, 54, 51, 0.15);
+            color: var(--danger);
+        }
+
+        /* 사이드바 푸터 */
+        .sidebar-footer {
+            padding: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .sidebar-footer .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* 에디터 영역 */
+        .editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-panel);
+        }
+
+        .editor-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .editor-title h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-bright);
+        }
+
+        .editor-title .quest-id {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: monospace;
+            background: var(--bg-card);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .editor-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .editor-placeholder-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .editor-placeholder h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .editor-placeholder p {
+            font-size: 13px;
+            max-width: 300px;
+            line-height: 1.5;
+        }
+
+        /* 폼 섹션 */
+        .form-section {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-section-header .icon {
+            font-size: 18px;
+        }
+
+        .form-section-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-bright);
+        }
+
+        .form-section-header .hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-group label .required {
+            color: var(--danger);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.15);
+        }
+
+        .form-group input:disabled,
+        .form-group select:disabled {
+            background: var(--bg-card);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .form-group .helper {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .form-group.error input,
+        .form-group.error select {
+            border-color: var(--danger);
+        }
+
+        .form-group .error-msg {
+            font-size: 11px;
+            color: var(--danger);
+            margin-top: 4px;
+        }
+
+        /* 이벤트 타입 카드 */
+        .event-type-card {
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(163, 113, 247, 0.1));
+            border: 2px solid var(--info);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .event-type-card h4 {
+            font-size: 13px;
+            color: var(--info);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .event-type-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 12px;
+        }
+
+        .event-type-info {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .event-type-info code {
+            background: var(--bg-card);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--primary);
+            font-family: monospace;
+        }
+
+        /* 보상 그리드 */
+        .reward-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .reward-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .reward-card-header {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .reward-card select,
+        .reward-card input {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .reward-card select:focus,
+        .reward-card input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* 미리보기 */
+        .preview-card {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-panel));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--achievement));
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .preview-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-bright);
+        }
+
+        .preview-type {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .preview-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .preview-rewards {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .preview-reward-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-input);
+            padding: 8px 14px;
+            border-radius: 8px;
+        }
+
+        .preview-reward-icon {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .preview-reward-text {
+            font-size: 13px;
+            color: var(--text);
+        }
+
+        .preview-reward-amount {
+            color: var(--warning);
+            font-weight: 600;
+        }
+
+        .preview-progress {
+            margin-bottom: 16px;
+        }
+
+        .preview-progress-bar {
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .preview-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+            width: 65%;
+            transition: width 0.3s;
+        }
+
+        .preview-progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .preview-mapping {
+            background: var(--bg-input);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            overflow-x: auto;
+        }
+
+        .preview-mapping code {
+            color: var(--success);
+        }
+
+        /* 모달 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 16px;
+            color: var(--text-bright);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* 파일 드롭존 */
+        .dropzone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .dropzone:hover,
+        .dropzone.dragover {
+            border-color: var(--primary);
+            background: rgba(233, 69, 96, 0.05);
+        }
+
+        .dropzone-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .dropzone h4 {
+            font-size: 14px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .dropzone p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* 토스트 */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 14px 20px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            transform: translateX(120%);
+            transition: transform 0.3s;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.warning { border-left: 4px solid var(--warning); }
+        .toast.info { border-left: 4px solid var(--info); }
+
+        .toast-icon {
+            font-size: 18px;
+        }
+
+        /* 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* 반응형 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 280px;
+            }
+            .reward-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -320px;
+                top: 0;
+                bottom: 0;
+                z-index: 100;
+                transition: left 0.3s;
+            }
+            .sidebar.open {
+                left: 0;
+            }
+            .header-stats {
+                display: none;
+            }
+        }
+
+        /* 키보드 단축키 힌트 */
+        .shortcut {
+            font-size: 10px;
+            background: var(--bg-input);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- 헤더 -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <div class="logo-icon">💫</div>
+                    <span>HeartStage Quest Editor</span>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <span>전체:</span>
+                        <span class="count" id="totalCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span style="color: var(--achievement);">업적:</span>
+                        <span class="count" id="achievementCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span style="color: var(--daily);">일일:</span>
+                        <span class="count" id="dailyCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span style="color: var(--weekly);">주간:</span>
+                        <span class="count" id="weeklyCount">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn" onclick="showImportModal()">
+                    <span>📥</span> CSV 가져오기
+                </button>
+                <button class="btn btn-primary" onclick="exportCSV()">
+                    <span>📤</span> CSV 내보내기
+                </button>
+            </div>
+        </header>
+
+        <!-- 메인 -->
+        <main class="main">
+            <!-- 사이드바 -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="퀘스트 검색..." oninput="onSearch()">
+                    </div>
+                    <div class="filter-tabs">
+                        <div class="filter-tab active" data-filter="all">
+                            전체
+                            <span class="count" id="filterAllCount">0</span>
+                        </div>
+                        <div class="filter-tab" data-filter="achievement">
+                            업적
+                            <span class="count" id="filterAchievementCount">0</span>
+                        </div>
+                        <div class="filter-tab" data-filter="daily">
+                            일일
+                            <span class="count" id="filterDailyCount">0</span>
+                        </div>
+                        <div class="filter-tab" data-filter="weekly">
+                            주간
+                            <span class="count" id="filterWeeklyCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quest-list" id="questList">
+                    <!-- 퀘스트 목록 -->
+                </div>
+
+                <div class="sidebar-footer">
+                    <button class="btn btn-success" onclick="addNewQuest()">
+                        <span>➕</span> 새 퀘스트 추가
+                        <span class="shortcut">Ctrl+N</span>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- 에디터 -->
+            <section class="editor">
+                <div class="editor-header" id="editorHeader" style="display: none;">
+                    <div class="editor-title">
+                        <h2 id="editorTitle">퀘스트 편집</h2>
+                        <span class="quest-id" id="editorQuestId">#0</span>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn" onclick="duplicateQuest()">
+                            <span>📋</span> 복제
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteQuest()">
+                            <span>🗑️</span> 삭제
+                        </button>
+                        <button class="btn btn-success" onclick="saveQuest()">
+                            <span>💾</span> 저장
+                            <span class="shortcut">Ctrl+S</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="editor-content" id="editorContent">
+                    <div class="editor-placeholder">
+                        <div class="editor-placeholder-icon">📝</div>
+                        <h3>퀘스트를 선택하세요</h3>
+                        <p>왼쪽 목록에서 퀘스트를 선택하거나<br>새 퀘스트를 추가해서 편집을 시작하세요</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- CSV 가져오기 모달 -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>📥 CSV 가져오기</h3>
+                <button class="modal-close" onclick="hideImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+                    <div class="dropzone-icon">📄</div>
+                    <h4>CSV 파일을 드래그하거나 클릭하세요</h4>
+                    <p>QuestTable.csv 형식의 파일을 지원합니다</p>
+                </div>
+                <input type="file" id="fileInput" accept=".csv" style="display: none;" onchange="handleFileSelect(event)">
+
+                <div style="margin-top: 16px;">
+                    <label style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="replaceAll"> 기존 데이터 대체 (체크 해제 시 병합)
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hideImportModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 컨테이너 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // ========================================
+        // 데이터 정의
+        // ========================================
+
+        const ITEMS = {
+            0: { name: '(없음)', icon: '➖' },
+            7101: { name: '라이트 스틱', icon: '🎵' },
+            7102: { name: '하트 스틱', icon: '💖' },
+            7104: { name: '드림 에너지', icon: '⚡' },
+            7105: { name: '트레이닝 포인트', icon: '📈' },
+            7108: { name: '캐릭터 뽑기 티켓', icon: '🎫' },
+            7109: { name: '의상 뽑기 티켓', icon: '👗' },
+            7110: { name: '하나 조각', icon: '🧩' },
+            7113: { name: '세라 조각', icon: '🧩' },
+            7114: { name: '리아 조각', icon: '🧩' },
+            7115: { name: '지안 조각', icon: '🧩' }
+        };
+
+        const TITLES = {
+            0: '(없음)',
+            41001: '초급 천사',
+            41002: '중급 천사',
+            41003: '고급 천사',
+            41004: '루미나 가디언즈의 신입',
+            41005: '거리무대 지킴이'
+        };
+
+        const QUEST_TYPES = {
+            0: { name: '업적', class: 'type-achievement', color: 'var(--achievement)' },
+            1: { name: '일일', class: 'type-daily', color: 'var(--daily)' },
+            2: { name: '주간', class: 'type-weekly', color: 'var(--weekly)' }
+        };
+
+        const EVENT_TYPES = {
+            0: { name: 'None', display: '선택 안함', icon: '❌', requiresTarget: false, targetDesc: '' },
+            1: { name: 'Attendance', display: '출석/로그인', icon: '📅', requiresTarget: false, targetDesc: '' },
+            2: { name: 'ClearStage', display: '스테이지 클리어', icon: '🏆', requiresTarget: true, targetDesc: '스테이지 ID (0=아무 스테이지)' },
+            3: { name: 'MonsterKill', display: '몬스터 처치', icon: '⚔️', requiresTarget: false, targetDesc: '몬스터 마리수로 카운트' },
+            4: { name: 'BossKill', display: '보스 처치', icon: '👹', requiresTarget: true, targetDesc: '보스 몬스터 ID (0=아무 보스)' },
+            5: { name: 'GachaDraw', display: '뽑기', icon: '🎰', requiresTarget: false, targetDesc: '' },
+            6: { name: 'ShopPurchase', display: '상점 구매', icon: '🛒', requiresTarget: false, targetDesc: '' },
+            7: { name: 'FanAmountReach', display: '팬수 달성', icon: '👥', requiresTarget: false, targetDesc: 'Quest_required가 목표 팬수' }
+        };
+
+        // 기본 퀘스트 데이터 (실제 CSV 기반)
+        let quests = [];
+
+        // 상태
+        let selectedQuestId = null;
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        // ========================================
+        // 초기화
+        // ========================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            if (quests.length === 0) {
+                loadDefaultQuests();
+            }
+            renderQuestList();
+            updateStats();
+            setupEventListeners();
+        });
+
+        function loadDefaultQuests() {
+            // 실제 QuestTable.csv 기반 기본 데이터
+            quests = [
+                { Quest_ID: 1301001, Quest_name: '일일 출석체크 퀘스트1', Quest_type: 1, Quest_info: '하루 {Quest_required}회 로그인', Quest_required: 1, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 1, progress_amount: 20, Title_ID: 0, Event_type: 1, Target_ID: 0 },
+                { Quest_ID: 1301002, Quest_name: '일일 출석체크 퀘스트2', Quest_type: 1, Quest_info: '스테이지 {Quest_required} 회 클리어', Quest_required: 1, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 1, progress_amount: 20, Title_ID: 0, Event_type: 2, Target_ID: 0 },
+                { Quest_ID: 1301003, Quest_name: '일일 출석체크 퀘스트3', Quest_type: 1, Quest_info: '사람 정화 {Quest_required}회', Quest_required: 1, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 1, progress_amount: 20, Title_ID: 0, Event_type: 3, Target_ID: 0 },
+                { Quest_ID: 1301004, Quest_name: '일일 출석체크 퀘스트4', Quest_type: 1, Quest_info: '뽑기 {Quest_required}회', Quest_required: 1, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 1, progress_amount: 20, Title_ID: 0, Event_type: 5, Target_ID: 0 },
+                { Quest_ID: 1301005, Quest_name: '일일 출석체크 퀘스트5', Quest_type: 1, Quest_info: '상점 {Quest_required}회', Quest_required: 1, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 1, progress_amount: 20, Title_ID: 0, Event_type: 6, Target_ID: 0 },
+                { Quest_ID: 1302001, Quest_name: '주간 출석체크 퀘스트1', Quest_type: 2, Quest_info: '일주일 안에 {Quest_required}번 로그인하기', Quest_required: 5, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 2, progress_amount: 20, Title_ID: 0, Event_type: 1, Target_ID: 0 },
+                { Quest_ID: 1302002, Quest_name: '주간 출석체크 퀘스트2', Quest_type: 2, Quest_info: '사람 정화 {Quest_required}회', Quest_required: 50, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 2, progress_amount: 20, Title_ID: 0, Event_type: 3, Target_ID: 0 },
+                { Quest_ID: 1302003, Quest_name: '주간 출석체크 퀘스트3', Quest_type: 2, Quest_info: '상점 이용 {Quest_required}회', Quest_required: 10, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 2, progress_amount: 20, Title_ID: 0, Event_type: 6, Target_ID: 0 },
+                { Quest_ID: 1302004, Quest_name: '주간 출석체크 퀘스트4', Quest_type: 2, Quest_info: '보스 처치 {Quest_required}회', Quest_required: 3, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 2, progress_amount: 20, Title_ID: 0, Event_type: 4, Target_ID: 0 },
+                { Quest_ID: 1302005, Quest_name: '주간 출석체크 퀘스트5', Quest_type: 2, Quest_info: '뽑기 {Quest_required}회', Quest_required: 5, Quest_reward1: 0, Quest_reward1_A: 0, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 2, progress_amount: 20, Title_ID: 0, Event_type: 5, Target_ID: 0 },
+                { Quest_ID: 1300001, Quest_name: '초급 천사', Quest_type: 0, Quest_info: '유저 팬수 {Quest_required} 달성', Quest_required: 100, Quest_reward1: 7102, Quest_reward1_A: 50, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 0, progress_amount: 0, Title_ID: 41001, Event_type: 7, Target_ID: 0 },
+                { Quest_ID: 1300002, Quest_name: '중급 천사', Quest_type: 0, Quest_info: '유저 팬수 {Quest_required} 달성', Quest_required: 1000, Quest_reward1: 7102, Quest_reward1_A: 500, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 0, progress_amount: 0, Title_ID: 41002, Event_type: 7, Target_ID: 0 },
+                { Quest_ID: 1300003, Quest_name: '고급 천사', Quest_type: 0, Quest_info: '유저 팬수 {Quest_required} 달성', Quest_required: 10000, Quest_reward1: 7102, Quest_reward1_A: 1000, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 0, progress_amount: 0, Title_ID: 41003, Event_type: 7, Target_ID: 0 },
+                { Quest_ID: 1300004, Quest_name: '루미나 가디언즈의 신입', Quest_type: 0, Quest_info: '튜토리얼 스테이지 최초 클리어', Quest_required: 1, Quest_reward1: 7101, Quest_reward1_A: 500, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 0, progress_amount: 0, Title_ID: 41004, Event_type: 2, Target_ID: 601 },
+                { Quest_ID: 1300005, Quest_name: '거리무대 지킴이', Quest_type: 0, Quest_info: '보스 등급 몬스터 최초 처치', Quest_required: 1, Quest_reward1: 7101, Quest_reward1_A: 1000, Quest_reward2: 0, Quest_reward2_A: 0, Quest_reward3: 0, Quest_reward3_A: 0, progress_type: 0, progress_amount: 0, Title_ID: 41005, Event_type: 4, Target_ID: 22214 }
+            ];
+            saveToLocalStorage();
+        }
+
+        function setupEventListeners() {
+            // 필터 탭
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentFilter = tab.dataset.filter;
+                    renderQuestList();
+                });
+            });
+
+            // 드래그앤드롭
+            const dropzone = document.getElementById('dropzone');
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('dragover');
+            });
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) handleFile(file);
+            });
+
+            // 키보드 단축키
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 's') {
+                        e.preventDefault();
+                        if (selectedQuestId) saveQuest();
+                    } else if (e.key === 'n') {
+                        e.preventDefault();
+                        addNewQuest();
+                    }
+                }
+            });
+        }
+
+        // ========================================
+        // 로컬스토리지
+        // ========================================
+
+        function saveToLocalStorage() {
+            localStorage.setItem('heartStageQuests', JSON.stringify(quests));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('heartStageQuests');
+            if (saved) {
+                try {
+                    quests = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Failed to load from localStorage:', e);
+                }
+            }
+        }
+
+        // ========================================
+        // 통계 업데이트
+        // ========================================
+
+        function updateStats() {
+            const total = quests.length;
+            const achievement = quests.filter(q => q.Quest_type === 0).length;
+            const daily = quests.filter(q => q.Quest_type === 1).length;
+            const weekly = quests.filter(q => q.Quest_type === 2).length;
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('achievementCount').textContent = achievement;
+            document.getElementById('dailyCount').textContent = daily;
+            document.getElementById('weeklyCount').textContent = weekly;
+
+            document.getElementById('filterAllCount').textContent = total;
+            document.getElementById('filterAchievementCount').textContent = achievement;
+            document.getElementById('filterDailyCount').textContent = daily;
+            document.getElementById('filterWeeklyCount').textContent = weekly;
+        }
+
+        // ========================================
+        // 퀘스트 목록 렌더링
+        // ========================================
+
+        function renderQuestList() {
+            const container = document.getElementById('questList');
+
+            let filtered = quests;
+
+            // 타입 필터
+            if (currentFilter !== 'all') {
+                const typeMap = { achievement: 0, daily: 1, weekly: 2 };
+                filtered = filtered.filter(q => q.Quest_type === typeMap[currentFilter]);
+            }
+
+            // 검색 필터
+            if (searchQuery) {
+                const query = searchQuery.toLowerCase();
+                filtered = filtered.filter(q =>
+                    q.Quest_name.toLowerCase().includes(query) ||
+                    q.Quest_info.toLowerCase().includes(query) ||
+                    q.Quest_ID.toString().includes(query)
+                );
+            }
+
+            // 타입별 그룹핑
+            const groups = { 0: [], 1: [], 2: [] };
+            filtered.forEach(q => {
+                if (groups[q.Quest_type]) {
+                    groups[q.Quest_type].push(q);
+                }
+            });
+
+            let html = '';
+
+            // 업적 → 일일 → 주간 순서
+            [0, 1, 2].forEach(type => {
+                const groupQuests = groups[type];
+                if (groupQuests.length === 0) return;
+
+                const typeInfo = QUEST_TYPES[type];
+                html += `
+                    <div class="quest-group">
+                        <div class="quest-group-header">
+                            <span style="color: ${typeInfo.color}">${typeInfo.name}</span>
+                            <span class="badge">${groupQuests.length}</span>
+                        </div>
+                `;
+
+                groupQuests.sort((a, b) => a.Quest_ID - b.Quest_ID).forEach(q => {
+                    const eventInfo = EVENT_TYPES[q.Event_type] || EVENT_TYPES[0];
+                    const desc = q.Quest_info.replace('{Quest_required}', q.Quest_required);
+                    const hasTarget = q.Target_ID > 0;
+                    const noEvent = q.Event_type === 0;
+
+                    html += `
+                        <div class="quest-item ${selectedQuestId === q.Quest_ID ? 'selected' : ''}"
+                             onclick="selectQuest(${q.Quest_ID})">
+                            <div class="quest-item-header">
+                                <span class="quest-item-id">#${q.Quest_ID}</span>
+                                <span class="quest-item-type ${typeInfo.class}">${typeInfo.name}</span>
+                            </div>
+                            <div class="quest-item-name">${q.Quest_name}</div>
+                            <div class="quest-item-desc">${desc}</div>
+                            <div class="quest-item-tags">
+                                ${noEvent ? '<span class="tag warning">이벤트 미설정</span>' : `<span class="tag event">${eventInfo.icon} ${eventInfo.display}</span>`}
+                                ${hasTarget ? `<span class="tag target">Target: ${q.Target_ID}</span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html || '<div style="padding: 40px; text-align: center; color: var(--text-muted);">검색 결과가 없습니다</div>';
+        }
+
+        // ========================================
+        // 퀘스트 선택 / 편집
+        // ========================================
+
+        function selectQuest(questId) {
+            selectedQuestId = questId;
+            renderQuestList();
+            renderEditor();
+        }
+
+        function renderEditor() {
+            const header = document.getElementById('editorHeader');
+            const content = document.getElementById('editorContent');
+            const title = document.getElementById('editorTitle');
+            const questIdEl = document.getElementById('editorQuestId');
+
+            if (!selectedQuestId) {
+                header.style.display = 'none';
+                content.innerHTML = `
+                    <div class="editor-placeholder">
+                        <div class="editor-placeholder-icon">📝</div>
+                        <h3>퀘스트를 선택하세요</h3>
+                        <p>왼쪽 목록에서 퀘스트를 선택하거나<br>새 퀘스트를 추가해서 편집을 시작하세요</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const quest = quests.find(q => q.Quest_ID === selectedQuestId);
+            if (!quest) return;
+
+            header.style.display = 'flex';
+            title.textContent = quest.Quest_name;
+            questIdEl.textContent = `#${quest.Quest_ID}`;
+
+            const typeInfo = QUEST_TYPES[quest.Quest_type];
+            const eventInfo = EVENT_TYPES[quest.Event_type] || EVENT_TYPES[0];
+            const descWithValue = quest.Quest_info.replace('{Quest_required}', quest.Quest_required);
+
+            content.innerHTML = `
+                <!-- 이벤트 타입 설정 -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <span class="icon">🎯</span>
+                        <h3>이벤트 연동 설정</h3>
+                        <span class="hint">퀘스트가 언제 진행되는지 설정합니다</span>
+                    </div>
+
+                    <div class="event-type-card">
+                        <h4>⚡ 이벤트 타입 매핑</h4>
+                        <div class="event-type-grid">
+                            <div class="form-group">
+                                <label>이벤트 타입 <span class="required">*</span></label>
+                                <select id="eventType" onchange="onEventTypeChange()">
+                                    ${Object.entries(EVENT_TYPES).map(([id, info]) =>
+                                        `<option value="${id}" ${parseInt(id) === quest.Event_type ? 'selected' : ''}>${info.icon} ${info.display}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group" id="targetIdGroup" style="${eventInfo.requiresTarget ? '' : 'opacity: 0.5;'}">
+                                <label>Target ID <span id="targetIdOptional">${eventInfo.requiresTarget ? '' : '(선택)'}</span></label>
+                                <input type="number" id="targetId" value="${quest.Target_ID || 0}" placeholder="0"
+                                       ${eventInfo.requiresTarget ? '' : 'disabled'} oninput="updatePreview()">
+                                <div class="helper" id="targetIdHint">${eventInfo.targetDesc || '이 이벤트는 Target ID가 필요 없습니다'}</div>
+                            </div>
+                        </div>
+                        <div class="event-type-info" id="eventTypeInfo">
+                            ${getEventTypeDescription(quest.Event_type, quest.Target_ID, quest.Quest_required)}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 기본 정보 -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <span class="icon">📋</span>
+                        <h3>기본 정보</h3>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Quest ID</label>
+                            <input type="text" value="${quest.Quest_ID}" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label>퀘스트 타입 <span class="required">*</span></label>
+                            <select id="questType" onchange="onTypeChange()">
+                                ${Object.entries(QUEST_TYPES).map(([id, info]) =>
+                                    `<option value="${id}" ${parseInt(id) === quest.Quest_type ? 'selected' : ''}>${info.name}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>퀘스트 이름 <span class="required">*</span></label>
+                            <input type="text" id="questName" value="${quest.Quest_name}" oninput="updatePreview()">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>퀘스트 설명</label>
+                            <textarea id="questInfo" oninput="updatePreview()">${quest.Quest_info}</textarea>
+                            <div class="helper">{Quest_required}는 조건 값으로 자동 대체됩니다</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>조건 값 (Quest_required) <span class="required">*</span></label>
+                            <input type="number" id="questRequired" value="${quest.Quest_required}" min="1" oninput="updatePreview()">
+                            <div class="helper">목표 횟수 또는 달성값</div>
+                        </div>
+                        <div class="form-group">
+                            <label>칭호 (업적 전용)</label>
+                            <select id="questTitle" ${quest.Quest_type !== 0 ? 'disabled' : ''}>
+                                ${Object.entries(TITLES).map(([id, name]) =>
+                                    `<option value="${id}" ${parseInt(id) === quest.Title_ID ? 'selected' : ''}>${name}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 보상 설정 -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <span class="icon">🎁</span>
+                        <h3>보상 설정</h3>
+                    </div>
+
+                    <div class="reward-grid">
+                        ${[1, 2, 3].map(i => `
+                            <div class="reward-card">
+                                <div class="reward-card-header">보상 ${i}</div>
+                                <select id="reward${i}" onchange="updatePreview()">
+                                    ${Object.entries(ITEMS).map(([id, item]) =>
+                                        `<option value="${id}" ${parseInt(id) === quest[`Quest_reward${i}`] ? 'selected' : ''}>${item.icon} ${item.name}</option>`
+                                    ).join('')}
+                                </select>
+                                <input type="number" id="reward${i}A" value="${quest[`Quest_reward${i}_A`]}" placeholder="수량" min="0" oninput="updatePreview()">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- 진행도 설정 -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <span class="icon">📊</span>
+                        <h3>진행도 설정</h3>
+                        <span class="hint">일일/주간 퀘스트의 상단 게이지 기여량</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Progress Type</label>
+                            <select id="progressType">
+                                <option value="0" ${quest.progress_type === 0 ? 'selected' : ''}>없음 (업적)</option>
+                                <option value="1" ${quest.progress_type === 1 ? 'selected' : ''}>1 (일일)</option>
+                                <option value="2" ${quest.progress_type === 2 ? 'selected' : ''}>2 (주간)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Progress Amount</label>
+                            <input type="number" id="progressAmount" value="${quest.progress_amount}" min="0">
+                            <div class="helper">완료 시 게이지 기여량 (보통 20)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 미리보기 -->
+                <div class="form-section">
+                    <div class="form-section-header">
+                        <span class="icon">👁️</span>
+                        <h3>게임 내 미리보기</h3>
+                    </div>
+
+                    <div class="preview-card">
+                        <div class="preview-header">
+                            <span class="preview-title" id="previewTitle">${quest.Quest_name}</span>
+                            <span class="preview-type ${typeInfo.class}">${typeInfo.name}</span>
+                        </div>
+                        <div class="preview-desc" id="previewDesc">${descWithValue}</div>
+                        <div class="preview-rewards" id="previewRewards"></div>
+                        <div class="preview-progress">
+                            <div class="preview-progress-bar">
+                                <div class="preview-progress-fill"></div>
+                            </div>
+                            <div class="preview-progress-text">
+                                <span>진행도</span>
+                                <span id="previewProgressText">0 / ${quest.Quest_required}</span>
+                            </div>
+                        </div>
+                        <div class="preview-mapping" id="previewMapping">
+                            <strong>C# 매핑 코드:</strong><br>
+                            <code>new QuestEventMapping(QuestEventType.${eventInfo.name}, ${quest.Quest_ID}, ${quest.Target_ID || 0})</code>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            updatePreview();
+        }
+
+        function getEventTypeDescription(eventType, targetId, required) {
+            const info = EVENT_TYPES[eventType];
+            if (!info || eventType === 0) {
+                return '⚠️ <strong>이벤트 타입을 선택해주세요!</strong> 게임 내에서 퀘스트가 진행되지 않습니다.';
+            }
+
+            let desc = `<strong>${info.icon} ${info.display}</strong> 이벤트 발생 시 퀘스트가 진행됩니다.<br>`;
+
+            if (info.requiresTarget) {
+                if (targetId > 0) {
+                    desc += `▸ Target ID <code>${targetId}</code> 대상만 카운트 (특정 대상)<br>`;
+                    desc += `▸ <code>${required}</code>회 달성 시 완료`;
+                } else {
+                    desc += `▸ Target ID <code>0</code> = 모든 대상 카운트<br>`;
+                    desc += `▸ <code>${required}</code>회 달성 시 완료`;
+                }
+            } else {
+                if (eventType === 7) { // 팬수 달성
+                    desc += `▸ 팬수가 <code>${required}</code> 이상이면 완료`;
+                } else {
+                    desc += `▸ <code>${required}</code>회 수행 시 완료`;
+                }
+            }
+
+            return desc;
+        }
+
+        function onEventTypeChange() {
+            const eventType = parseInt(document.getElementById('eventType').value);
+            const info = EVENT_TYPES[eventType];
+            const targetIdGroup = document.getElementById('targetIdGroup');
+            const targetIdInput = document.getElementById('targetId');
+            const targetIdHint = document.getElementById('targetIdHint');
+            const targetIdOptional = document.getElementById('targetIdOptional');
+            const eventTypeInfo = document.getElementById('eventTypeInfo');
+
+            if (info.requiresTarget) {
+                targetIdGroup.style.opacity = '1';
+                targetIdInput.disabled = false;
+                targetIdOptional.textContent = '';
+                targetIdHint.textContent = info.targetDesc;
+            } else {
+                targetIdGroup.style.opacity = '0.5';
+                targetIdInput.disabled = true;
+                targetIdInput.value = 0;
+                targetIdOptional.textContent = '(선택)';
+                targetIdHint.textContent = '이 이벤트는 Target ID가 필요 없습니다';
+            }
+
+            const required = parseInt(document.getElementById('questRequired')?.value) || 1;
+            const targetId = parseInt(targetIdInput.value) || 0;
+            eventTypeInfo.innerHTML = getEventTypeDescription(eventType, targetId, required);
+            updatePreview();
+        }
+
+        function onTypeChange() {
+            const type = parseInt(document.getElementById('questType').value);
+            const titleSelect = document.getElementById('questTitle');
+            const progressType = document.getElementById('progressType');
+            const progressAmount = document.getElementById('progressAmount');
+
+            titleSelect.disabled = type !== 0;
+            if (type !== 0) titleSelect.value = '0';
+
+            if (type === 1) {
+                progressType.value = '1';
+                progressAmount.value = '20';
+            } else if (type === 2) {
+                progressType.value = '2';
+                progressAmount.value = '20';
+            } else {
+                progressType.value = '0';
+                progressAmount.value = '0';
+            }
+
+            updatePreview();
+        }
+
+        function updatePreview() {
+            if (!selectedQuestId) return;
+
+            const name = document.getElementById('questName')?.value || '';
+            const info = document.getElementById('questInfo')?.value || '';
+            const required = document.getElementById('questRequired')?.value || 1;
+            const type = parseInt(document.getElementById('questType')?.value || 0);
+            const eventType = parseInt(document.getElementById('eventType')?.value || 0);
+            const targetId = parseInt(document.getElementById('targetId')?.value || 0);
+
+            const typeInfo = QUEST_TYPES[type];
+            const eventInfo = EVENT_TYPES[eventType];
+            const descWithValue = info.replace('{Quest_required}', required);
+
+            // 제목, 설명
+            const titleEl = document.getElementById('previewTitle');
+            const descEl = document.getElementById('previewDesc');
+            const progressText = document.getElementById('previewProgressText');
+
+            if (titleEl) titleEl.textContent = name;
+            if (descEl) descEl.textContent = descWithValue;
+            if (progressText) progressText.textContent = `0 / ${required}`;
+
+            // 보상
+            const rewardsEl = document.getElementById('previewRewards');
+            if (rewardsEl) {
+                let rewardsHtml = '';
+                for (let i = 1; i <= 3; i++) {
+                    const itemId = parseInt(document.getElementById(`reward${i}`)?.value || 0);
+                    const amount = parseInt(document.getElementById(`reward${i}A`)?.value || 0);
+                    if (itemId > 0 && amount > 0) {
+                        const item = ITEMS[itemId];
+                        rewardsHtml += `
+                            <div class="preview-reward-item">
+                                <div class="preview-reward-icon">${item.icon}</div>
+                                <span class="preview-reward-text">${item.name}</span>
+                                <span class="preview-reward-amount">x${amount}</span>
+                            </div>
+                        `;
+                    }
+                }
+                rewardsEl.innerHTML = rewardsHtml || '<span style="color: var(--text-muted); font-size: 12px;">보상 없음</span>';
+            }
+
+            // 매핑 코드
+            const mappingEl = document.getElementById('previewMapping');
+            if (mappingEl) {
+                mappingEl.innerHTML = `
+                    <strong>C# 매핑 코드:</strong><br>
+                    <code>new QuestEventMapping(QuestEventType.${eventInfo?.name || 'None'}, ${selectedQuestId}, ${targetId})</code>
+                `;
+            }
+
+            // 이벤트 설명
+            const eventTypeInfo = document.getElementById('eventTypeInfo');
+            if (eventTypeInfo) {
+                eventTypeInfo.innerHTML = getEventTypeDescription(eventType, targetId, required);
+            }
+        }
+
+        // ========================================
+        // CRUD 기능
+        // ========================================
+
+        function addNewQuest() {
+            const type = 1; // 기본: 일일
+            const prefix = type === 0 ? 1300000 : type === 1 ? 1301000 : 1302000;
+            const existingIds = quests.filter(q => q.Quest_type === type).map(q => q.Quest_ID);
+            const maxId = existingIds.length > 0 ? Math.max(...existingIds) : prefix;
+            const newId = maxId + 1;
+
+            const newQuest = {
+                Quest_ID: newId,
+                Quest_name: '새 퀘스트',
+                Quest_type: type,
+                Quest_info: '퀘스트 설명 ({Quest_required}회)',
+                Quest_required: 1,
+                Quest_reward1: 0, Quest_reward1_A: 0,
+                Quest_reward2: 0, Quest_reward2_A: 0,
+                Quest_reward3: 0, Quest_reward3_A: 0,
+                progress_type: type === 0 ? 0 : type,
+                progress_amount: type === 0 ? 0 : 20,
+                Title_ID: 0,
+                Event_type: 0,
+                Target_ID: 0
+            };
+
+            quests.push(newQuest);
+            selectedQuestId = newId;
+            saveToLocalStorage();
+            updateStats();
+            renderQuestList();
+            renderEditor();
+            showToast('새 퀘스트가 추가되었습니다', 'success');
+        }
+
+        function duplicateQuest() {
+            const quest = quests.find(q => q.Quest_ID === selectedQuestId);
+            if (!quest) return;
+
+            const existingIds = quests.filter(q => q.Quest_type === quest.Quest_type).map(q => q.Quest_ID);
+            const maxId = Math.max(...existingIds);
+            const newId = maxId + 1;
+
+            const newQuest = { ...quest, Quest_ID: newId, Quest_name: quest.Quest_name + ' (복사)' };
+            quests.push(newQuest);
+            selectedQuestId = newId;
+            saveToLocalStorage();
+            updateStats();
+            renderQuestList();
+            renderEditor();
+            showToast('퀘스트가 복제되었습니다', 'success');
+        }
+
+        function deleteQuest() {
+            if (!confirm('이 퀘스트를 삭제하시겠습니까?')) return;
+
+            quests = quests.filter(q => q.Quest_ID !== selectedQuestId);
+            selectedQuestId = null;
+            saveToLocalStorage();
+            updateStats();
+            renderQuestList();
+            renderEditor();
+            showToast('퀘스트가 삭제되었습니다', 'warning');
+        }
+
+        function saveQuest() {
+            const quest = quests.find(q => q.Quest_ID === selectedQuestId);
+            if (!quest) return;
+
+            // 유효성 검사
+            const name = document.getElementById('questName').value.trim();
+            const eventType = parseInt(document.getElementById('eventType').value);
+
+            if (!name) {
+                showToast('퀘스트 이름을 입력해주세요', 'error');
+                return;
+            }
+
+            if (eventType === 0) {
+                showToast('이벤트 타입을 선택해주세요', 'warning');
+            }
+
+            // 저장
+            quest.Quest_name = name;
+            quest.Quest_type = parseInt(document.getElementById('questType').value);
+            quest.Quest_info = document.getElementById('questInfo').value;
+            quest.Quest_required = parseInt(document.getElementById('questRequired').value) || 1;
+            quest.Quest_reward1 = parseInt(document.getElementById('reward1').value);
+            quest.Quest_reward1_A = parseInt(document.getElementById('reward1A').value) || 0;
+            quest.Quest_reward2 = parseInt(document.getElementById('reward2').value);
+            quest.Quest_reward2_A = parseInt(document.getElementById('reward2A').value) || 0;
+            quest.Quest_reward3 = parseInt(document.getElementById('reward3').value);
+            quest.Quest_reward3_A = parseInt(document.getElementById('reward3A').value) || 0;
+            quest.progress_type = parseInt(document.getElementById('progressType').value);
+            quest.progress_amount = parseInt(document.getElementById('progressAmount').value) || 0;
+            quest.Title_ID = parseInt(document.getElementById('questTitle').value);
+            quest.Event_type = eventType;
+            quest.Target_ID = parseInt(document.getElementById('targetId').value) || 0;
+
+            saveToLocalStorage();
+            updateStats();
+            renderQuestList();
+            showToast('저장되었습니다', 'success');
+        }
+
+        // ========================================
+        // CSV 가져오기/내보내기
+        // ========================================
+
+        function showImportModal() {
+            document.getElementById('importModal').classList.add('show');
+        }
+
+        function hideImportModal() {
+            document.getElementById('importModal').classList.remove('show');
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) handleFile(file);
+        }
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.csv')) {
+                showToast('CSV 파일만 지원합니다', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    parseCSV(e.target.result);
+                    hideImportModal();
+                    showToast('CSV 파일을 불러왔습니다', 'success');
+                } catch (err) {
+                    showToast('CSV 파싱 실패: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) throw new Error('데이터가 없습니다');
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const replaceAll = document.getElementById('replaceAll').checked;
+
+            const newQuests = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length !== headers.length) continue;
+
+                const quest = {};
+                headers.forEach((h, idx) => {
+                    let val = values[idx];
+                    // 숫자 필드 변환
+                    if (['Quest_ID', 'Quest_type', 'Quest_required', 'Quest_reward1', 'Quest_reward1_A',
+                         'Quest_reward2', 'Quest_reward2_A', 'Quest_reward3', 'Quest_reward3_A',
+                         'progress_type', 'progress_amount', 'Title_ID', 'Event_type', 'Target_ID'].includes(h)) {
+                        val = parseInt(val) || 0;
+                    }
+                    quest[h] = val;
+                });
+
+                if (quest.Quest_ID) {
+                    newQuests.push(quest);
+                }
+            }
+
+            if (replaceAll) {
+                quests = newQuests;
+            } else {
+                // 병합: 기존 ID는 덮어쓰고, 새 ID는 추가
+                newQuests.forEach(nq => {
+                    const idx = quests.findIndex(q => q.Quest_ID === nq.Quest_ID);
+                    if (idx >= 0) {
+                        quests[idx] = nq;
+                    } else {
+                        quests.push(nq);
+                    }
+                });
+            }
+
+            saveToLocalStorage();
+            selectedQuestId = null;
+            updateStats();
+            renderQuestList();
+            renderEditor();
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        function exportCSV() {
+            const headers = ['Quest_ID', 'Quest_name', 'Quest_type', 'Quest_info', 'Quest_required',
+                           'Quest_reward1', 'Quest_reward1_A', 'Quest_reward2', 'Quest_reward2_A',
+                           'Quest_reward3', 'Quest_reward3_A', 'progress_type', 'progress_amount',
+                           'Title_ID', 'Icon_image', 'Event_type', 'Target_ID'];
+
+            let csv = headers.join(',') + '\n';
+
+            // ID 순으로 정렬
+            const sorted = [...quests].sort((a, b) => a.Quest_ID - b.Quest_ID);
+
+            sorted.forEach(q => {
+                csv += headers.map(h => {
+                    let val = q[h];
+                    if (h === 'Icon_image' && (val === undefined || val === null)) val = '';
+                    if (h === 'Target_ID' && (val === undefined || val === null)) val = 0;
+                    if (h === 'Event_type' && (val === undefined || val === null)) val = 0;
+                    if (typeof val === 'string' && val.includes(',')) {
+                        return `"${val}"`;
+                    }
+                    return val ?? '';
+                }).join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'QuestTable.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showToast('QuestTable.csv 다운로드 완료!', 'success');
+        }
+
+        // ========================================
+        // 검색
+        // ========================================
+
+        function onSearch() {
+            searchQuery = document.getElementById('searchInput').value;
+            renderQuestList();
+        }
+
+        // ========================================
+        // 토스트
+        // ========================================
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${message}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

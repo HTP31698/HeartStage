@@ -323,4 +323,35 @@ public class AchievementQuestState
 
     // 보상까지 받은 업적 퀘스트
     public List<int> completedQuestIds = new List<int>();
+
+    // ★ 퀘스트별 진행도 (특정 대상 N회 업적용)
+    // Key: questId, Value: 현재 카운트
+    public Dictionary<int, int> questProgress;
+
+    public int GetQuestProgress(int questId)
+    {
+        if (questProgress == null)
+            return 0;
+
+        return questProgress.TryGetValue(questId, out int count) ? count : 0;
+    }
+
+    public int IncrementQuestProgress(int questId)
+    {
+        if (questProgress == null)
+            questProgress = new Dictionary<int, int>();
+
+        if (!questProgress.ContainsKey(questId))
+            questProgress[questId] = 0;
+
+        return ++questProgress[questId];
+    }
+
+    public void SetQuestProgress(int questId, int value)
+    {
+        if (questProgress == null)
+            questProgress = new Dictionary<int, int>();
+
+        questProgress[questId] = value;
+    }
 }

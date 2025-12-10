@@ -151,67 +151,31 @@ public class QuestManager : MonoBehaviour
 
     #endregion
 
-    /// <summary>
-    /// 게임 전체에서 쓸 "이벤트 타입" 태그.
-    /// CSV랑 숫자를 맞추는 게 아니라, 코드 안에서만 어떤 이벤트인지 구분용으로 쓴다.
-    /// </summary>
-    public enum DailyQuestEventType
-    {
-        None = 0,
-        Attendance = 1, // 출석
-        ClearStage = 2, // 스테이지 클리어
-        MonsterKill = 3, // 몬스터 처치
-        GachaDraw = 4, // 뽑기
-        ShopPurchase = 5, // 상점 구매
-    }
+    [Header("퀘스트 이벤트 매핑 (통합 시스템)")]
+    [Tooltip("이벤트 타입별 퀘스트 ID 매핑. Inspector에서 설정")]
+    public List<QuestEventMapping> questMappings = new List<QuestEventMapping>();
 
-    [Header("Daily 퀘스트 ID 매핑 (QuestData.Quest_ID)")]
-    [Tooltip("출석 체크 데일리 퀘스트 Quest_ID")]
-    public int attendanceDailyQuestId;
+    // ★ 기존 15개 슬롯은 하위 호환성을 위해 유지 (새 시스템으로 점진적 마이그레이션)
+    [Header("[Legacy] Daily 퀘스트 ID 매핑")]
+    [HideInInspector] public int attendanceDailyQuestId;
+    [HideInInspector] public int clearStageDailyQuestId;
+    [HideInInspector] public int monsterKillDailyQuestId;
+    [HideInInspector] public int gachaDrawDailyQuestId;
+    [HideInInspector] public int shopPurchaseDailyQuestId;
 
-    [Tooltip("일일 스테이지 1회 클리어 데일리 퀘스트 Quest_ID")]
-    public int clearStageDailyQuestId;
+    [Header("[Legacy] Weekly 퀘스트 ID 매핑")]
+    [HideInInspector] public int weeklyLoginQuestId;
+    [HideInInspector] public int weeklyMonsterKillQuestId;
+    [HideInInspector] public int weeklyShopPurchaseQuestId;
+    [HideInInspector] public int weeklyBossKillQuestId;
+    [HideInInspector] public int weeklyGachaDrawQuestId;
 
-    [Tooltip("몬스터 처치 데일리 퀘스트 Quest_ID")]
-    public int monsterKillDailyQuestId;
-
-    [Tooltip("뽑기 1회 데일리 퀘스트 Quest_ID")]
-    public int gachaDrawDailyQuestId;
-
-    [Tooltip("상점 구매 1회 데일리 퀘스트 Quest_ID")]
-    public int shopPurchaseDailyQuestId;
-
-    [Header("Weekly 퀘스트 ID 매핑 (QuestData.Quest_ID)")]
-    [Tooltip("주간 로그인 퀘스트 Quest_ID")]
-    public int weeklyLoginQuestId;
-
-    [Tooltip("주간 몬스터 처치 퀘스트 Quest_ID")]
-    public int weeklyMonsterKillQuestId;
-
-    [Tooltip("주간 상점 이용 퀘스트 Quest_ID")]
-    public int weeklyShopPurchaseQuestId;
-
-    [Tooltip("주간 보스 처치 퀘스트 Quest_ID")]
-    public int weeklyBossKillQuestId;
-
-    [Tooltip("주간 뽑기 퀘스트 Quest_ID")]
-    public int weeklyGachaDrawQuestId;
-
-    [Header("Achievement 퀘스트 ID 매핑 (QuestData.Quest_ID)")]
-    [Tooltip("팬수 100 달성 업적 Quest_ID")]
-    public int achievementFan100QuestId;
-
-    [Tooltip("팬수 1000 달성 업적 Quest_ID")]
-    public int achievementFan1000QuestId;
-
-    [Tooltip("팬수 10000 달성 업적 Quest_ID")]
-    public int achievementFan10000QuestId;
-
-    [Tooltip("튜토리얼 스테이지 최초 클리어 업적 Quest_ID")]
-    public int achievementTutorialClearQuestId;
-
-    [Tooltip("보스 최초 처치 업적 Quest_ID")]
-    public int achievementBossFirstKillQuestId;
+    [Header("[Legacy] Achievement 퀘스트 ID 매핑")]
+    [HideInInspector] public int achievementFan100QuestId;
+    [HideInInspector] public int achievementFan1000QuestId;
+    [HideInInspector] public int achievementFan10000QuestId;
+    [HideInInspector] public int achievementTutorialClearQuestId;
+    [HideInInspector] public int achievementBossFirstKillQuestId;
 
     private QuestTable QuestTable => DataTableManager.Get<QuestTable>(DataTableIds.Quest);
     private QuestProgressTable QuestProgressTable => DataTableManager.Get<QuestProgressTable>(DataTableIds.QuestProgress);
@@ -313,6 +277,7 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     public int GetDailyQuestProgress(int questId)
     {
+        // Legacy 슬롯 지원
         if (questId == attendanceDailyQuestId)
             return DailyState.attendanceCount;
         if (questId == clearStageDailyQuestId)
@@ -324,7 +289,37 @@ public class QuestManager : MonoBehaviour
         if (questId == shopPurchaseDailyQuestId)
             return DailyState.shopPurchaseCount;
 
-        return 0;
+        // ★ 새 시스템: CSV Event_type/Target_ID 기반 진행도 반환
+        var table = QuestTable;
+        if (table == null)
+            return 0;
+
+        var quest = table.Get(questId);
+        if (quest == null || quest.Quest_type != QuestType.Daily)
+            return 0;
+
+        // Target_ID가 있으면 대상별 카운터, 없으면 전역 카운터
+        if (quest.Target_ID > 0)
+        {
+            return DailyState.GetTargetCount(quest.Event_type, quest.Target_ID);
+        }
+
+        // Target_ID가 0이면 이벤트 타입에 따른 전역 카운터
+        switch (quest.Event_type)
+        {
+            case QuestEventType.Attendance:
+                return DailyState.attendanceCount;
+            case QuestEventType.ClearStage:
+                return DailyState.clearStageCount;
+            case QuestEventType.MonsterKill:
+                return DailyState.monsterKillCount;
+            case QuestEventType.GachaDraw:
+                return DailyState.gachaDrawCount;
+            case QuestEventType.ShopPurchase:
+                return DailyState.shopPurchaseCount;
+            default:
+                return 0;
+        }
     }
 
     #endregion
@@ -367,6 +362,7 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     public int GetWeeklyQuestProgress(int questId)
     {
+        // Legacy 슬롯 지원
         if (questId == weeklyLoginQuestId)
             return WeeklyState.loginCount;
         if (questId == weeklyMonsterKillQuestId)
@@ -378,7 +374,37 @@ public class QuestManager : MonoBehaviour
         if (questId == weeklyGachaDrawQuestId)
             return WeeklyState.gachaDrawCount;
 
-        return 0;
+        // ★ 새 시스템: CSV Event_type/Target_ID 기반 진행도 반환
+        var table = QuestTable;
+        if (table == null)
+            return 0;
+
+        var quest = table.Get(questId);
+        if (quest == null || quest.Quest_type != QuestType.Weekly)
+            return 0;
+
+        // Target_ID가 있으면 대상별 카운터, 없으면 전역 카운터
+        if (quest.Target_ID > 0)
+        {
+            return WeeklyState.GetTargetCount(quest.Event_type, quest.Target_ID);
+        }
+
+        // Target_ID가 0이면 이벤트 타입에 따른 전역 카운터
+        switch (quest.Event_type)
+        {
+            case QuestEventType.Attendance:
+                return WeeklyState.loginCount;
+            case QuestEventType.MonsterKill:
+                return WeeklyState.monsterKillCount;
+            case QuestEventType.BossKill:
+                return WeeklyState.bossKillCount;
+            case QuestEventType.GachaDraw:
+                return WeeklyState.gachaDrawCount;
+            case QuestEventType.ShopPurchase:
+                return WeeklyState.shopPurchaseCount;
+            default:
+                return 0;
+        }
     }
 
     #endregion
@@ -430,6 +456,23 @@ public class QuestManager : MonoBehaviour
             return IsAchievementQuestCleared(questId) ? 1 : 0;
         }
 
+        // ★ 새 시스템: questProgress에서 진행도 확인 (Target_ID가 있는 퀘스트용)
+        int progress = AchievementState.GetQuestProgress(questId);
+        if (progress > 0)
+            return progress;
+
+        // 이미 완료된 업적은 required 값 반환
+        if (IsAchievementQuestCleared(questId))
+        {
+            var table = QuestTable;
+            if (table != null)
+            {
+                var quest = table.Get(questId);
+                if (quest != null)
+                    return quest.Quest_required;
+            }
+        }
+
         return 0;
     }
 
@@ -456,6 +499,357 @@ public class QuestManager : MonoBehaviour
         }
 
         return 1;
+    }
+
+    #endregion
+
+    #region 통합 이벤트 처리 시스템
+
+    /// <summary>
+    /// 이벤트 타입에 해당하는 퀘스트 목록 반환 (CSV에서 직접 조회)
+    /// </summary>
+    private IEnumerable<QuestData> GetQuestsByEventType(QuestEventType eventType, int targetId = 0)
+    {
+        var table = QuestTable;
+        if (table == null)
+            yield break;
+
+        // CSV의 Event_type, Target_ID 기반으로 조회
+        foreach (var quest in table.GetByEventTypeAndTarget(eventType, targetId))
+        {
+            yield return quest;
+        }
+
+        // ★ Legacy: Inspector questMappings도 지원 (마이그레이션 완료 후 제거 가능)
+        foreach (var mapping in questMappings)
+        {
+            if (mapping.eventType != eventType)
+                continue;
+
+            if (mapping.targetId == 0 || mapping.targetId == targetId)
+            {
+                var quest = table.Get(mapping.questId);
+                if (quest != null && quest.Event_type == QuestEventType.None)
+                {
+                    // CSV에 Event_type이 없는 경우에만 Legacy 매핑 사용
+                    yield return quest;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 통합 이벤트 처리 메서드 (카운터 증가 포함 - 툴에서 직접 호출용)
+    /// </summary>
+    /// <param name="eventType">이벤트 타입</param>
+    /// <param name="targetId">대상 ID (몬스터ID, 스테이지ID 등). 0이면 전체</param>
+    /// <param name="value">값 (팬수 등 직접 비교용)</param>
+    public void ProcessQuestEvent(QuestEventType eventType, int targetId = 0, int value = 0)
+    {
+        if (eventType == QuestEventType.None)
+            return;
+
+        // CSV 기반 퀘스트 처리
+        foreach (var quest in GetQuestsByEventType(eventType, targetId))
+        {
+            ProcessSingleQuest(quest, eventType, value);
+        }
+    }
+
+    /// <summary>
+    /// 통합 이벤트 체크 메서드 (카운터 증가 없이 - 내부 호출용)
+    /// 외부 이벤트 메서드에서 카운터를 이미 증가시킨 후 호출
+    /// Daily/Achievement 퀘스트만 체크 (Weekly는 별도 메서드 사용)
+    /// </summary>
+    private void ProcessQuestEventCheck(QuestEventType eventType, int targetId, int currentValue)
+    {
+        if (eventType == QuestEventType.None)
+            return;
+
+        // CSV 기반 퀘스트 체크 (Daily/Achievement만)
+        foreach (var quest in GetQuestsByEventType(eventType, targetId))
+        {
+            // Weekly 퀘스트는 별도 카운터 사용하므로 여기서 스킵
+            if (quest.Quest_type == QuestType.Weekly)
+                continue;
+
+            // ★ Target_ID에 따라 적절한 카운터 값 사용
+            int checkValue = GetQuestCheckValue(quest, eventType, targetId, currentValue);
+            ProcessSingleQuestCheck(quest, checkValue);
+        }
+    }
+
+    /// <summary>
+    /// 퀘스트 체크에 사용할 값 결정 (Target_ID 기반)
+    /// </summary>
+    private int GetQuestCheckValue(QuestData quest, QuestEventType eventType, int targetId, int globalValue)
+    {
+        // Target_ID가 0이면 전역 카운터 사용
+        if (quest.Target_ID == 0)
+            return globalValue;
+
+        // Target_ID가 특정 대상이고, targetId와 매칭되면 대상별 카운터 사용
+        if (quest.Target_ID == targetId && targetId > 0)
+        {
+            switch (quest.Quest_type)
+            {
+                case QuestType.Daily:
+                    return DailyState.GetTargetCount(eventType, targetId);
+                case QuestType.Achievement:
+                    return AchievementState.GetQuestProgress(quest.Quest_ID);
+                default:
+                    return globalValue;
+            }
+        }
+
+        // 매칭 안되면 0 (이 퀘스트는 해당 이벤트로 진행 안됨)
+        return 0;
+    }
+
+    /// <summary>
+    /// Weekly 전용 이벤트 체크 메서드 (Weekly 카운터 사용)
+    /// </summary>
+    private void ProcessWeeklyQuestEventCheck(QuestEventType eventType, int targetId, int currentValue)
+    {
+        if (eventType == QuestEventType.None)
+            return;
+
+        // CSV 기반 Weekly 퀘스트만 체크
+        foreach (var quest in GetQuestsByEventType(eventType, targetId))
+        {
+            // Weekly 퀘스트만 처리
+            if (quest.Quest_type != QuestType.Weekly)
+                continue;
+
+            // ★ Target_ID에 따라 적절한 카운터 값 사용
+            int checkValue = GetWeeklyQuestCheckValue(quest, eventType, targetId, currentValue);
+            TryCompleteWeeklyInternal(quest, checkValue);
+        }
+    }
+
+    /// <summary>
+    /// Weekly 퀘스트 체크에 사용할 값 결정 (Target_ID 기반)
+    /// </summary>
+    private int GetWeeklyQuestCheckValue(QuestData quest, QuestEventType eventType, int targetId, int globalValue)
+    {
+        // Target_ID가 0이면 전역 카운터 사용
+        if (quest.Target_ID == 0)
+            return globalValue;
+
+        // Target_ID가 특정 대상이고, targetId와 매칭되면 대상별 카운터 사용
+        if (quest.Target_ID == targetId && targetId > 0)
+        {
+            return WeeklyState.GetTargetCount(eventType, targetId);
+        }
+
+        // 매칭 안되면 0 (이 퀘스트는 해당 이벤트로 진행 안됨)
+        return 0;
+    }
+
+    /// <summary>
+    /// 단일 퀘스트 체크 (카운터 증가 없이) - Quest_type에 따라 Daily/Weekly/Achievement 분기
+    /// </summary>
+    private void ProcessSingleQuestCheck(QuestData quest, int currentValue)
+    {
+        if (quest == null)
+            return;
+
+        // Quest_type에 따라 분기 (카운터 증가 없이 체크만)
+        switch (quest.Quest_type)
+        {
+            case QuestType.Daily:
+                TryCompleteDailyInternal(quest, currentValue);
+                break;
+            case QuestType.Weekly:
+                TryCompleteWeeklyInternal(quest, currentValue);
+                break;
+            case QuestType.Achievement:
+                TryCompleteAchievementInternal(quest, currentValue);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// 단일 퀘스트 처리 - Quest_type에 따라 Daily/Weekly/Achievement 분기
+    /// </summary>
+    private void ProcessSingleQuest(QuestData quest, QuestEventType eventType, int value)
+    {
+        if (quest == null)
+            return;
+
+        // Quest_type에 따라 분기
+        switch (quest.Quest_type)
+        {
+            case QuestType.Daily:
+                ProcessDailyQuest(quest, eventType, value);
+                break;
+            case QuestType.Weekly:
+                ProcessWeeklyQuest(quest, eventType, value);
+                break;
+            case QuestType.Achievement:
+                ProcessAchievementQuest(quest, eventType, value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Daily 퀘스트 처리
+    /// </summary>
+    private void ProcessDailyQuest(QuestData quest, QuestEventType eventType, int value)
+    {
+        EnsureDailyInitialized();
+        var state = DailyState;
+
+        // 이벤트 타입별 카운터 증가 및 현재값 가져오기
+        int currentCount = GetAndIncrementDailyCounter(eventType, state);
+
+        // FanAmountReach는 value를 직접 비교
+        if (eventType == QuestEventType.FanAmountReach)
+        {
+            currentCount = value;
+        }
+
+        // 저장 (빈번한 이벤트는 주기적, 1회성은 즉시)
+        bool isFrequent = eventType == QuestEventType.MonsterKill;
+        MarkDirty(forceSave: !isFrequent);
+
+        TryCompleteDailyInternal(quest, currentCount);
+    }
+
+    /// <summary>
+    /// Weekly 퀘스트 처리
+    /// </summary>
+    private void ProcessWeeklyQuest(QuestData quest, QuestEventType eventType, int value)
+    {
+        EnsureWeeklyInitialized();
+        var state = WeeklyState;
+
+        // 이벤트 타입별 카운터 증가 및 현재값 가져오기
+        int currentCount = GetAndIncrementWeeklyCounter(eventType, state);
+
+        // FanAmountReach는 value를 직접 비교
+        if (eventType == QuestEventType.FanAmountReach)
+        {
+            currentCount = value;
+        }
+
+        MarkDirty();
+
+        TryCompleteWeeklyInternal(quest, currentCount);
+    }
+
+    /// <summary>
+    /// Achievement 퀘스트 처리
+    /// </summary>
+    private void ProcessAchievementQuest(QuestData quest, QuestEventType eventType, int value)
+    {
+        EnsureAchievementInitialized();
+
+        // Achievement는 카운터 없이 value를 직접 비교
+        int currentValue = value;
+
+        // 특정 이벤트는 1회성 (스테이지클리어, 보스처치 등)
+        if (eventType == QuestEventType.ClearStage || eventType == QuestEventType.BossKill)
+        {
+            currentValue = 1;
+        }
+
+        TryCompleteAchievementInternal(quest, currentValue);
+    }
+
+    /// <summary>
+    /// Daily 카운터 증가 및 현재값 반환
+    /// </summary>
+    private int GetAndIncrementDailyCounter(QuestEventType eventType, DailyQuestState state)
+    {
+        switch (eventType)
+        {
+            case QuestEventType.Attendance:
+                return ++state.attendanceCount;
+            case QuestEventType.ClearStage:
+                return ++state.clearStageCount;
+            case QuestEventType.MonsterKill:
+                return ++state.monsterKillCount;
+            case QuestEventType.BossKill:
+                // Daily에는 별도 bossKillCount가 없으므로 monsterKillCount 사용 안함
+                // (보스도 몬스터로 카운트하려면 monsterKillCount++ 추가)
+                return 1; // 1회성
+            case QuestEventType.GachaDraw:
+                return ++state.gachaDrawCount;
+            case QuestEventType.ShopPurchase:
+                return ++state.shopPurchaseCount;
+            default:
+                return 0;
+        }
+    }
+
+    /// <summary>
+    /// Weekly 카운터 증가 및 현재값 반환
+    /// </summary>
+    private int GetAndIncrementWeeklyCounter(QuestEventType eventType, WeeklyQuestState state)
+    {
+        switch (eventType)
+        {
+            case QuestEventType.Attendance:
+                return ++state.loginCount;
+            case QuestEventType.MonsterKill:
+                return ++state.monsterKillCount;
+            case QuestEventType.BossKill:
+                return ++state.bossKillCount;
+            case QuestEventType.GachaDraw:
+                return ++state.gachaDrawCount;
+            case QuestEventType.ShopPurchase:
+                return ++state.shopPurchaseCount;
+            default:
+                return 0;
+        }
+    }
+
+    /// <summary>
+    /// Daily 퀘스트 완료 체크 (내부용)
+    /// </summary>
+    private void TryCompleteDailyInternal(QuestData quest, int currentCount)
+    {
+        int requiredCount = quest.Quest_required > 0 ? quest.Quest_required : 1;
+
+        if (currentCount < requiredCount)
+        {
+            Debug.Log($"[QuestManager] Daily 진행도 {currentCount}/{requiredCount} - {quest.Quest_name}");
+            return;
+        }
+
+        CompleteDailyQuestInternal(quest);
+    }
+
+    /// <summary>
+    /// Weekly 퀘스트 완료 체크 (내부용)
+    /// </summary>
+    private void TryCompleteWeeklyInternal(QuestData quest, int currentCount)
+    {
+        int requiredCount = quest.Quest_required > 0 ? quest.Quest_required : 1;
+
+        if (currentCount < requiredCount)
+        {
+            Debug.Log($"[QuestManager] Weekly 진행도 {currentCount}/{requiredCount} - {quest.Quest_name}");
+            return;
+        }
+
+        CompleteWeeklyQuestInternal(quest);
+    }
+
+    /// <summary>
+    /// Achievement 퀘스트 완료 체크 (내부용)
+    /// </summary>
+    private void TryCompleteAchievementInternal(QuestData quest, int currentValue)
+    {
+        int requiredValue = quest.Quest_required > 0 ? quest.Quest_required : 1;
+
+        if (currentValue < requiredValue)
+        {
+            return; // Achievement는 조용히 체크만
+        }
+
+        CompleteAchievementQuestInternal(quest);
     }
 
     #endregion
@@ -531,6 +925,9 @@ public class QuestManager : MonoBehaviour
         state.monsterKillCount = 0;
         state.gachaDrawCount = 0;
         state.shopPurchaseCount = 0;
+
+        // ★ 대상별 카운터도 리셋
+        state.targetCounts?.Clear();
 
         Debug.Log($"[QuestManager] DailyQuest 리셋. date={todayKey}");
     }
@@ -656,6 +1053,9 @@ public class QuestManager : MonoBehaviour
         state.bossKillCount = 0;
         state.gachaDrawCount = 0;
         state.lastLoginDate = "";
+
+        // ★ 대상별 카운터도 리셋
+        state.targetCounts?.Clear();
 
         Debug.Log($"[QuestManager] WeeklyQuest 리셋. weekKey={weekKey}");
     }
@@ -795,14 +1195,20 @@ public class QuestManager : MonoBehaviour
     public void OnAttendance()
     {
         EnsureDailyInitialized();
-
         var state = DailyState;
+
+        // ★ 카운터는 항상 여기서 증가 (새 시스템/레거시 모두 동일 카운터 사용)
         state.attendanceCount++;
-        MarkDirty(forceSave: true); // 1회성 이벤트는 즉시 저장
+        MarkDirty(forceSave: true);
 
-        Debug.Log($"[QuestManager] 출석 이벤트 발생: attendanceCount = {state.attendanceCount}, date = {state.date}");
+        Debug.Log($"[QuestManager] 출석 이벤트 발생: attendanceCount = {state.attendanceCount}");
 
-        TryCompleteDailyById(attendanceDailyQuestId, DailyQuestEventType.Attendance, state.attendanceCount);
+        // ★ 새 통합 시스템 사용 (카운터 증가 없이 체크만)
+        ProcessQuestEventCheck(QuestEventType.Attendance, 0, state.attendanceCount);
+
+        // ★ Legacy 슬롯도 지원
+        if (attendanceDailyQuestId > 0)
+            TryCompleteLegacyDaily(attendanceDailyQuestId, state.attendanceCount);
 
         // Weekly 로그인도 함께 체크
         OnWeeklyLogin();
@@ -812,43 +1218,110 @@ public class QuestManager : MonoBehaviour
     public void OnStageClear(int stageId = 0)
     {
         EnsureDailyInitialized();
+        EnsureAchievementInitialized();
+        var dailyState = DailyState;
+        var achieveState = AchievementState;
 
-        var state = DailyState;
-        state.clearStageCount++;
-        MarkDirty(forceSave: true); // 1회성 이벤트는 즉시 저장
+        // ★ 전역 카운터 증가
+        dailyState.clearStageCount++;
 
-        TryCompleteDailyById(clearStageDailyQuestId, DailyQuestEventType.ClearStage, state.clearStageCount);
+        // ★ 대상별 카운터 증가 (특정 스테이지 N회 퀘스트용)
+        if (stageId > 0)
+        {
+            dailyState.IncrementTargetCount(QuestEventType.ClearStage, stageId);
+
+            // Achievement용 퀘스트별 진행도 증가
+            foreach (var quest in GetQuestsByEventType(QuestEventType.ClearStage, stageId))
+            {
+                if (quest.Quest_type == QuestType.Achievement && quest.Target_ID == stageId)
+                {
+                    achieveState.IncrementQuestProgress(quest.Quest_ID);
+                }
+            }
+        }
+
+        MarkDirty(forceSave: true);
+
+        // ★ 새 통합 시스템 사용
+        ProcessQuestEventCheck(QuestEventType.ClearStage, stageId, dailyState.clearStageCount);
+
+        // ★ Legacy 슬롯도 지원
+        if (clearStageDailyQuestId > 0)
+            TryCompleteLegacyDaily(clearStageDailyQuestId, dailyState.clearStageCount);
     }
 
     // 몬스터 사망 시점(Monster / MonsterHP 등)에서 호출
     public void OnMonsterKilled(int monsterId)
     {
         EnsureDailyInitialized();
-
         var state = DailyState;
-        // ★ 몬스터 처치는 누적 카운트이므로 즉시 증가 (보상과 무관)
-        state.monsterKillCount++;
 
-        // ★ 몬스터 처치는 빈번하므로 Dirty만 표시 (주기적으로 저장됨)
+        // ★ 카운터 증가 (몬스터는 빈번하므로 주기적 저장)
+        state.monsterKillCount++;
         MarkDirty();
 
-        TryCompleteDailyById(monsterKillDailyQuestId, DailyQuestEventType.MonsterKill, state.monsterKillCount);
+        // ★ 새 통합 시스템 사용 (몬스터 처치는 마리수만 카운트, targetId 불필요)
+        ProcessQuestEventCheck(QuestEventType.MonsterKill, 0, state.monsterKillCount);
+
+        // ★ Legacy 슬롯도 지원
+        if (monsterKillDailyQuestId > 0)
+            TryCompleteLegacyDaily(monsterKillDailyQuestId, state.monsterKillCount);
 
         // Weekly 몬스터 처치도 함께 체크
         OnWeeklyMonsterKill();
+    }
+
+    // 보스 처치 시점에서 호출 (MonsterSpawner에서 보스 체크 후 호출)
+    public void OnBossKilled(int monsterId)
+    {
+        EnsureDailyInitialized();
+        EnsureAchievementInitialized();
+        var dailyState = DailyState;
+        var achieveState = AchievementState;
+
+        // ★ 대상별 카운터 증가 (특정 보스 N회 퀘스트용)
+        if (monsterId > 0)
+        {
+            dailyState.IncrementTargetCount(QuestEventType.BossKill, monsterId);
+
+            // Achievement용 퀘스트별 진행도 증가
+            foreach (var quest in GetQuestsByEventType(QuestEventType.BossKill, monsterId))
+            {
+                if (quest.Quest_type == QuestType.Achievement && quest.Target_ID == monsterId)
+                {
+                    achieveState.IncrementQuestProgress(quest.Quest_ID);
+                }
+            }
+        }
+
+        MarkDirty(forceSave: true);
+
+        // ★ 새 통합 시스템 사용
+        int targetCount = monsterId > 0 ? dailyState.GetTargetCount(QuestEventType.BossKill, monsterId) : 1;
+        ProcessQuestEventCheck(QuestEventType.BossKill, monsterId, targetCount);
+
+        // Weekly 보스 처치도 함께 체크
+        OnWeeklyBossKill(monsterId);
     }
 
     // 가챠 결과 확정 시점에서 호출 (count: 1회/10회 등)
     public void OnGachaDraw(int count = 0)
     {
         EnsureDailyInitialized();
-
         var state = DailyState;
-        int addCount = count <= 0 ? 1 : count;
-        state.gachaDrawCount += addCount;
-        MarkDirty(forceSave: true); // 1회성 이벤트는 즉시 저장
 
-        TryCompleteDailyById(gachaDrawDailyQuestId, DailyQuestEventType.GachaDraw, state.gachaDrawCount);
+        int addCount = count <= 0 ? 1 : count;
+
+        // ★ 카운터 증가
+        state.gachaDrawCount += addCount;
+        MarkDirty(forceSave: true);
+
+        // ★ 새 통합 시스템 사용
+        ProcessQuestEventCheck(QuestEventType.GachaDraw, 0, state.gachaDrawCount);
+
+        // ★ Legacy 슬롯도 지원
+        if (gachaDrawDailyQuestId > 0)
+            TryCompleteLegacyDaily(gachaDrawDailyQuestId, state.gachaDrawCount);
 
         // Weekly 뽑기도 함께 체크
         OnWeeklyGachaDraw(addCount);
@@ -858,61 +1331,90 @@ public class QuestManager : MonoBehaviour
     public void OnShopPurchase(int shopItemId = 0)
     {
         EnsureDailyInitialized();
-
         var state = DailyState;
-        state.shopPurchaseCount++;
-        MarkDirty(forceSave: true); // 1회성 이벤트는 즉시 저장
 
-        TryCompleteDailyById(shopPurchaseDailyQuestId, DailyQuestEventType.ShopPurchase, state.shopPurchaseCount);
+        // ★ 카운터 증가
+        state.shopPurchaseCount++;
+        MarkDirty(forceSave: true);
+
+        // ★ 새 통합 시스템 사용
+        ProcessQuestEventCheck(QuestEventType.ShopPurchase, 0, state.shopPurchaseCount);
+
+        // ★ Legacy 슬롯도 지원
+        if (shopPurchaseDailyQuestId > 0)
+            TryCompleteLegacyDaily(shopPurchaseDailyQuestId, state.shopPurchaseCount);
 
         // Weekly 상점 구매도 함께 체크
         OnWeeklyShopPurchase();
     }
+
+    // 팬수 변경 시 호출
+    public void OnFanAmountChanged(int newFanAmount)
+    {
+        // ★ 새 통합 시스템 사용 (팬수는 외부 값 직접 사용)
+        ProcessQuestEventCheck(QuestEventType.FanAmountReach, 0, newFanAmount);
+
+        // ★ Legacy Achievement 슬롯도 지원
+        EnsureAchievementInitialized();
+
+        if (achievementFan100QuestId > 0)
+            TryCompleteLegacyAchievement(achievementFan100QuestId, newFanAmount);
+        if (achievementFan1000QuestId > 0)
+            TryCompleteLegacyAchievement(achievementFan1000QuestId, newFanAmount);
+        if (achievementFan10000QuestId > 0)
+            TryCompleteLegacyAchievement(achievementFan10000QuestId, newFanAmount);
+    }
+
     #endregion
 
-    #region Daily 퀘스트 완료 처리
+    #region Legacy 퀘스트 완료 처리 (하위 호환)
 
-    private void TryCompleteDailyById(int questId, DailyQuestEventType evtType, int currentCount)
+    /// <summary>
+    /// Legacy Daily 퀘스트 완료 체크 (기존 개별 슬롯용)
+    /// </summary>
+    private void TryCompleteLegacyDaily(int questId, int currentCount)
     {
         if (questId <= 0)
-        {
-            Debug.LogWarning($"[QuestManager] {evtType} 에 매핑된 Daily Quest_ID 가 설정되지 않았습니다.");
             return;
-        }
 
         var table = QuestTable;
         if (table == null)
-        {
-            Debug.LogError("[QuestManager] QuestTable 이 null 입니다.");
             return;
-        }
 
         QuestData quest = table.Get(questId);
         if (quest == null)
-        {
-            Debug.LogError($"[QuestManager] Quest_ID={questId} 를 QuestTable에서 찾을 수 없습니다. ({evtType})");
             return;
-        }
 
-        if (quest.Quest_type != QuestType.Daily)
+        int requiredCount = quest.Quest_required > 0 ? quest.Quest_required : 1;
+
+        if (currentCount >= requiredCount)
         {
-            Debug.LogWarning($"[QuestManager] Quest_ID={questId} 는 Quest_Type={quest.Quest_type} 입니다. Daily가 아닙니다. ({evtType})");
+            CompleteDailyQuestInternal(quest);
         }
+    }
 
-        int requiredCount = quest.Quest_required;
-
-        if (requiredCount <= 0)
-            requiredCount = 1;  // 기본값: 1회만 해도 완료
-
-        // 아직 목표 수치에 못 미치면 그냥 진행도만 로그 찍고 종료
-        if (currentCount < requiredCount)
-        {
-            Debug.Log($"[QuestManager] {evtType} 진행도 {currentCount}/{requiredCount}");
+    /// <summary>
+    /// Legacy Achievement 퀘스트 완료 체크 (기존 개별 슬롯용)
+    /// </summary>
+    private void TryCompleteLegacyAchievement(int questId, int currentValue)
+    {
+        if (questId <= 0)
             return;
-        }
 
-        // 목표 이상이면 진짜 완료 처리
-        CompleteDailyQuestInternal(quest);
+        var table = QuestTable;
+        if (table == null)
+            return;
+
+        QuestData quest = table.Get(questId);
+        if (quest == null)
+            return;
+
+        int requiredValue = quest.Quest_required > 0 ? quest.Quest_required : 1;
+
+        if (currentValue >= requiredValue)
+        {
+            CompleteAchievementQuestInternal(quest);
+        }
     }
 
 
@@ -978,6 +1480,10 @@ public class QuestManager : MonoBehaviour
         state.loginCount++;
         MarkDirty();
 
+        // ★ 새 CSV 시스템 (Weekly 퀘스트용)
+        ProcessWeeklyQuestEventCheck(QuestEventType.Attendance, 0, state.loginCount);
+
+        // ★ Legacy 슬롯도 지원
         TryCompleteWeeklyById(weeklyLoginQuestId, state.loginCount);
     }
 
@@ -990,6 +1496,10 @@ public class QuestManager : MonoBehaviour
         state.monsterKillCount++;
         MarkDirty();
 
+        // ★ 새 CSV 시스템 (Weekly 퀘스트용)
+        ProcessWeeklyQuestEventCheck(QuestEventType.MonsterKill, 0, state.monsterKillCount);
+
+        // ★ Legacy 슬롯도 지원
         TryCompleteWeeklyById(weeklyMonsterKillQuestId, state.monsterKillCount);
     }
 
@@ -1002,6 +1512,10 @@ public class QuestManager : MonoBehaviour
         state.shopPurchaseCount++;
         MarkDirty();
 
+        // ★ 새 CSV 시스템 (Weekly 퀘스트용)
+        ProcessWeeklyQuestEventCheck(QuestEventType.ShopPurchase, 0, state.shopPurchaseCount);
+
+        // ★ Legacy 슬롯도 지원
         TryCompleteWeeklyById(weeklyShopPurchaseQuestId, state.shopPurchaseCount);
     }
 
@@ -1011,9 +1525,22 @@ public class QuestManager : MonoBehaviour
         EnsureWeeklyInitialized();
 
         var state = WeeklyState;
+
+        // ★ 전역 카운터 증가
         state.bossKillCount++;
+
+        // ★ 대상별 카운터 증가 (특정 보스 N회 주간 퀘스트용)
+        if (monsterId > 0)
+        {
+            state.IncrementTargetCount(QuestEventType.BossKill, monsterId);
+        }
+
         MarkDirty();
 
+        // ★ 새 CSV 시스템 (Weekly 퀘스트용)
+        ProcessWeeklyQuestEventCheck(QuestEventType.BossKill, monsterId, state.bossKillCount);
+
+        // ★ Legacy 슬롯도 지원
         TryCompleteWeeklyById(weeklyBossKillQuestId, state.bossKillCount);
     }
 
@@ -1026,6 +1553,10 @@ public class QuestManager : MonoBehaviour
         state.gachaDrawCount += count;
         MarkDirty();
 
+        // ★ 새 CSV 시스템 (Weekly 퀘스트용)
+        ProcessWeeklyQuestEventCheck(QuestEventType.GachaDraw, 0, state.gachaDrawCount);
+
+        // ★ Legacy 슬롯도 지원
         TryCompleteWeeklyById(weeklyGachaDrawQuestId, state.gachaDrawCount);
     }
 
@@ -1097,39 +1628,19 @@ public class QuestManager : MonoBehaviour
 
     #endregion
 
-    #region 외부에서 호출할 이벤트 진입점 (Achievement)
+    #region 외부에서 호출할 이벤트 진입점 (Achievement) - Legacy
 
-    // 팬 수 변경 시 호출
-    public void OnFanAmountChanged(int newFanAmount)
-    {
-        EnsureAchievementInitialized();
-
-        // 팬수 100 체크
-        if (achievementFan100QuestId > 0)
-        {
-            TryCompleteAchievementById(achievementFan100QuestId, newFanAmount);
-        }
-
-        // 팬수 1000 체크
-        if (achievementFan1000QuestId > 0)
-        {
-            TryCompleteAchievementById(achievementFan1000QuestId, newFanAmount);
-        }
-
-        // 팬수 10000 체크
-        if (achievementFan10000QuestId > 0)
-        {
-            TryCompleteAchievementById(achievementFan10000QuestId, newFanAmount);
-        }
-    }
-
-    // 스테이지 최초 클리어 시 호출
+    // 스테이지 최초 클리어 시 호출 (Achievement 전용 - 카운터 증가 없이 1회성 체크)
     public void OnStageFirstClear(int stageId)
     {
-        EnsureAchievementInitialized();
+        // ★ 새 시스템: ClearStage 이벤트로 처리 (카운터 증가 없이 1회성 체크)
+        ProcessQuestEventCheck(QuestEventType.ClearStage, stageId, 1);
 
+        // ★ Legacy 슬롯도 지원
         if (achievementTutorialClearQuestId <= 0)
             return;
+
+        EnsureAchievementInitialized();
 
         var table = QuestTable;
         if (table == null)
@@ -1142,17 +1653,21 @@ public class QuestManager : MonoBehaviour
         // CSV의 Quest_required에서 튜토리얼 스테이지 ID를 읽어서 매칭
         if (quest.Quest_required == stageId)
         {
-            TryCompleteAchievementById(achievementTutorialClearQuestId, 1);
+            TryCompleteLegacyAchievement(achievementTutorialClearQuestId, 1);
         }
     }
 
-    // 보스 최초 처치 시 호출
+    // 보스 최초 처치 시 호출 (Achievement 전용 - 카운터 증가 없이 1회성 체크)
     public void OnBossFirstKill(int monsterId)
     {
-        EnsureAchievementInitialized();
+        // ★ 새 시스템: BossKill 이벤트로 처리 (카운터 증가 없이 1회성 체크)
+        ProcessQuestEventCheck(QuestEventType.BossKill, monsterId, 1);
 
+        // ★ Legacy 슬롯도 지원
         if (achievementBossFirstKillQuestId <= 0)
             return;
+
+        EnsureAchievementInitialized();
 
         // 이미 달성한 업적이면 스킵
         if (_clearedAchievementQuestIds.Contains(achievementBossFirstKillQuestId))
@@ -1170,13 +1685,13 @@ public class QuestManager : MonoBehaviour
         if (quest.Quest_required == monsterId)
         {
             Debug.Log($"[QuestManager] 보스 최초 처치 업적 달성! monsterId={monsterId}");
-            TryCompleteAchievementById(achievementBossFirstKillQuestId, 1);
+            TryCompleteLegacyAchievement(achievementBossFirstKillQuestId, 1);
         }
     }
 
     #endregion
 
-    #region Achievement 퀘스트 완료 처리
+    #region Achievement 퀘스트 완료 처리 (Legacy)
 
     private void TryCompleteAchievementById(int questId, int currentValue)
     {

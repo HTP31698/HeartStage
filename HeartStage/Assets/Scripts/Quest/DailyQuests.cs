@@ -571,4 +571,32 @@ public class DailyQuestState
     public int monsterKillCount;    // 몬스터 처치 수
     public int gachaDrawCount;      // 가챠 사용 횟수
     public int shopPurchaseCount;   // 상점 구매 횟수
+
+    // ★ 대상별 카운터 (특정 스테이지/보스 N회 퀘스트용)
+    // Key: "eventType_targetId" (예: "2_601" = ClearStage + stageId 601)
+    public Dictionary<string, int> targetCounts;
+
+    public int GetTargetCount(QuestEventType eventType, int targetId)
+    {
+        if (targetCounts == null || targetId == 0)
+            return 0;
+
+        string key = $"{(int)eventType}_{targetId}";
+        return targetCounts.TryGetValue(key, out int count) ? count : 0;
+    }
+
+    public int IncrementTargetCount(QuestEventType eventType, int targetId)
+    {
+        if (targetId == 0)
+            return 0;
+
+        if (targetCounts == null)
+            targetCounts = new Dictionary<string, int>();
+
+        string key = $"{(int)eventType}_{targetId}";
+        if (!targetCounts.ContainsKey(key))
+            targetCounts[key] = 0;
+
+        return ++targetCounts[key];
+    }
 }

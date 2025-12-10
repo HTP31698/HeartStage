@@ -63,4 +63,45 @@ public class QuestTable : DataTable
                 yield return q;
         }
     }
+
+    /// <summary>
+    /// 이벤트 타입에 해당하는 퀘스트 목록 반환
+    /// </summary>
+    public IEnumerable<QuestData> GetByEventType(QuestEventType eventType)
+    {
+        foreach (var kvp in table)
+        {
+            var q = kvp.Value;
+            if (q.Event_type == eventType)
+                yield return q;
+        }
+    }
+
+    /// <summary>
+    /// 이벤트 타입 + Target ID 매칭 퀘스트 목록 반환
+    /// targetId=0이면 해당 이벤트 타입의 전체 대상 퀘스트만 반환
+    /// targetId>0이면 Target_ID가 0(전체) 또는 targetId와 일치하는 퀘스트 반환
+    /// </summary>
+    public IEnumerable<QuestData> GetByEventTypeAndTarget(QuestEventType eventType, int targetId)
+    {
+        foreach (var kvp in table)
+        {
+            var q = kvp.Value;
+            if (q.Event_type != eventType)
+                continue;
+
+            // targetId가 0이면 전체 대상 퀘스트만
+            // targetId > 0이면 Target_ID가 0(전체) 또는 매칭되는 퀘스트
+            if (targetId == 0)
+            {
+                if (q.Target_ID == 0)
+                    yield return q;
+            }
+            else
+            {
+                if (q.Target_ID == 0 || q.Target_ID == targetId)
+                    yield return q;
+            }
+        }
+    }
 }

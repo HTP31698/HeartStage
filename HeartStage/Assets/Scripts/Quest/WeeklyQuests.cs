@@ -155,6 +155,9 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
         State.bossKillCount = 0;
         State.gachaDrawCount = 0;
         State.lastLoginDate = "";
+
+        // ★ 대상별 카운터도 리셋
+        State.targetCounts?.Clear();
     }
 
     private async UniTask SaveWeeklyStateAsync()
@@ -609,4 +612,32 @@ public class WeeklyQuestState
 
     // 🔽 중복 방지용 마지막 로그인 날짜 (yyyy-MM-dd)
     public string lastLoginDate = "";
+
+    // ★ 대상별 카운터 (특정 스테이지/보스 N회 퀘스트용)
+    // Key: "eventType_targetId" (예: "4_22214" = BossKill + bossId 22214)
+    public Dictionary<string, int> targetCounts;
+
+    public int GetTargetCount(QuestEventType eventType, int targetId)
+    {
+        if (targetCounts == null || targetId == 0)
+            return 0;
+
+        string key = $"{(int)eventType}_{targetId}";
+        return targetCounts.TryGetValue(key, out int count) ? count : 0;
+    }
+
+    public int IncrementTargetCount(QuestEventType eventType, int targetId)
+    {
+        if (targetId == 0)
+            return 0;
+
+        if (targetCounts == null)
+            targetCounts = new Dictionary<string, int>();
+
+        string key = $"{(int)eventType}_{targetId}";
+        if (!targetCounts.ContainsKey(key))
+            targetCounts[key] = 0;
+
+        return ++targetCounts[key];
+    }
 }
