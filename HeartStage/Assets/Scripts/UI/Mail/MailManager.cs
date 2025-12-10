@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class MailManager : MonoBehaviour
 {
@@ -18,8 +17,6 @@ public class MailManager : MonoBehaviour
     public event Action<List<MailData>> OnMailsLoaded;    // 메일 목록 로드 완료 시
     public event Action<MailData> OnMailReceived;         // 새 메일 수신 시
     public event Action OnMailReadStatusChanged;         // 메일 읽음 상태 변경 시
-
-    [SerializeField] private Button mailTextButton;
     private void Awake()
     {
         if (Instance == null)
@@ -31,8 +28,6 @@ public class MailManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-
-        mailTextButton.onClick.AddListener(OnTestButtonClicked);
     }
 
     /// Firebase 초기화 및 글로벌 메일 리스너 등록

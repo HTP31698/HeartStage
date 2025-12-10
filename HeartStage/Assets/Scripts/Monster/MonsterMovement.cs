@@ -61,10 +61,12 @@ public class MonsterMovement : MonoBehaviour
         CheckWallProximity();
         CheckFrontBlocked();
 
+        float finalMoveSpeed = StatCalc.GetFinalStat(gameObject, StatType.MoveSpeed, monsterData.moveSpeed);
+
         // 이동 처리
         if (!isNearWall && !isFrontBlocked)
         {
-            MoveWithSeparation(moveDirection * monsterData.moveSpeed * Time.deltaTime);
+            MoveWithSeparation(moveDirection * finalMoveSpeed * Time.deltaTime); 
         }
 
         else if (!isNearWall && isFrontBlocked)
@@ -381,10 +383,12 @@ public class MonsterMovement : MonoBehaviour
 
         float attackRangeSq = monsterData.attackRange * monsterData.attackRange;
 
-        if (bestDistSq > attackRangeSq)
+        if (closest != null && bestDistSq > attackRangeSq)
         {
+            float finalMoveSpeed = StatCalc.GetFinalStat(gameObject, StatType.MoveSpeed, monsterData.moveSpeed);
+
             Vector3 dir = (closest.transform.position - transform.position).normalized;
-            transform.position += dir * monsterData.moveSpeed * Time.deltaTime;
+            transform.position += dir * finalMoveSpeed * Time.deltaTime; 
         }
     }
 }
