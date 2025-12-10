@@ -1154,6 +1154,10 @@ public class QuestManager : MonoBehaviour
         if (achievementBossFirstKillQuestId <= 0)
             return;
 
+        // 이미 달성한 업적이면 스킵
+        if (_clearedAchievementQuestIds.Contains(achievementBossFirstKillQuestId))
+            return;
+
         var table = QuestTable;
         if (table == null)
             return;
@@ -1162,9 +1166,10 @@ public class QuestManager : MonoBehaviour
         if (quest == null)
             return;
 
-        // CSV의 Quest_required에서 보스 몬스터 ID를 읽어서 매칭
+        // Quest_required에 적힌 보스 ID와 일치하면 완료
         if (quest.Quest_required == monsterId)
         {
+            Debug.Log($"[QuestManager] 보스 최초 처치 업적 달성! monsterId={monsterId}");
             TryCompleteAchievementById(achievementBossFirstKillQuestId, 1);
         }
     }
@@ -1201,8 +1206,17 @@ public class QuestManager : MonoBehaviour
 
         int requiredValue = quest.Quest_required;
 
-        if (requiredValue <= 0)
+        // ★ 튜토리얼/보스 업적은 Quest_required가 스테이지ID/몬스터ID로 사용되므로
+        //    진행도 비교 시에는 1회성(requiredValue = 1)으로 처리
+        if (questId == achievementTutorialClearQuestId ||
+            questId == achievementBossFirstKillQuestId)
+        {
             requiredValue = 1;
+        }
+        else if (requiredValue <= 0)
+        {
+            requiredValue = 1;
+        }
 
         if (currentValue < requiredValue)
         {

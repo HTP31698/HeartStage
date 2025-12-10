@@ -239,6 +239,13 @@ public class CharacterDetailPanel : MonoBehaviour
         }
 
         var lvdata = DataTableManager.LevelUpTable.Get(charId);
+        if (lvdata == null)
+        {
+            levelUpCostText.text = "-최대 레벨-";
+            levelUpButton.interactable = false;
+            levelUpButton.onClick.RemoveAllListeners();
+            return;
+        }
 
         int currentPoint = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm);
         levelUpCostText.text = $"트레이닝 포인트: {currentPoint} / {lvdata.Lvup_ingrd_Itm_count}";
@@ -270,6 +277,13 @@ public class CharacterDetailPanel : MonoBehaviour
         }
 
         var rankdata = DataTableManager.RankUpTable.Get(charId);
+        if (rankdata == null)
+        {
+            rankUpCostText.text = "-최대 랭크-";
+            rankUpButton.interactable = false;
+            rankUpButton.onClick.RemoveAllListeners();
+            return;
+        }
 
         int currentPoint = ItemInvenHelper.GetAmount(rankdata.Upgrade_ingrd_Itm1);
         rankUpCostText.text = $"{rankdata.Upgrade_ingrd_Itm1} 조각: {currentPoint} / {rankdata.Ingrd_Itm1_amount}";

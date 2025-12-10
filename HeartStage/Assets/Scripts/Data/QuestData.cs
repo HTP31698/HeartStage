@@ -3,6 +3,7 @@
 public class QuestData
 {
     public int Quest_ID { get; set; }
+    public string Quest_name { get; set; }
     public QuestType Quest_type { get; set; }
     public string Quest_info { get; set; }
     public int Quest_required { get; set; }
@@ -12,9 +13,8 @@ public class QuestData
     public int Quest_reward2_A { get; set; }
     public int Quest_reward3 { get; set; }
     public int Quest_reward3_A { get; set; }
-    public int Title_ID { get; set; }
     public int progress_type { get; set; }
     public int progress_amount { get; set; }
-
+    public int Title_ID { get; set; }
     public string Icon_image { get; set; }
 }

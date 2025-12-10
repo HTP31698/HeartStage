@@ -248,18 +248,18 @@ public class FriendListWindow : MonoBehaviour
 
         if (dailyLimitText != null)
         {
-            int limit = data.dreamSendDailyLimit;
-            int todayCount = GetTodaySendCount(data);
+            int limit = data.dreamReceiveDailyLimit;
+            int todayCount = GetTodayReceiveCount(data);
             dailyLimitText.text = $"일일 한도: {todayCount}/{limit}";
         }
     }
 
-    private int GetTodaySendCount(SaveDataV1 data)
+    private int GetTodayReceiveCount(SaveDataV1 data)
     {
         int today = GetTodayYmd();
-        if (data.dreamLastSendDate != today)
+        if (data.dreamLastReceiveDate != today)
             return 0;
-        return data.dreamSendTodayCount;
+        return data.dreamReceiveTodayCount;
     }
 
     private int GetTodayYmd()
