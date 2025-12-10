@@ -427,7 +427,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             }
         }
 
-        return id == 22201 || id == 22214 || id == 22224; // 보스 id
+        return id == 22201 || id == 22214 || id == 22224 || id == 22231 || id == 22241; // 보스 id
     }
 
     private void ResetFadeState()
