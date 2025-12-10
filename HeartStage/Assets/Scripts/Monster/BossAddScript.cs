@@ -121,8 +121,8 @@ public class BossAddScript : MonoBehaviour
                 deceptionSkillIds.Add(skillId);
                 break;
 
-            case 31101: // 야유 스킬
-            case 31201: // 단체 강화
+            case 31101: // 광기의 행진
+            case 31201: // 야유 공격
                 otherSkillIds.Add(skillId);
                 break;
 
@@ -151,11 +151,6 @@ public class BossAddScript : MonoBehaviour
             // 초기화는 한 번만
             skillBehavior.InitializeWithMonsterData(monsterBehavior.GetMonsterData()).Forget();
 
-            // ActiveSkillManager에는 첫 번째 스킬만 등록 (대표 스킬)
-            int representativeSkillId = skillIds[0];
-            ActiveSkillManager.Instance.RegisterSkillBehavior(this.gameObject, representativeSkillId, skillBehavior);
-            ActiveSkillManager.Instance.RegisterSkill(this.gameObject, representativeSkillId);
-
             Debug.Log($"{gameObject.name}에 DeceptionBossSkills ({skillIds.Count}개) 등록 완료");
         }
         else
@@ -168,12 +163,12 @@ public class BossAddScript : MonoBehaviour
     {
         switch (skillId)
         {
-            case 31101: // 야유 스킬
-                RegisterBooingSkill(skillId);
+            case 31101:
+                RegisterSpeedBuffSkill(skillId);
                 break;
 
-            case 31201: // 단체 강화
-                RegisterSpeedBuffSkill(skillId);
+            case 31201:
+                RegisterBooingSkill(skillId);
                 break;
 
             default:
@@ -192,8 +187,6 @@ public class BossAddScript : MonoBehaviour
             var skillData = DataTableManager.SkillTable.Get(skillId);
             speedBuffBehavior.Init(skillData);
 
-            ActiveSkillManager.Instance.RegisterSkillBehavior(this.gameObject, skillId, speedBuffBehavior);
-            ActiveSkillManager.Instance.RegisterSkill(this.gameObject, skillId);
             Debug.Log($"{gameObject.name}에 SpeedBuffBossSkill (ID: {skillId}) 등록 완료");
         }
         else
@@ -212,8 +205,7 @@ public class BossAddScript : MonoBehaviour
             var skillData = DataTableManager.SkillTable.Get(skillId);
             booingSkill.Init(skillData);
 
-            ActiveSkillManager.Instance.RegisterSkillBehavior(this.gameObject, skillId, booingSkill);
-            ActiveSkillManager.Instance.RegisterSkill(this.gameObject, skillId);
+            Debug.Log($"{gameObject.name}에 BooingBossSkill (ID: {skillId}) 등록 완료");
         }
     }
 

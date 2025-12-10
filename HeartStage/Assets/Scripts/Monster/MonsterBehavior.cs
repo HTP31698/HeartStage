@@ -12,6 +12,9 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
     private HealthBar healthBar;
     public bool isDead = false;
 
+    private bool wasConfused = false; // 혼란 상태 추적
+
+
     private readonly string attack = "Attack";
 
     [SerializeField] private GameObject heartPrefab;
@@ -109,6 +112,14 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
 
         if (isDead || monsterData == null || EffectBase.Has<StunEffect>(gameObject))
             return;
+
+        bool currentlyConfused = EffectBase.Has<ConfuseEffect>(gameObject);
+        if (wasConfused && !currentlyConfused)
+        {
+            ResetToRunAnimation();
+        }
+        wasConfused = currentlyConfused;
+
 
         // SO의 최신 공격속도 값을 직접 사용 (런타임 변경사항 즉시 반영)
         attackCooldown -= Time.deltaTime;
@@ -219,26 +230,12 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             monsterSpawner.OnMonsterDied(monsterData.id);
         }
 
-        // 퀘스트 체크: 몬스터 처치
-        if (QuestManager.Instance != null && monsterData != null)
-        {
-            QuestManager.Instance.OnMonsterKilled(monsterData.id);
-
-            // 보스 처치 체크 (mon_type == 2)
-            if (isBoss)
-            {
-                QuestManager.Instance.OnWeeklyBossKill(monsterData.id);
-                QuestManager.Instance.OnBossFirstKill(monsterData.id);
-            }
-        }
-
         isFading = true;
         fadeTimer = 0f;
 
         // 경험치 생성
         int rand = Random.Range(monsterData.minExp, monsterData.maxExp + 1);
-        int finalRand = Mathf.FloorToInt(StatCalc.GetFinalStat(StageManager.Instance.gameObject, StatType.ShoutGainRate, rand));
-        ItemManager.Instance.SpawnItem(ItemID.Exp, finalRand, transform.position);
+        ItemManager.Instance.SpawnItem(ItemID.Exp, rand, transform.position);
         // 드랍아이템 생성
         if (monsterData == null)
             return;
@@ -246,8 +243,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
         var dropList = DataTableManager.MonsterTable.GetDropItemInfo(monsterData.id);
         foreach (var dropItem in dropList)
         {
-            int finalCount = Mathf.FloorToInt(StatCalc.GetFinalStat(StageManager.Instance.gameObject, StatType.DropAmountRate, dropItem.Value));
-            ItemManager.Instance.SpawnItem(dropItem.Key, finalCount, transform.position);
+            ItemManager.Instance.SpawnItem(dropItem.Key, dropItem.Value, transform.position);
         }
     }
 
@@ -442,7 +438,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             }
         }
 
-        return id == 22201 || id == 22214 || id == 22224; // 보스 id
+        return id == 22201 || id == 22214 || id == 22224 || id == 22231 || id == 22241; // 보스 id
     }
 
     private void ResetFadeState()
@@ -535,6 +531,18 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
                     DestroyImmediate(effect);
                 }
             }
+        }
+    }
+
+    private void ResetToRunAnimation()
+    {
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            animator.ResetTrigger(attack);
+
+            animator.SetTrigger("Run");            
+
+            Debug.Log($"[MonsterBehavior] {gameObject.name} 혼란 해제 - 애니메이션 리셋");
         }
     }
 }

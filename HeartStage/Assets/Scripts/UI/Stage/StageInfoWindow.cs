@@ -192,16 +192,24 @@ public class StageInfoWindow : GenericWindow
         int clearedCount = 0;
         var clearWaveList = SaveLoadManager.Data.clearWaveList;
 
+        //foreach (var waveId in waveIds)
+        //{
+        //    var waveData = DataTableManager.StageWaveTable?.Get(waveId);
+        //    if (waveData != null)
+        //    {
+        //        var rewardData = DataTableManager.RewardTable?.Get(waveData.wave_reward);
+        //        if (rewardData != null && clearWaveList.Contains(rewardData.reward_id))
+        //        {
+        //            clearedCount++;
+        //        }
+        //    }
+        //}
+
         foreach (var waveId in waveIds)
         {
-            var waveData = DataTableManager.StageWaveTable?.Get(waveId);
-            if (waveData != null)
+            if (clearWaveList.Contains(waveId))
             {
-                var rewardData = DataTableManager.RewardTable?.Get(waveData.wave_reward);
-                if (rewardData != null && clearWaveList.Contains(rewardData.reward_id))
-                {
-                    clearedCount++;
-                }
+                clearedCount++;
             }
         }
 

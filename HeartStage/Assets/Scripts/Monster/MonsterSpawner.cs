@@ -835,27 +835,27 @@ public class MonsterSpawner : MonoBehaviour
         if (rewardData == null)
         {
             Debug.LogWarning($"[MonsterSpawner] RewardData가 null입니다! RewardID: {waveData.wave_reward} - 보상 없이 진행");
-            OnWaveCleared?.Invoke(); //이벤트는 발생시켜서 UI 업데이트
-            return; // 리워드 데이터에 데이터가 없으면 보상 없이 그냥 진행하기 위함
+            OnWaveCleared?.Invoke();
+            return;
         }
 
-        // 최초 보상 체크
         var clearWaveList = SaveLoadManager.Data.clearWaveList;
-        bool isFirstClear = false; // 최초 클리어 여부 
+        bool needSave = false;
 
-        // 기존 리워드 ID로 최초 클리어 체크 (기존 시스템 호환성 유지)
+        // 기존 리워드 ID로 최초 클리어 체크
         if (!clearWaveList.Contains(rewardData.reward_id))
         {
-            clearWaveList.Add(rewardData.reward_id); // 기존 리워드 ID 저장
+            clearWaveList.Add(rewardData.reward_id);
             ItemManager.Instance.AcquireItem(rewardData.first_clear, rewardData.first_clear_a);
-            isFirstClear = true; // 최초 클리어
+            needSave = true;
         }
 
-        // 웨이브 ID도 추가로 저장 (스테이지 클리어 체크용)
+        // 웨이브 ID도 항상 저장 (스테이지 클리어 체크용)
         int currentWaveId = stageWaveIds[currentWaveIndex];
         if (!clearWaveList.Contains(currentWaveId))
         {
             clearWaveList.Add(currentWaveId);
+            needSave = true;
         }
 
         // 팬 보상
@@ -874,13 +874,13 @@ public class MonsterSpawner : MonoBehaviour
         {
             ItemManager.Instance.AcquireItem(rewardData.normal_clear3, rewardData.normal_clear3_a);
         }
-
-        if (isFirstClear)
+  
+        if (needSave)
         {
-            SaveLoadManager.SaveToServer().Forget(); // 최초 클리어일 때만 저장
+            SaveLoadManager.SaveToServer().Forget();
         }
 
-        OnWaveCleared?.Invoke(); //이벤트 발생
+        OnWaveCleared?.Invoke();
     }
 
     // 현재 웨이브 스킵

@@ -46,6 +46,8 @@ public class RewardTable : DataTable
             }
             else
             {
+                Debug.LogError($"[RewardTable] 리워드 ID 중복! ID: {item.reward_id}, 이름: {item.reward_name}");
+
                 Debug.LogError("몬스터 아이디 중복!");
             }
         }
