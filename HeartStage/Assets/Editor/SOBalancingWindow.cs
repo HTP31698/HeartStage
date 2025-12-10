@@ -59,24 +59,142 @@ public class SOBalancingWindow : EditorWindow
         { SOType.Synergy, "SynergyTable.csv" }
     };
 
-    // Passive 패턴 정의 (5x3 그리드)
-    private static readonly Dictionary<int, Vector2Int[]> PASSIVE_PATTERNS = new Dictionary<int, Vector2Int[]>
+    // Passive 패턴 - SO에서 동적으로 로드
+    private static PassivePatternData _cachedPassiveData;
+    private static PassivePatternData PassivePatternData
+    {
+        get
+        {
+            if (_cachedPassiveData == null)
+                _cachedPassiveData = Resources.Load<PassivePatternData>("PassivePatterns");
+            return _cachedPassiveData;
+        }
+    }
+
+    // 폴백용 패턴 정의 (SO 없을 때)
+    private static readonly Dictionary<int, Vector2Int[]> FALLBACK_PASSIVE_PATTERNS = new Dictionary<int, Vector2Int[]>
     {
         { 0, new Vector2Int[] { } }, // None
-        { 1, new[] { new Vector2Int(0, 0), new Vector2Int(1, 0) } }, // 자기 + 아래
-        { 2, new[] { new Vector2Int(-1, 0), new Vector2Int(0, 0), new Vector2Int(1, 0) } }, // 위 + 자기 + 아래
-        { 3, new[] { new Vector2Int(0, 0), new Vector2Int(1, 1) } }, // 자기 + 우하
-        { 4, new[] { new Vector2Int(-1, -1), new Vector2Int(0, 0), new Vector2Int(1, 1) } }, // 좌상 + 자기 + 우하
-        { 5, new[] { new Vector2Int(0, 0), new Vector2Int(1, -1) } }, // 자기 + 좌하
-        { 6, new[] { new Vector2Int(-1, 1), new Vector2Int(0, 0), new Vector2Int(1, -1) } }, // 우상 + 자기 + 좌하
-        { 7, new[] { new Vector2Int(0, 0), new Vector2Int(0, 1) } }, // 자기 + 우
-        { 8, new[] { new Vector2Int(0, -1), new Vector2Int(0, 0), new Vector2Int(0, 1) } } // 좌 + 자기 + 우
+        { 1, new[] { new Vector2Int(0, 0), new Vector2Int(1, 0) } },
+        { 2, new[] { new Vector2Int(-1, 0), new Vector2Int(0, 0), new Vector2Int(1, 0) } },
+        { 3, new[] { new Vector2Int(0, 0), new Vector2Int(1, 1) } },
+        { 4, new[] { new Vector2Int(-1, -1), new Vector2Int(0, 0), new Vector2Int(1, 1) } },
+        { 5, new[] { new Vector2Int(0, 0), new Vector2Int(1, -1) } },
+        { 6, new[] { new Vector2Int(-1, 1), new Vector2Int(0, 0), new Vector2Int(1, -1) } },
+        { 7, new[] { new Vector2Int(0, 0), new Vector2Int(0, 1) } },
+        { 8, new[] { new Vector2Int(0, -1), new Vector2Int(0, 0), new Vector2Int(0, 1) } }
     };
 
     private static readonly string[] PASSIVE_NAMES = {
         "None", "자기+아래(↓)", "세로(↕)", "자기+우하(↘)", "대각선(⤡)",
         "자기+좌하(↙)", "역대각선(⤢)", "자기+우(→)", "가로(↔)"
     };
+
+    // ★ SOType별 탭 색상
+    private static readonly Dictionary<SOType, Color> TAB_COLORS = new Dictionary<SOType, Color>
+    {
+        { SOType.Character, new Color(0.4f, 0.7f, 1f) },    // 하늘색
+        { SOType.Monster, new Color(1f, 0.5f, 0.5f) },      // 빨강
+        { SOType.Skill, new Color(0.8f, 0.5f, 1f) },        // 보라
+        { SOType.Item, new Color(1f, 0.85f, 0.4f) },        // 금색
+        { SOType.Stage, new Color(0.5f, 0.85f, 0.5f) },     // 초록
+        { SOType.StageWave, new Color(0.6f, 0.9f, 0.7f) },  // 민트
+        { SOType.Synergy, new Color(1f, 0.7f, 0.5f) }       // 주황
+    };
+
+    // ★ 캐릭터 속성별 색상 (char_type)
+    private static readonly Dictionary<int, Color> CHAR_TYPE_COLORS = new Dictionary<int, Color>
+    {
+        { 0, new Color(0.7f, 0.7f, 0.7f) },   // 기본 (회색)
+        { 1, new Color(1f, 0.4f, 0.4f) },     // Vocal (빨강)
+        { 2, new Color(0.4f, 0.6f, 1f) },     // Lab (파랑)
+        { 3, new Color(1f, 0.85f, 0.3f) },    // Charisma (금색)
+        { 4, new Color(1f, 0.6f, 0.8f) },     // Cuty (핑크)
+        { 5, new Color(0.5f, 0.9f, 0.5f) },   // Dance (초록)
+        { 6, new Color(0.8f, 0.5f, 1f) },     // Visual (보라)
+        { 7, new Color(1f, 0.5f, 0.3f) }      // Sexy (주황)
+    };
+
+    // ★ 스킬 타입별 색상 (skill_type: 0=보스, 1=액티브, 2=패시브)
+    private static readonly Dictionary<int, Color> SKILL_TYPE_COLORS = new Dictionary<int, Color>
+    {
+        { 0, new Color(1f, 0.4f, 0.4f) },     // 보스 (빨강)
+        { 1, new Color(0.4f, 0.8f, 1f) },     // 액티브 (하늘색)
+        { 2, new Color(0.6f, 1f, 0.6f) }      // 패시브 (연두)
+    };
+
+    /// <summary>
+    /// PassivePatternData SO에서 패턴 가져오기 (폴백 지원)
+    /// </summary>
+    private static Vector2Int[] GetPassivePattern(int passiveType)
+    {
+        // SO에서 먼저 시도
+        if (PassivePatternData != null)
+        {
+            var pattern = PassivePatternData.GetPattern(passiveType);
+            if (pattern != null)
+                return pattern;
+        }
+
+        // 폴백
+        return FALLBACK_PASSIVE_PATTERNS.GetValueOrDefault(passiveType, new Vector2Int[] { });
+    }
+
+    /// <summary>
+    /// PassivePatternData SO에서 드롭다운 옵션 가져오기
+    /// </summary>
+    private (string[], int[]) GetPassivePatternOptions()
+    {
+        // SO에서 먼저 시도
+        if (PassivePatternData != null)
+        {
+            var patterns = PassivePatternData.GetAllPatterns();
+            if (patterns != null && patterns.Count > 0)
+            {
+                // None(0) + SO 패턴들
+                var names = new string[patterns.Count + 1];
+                var ids = new int[patterns.Count + 1];
+
+                names[0] = "None";
+                ids[0] = 0;
+
+                for (int i = 0; i < patterns.Count; i++)
+                {
+                    names[i + 1] = string.IsNullOrEmpty(patterns[i].description)
+                        ? $"Type {patterns[i].typeId}"
+                        : patterns[i].description;
+                    ids[i + 1] = patterns[i].typeId;
+                }
+                return (names, ids);
+            }
+        }
+
+        // 폴백
+        return (PASSIVE_NAMES, new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 });
+    }
+
+    /// <summary>
+    /// 패시브 타입 ID로 이름 가져오기
+    /// </summary>
+    private string GetPassivePatternName(int passiveType)
+    {
+        if (passiveType == 0) return "None";
+
+        // SO에서 먼저 시도
+        if (PassivePatternData != null)
+        {
+            var patterns = PassivePatternData.GetAllPatterns();
+            var pattern = patterns?.Find(p => p.typeId == passiveType);
+            if (pattern != null && !string.IsNullOrEmpty(pattern.description))
+                return pattern.description;
+        }
+
+        // 폴백 (PASSIVE_NAMES 배열 범위 체크)
+        if (passiveType >= 0 && passiveType < PASSIVE_NAMES.Length)
+            return PASSIVE_NAMES[passiveType];
+
+        return $"Type {passiveType}";
+    }
 
     #endregion
 
@@ -192,7 +310,23 @@ public class SOBalancingWindow : EditorWindow
 
     private void OnEnable()
     {
+        ClearSOCaches();
         LoadAllData();
+    }
+
+    private void OnFocus()
+    {
+        // 다른 툴에서 SO 수정 시 캐시 갱신
+        ClearSOCaches();
+    }
+
+    /// <summary>
+    /// PassivePatternData, StageLayoutData 캐시 클리어
+    /// </summary>
+    private static void ClearSOCaches()
+    {
+        _cachedPassiveData = null;
+        _cachedStageLayoutData = null;
     }
 
     private void OnDisable()
@@ -277,7 +411,7 @@ public class SOBalancingWindow : EditorWindow
     {
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
         {
-            // SO 타입 탭
+            // SO 타입 탭 (색상 적용)
             foreach (SOType type in Enum.GetValues(typeof(SOType)))
             {
                 bool isSelected = currentType == type;
@@ -286,6 +420,13 @@ public class SOBalancingWindow : EditorWindow
                 string label = type.ToString();
                 if (modCount > 0)
                     label += $" ({modCount})";
+
+                // ★ 탭 색상 적용
+                var originalBg = GUI.backgroundColor;
+                if (TAB_COLORS.TryGetValue(type, out var tabColor))
+                {
+                    GUI.backgroundColor = isSelected ? tabColor : Color.Lerp(tabColor, Color.gray, 0.5f);
+                }
 
                 if (GUILayout.Toggle(isSelected, label, EditorStyles.toolbarButton, GUILayout.MinWidth(70)))
                 {
@@ -296,6 +437,8 @@ public class SOBalancingWindow : EditorWindow
                         compareIndex = -1;
                     }
                 }
+
+                GUI.backgroundColor = originalBg;
             }
 
             GUILayout.FlexibleSpace();
@@ -719,6 +862,32 @@ public class SOBalancingWindow : EditorWindow
 
         // 전체 항목을 클릭 가능한 버튼으로 만들기
         var bgColor = GUI.backgroundColor;
+
+        // ★ 캐릭터 속성별 색상 적용
+        if (so is CharacterData charData && !hasErrors && !isSelected)
+        {
+            if (CHAR_TYPE_COLORS.TryGetValue(charData.char_type, out var typeColor))
+            {
+                GUI.backgroundColor = Color.Lerp(typeColor, Color.gray, 0.3f);
+            }
+        }
+        // ★ 몬스터 타입별 색상 (보스=빨강, 일반=회색)
+        else if (so is MonsterData monsterData && !hasErrors && !isSelected)
+        {
+            if (monsterData.monsterType == 2) // Boss
+                GUI.backgroundColor = new Color(1f, 0.6f, 0.6f);
+            else
+                GUI.backgroundColor = new Color(0.6f, 0.6f, 0.7f);
+        }
+        // ★ 스킬 타입별 색상 (0=보스, 1=액티브, 2=패시브)
+        else if (so is SkillData skillData && !hasErrors && !isSelected)
+        {
+            if (SKILL_TYPE_COLORS.TryGetValue(skillData.skill_type, out var skillColor))
+            {
+                GUI.backgroundColor = Color.Lerp(skillColor, Color.gray, 0.3f);
+            }
+        }
+
         if (hasErrors)
             GUI.backgroundColor = new Color(1f, 0.5f, 0.5f);
         else if (isSelected)
@@ -979,10 +1148,11 @@ public class SOBalancingWindow : EditorWindow
 
         EditorGUILayout.Space(10);
 
-        // Passive Type with Grid
+        // Passive Type with Grid (SO 연동)
         DrawSectionHeader("패시브", SECTION_SKILL);
+        var (passiveNames, passiveIds) = GetPassivePatternOptions();
         data.passive_type = (PassiveType)EditorGUILayout.IntPopup("패시브 타입", (int)data.passive_type,
-            PASSIVE_NAMES, new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8 });
+            passiveNames, passiveIds);
 
         // 패시브 그리드 시각화
         if (data.passive_type != PassiveType.None)
@@ -1127,9 +1297,14 @@ public class SOBalancingWindow : EditorWindow
         data.stage_name = EditorGUILayout.TextField("이름", data.stage_name);
         data.stage_step1 = EditorGUILayout.IntField("스텝 1", data.stage_step1);
         data.stage_step2 = EditorGUILayout.IntField("스텝 2", data.stage_step2);
-        data.stage_type = EditorGUILayout.IntPopup("타입", data.stage_type,
-            new[] { "Full", "Stage1", "Stage2" }, new[] { 0, 1, 2 });
+
+        // ★ StageLayoutData SO에서 동적으로 드롭다운 생성
+        var (layoutNames, layoutIds) = GetStageLayoutOptions();
+        data.stage_type = EditorGUILayout.IntPopup("타입", data.stage_type, layoutNames, layoutIds);
         data.stage_position = EditorGUILayout.IntField("포지션", data.stage_position);
+
+        // ★ StageLayout 미리보기 (SO 연동)
+        DrawStageLayoutPreview(data.stage_type);
 
         EditorGUILayout.Space(10);
 
@@ -1238,6 +1413,139 @@ public class SOBalancingWindow : EditorWindow
 
     #endregion
 
+    #region Stage Layout Grid
+
+    // ★ StageLayoutData SO 캐싱
+    private static StageLayoutData _cachedStageLayoutData;
+    private static StageLayoutData StageLayoutData
+    {
+        get
+        {
+            if (_cachedStageLayoutData == null)
+                _cachedStageLayoutData = Resources.Load<StageLayoutData>("StageLayouts");
+            return _cachedStageLayoutData;
+        }
+    }
+
+    // 폴백용 기본 레이아웃 이름
+    private static readonly string[] FALLBACK_LAYOUT_NAMES = { "Full", "Stage1", "Stage2" };
+    private static readonly int[] FALLBACK_LAYOUT_IDS = { 0, 1, 2 };
+
+    /// <summary>
+    /// StageLayoutData SO에서 드롭다운 옵션 가져오기
+    /// </summary>
+    private (string[], int[]) GetStageLayoutOptions()
+    {
+        if (StageLayoutData != null)
+        {
+            var layouts = StageLayoutData.GetAllLayouts();
+            if (layouts != null && layouts.Count > 0)
+            {
+                var names = new string[layouts.Count];
+                var ids = new int[layouts.Count];
+                for (int i = 0; i < layouts.Count; i++)
+                {
+                    names[i] = string.IsNullOrEmpty(layouts[i].description)
+                        ? $"Type {layouts[i].typeId}"
+                        : layouts[i].description;
+                    ids[i] = layouts[i].typeId;
+                }
+                return (names, ids);
+            }
+        }
+        return (FALLBACK_LAYOUT_NAMES, FALLBACK_LAYOUT_IDS);
+    }
+
+    /// <summary>
+    /// StageLayout 미리보기 (5x3 그리드)
+    /// </summary>
+    private void DrawStageLayoutPreview(int stageType)
+    {
+        EditorGUILayout.Space(5);
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+        {
+            EditorGUILayout.LabelField("무대 레이아웃 미리보기 (5x3) - SO 연동", EditorStyles.miniLabel);
+
+            EditorGUILayout.Space(5);
+
+            // SO에서 활성 슬롯 가져오기
+            bool[] mask = GetStageLayoutMask(stageType);
+
+            // 5x3 그리드
+            const int gridCols = 5;
+            const int gridRows = 3;
+            const float tileSize = 50f;
+            const float tileSpacing = 3f;
+
+            float gridWidth = gridCols * (tileSize + tileSpacing);
+            float gridHeight = gridRows * (tileSize + tileSpacing);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            Rect gridRect = GUILayoutUtility.GetRect(gridWidth, gridHeight);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            // 각 타일 그리기
+            int enabledCount = 0;
+            for (int row = 0; row < gridRows; row++)
+            {
+                for (int col = 0; col < gridCols; col++)
+                {
+                    int slotIndex = row * gridCols + col;
+
+                    Rect tileRect = new Rect(
+                        gridRect.x + col * (tileSize + tileSpacing),
+                        gridRect.y + row * (tileSize + tileSpacing),
+                        tileSize,
+                        tileSize);
+
+                    bool isEnabled = mask[slotIndex];
+                    if (isEnabled) enabledCount++;
+
+                    // 색상 결정
+                    Color bgColor = isEnabled
+                        ? new Color(0.3f, 0.8f, 0.5f, 1f)  // 초록 (활성)
+                        : new Color(0.2f, 0.2f, 0.25f, 1f); // 어두운 회색 (비활성)
+
+                    EditorGUI.DrawRect(tileRect, bgColor);
+
+                    // 테두리
+                    Handles.DrawSolidRectangleWithOutline(tileRect, Color.clear, new Color(0.1f, 0.1f, 0.1f));
+
+                    // 슬롯 번호
+                    GUIStyle indexStyle = new GUIStyle(EditorStyles.boldLabel)
+                    {
+                        alignment = TextAnchor.MiddleCenter,
+                        fontSize = 16,
+                        normal = { textColor = isEnabled ? Color.white : new Color(1, 1, 1, 0.3f) }
+                    };
+                    GUI.Label(tileRect, slotIndex.ToString(), indexStyle);
+                }
+            }
+
+            EditorGUILayout.LabelField($"활성 슬롯: {enabledCount} / 15", EditorStyles.miniLabel);
+        }
+        EditorGUILayout.EndVertical();
+    }
+
+    /// <summary>
+    /// StageLayoutData SO에서 마스크 가져오기 (폴백 지원)
+    /// </summary>
+    private bool[] GetStageLayoutMask(int stageType)
+    {
+        // SO에서 먼저 시도
+        if (StageLayoutData != null)
+        {
+            return StageLayoutData.BuildMask(stageType);
+        }
+
+        // 폴백: StageLayoutUtil 사용
+        return StageLayoutUtil.BuildMask(stageType);
+    }
+
+    #endregion
+
     #region Passive Grid
 
     private void DrawPassiveGrid(int passiveType)
@@ -1245,12 +1553,12 @@ public class SOBalancingWindow : EditorWindow
         EditorGUILayout.Space(5);
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         {
-            EditorGUILayout.LabelField("패시브 패턴 미리보기 (9x5 확장)", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("패시브 패턴 미리보기 (9x5 확장) - SO 연동", EditorStyles.miniLabel);
 
             EditorGUILayout.Space(5);
 
-            // 패턴 가져오기
-            var pattern = PASSIVE_PATTERNS.GetValueOrDefault(passiveType, new Vector2Int[] { });
+            // ★ SO에서 패턴 가져오기 (폴백 지원)
+            var pattern = GetPassivePattern(passiveType);
             var activeOffsets = new HashSet<Vector2Int>(pattern);
 
             // 9x5 그리드 (중심 고정: row=2, col=4 = offset(0,0))
@@ -1338,7 +1646,8 @@ public class SOBalancingWindow : EditorWindow
             }
 
             EditorGUILayout.Space(3);
-            EditorGUILayout.LabelField($"패턴: {PASSIVE_NAMES[passiveType]}", EditorStyles.centeredGreyMiniLabel);
+            string patternName = GetPassivePatternName(passiveType);
+            EditorGUILayout.LabelField($"패턴: {patternName}", EditorStyles.centeredGreyMiniLabel);
             EditorGUILayout.LabelField("밝은 영역 = 게임 내 범위 (3x5)  |  중심(0,0) 기준", EditorStyles.centeredGreyMiniLabel);
         }
         EditorGUILayout.EndVertical();
