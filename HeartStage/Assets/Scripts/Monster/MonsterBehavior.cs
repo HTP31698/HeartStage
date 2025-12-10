@@ -12,6 +12,9 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
     private HealthBar healthBar;
     public bool isDead = false;
 
+    private bool wasConfused = false; // 혼란 상태 추적
+
+
     private readonly string attack = "Attack";
 
     [SerializeField] private GameObject heartPrefab;
@@ -109,6 +112,14 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
 
         if (isDead || monsterData == null || EffectBase.Has<StunEffect>(gameObject))
             return;
+
+        bool currentlyConfused = EffectBase.Has<ConfuseEffect>(gameObject);
+        if (wasConfused && !currentlyConfused)
+        {
+            ResetToRunAnimation();
+        }
+        wasConfused = currentlyConfused;
+
 
         // SO의 최신 공격속도 값을 직접 사용 (런타임 변경사항 즉시 반영)
         attackCooldown -= Time.deltaTime;
@@ -520,6 +531,18 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
                     DestroyImmediate(effect);
                 }
             }
+        }
+    }
+
+    private void ResetToRunAnimation()
+    {
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            animator.ResetTrigger(attack);
+
+            animator.SetTrigger("Run");            
+
+            Debug.Log($"[MonsterBehavior] {gameObject.name} 혼란 해제 - 애니메이션 리셋");
         }
     }
 }
