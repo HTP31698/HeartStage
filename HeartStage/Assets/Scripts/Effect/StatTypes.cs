@@ -22,4 +22,5 @@ public enum ConditionType
     Paralyze = 3012,   // 3012: 이동 불가, 공격 가능
     Confuse = 3013,    // 3013: 확률적으로 아군 공격
     Knockback = 3014,  // 3014: 뒤로 튕기는 CC
+    Penetrate = 3018   // 3018: 기본공격 관통
 }

@@ -101,6 +101,16 @@ public class CharacterFence : MonoBehaviour, IDamageable
         }
     }
 
+    public void Heal(int amount)
+    {
+        hp += amount;
+
+        if (hp > maxHp)
+            hp = maxHp;
+
+        UpdateAllFencesHpText();
+    }
+
     public void OnDamage(int damage, bool isCritical = false)
     {
         hp -= damage;

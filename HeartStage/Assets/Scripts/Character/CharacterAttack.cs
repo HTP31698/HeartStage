@@ -148,10 +148,13 @@ public class CharacterAttack : MonoBehaviour
             final = Mathf.FloorToInt(final * crtDmgStat);
         }
 
+        // 관통 체크(3018 버프 있는지)
+        PenetrationType penetrate = EffectBase.Has<PenetrateEffect>(gameObject) ? PenetrationType.Penetrate : PenetrationType.NonPenetrate;
+
         // 투사체 세팅
         var dir = (targetPos - transform.position).normalized;
         projectile.GetComponent<CharacterProjectile>()
-            .SetMissile(data.projectile_AssetName, data.hitEffect_AssetName, transform.position, dir, data.bullet_speed, final, isCritical: isCritical);
+            .SetMissile(data.projectile_AssetName, data.hitEffect_AssetName, transform.position, dir, data.bullet_speed, final, penetration:penetrate, isCritical: isCritical);
     }
 
     private async UniTask FireAsync(Vector3 targetpos, float delay)
