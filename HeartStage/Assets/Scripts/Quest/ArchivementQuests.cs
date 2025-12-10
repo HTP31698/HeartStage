@@ -285,6 +285,24 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
             if (acquirePanel != null)
                 acquirePanel.Open(questData.Quest_reward3, questData.Quest_reward3_A);
         }
+
+        // ★ 칭호(Title_ID) 지급
+        if (questData.Title_ID > 0)
+        {
+            var data = SaveLoadManager.Data;
+            if (data.ownedTitleIds == null)
+                data.ownedTitleIds = new List<int>();
+
+            if (!data.ownedTitleIds.Contains(questData.Title_ID))
+            {
+                data.ownedTitleIds.Add(questData.Title_ID);
+                SaveLoadManager.SaveToServer().Forget();
+
+                var titleData = DataTableManager.TitleTable?.Get(questData.Title_ID);
+                string titleName = titleData?.Title_name ?? $"칭호 #{questData.Title_ID}";
+                Debug.Log($"[ArchivementQuests] 칭호 지급: {titleName} (ID: {questData.Title_ID})");
+            }
+        }
     }
 
     private async UniTask SaveAchievementStateAsync()

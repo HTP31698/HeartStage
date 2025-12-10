@@ -278,6 +278,15 @@ public static class DreamEnergyGiftService
             _sentTodayCache.Add(friendUid);
             _sentTodayCacheDate = today;
 
+            // ★ 로컬 SaveData에도 보내기 카운트 증가
+            if (data.dreamLastSendDate != today)
+            {
+                data.dreamLastSendDate = today;
+                data.dreamSendTodayCount = 0;
+            }
+            data.dreamSendTodayCount++;
+            SaveLoadManager.SaveToServer().Forget();
+
             Debug.Log($"[DreamEnergyGiftService] 드림 에너지 선물 전송 완료: {friendUid}");
             return true;
         }

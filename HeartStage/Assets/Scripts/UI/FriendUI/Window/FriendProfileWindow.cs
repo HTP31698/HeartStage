@@ -85,6 +85,9 @@ public class FriendProfileWindow : MonoBehaviour
                 return;
             }
 
+            // ★ 캐시도 최신 데이터로 업데이트
+            LobbySceneController.UpdateCachedProfile(uid, data);
+
             // 닉네임
             if (nicknameText != null)
                 nicknameText.text = GetDisplayNickname(data.nickname, uid);

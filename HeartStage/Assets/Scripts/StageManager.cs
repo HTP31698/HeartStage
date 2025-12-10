@@ -239,6 +239,9 @@ public class StageManager : MonoBehaviour
         if (QuestManager.Instance != null && currentStageCSVData != null)
         {
             QuestManager.Instance.OnStageClear(currentStageCSVData.stage_ID);
+
+            // ★ 스테이지 최초 클리어 업적 체크 (튜토리얼 등)
+            QuestManager.Instance.OnStageFirstClear(currentStageCSVData.stage_ID);
         }
 
         if (windowManager != null)
