@@ -107,8 +107,8 @@ public class ItemID
 
 public class CurrencyIcon
 {
-    public static readonly string lightStickIcon = "LightstickImage";
-    public static readonly string heartStickIcon = "HeartStickImage";
+    public static readonly string lightStickIcon = "Star-Stick-Yellow-128";
+    public static readonly string heartStickIcon = "Star-Stick-Pink-128";
     public static readonly string dollarIcon = "DollarIcon";
 
     // 0 : 없음
