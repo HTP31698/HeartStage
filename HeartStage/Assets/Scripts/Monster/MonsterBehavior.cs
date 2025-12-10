@@ -224,7 +224,8 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
 
         // 경험치 생성
         int rand = Random.Range(monsterData.minExp, monsterData.maxExp + 1);
-        ItemManager.Instance.SpawnItem(ItemID.Exp, rand, transform.position);
+        int finalRand = Mathf.FloorToInt(StatCalc.GetFinalStat(StageManager.Instance.gameObject, StatType.ShoutGainRate, rand));
+        ItemManager.Instance.SpawnItem(ItemID.Exp, finalRand, transform.position);
         // 드랍아이템 생성
         if (monsterData == null)
             return;
@@ -232,7 +233,8 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
         var dropList = DataTableManager.MonsterTable.GetDropItemInfo(monsterData.id);
         foreach (var dropItem in dropList)
         {
-            ItemManager.Instance.SpawnItem(dropItem.Key, dropItem.Value, transform.position);
+            int finalCount = Mathf.FloorToInt(StatCalc.GetFinalStat(StageManager.Instance.gameObject, StatType.DropAmountRate, dropItem.Value));
+            ItemManager.Instance.SpawnItem(dropItem.Key, finalCount, transform.position);
         }
     }
 
