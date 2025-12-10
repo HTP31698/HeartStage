@@ -26,7 +26,7 @@ public class DropAmountMulEffect : EffectBase, IStatMulSource
     {
         if (stat == StatType.DropAmountRate)
         {
-            float factor = 1f + magnitude; // +1.0 → 2배 드랍
+            float factor = magnitude; // magnitude 그대로 쓰는 공식
             factor = Mathf.Max(0f, factor);
             mul = factor;
             return true;

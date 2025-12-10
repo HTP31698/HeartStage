@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public enum SynergyTarget
@@ -7,6 +6,7 @@ public enum SynergyTarget
     None = 0,
     AlliesAll = 1,      // CSV에서 skill_target = 1
     GlobalOrEtc = 2,    // CSV에서 skill_target = 2 (함성 게이지, 몬스터 드랍, 적 속도 등)
+    Stage = 4,
 }
 
 /// 배치된 캐릭터들의 CharacterType을 보고
@@ -158,8 +158,11 @@ public static class SynergyManager
                 }
                 break;
             case SynergyTarget.GlobalOrEtc:
-                //  - 508~509: 함성 게이지 / 드랍량 배수 → 나중에 별도 시스템이 있으면 case 분기해서 처리
                 //  - 510~514: 적 이동/공격 속도 감소 → 효과 3010이 알아서 적들에게 퍼지게 구현할 수도 있음
+                break;
+            case SynergyTarget.Stage:
+                //  - 508~509: 함성 게이지 / 드랍량 배수 → 나중에 별도 시스템이 있으면 case 분기해서 처리
+                EffectRegistry.Apply(StageManager.Instance.gameObject, effectId, value, 99999f);
                 break;
             case SynergyTarget.None:
             default:

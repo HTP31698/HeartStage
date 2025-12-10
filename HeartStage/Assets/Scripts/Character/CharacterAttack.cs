@@ -117,7 +117,6 @@ public class CharacterAttack : MonoBehaviour
             }
 
             var atkSpeedStat = StatCalc.GetFinalStat(gameObject, StatType.AttackSpeed, data.atk_speed);
-
             nextAttackTime = Time.time + atkSpeedStat;
         }
 
