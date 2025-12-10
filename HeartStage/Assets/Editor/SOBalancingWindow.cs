@@ -157,9 +157,6 @@ public class SOBalancingWindow : EditorWindow
     private Texture2D _passiveActiveTex;
     private Texture2D _passiveCenterTex;
 
-    // 패시브 그리드 설정
-    private int passiveGridCenterIndex = 7; // 기본 중앙 위치
-
     // 북마크
     private List<ScriptableObject> bookmarks = new List<ScriptableObject>();
     private Vector2 bookmarkScroll;
@@ -382,14 +379,16 @@ public class SOBalancingWindow : EditorWindow
             }
             GUI.backgroundColor = Color.white;
 
-            // 적용 (초록)
-            GUI.backgroundColor = modifiedObjects.Count > 0 ? new Color(0.5f, 1f, 0.5f) : new Color(0.6f, 0.9f, 0.6f);
+            // 적용 (초록) - 수정사항 있을 때만 활성화
+            GUI.enabled = modifiedObjects.Count > 0;
+            GUI.backgroundColor = modifiedObjects.Count > 0 ? new Color(0.5f, 1f, 0.5f) : new Color(0.6f, 0.6f, 0.6f);
             string saveLabel = modifiedObjects.Count > 0 ? $"적용 ({modifiedObjects.Count})" : "적용";
             if (GUILayout.Button(saveLabel, GUILayout.Width(buttonWidth), GUILayout.Height(buttonHeight)))
             {
                 SaveAllModified();
             }
             GUI.backgroundColor = Color.white;
+            GUI.enabled = true;
 
             // 변경 취소 (빨강)
             GUI.enabled = modifiedObjects.Count > 0;
@@ -1246,61 +1245,101 @@ public class SOBalancingWindow : EditorWindow
         EditorGUILayout.Space(5);
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         {
-            EditorGUILayout.LabelField("패시브 패턴 미리보기 (클릭으로 중앙 변경)", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField("패시브 패턴 미리보기 (9x5 확장)", EditorStyles.miniLabel);
 
             EditorGUILayout.Space(5);
 
-            // 그리드 그리기
+            // 패턴 가져오기
             var pattern = PASSIVE_PATTERNS.GetValueOrDefault(passiveType, new Vector2Int[] { });
-            int centerRow = passiveGridCenterIndex / 5;
-            int centerCol = passiveGridCenterIndex % 5;
+            var activeOffsets = new HashSet<Vector2Int>(pattern);
 
-            // 활성화될 셀 계산
-            var activeCells = new HashSet<int>();
-            foreach (var offset in pattern)
+            // 9x5 그리드 (중심 고정: row=2, col=4 = offset(0,0))
+            const int gridCols = 9;  // -4 ~ +4
+            const int gridRows = 5;  // -2 ~ +2
+            const float tileSize = 45f;
+
+            // 그리드 전체 영역 확보
+            const float tileSpacing = 2f;
+            float gridWidth = gridCols * (tileSize + tileSpacing);
+            float gridHeight = gridRows * (tileSize + tileSpacing);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            Rect gridRect = GUILayoutUtility.GetRect(gridWidth, gridHeight);
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            // 각 타일 그리기
+            for (int row = 0; row < gridRows; row++)
             {
-                int r = centerRow + offset.x;
-                int c = centerCol + offset.y;
-                if (r >= 0 && r < 3 && c >= 0 && c < 5)
+                for (int col = 0; col < gridCols; col++)
                 {
-                    activeCells.Add(r * 5 + c);
-                }
-            }
+                    // 오프셋 계산 (중심은 row=2, col=4)
+                    int offsetRow = row - 2;  // -2, -1, 0, 1, 2
+                    int offsetCol = col - 4;  // -4, -3, -2, -1, 0, 1, 2, 3, 4
+                    Vector2Int offset = new Vector2Int(offsetRow, offsetCol);
 
-            // 그리드 그리기 (버튼 클릭으로 중앙 위치 변경 - 미리보기 전용, 적용 안됨)
-            for (int row = 0; row < 3; row++)
-            {
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-                for (int col = 0; col < 5; col++)
-                {
-                    int idx = row * 5 + col;
-                    bool isCenter = idx == passiveGridCenterIndex;
-                    bool isActive = activeCells.Contains(idx);
+                    // 타일 위치 계산
+                    Rect tileRect = new Rect(
+                        gridRect.x + col * (tileSize + tileSpacing),
+                        gridRect.y + row * (tileSize + tileSpacing),
+                        tileSize,
+                        tileSize);
 
+                    bool isCenter = (offsetRow == 0 && offsetCol == 0);
+                    bool isActive = activeOffsets.Contains(offset);
+
+                    // 게임 내 실제 범위: row -1~1, col -2~2 (3행 5열)
+                    bool isInGameArea = (offsetRow >= -1 && offsetRow <= 1) &&
+                                        (offsetCol >= -2 && offsetCol <= 2);
+
+                    // 색상 결정 (모던 팔레트)
                     Color bgColor;
-                    if (isCenter)
-                        bgColor = new Color(0.2f, 0.6f, 1f, 1f); // 파란색 - 중앙
+                    if (isCenter && isActive)
+                        bgColor = new Color(0.3f, 0.9f, 0.7f, 1f);   // 민트 (중심+활성)
+                    else if (isCenter)
+                        bgColor = new Color(1f, 0.85f, 0.3f, 1f);    // 골드 (중심)
                     else if (isActive)
-                        bgColor = new Color(0.3f, 0.8f, 0.3f, 1f); // 녹색 - 활성
+                        bgColor = new Color(0.95f, 0.4f, 0.6f, 1f);  // 코랄 핑크 (활성)
+                    else if (!isInGameArea)
+                        bgColor = new Color(0.12f, 0.1f, 0.18f, 1f); // 딥 퍼플 (영역 밖)
                     else
-                        bgColor = new Color(0.3f, 0.3f, 0.3f, 1f); // 회색 - 비활성
+                        bgColor = new Color(0.2f, 0.25f, 0.35f, 1f); // 슬레이트 블루 (영역 내)
 
-                    GUI.backgroundColor = bgColor;
-                    if (GUILayout.Button(idx.ToString(), GUILayout.Width(35), GUILayout.Height(35)))
+                    // 타일 배경 (진하게!)
+                    EditorGUI.DrawRect(tileRect, bgColor);
+
+                    // 테두리
+                    Handles.DrawSolidRectangleWithOutline(tileRect, Color.clear, new Color(0.1f, 0.1f, 0.1f));
+
+                    // 중심점 표시
+                    if (isCenter)
                     {
-                        // 미리보기용 중앙 위치만 변경 (SO 데이터 수정 안 함, 적용 표시 안 됨)
-                        passiveGridCenterIndex = idx;
+                        GUIStyle centerStyle = new GUIStyle(GUI.skin.label)
+                        {
+                            alignment = TextAnchor.MiddleCenter,
+                            fontSize = 18,
+                            fontStyle = FontStyle.Bold,
+                            normal = { textColor = Color.white }
+                        };
+                        GUI.Label(tileRect, "●", centerStyle);
                     }
-                    GUI.backgroundColor = Color.white;
+
+                    // 좌표 표시
+                    GUIStyle coordStyle = new GUIStyle(EditorStyles.miniLabel)
+                    {
+                        alignment = TextAnchor.LowerRight,
+                        fontSize = 9,
+                        normal = { textColor = new Color(1, 1, 1, 0.6f) }
+                    };
+                    Rect coordRect = new Rect(tileRect.x, tileRect.y, tileRect.width - 2, tileRect.height - 1);
+                    GUI.Label(coordRect, $"{offsetRow},{offsetCol}", coordStyle);
                 }
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
             }
 
             EditorGUILayout.Space(3);
             EditorGUILayout.LabelField($"패턴: {PASSIVE_NAMES[passiveType]}", EditorStyles.centeredGreyMiniLabel);
-            EditorGUILayout.HelpBox("미리보기 전용입니다. 패시브 패턴 수정은 별도 Tool에서 진행해주세요.", MessageType.Info);
+            EditorGUILayout.LabelField("밝은 영역 = 게임 내 범위 (3x5)  |  중심(0,0) 기준", EditorStyles.centeredGreyMiniLabel);
         }
         EditorGUILayout.EndVertical();
     }

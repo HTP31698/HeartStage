@@ -1,92 +1,87 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class PassivePatternUtil
 {
     // 5x3 그리드 기준 (0~14)
-    private const int Columns = 5;
-    private const int Rows = 3;
+    public const int Columns = 5;
+    public const int Rows = 3;
 
-    // 🔹 PassiveType별 패턴 정의 (행/열 오프셋)
-    //   중심칸은 항상 (0, 0)
-    private static readonly Dictionary<PassiveType, Vector2Int[]> Patterns =
-     new Dictionary<PassiveType, Vector2Int[]>
- {
-    // 1: 자기 + 자기 아래 (7, 12)
-    { PassiveType.Type1, new[]
-        {
-            new Vector2Int(0, 0),
-            new Vector2Int(1, 0),
-        }
-    },
+    // SO 데이터 캐시
+    private static PassivePatternData _patternData;
 
-    // 2: 자기 위 + 자기 + 자기 아래 (2, 7, 12)
-    { PassiveType.Type2, new[]
-        {
-            new Vector2Int(-1, 0),
-            new Vector2Int(0, 0),
-            new Vector2Int(1, 0),
-        }
-    },
-
-    // 3: 자기 + 자기 우 아래 (7, 13)
-    { PassiveType.Type3, new[]
-        {
-            new Vector2Int(0, 0),
-            new Vector2Int(1, 1),
-        }
-    },
-
-    // 4: 자기 왼 위 + 자기 + 자기 우 아래 (1, 7, 13)
-    { PassiveType.Type4, new[]
-        {
-            new Vector2Int(-1, -1),
-            new Vector2Int(0, 0),
-            new Vector2Int(1, 1),
-        }
-    },
-
-    // 5: 자기 + 자기 왼 아래 (7, 11)
-    { PassiveType.Type5, new[]
-        {
-            new Vector2Int(0, 0),
-            new Vector2Int(1, -1),
-        }
-    },
-
-    // 6: 자기 우 위 + 자기 + 자기 왼 아래 (3, 7, 11)
-    { PassiveType.Type6, new[]
-        {
-            new Vector2Int(-1,  1),
-            new Vector2Int(0,   0),
-            new Vector2Int(1,  -1),
-        }
-    },
-
-    // 7: 자기 + 자기 우 (7, 8)
-    { PassiveType.Type7, new[]
-        {
-            new Vector2Int(0, 0),
-            new Vector2Int(0, 1),
-        }
-    },
-
-    // 8: 자기 왼 + 자기 + 자기 우 (6, 7, 8)
-    { PassiveType.Type8, new[]
-        {
-            new Vector2Int(0, -1),
-            new Vector2Int(0,  0),
-            new Vector2Int(0,  1),
-        }
-    },
- };
+    // SO 경로 (Resources 폴더 기준)
+    private const string PatternDataPath = "PassivePatterns";
 
     /// <summary>
-    /// 중심 index와 PassiveType을 기준으로, 실제로 색칠/버프가 들어가는 타일 인덱스들 리턴
+    /// SO 데이터 로드 (캐싱)
+    /// </summary>
+    private static PassivePatternData GetPatternData()
+    {
+        if (_patternData == null)
+        {
+            _patternData = Resources.Load<PassivePatternData>(PatternDataPath);
+
+            if (_patternData == null)
+            {
+                Debug.LogError($"[PassivePatternUtil] PassivePatternData를 찾을 수 없습니다. " +
+                    $"Resources/{PatternDataPath}.asset 파일이 있는지 확인하세요.");
+            }
+        }
+        return _patternData;
+    }
+
+    /// <summary>
+    /// 캐시 초기화 (에디터에서 SO 수정 후 갱신용)
+    /// </summary>
+    public static void ClearCache()
+    {
+        _patternData = null;
+    }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// 에디터 전용: AssetDatabase로 직접 로드
+    /// </summary>
+    public static PassivePatternData GetPatternDataEditor()
+    {
+        if (_patternData == null)
+        {
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:PassivePatternData");
+            if (guids.Length > 0)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                _patternData = UnityEditor.AssetDatabase.LoadAssetAtPath<PassivePatternData>(path);
+            }
+        }
+        return _patternData;
+    }
+#endif
+
+    /// <summary>
+    /// 중심 index와 PassiveType(enum)을 기준으로, 버프가 들어가는 타일 인덱스들 리턴
+    /// (기존 호환용 오버로드)
     /// </summary>
     public static IEnumerable<int> GetPatternTiles(int centerIndex, PassiveType type, int slotCount)
     {
-        if (!Patterns.TryGetValue(type, out var offsets))
+        return GetPatternTiles(centerIndex, (int)type, slotCount);
+    }
+
+    /// <summary>
+    /// 중심 index와 typeId(int)를 기준으로, 버프가 들어가는 타일 인덱스들 리턴
+    /// </summary>
+    public static IEnumerable<int> GetPatternTiles(int centerIndex, int typeId, int slotCount)
+    {
+        // typeId가 0(None)이면 빈 결과
+        if (typeId <= 0)
+            yield break;
+
+        var data = GetPatternData();
+        if (data == null)
+            yield break;
+
+        var offsets = data.GetPattern(typeId);
+        if (offsets == null || offsets.Length == 0)
             yield break;
 
         int total = slotCount;

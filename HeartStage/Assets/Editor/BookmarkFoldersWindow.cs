@@ -43,6 +43,25 @@ public class BookmarkAssetsWindow : EditorWindow
         win.Focus();
     }
 
+    [MenuItem("Tools/Asset Bookmarks/Open Window")]
+    public static void OpenWindow()
+    {
+        GetWindow<BookmarkAssetsWindow>("Asset Bookmarks");
+    }
+
+    [MenuItem("Tools/Asset Bookmarks/Reset to Default")]
+    public static void ResetToDefault()
+    {
+        if (EditorUtility.DisplayDialog("북마크 초기화",
+            "모든 북마크를 기본값으로 초기화합니다.\n계속하시겠습니까?", "확인", "취소"))
+        {
+            EditorPrefs.DeleteKey(PrefKey);
+            var win = GetWindow<BookmarkAssetsWindow>("Asset Bookmarks");
+            win.InitializeDefaultBookmarks();
+            win.Repaint();
+        }
+    }
+
     private void OnEnable()
     {
         LoadBookmarks();
@@ -165,38 +184,79 @@ public class BookmarkAssetsWindow : EditorWindow
     private void SaveBookmarks()
     {
         BookmarkData data = new BookmarkData();
-        data.slotData = new List<string>[SlotCount];
 
         for (int i = 0; i < SlotCount; i++)
-            data.slotData[i] = bookmarkSlots[i].ToList();
+        {
+            SlotData slot = new SlotData();
+            slot.paths = bookmarkSlots[i].ToList();
+            data.slots.Add(slot);
+        }
 
-        string json = JsonUtility.ToJson(data);
+        string json = JsonUtility.ToJson(data, true);
         EditorPrefs.SetString(PrefKey, json);
     }
 
     private void LoadBookmarks()
     {
         if (!EditorPrefs.HasKey(PrefKey))
+        {
+            // 첫 실행 시 기본 북마크 설정
+            InitializeDefaultBookmarks();
             return;
+        }
 
         string json = EditorPrefs.GetString(PrefKey);
         BookmarkData data = JsonUtility.FromJson<BookmarkData>(json);
 
-        if (data != null && data.slotData != null)
+        if (data != null && data.slots != null && data.slots.Count > 0)
         {
             for (int i = 0; i < SlotCount; i++)
             {
-                bookmarkSlots[i] = data.slotData[i] != null ?
-                    data.slotData[i].ToList() :
-                    new List<string>();
+                if (i < data.slots.Count && data.slots[i] != null && data.slots[i].paths != null)
+                {
+                    bookmarkSlots[i] = data.slots[i].paths.ToList();
+                }
+                else
+                {
+                    bookmarkSlots[i] = new List<string>();
+                }
             }
         }
+        else
+        {
+            // 데이터가 비어있거나 잘못된 경우 기본값 설정
+            InitializeDefaultBookmarks();
+        }
+    }
+
+    private void InitializeDefaultBookmarks()
+    {
+        // Slot 0: 자주 쓰는 폴더들
+        bookmarkSlots[0] = new List<string>
+        {
+            "Assets/Scripts",
+            "Assets/ScriptableObject",
+            "Assets/DataTables"
+        };
+
+        // Slot 1, 2는 빈 상태로
+        bookmarkSlots[1] = new List<string>();
+        bookmarkSlots[2] = new List<string>();
+
+        // 바로 저장
+        SaveBookmarks();
+    }
+
+    [Serializable]
+    private class SlotData
+    {
+        public List<string> paths = new List<string>();
     }
 
     [Serializable]
     private class BookmarkData
     {
-        public List<string>[] slotData;
+        public List<SlotData> slots = new List<SlotData>();
     }
 }
 
