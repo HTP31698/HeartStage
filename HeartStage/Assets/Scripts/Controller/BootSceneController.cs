@@ -45,6 +45,10 @@ public class BootSceneController : MonoBehaviour
             await DataTableManager.Initialization;
             await LiveConfigManager.Instance.InitializeAsync();
 
+            // StageAssets 라벨로 등록된 SO 유틸리티 초기화
+            await PassivePatternUtil.InitializeAsync();
+            await StageLayoutUtil.InitializeAsync();
+
             BootStrap.IsInitialized = true;
         }
 
