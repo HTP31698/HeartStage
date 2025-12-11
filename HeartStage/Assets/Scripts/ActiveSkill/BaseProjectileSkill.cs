@@ -127,8 +127,9 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             _ => 30
         };
         int skillDmg = Mathf.FloorToInt(baseValue * skillData.damage_ratio);
-        //
-
+        // 지속형 스킬 체크(장판형)
+        bool isDOT = skillData.skill_duration > 0f;
+        // 발사체 세팅
         proj.SetMissile(
             prefabName,
             skillData.skillhit_prefab,
@@ -138,7 +139,9 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             skillDmg, 
             penetrationType,
             false,
-            debuffList
+            debuffList,
+            isDOT,
+            skillData.tick_interval
         );
 
         // 장판 스킬 시

@@ -25,6 +25,9 @@ public class CharacterProjectile : MonoBehaviour
 
     private bool isCritical = false;
 
+    private bool isDOT = false; // 지속형인지
+    private float tickInterval = 0f; // 지속형일때 틱
+
     // 디버프 모음(몬스터에게 장착시킬) (ID, 수치, 지속시간)
     private List<(int id, float value, float duration)> debuffList = new List<(int, float, float)>();
 
@@ -68,7 +71,7 @@ public class CharacterProjectile : MonoBehaviour
     // 미사일 정보 세팅
     public void SetMissile(string id, string hitEffectId, Vector3 startPos,
         Vector3 dir, float speed, int dmg, PenetrationType penetration = PenetrationType.NonPenetrate,
-        bool isCritical = false, List<(int, float, float)> debuffList = null)
+        bool isCritical = false, List<(int, float, float)> debuffList = null, bool isDOT = false, float tickInterval = 0f)
     {
         this.id = id;
         this.hitEffectId = hitEffectId;
@@ -79,6 +82,9 @@ public class CharacterProjectile : MonoBehaviour
         penetrationType = penetration;
         this.isCritical = isCritical;
         this.debuffList = debuffList;
+        this.isDOT = isDOT;
+        this.tickInterval = tickInterval;
+        stayTimer = 0f;
     }
 
     // 피격시
@@ -105,6 +111,38 @@ public class CharacterProjectile : MonoBehaviour
 
             if (penetrationType == PenetrationType.NonPenetrate)
                 ReleaseToPool();
+
+            if (hitEffectId != string.Empty)
+                HitEffectAsync(collision.transform.position).Forget();
+        }
+    }
+
+    private float stayTimer = 0f;
+    // 지속형 대미지일때
+    private void OnTriggerStay2D(Collider2D collision)
+    {
+        if (!isDOT)
+            return;
+
+        if (!collision.CompareTag(Tag.Monster))
+            return;
+
+
+        stayTimer += Time.deltaTime;
+        if (stayTimer >= tickInterval)
+        {
+            stayTimer = 0f;
+
+            var monster = collision.GetComponent<MonsterBehavior>();
+            monster.OnDamage(damage, isCritical);
+
+            if (debuffList != null)
+            {
+                foreach (var debuff in debuffList)
+                {
+                    EffectRegistry.Apply(collision.gameObject, debuff.id, debuff.value, debuff.duration);
+                }
+            }
 
             if (hitEffectId != string.Empty)
                 HitEffectAsync(collision.transform.position).Forget();
