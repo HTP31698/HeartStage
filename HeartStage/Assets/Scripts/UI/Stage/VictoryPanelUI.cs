@@ -58,7 +58,7 @@ public class VictoryPanel : GenericWindow
             var currentStage = StageManager.Instance.GetCurrentStageData();
         }
 
-        var stageData = StageManager.Instance.currentStageCSVData;
+        var stageData = StageManager.Instance.currentStageData;
 
         if (addFansText != null && StageManager.Instance != null)
         {

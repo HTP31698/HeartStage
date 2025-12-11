@@ -27,7 +27,7 @@ public class MonitoringRewardUI : GenericWindow
 
         if (currentStageID != -1)
         {
-            var stageData = DataTableManager.StageTable?.GetStage(currentStageID);
+            var stageData = DataTableManager.StageTable?.GetStageData(currentStageID);
             if (stageData != null)
             {
                 int rewardId = stageData.dispatch_reward;

@@ -51,7 +51,7 @@ public class LobbyUI : MonoBehaviour
         if (stageId <= 0)
             return;
 
-        var stageData = DataTableManager.StageTable?.GetStage(stageId);
+        var stageData = DataTableManager.StageTable?.GetStageData(stageId);
         if (stageData == null)
             return;
 

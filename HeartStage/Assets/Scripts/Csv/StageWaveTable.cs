@@ -102,4 +102,33 @@ public class StageWaveTable : DataTable
 
         return result;
     }
+
+    /// <summary>
+    /// 개별 StageWaveData SO 반환
+    /// </summary>
+    public StageWaveData GetWaveData(int waveId)
+    {
+        if (!table.ContainsKey(waveId))
+        {
+            Debug.LogWarning($"웨이브 아이디를 찾을 수 없음: {waveId}");
+            return null;
+        }
+        return ResourceManager.Instance.Get<StageWaveData>(table[waveId].wave_name);
+    }
+
+    /// <summary>
+    /// 다음 웨이브 SO 반환
+    /// </summary>
+    public StageWaveData GetNextWaveData(int currentWaveId)
+    {
+        int currentIndex = orderedWaves.FindIndex(w => w.wave_id == currentWaveId);
+
+        if (currentIndex >= 0 && currentIndex < orderedWaves.Count - 1)
+        {
+            var nextCsv = orderedWaves[currentIndex + 1];
+            return ResourceManager.Instance.Get<StageWaveData>(nextCsv.wave_name);
+        }
+
+        return null;
+    }
 }

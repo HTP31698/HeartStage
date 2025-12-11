@@ -55,7 +55,7 @@ public class StageWindow : GenericWindow
             stageTable = DataTableManager.StageTable;
         }
 
-        var allStages = stageTable.GetOrderedStages();
+        var allStages = stageTable.GetOrderedStagesSO();
 
         allStages.Sort((x, y) =>
         {
@@ -117,7 +117,7 @@ public class StageWindow : GenericWindow
         contentParent.sizeDelta = size;
     }
 
-    private void OnStageInfoButtonClicked(StageCSVData stageData)
+    private void OnStageInfoButtonClicked(StageData stageData)
     {
         if (stageInfoUI != null)
         {

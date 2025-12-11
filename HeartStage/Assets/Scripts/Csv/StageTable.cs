@@ -119,4 +119,49 @@ public class StageTable : DataTable
 
         return result;
     }
+
+    /// <summary>
+    /// 개별 StageData SO 반환
+    /// </summary>
+    public StageData GetStageData(int stageId)
+    {
+        if (!stagecsvTable.ContainsKey(stageId))
+        {
+            Debug.LogWarning($"스테이지 아이디를 찾을 수 없음: {stageId}");
+            return null;
+        }
+        return ResourceManager.Instance.Get<StageData>(stageId.ToString());
+    }
+
+    /// <summary>
+    /// 스테이지의 웨이브 ID 목록 반환 (SO 기반)
+    /// </summary>
+    public List<int> GetWaveIdsSO(int stageId)
+    {
+        var stageData = GetStageData(stageId);
+        if (stageData == null) return new List<int>();
+
+        var waveIds = new List<int>();
+        if (stageData.wave1_id > 0) waveIds.Add(stageData.wave1_id);
+        if (stageData.wave2_id > 0) waveIds.Add(stageData.wave2_id);
+        if (stageData.wave3_id > 0) waveIds.Add(stageData.wave3_id);
+        if (stageData.wave4_id > 0) waveIds.Add(stageData.wave4_id);
+
+        return waveIds;
+    }
+
+    /// <summary>
+    /// 정렬된 StageData SO 목록 반환
+    /// </summary>
+    public List<StageData> GetOrderedStagesSO()
+    {
+        var result = new List<StageData>();
+        foreach (var csvData in orderedStages)
+        {
+            var so = ResourceManager.Instance.Get<StageData>(csvData.stage_ID.ToString());
+            if (so != null)
+                result.Add(so);
+        }
+        return result;
+    }
 }

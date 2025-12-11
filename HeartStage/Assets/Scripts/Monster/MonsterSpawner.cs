@@ -38,8 +38,8 @@ public class MonsterSpawner : MonoBehaviour
     public static System.Action OnWaveCleared; // 웨이브 클리어 이벤트 
 
     // 스테이지 & 웨이브 관리
-    private StageWaveCSVData currentWaveData;      // 현재 진행 중인 웨이브 데이터
-    private StageCSVData currentStageData;         // 현재 스테이지 데이터
+    private StageWaveData currentWaveData;      // 현재 진행 중인 웨이브 데이터
+    private StageData currentStageData;         // 현재 스테이지 데이터
     private List<int> stageWaveIds = new List<int>();  // 현재 스테이지의 모든 웨이브 ID 목록
     private int currentWaveIndex = 0;
 
@@ -301,7 +301,7 @@ public class MonsterSpawner : MonoBehaviour
     private void LoadCurrentWave()
     {
         int currentWaveId = stageWaveIds[currentWaveIndex];
-        currentWaveData = DataTableManager.StageWaveTable.Get(currentWaveId);
+        currentWaveData = DataTableManager.StageWaveTable.GetWaveData(currentWaveId);
 
         if (currentWaveData == null)
         {
@@ -412,14 +412,15 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // 다음 스테이지 정보 가져오기
-    public StageCSVData GetNextStage()
+    public StageData GetNextStage()
     {
         var orderedStages = DataTableManager.StageTable.GetOrderedStages();
         int currentIndex = orderedStages.FindIndex(s => s.stage_ID == currentStageId);
 
         if (currentIndex >= 0 && currentIndex < orderedStages.Count - 1)
         {
-            return orderedStages[currentIndex + 1];
+            // 다음 스테이지 ID로 SO 가져오기
+            return DataTableManager.StageTable.GetStageData(orderedStages[currentIndex + 1].stage_ID);
         }
 
         return null;
@@ -834,7 +835,7 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // 보상 주기
-    private void GiveWaveReward(StageWaveCSVData waveData)
+    private void GiveWaveReward(StageWaveData waveData)
     {
         var rewardData = DataTableManager.RewardTable.Get(waveData.wave_reward);
 
