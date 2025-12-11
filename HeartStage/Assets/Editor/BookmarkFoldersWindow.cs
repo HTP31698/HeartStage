@@ -30,14 +30,14 @@ public class BookmarkAssetsWindow : EditorWindow
     private const string PrefKey = "BookmarkAssetsWindow_Slots";
 
     // -------------------------------------------
-    // ★ 단축키: Ctrl + Shift + D → 다음 Slot 이동
+    // ★ 단축키: Ctrl + Shift + D → Slot 1로 이동 및 창 열기
     // -------------------------------------------
     [MenuItem("Tools/Asset Bookmarks/Next Slot %#d")]
     public static void NextSlot()
     {
         var win = GetWindow<BookmarkAssetsWindow>("Asset Bookmarks");
 
-        win.currentSlot = (win.currentSlot + 1) % SlotCount;
+        win.currentSlot = 0; // 항상 Slot 1로 이동
 
         win.Repaint();
         win.Focus();

@@ -34,6 +34,8 @@ public class CharacterGrowthCompareWindow : EditorWindow
 
     private static readonly Color BG_DARK = new Color(0.1f, 0.1f, 0.18f);
     private static readonly Color BG_CARD = new Color(0.09f, 0.13f, 0.24f);
+    private static readonly Color BG_ERROR = new Color(0.35f, 0.1f, 0.1f); // 스탯 하락 시 빨간색 배경
+    private static readonly Color BORDER_ERROR = new Color(0.9f, 0.2f, 0.2f); // 스탯 하락 시 빨간색 테두리
     private static readonly Color BORDER_COLOR = new Color(0.2f, 0.25f, 0.33f);
     private static readonly Color ACCENT_CYAN = new Color(0.13f, 0.83f, 0.93f);
     private static readonly Color ACCENT_BLUE = new Color(0.38f, 0.65f, 0.98f);
@@ -114,7 +116,7 @@ public class CharacterGrowthCompareWindow : EditorWindow
     public static void ShowWindow()
     {
         var window = GetWindow<CharacterGrowthCompareWindow>("Character Growth");
-        window.minSize = new Vector2(1400, 700);
+        window.minSize = new Vector2(1800, 900);
         window.Show();
     }
 
@@ -267,7 +269,7 @@ public class CharacterGrowthCompareWindow : EditorWindow
         {
             alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold,
-            fontSize = 12
+            fontSize = 14
         };
 
         stylesInitialized = true;
@@ -360,12 +362,12 @@ public class CharacterGrowthCompareWindow : EditorWindow
 
         // Level header
         EditorGUILayout.BeginHorizontal();
-        GUILayout.Space(80);
+        GUILayout.Space(100);
         for (int lv = 1; lv <= MAX_LEVEL; lv++)
         {
-            var lvStyle = new GUIStyle(headerStyle);
+            var lvStyle = new GUIStyle(headerStyle) { fontSize = 16 };
             lvStyle.normal.textColor = ACCENT_YELLOW;
-            GUILayout.Label($"Lv {lv}", lvStyle, GUILayout.Width(120));
+            GUILayout.Label($"Lv {lv}", lvStyle, GUILayout.Width(160));
         }
         EditorGUILayout.EndHorizontal();
 
@@ -374,9 +376,9 @@ public class CharacterGrowthCompareWindow : EditorWindow
         {
             EditorGUILayout.BeginHorizontal();
 
-            var rankStyle = new GUIStyle(headerStyle) { fontSize = 13 };
+            var rankStyle = new GUIStyle(headerStyle) { fontSize = 16 };
             rankStyle.normal.textColor = ACCENT_PURPLE;
-            GUILayout.Label($"{rank}등급", rankStyle, GUILayout.Width(70));
+            GUILayout.Label($"{rank}등급", rankStyle, GUILayout.Width(90));
 
             for (int lv = 1; lv <= MAX_LEVEL; lv++)
                 DrawCard(charData, rank, lv, baseStats);
@@ -393,7 +395,7 @@ public class CharacterGrowthCompareWindow : EditorWindow
         var stats = GetStats(charData, rank, level);
         if (stats == null)
         {
-            GUILayout.Box("N/A", GUILayout.Width(120), GUILayout.Height(220));
+            GUILayout.Box("N/A", GUILayout.Width(160), GUILayout.Height(280));
             return;
         }
 
@@ -401,17 +403,22 @@ public class CharacterGrowthCompareWindow : EditorWindow
         bool isSelectedA = selectedA.HasValue && selectedA.Value.rank == rank && selectedA.Value.level == level;
         bool isSelectedB = selectedB.HasValue && selectedB.Value.rank == rank && selectedB.Value.level == level;
 
+        // 이전 카드 대비 스탯 하락 체크
+        bool hasStatDrop = CheckStatDrop(charData, rank, level, stats);
+
         Color bgColor = isSelectedA ? new Color(0.15f, 0.25f, 0.45f) :
                         isSelectedB ? new Color(0.3f, 0.2f, 0.45f) :
+                        hasStatDrop ? BG_ERROR :
                         isBase ? new Color(0.25f, 0.22f, 0.1f) : BG_CARD;
 
-        Rect cardRect = GUILayoutUtility.GetRect(120, 220, GUILayout.Width(120), GUILayout.Height(220));
+        Rect cardRect = GUILayoutUtility.GetRect(160, 280, GUILayout.Width(160), GUILayout.Height(280));
         EditorGUI.DrawRect(cardRect, bgColor);
 
         Color borderColor = isSelectedA ? ACCENT_BLUE :
                            isSelectedB ? ACCENT_PURPLE :
+                           hasStatDrop ? BORDER_ERROR :
                            isBase ? ACCENT_YELLOW : BORDER_COLOR;
-        DrawBorder(cardRect, borderColor, isSelectedA || isSelectedB ? 2 : 1);
+        DrawBorder(cardRect, borderColor, (isSelectedA || isSelectedB || hasStatDrop) ? 3 : 1);
 
         Event e = Event.current;
         if (e.type == EventType.MouseDown && cardRect.Contains(e.mousePosition))
@@ -421,19 +428,19 @@ public class CharacterGrowthCompareWindow : EditorWindow
         }
 
         // GUI.Label로 직접 위치 지정
-        float x = cardRect.x + 6;
-        float y = cardRect.y + 4;
-        float w = cardRect.width - 12;
+        float x = cardRect.x + 8;
+        float y = cardRect.y + 6;
+        float w = cardRect.width - 16;
 
         // 타이틀
-        var titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+        var titleStyle = new GUIStyle(GUI.skin.label) { fontSize = 14, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
         titleStyle.normal.textColor = isBase ? ACCENT_YELLOW : Color.white;
-        GUI.Label(new Rect(x, y, w, 18), isBase ? "★ 기준 ★" : $"{rank}등급 Lv{level}", titleStyle);
-        y += 20;
+        GUI.Label(new Rect(x, y, w, 22), isBase ? "★ 기준 ★" : $"{rank}등급 Lv{level}", titleStyle);
+        y += 26;
 
         // 구분선
         EditorGUI.DrawRect(new Rect(x, y, w, 1), BORDER_COLOR);
-        y += 3;
+        y += 5;
 
         // 스탯 행들
         foreach (var info in statInfos)
@@ -441,13 +448,13 @@ public class CharacterGrowthCompareWindow : EditorWindow
             float value = info.getter(stats);
             float baseValue = info.getter(baseStats);
             DrawStatRowDirect(x, y, w, info, value, baseValue, isBase);
-            y += 16;
+            y += 22;
         }
 
-        y += 2;
+        y += 4;
         // 구분선
         EditorGUI.DrawRect(new Rect(x, y, w, 1), BORDER_COLOR);
-        y += 3;
+        y += 5;
 
         // 전투력
         DrawPowerRowDirect(x, y, w, stats.GetTotalPower(), baseStats.GetTotalPower(), isBase);
@@ -455,17 +462,17 @@ public class CharacterGrowthCompareWindow : EditorWindow
 
     private void DrawStatRowDirect(float x, float y, float w, StatInfo info, float value, float baseValue, bool isBase)
     {
-        var nameStyle = new GUIStyle(GUI.skin.label) { fontSize = 9 };
+        var nameStyle = new GUIStyle(GUI.skin.label) { fontSize = 12 };
         nameStyle.normal.textColor = info.color;
-        GUI.Label(new Rect(x, y, 38, 16), info.name, nameStyle);
+        GUI.Label(new Rect(x, y, 50, 20), info.name, nameStyle);
 
         string valueStr = FormatValue(value, info.format);
 
         if (isBase)
         {
-            var valueStyle = new GUIStyle(GUI.skin.label) { fontSize = 9, alignment = TextAnchor.MiddleRight };
+            var valueStyle = new GUIStyle(GUI.skin.label) { fontSize = 12, alignment = TextAnchor.MiddleRight };
             valueStyle.normal.textColor = info.color;
-            GUI.Label(new Rect(x + 38, y, w - 38, 16), valueStr, valueStyle);
+            GUI.Label(new Rect(x + 50, y, w - 50, 20), valueStr, valueStyle);
         }
         else
         {
@@ -473,32 +480,32 @@ public class CharacterGrowthCompareWindow : EditorWindow
             float percent = baseValue != 0 ? ((value - baseValue) / baseValue) * 100f : 0f;
             string diffStr = FormatDiffCompact(diff, percent, info.format);
 
-            var combinedStyle = new GUIStyle(GUI.skin.label) { fontSize = 8, alignment = TextAnchor.MiddleRight };
+            var combinedStyle = new GUIStyle(GUI.skin.label) { fontSize = 10, alignment = TextAnchor.MiddleRight };
             combinedStyle.normal.textColor = GetDiffColor(diff);
-            GUI.Label(new Rect(x + 38, y, w - 38, 16), $"{valueStr} {diffStr}", combinedStyle);
+            GUI.Label(new Rect(x + 50, y, w - 50, 20), $"{valueStr} {diffStr}", combinedStyle);
         }
     }
 
     private void DrawPowerRowDirect(float x, float y, float w, float power, float basePower, bool isBase)
     {
-        var labelStyle = new GUIStyle(GUI.skin.label) { fontSize = 10, fontStyle = FontStyle.Bold };
+        var labelStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold };
         labelStyle.normal.textColor = ACCENT_YELLOW;
-        GUI.Label(new Rect(x, y, 38, 18), "전투력", labelStyle);
+        GUI.Label(new Rect(x, y, 50, 22), "전투력", labelStyle);
 
         if (isBase)
         {
-            var valueStyle = new GUIStyle(GUI.skin.label) { fontSize = 10, alignment = TextAnchor.MiddleRight, fontStyle = FontStyle.Bold };
+            var valueStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleRight, fontStyle = FontStyle.Bold };
             valueStyle.normal.textColor = ACCENT_YELLOW;
-            GUI.Label(new Rect(x + 38, y, w - 38, 18), Mathf.RoundToInt(power).ToString("N0"), valueStyle);
+            GUI.Label(new Rect(x + 50, y, w - 50, 22), Mathf.RoundToInt(power).ToString("N0"), valueStyle);
         }
         else
         {
             float diff = power - basePower;
             float percent = basePower != 0 ? ((power - basePower) / basePower) * 100f : 0f;
 
-            var combinedStyle = new GUIStyle(GUI.skin.label) { fontSize = 9, alignment = TextAnchor.MiddleRight };
+            var combinedStyle = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleRight };
             combinedStyle.normal.textColor = GetDiffColor(diff);
-            GUI.Label(new Rect(x + 38, y, w - 38, 18), $"{Mathf.RoundToInt(power):N0} {FormatDiffCompact(diff, percent, "int")}", combinedStyle);
+            GUI.Label(new Rect(x + 50, y, w - 50, 22), $"{Mathf.RoundToInt(power):N0} {FormatDiffCompact(diff, percent, "int")}", combinedStyle);
         }
     }
 
@@ -550,6 +557,37 @@ public class CharacterGrowthCompareWindow : EditorWindow
             if (rankData.TryGetValue(level, out var stats))
                 return stats;
         return null;
+    }
+
+    /// <summary>
+    /// 이전 카드 대비 전투력 하락 체크
+    /// - 가로(레벨): 왼쪽 카드(이전 레벨)보다 낮으면 하락
+    /// - 세로(등급): 위쪽 카드(이전 등급 같은 레벨)보다 낮으면 하락
+    /// </summary>
+    private bool CheckStatDrop(Dictionary<int, Dictionary<int, CharacterStats>> charData, int rank, int level, CharacterStats currentStats)
+    {
+        // 1등급 Lv1은 기준이므로 체크 안함
+        if (rank == 1 && level == 1) return false;
+
+        float currentPower = currentStats.GetTotalPower();
+
+        // 가로 체크: 같은 등급 이전 레벨과 비교
+        if (level > 1)
+        {
+            var prevLevelStats = GetStats(charData, rank, level - 1);
+            if (prevLevelStats != null && currentPower < prevLevelStats.GetTotalPower())
+                return true;
+        }
+
+        // 세로 체크: 이전 등급 같은 레벨과 비교
+        if (rank > 1)
+        {
+            var prevRankStats = GetStats(charData, rank - 1, level);
+            if (prevRankStats != null && currentPower < prevRankStats.GetTotalPower())
+                return true;
+        }
+
+        return false;
     }
 
     private void HandleCardClick(int rank, int level, bool isCtrlClick)

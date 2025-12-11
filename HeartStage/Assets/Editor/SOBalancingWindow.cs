@@ -2706,7 +2706,13 @@ public class SOBalancingWindow : EditorWindow
             PrepareHeaderForMatch = args => args.Header.Trim()
         };
 
-        using (var reader = new StreamReader(path))
+        // TRUE/FALSE 대문자를 소문자로 변환하여 읽기
+        string csvContent = File.ReadAllText(path);
+        csvContent = csvContent.Replace(",TRUE,", ",true,").Replace(",FALSE,", ",false,")
+                               .Replace(",TRUE\r", ",true\r").Replace(",FALSE\r", ",false\r")
+                               .Replace(",TRUE\n", ",true\n").Replace(",FALSE\n", ",false\n");
+
+        using (var reader = new StringReader(csvContent))
         using (var csv = new CsvReader(reader, config))
         {
             var records = csv.GetRecords<ItemCSVData>().ToList();
