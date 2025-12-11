@@ -274,6 +274,7 @@ public class TitleSceneController : MonoBehaviour
         }
         finally
         {
+            cts.Cancel();
             cts.Dispose();
         }
     }
@@ -340,6 +341,7 @@ public class TitleSceneController : MonoBehaviour
         }
         finally
         {
+            cts.Cancel();
             cts.Dispose();
         }
     }
@@ -360,6 +362,7 @@ public class TitleSceneController : MonoBehaviour
         }
         finally
         {
+            cts.Cancel();
             cts.Dispose();
         }
     }

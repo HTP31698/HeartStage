@@ -76,6 +76,7 @@ public class CloudSaveManager : MonoBehaviour
         }
         finally
         {
+            cts.Cancel();
             cts.Dispose();
         }
     }
