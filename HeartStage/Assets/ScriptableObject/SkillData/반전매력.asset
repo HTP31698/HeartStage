@@ -14,36 +14,37 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   skill_id: 31206
   skill_name: "\uBC18\uC804\uB9E4\uB825"
-  skill_auto: 1
   skill_type: 1
   passive_type: 0
+  active_type: 5
   skill_target: 2
   skill_pierce: 0
-  skill_dmg: 120
-  skill_cool: 12
-  skill_speed: 7
-  skill_crt: 0
+  char_type: 4
+  damage_ratio: 1.5
+  skill_cool: 8
+  skill_speed: 8
   skill_range: 1
   skill_straight_range: 14
   skill_range_type: 1
   skill_bull_amount: 1
   skill_delay: 0
+  tick_interval: 0
   skill_duration: 0
   summon_min: 0
   summon_max: 0
   summon_type: 0
   skill_eff1: 3013
-  skill_eff1_val: 1.5
-  skill_eff1_duration: 5
+  skill_eff1_val: 0
+  skill_eff1_duration: 3
   skill_eff2: 0
   skill_eff2_val: 0
   skill_eff2_duration: 0
   skill_eff3: 0
   skill_eff3_val: 0
   skill_eff3_duration: 0
-  info: "{skill_cool}\uCD08\uC5D0 \uD55C\uBC88 \uC529 {skill_dmg}\uB370\uBBF8\uC9C0\uC758
-    \uD22C\uC0AC\uCCB4\uB97C \uB0A0\uB9AC\uBA70 \uD22C\uC0AC\uCCB4\uC5D0 \uB2FF\uC740
-    \uBAAC\uC2A4\uD130\uAC00 {skill_eff1_duration}\uCD08\uAC04 \uC544\uAD70 \uACF5\uACA9"
+  info: " {skill_dmg}\uB370\uBBF8\uC9C0\uC758 \uD22C\uC0AC\uCCB4\uB97C \uB0A0\uB9AC\uBA70
+    \uD22C\uC0AC\uCCB4\uC5D0 \uB2FF\uC740 \uBAAC\uC2A4\uD130\uAC00 {skill_eff1_duration}\uCD08\uAC04
+    \uC544\uAD70 \uACF5\uACA9"
   icon_prefab: ReversalCharm
   skillprojectile_prefab: Charge_Light
   skillhit_prefab: StoneHit

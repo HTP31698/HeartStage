@@ -8,20 +8,21 @@ public class SkillData : ScriptableObject
 {
     public int skill_id;
     public string skill_name;
-    public int skill_auto;
     public int skill_type;
     public PassiveType passive_type;
+    public int active_type;
     public int skill_target;
     public bool skill_pierce;
-    public int skill_dmg;
+    public int char_type;
+    public float damage_ratio;
     public float skill_cool;
     public float skill_speed;
-    public float skill_crt;
     public float skill_range;
     public float skill_straight_range;
     public int skill_range_type;
     public int skill_bull_amount;
     public float skill_delay;
+    public float tick_interval;
     public float skill_duration;
     public int summon_min;
     public int summon_max;
@@ -45,20 +46,21 @@ public class SkillData : ScriptableObject
     {
         skill_id = csvData.skill_id;
         skill_name = csvData.skill_name;
-        skill_auto = csvData.skill_auto;
         skill_type = csvData.skill_type;
         passive_type = csvData.passive_type;
+        active_type = csvData.active_type;
         skill_target = csvData.skill_target;
         skill_pierce = csvData.skill_pierce;
-        skill_dmg = csvData.skill_dmg;
+        char_type = csvData.char_type;
+        damage_ratio = csvData.damage_ratio;
         skill_cool = csvData.skill_cool;
         skill_speed = csvData.skill_speed;
-        skill_crt = csvData.skill_crt;
         skill_range = csvData.skill_range;
         skill_straight_range = csvData.skill_straight_range;
         skill_range_type = csvData.skill_range_type;
         skill_bull_amount = csvData.skill_bull_amount;
         skill_delay = csvData.skill_delay;
+        tick_interval = csvData.tick_interval;
         skill_duration = csvData.skill_duration;
         summon_min = csvData.summon_min;
         summon_max = csvData.summon_max;
@@ -83,20 +85,21 @@ public class SkillData : ScriptableObject
         SkillCSVData csvData = new SkillCSVData();
         csvData.skill_id = skill_id;
         csvData.skill_name = skill_name;
-        csvData.skill_auto = skill_auto;
         csvData.skill_type = skill_type;
         csvData.passive_type = passive_type;
+        csvData.active_type = active_type;
         csvData.skill_target = skill_target;
         csvData.skill_pierce = skill_pierce;
-        csvData.skill_dmg = skill_dmg;
+        csvData.char_type = char_type;
+        csvData.damage_ratio = damage_ratio;
         csvData.skill_cool = skill_cool;
         csvData.skill_speed = skill_speed;
-        csvData.skill_crt = skill_crt;
         csvData.skill_range = skill_range;
         csvData.skill_straight_range = skill_straight_range;
         csvData.skill_range_type = skill_range_type;
         csvData.skill_bull_amount = skill_bull_amount;
         csvData.skill_delay = skill_delay;
+        csvData.tick_interval = tick_interval;
         csvData.skill_duration = skill_duration;
         csvData.summon_min = summon_min;
         csvData.summon_max = summon_max;
@@ -125,20 +128,21 @@ public class SkillCSVData
 {
     public int skill_id { get; set; }
     public string skill_name { get; set; }
-    public int skill_auto { get; set; }
     public int skill_type { get; set; }
     public PassiveType passive_type { get; set; }
+    public int active_type { get; set; }
     public int skill_target { get; set; }
     public bool skill_pierce { get; set; }
-    public int skill_dmg { get; set; }
+    public int char_type { get; set; }
+    public float damage_ratio { get; set; }
     public float skill_cool { get; set; }
     public float skill_speed { get; set; }
-    public float skill_crt { get; set; }
     public float skill_range { get; set; }
     public float skill_straight_range { get; set; }
     public int skill_range_type { get; set; }
     public int skill_bull_amount { get; set; }
     public float skill_delay { get; set; }
+    public float tick_interval { get; set; }
     public float skill_duration { get; set; }
     public int summon_min { get; set; }
     public int summon_max { get; set; }

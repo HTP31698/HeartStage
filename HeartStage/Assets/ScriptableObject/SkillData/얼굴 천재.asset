@@ -14,26 +14,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   skill_id: 31202
   skill_name: "\uC5BC\uAD74 \uCC9C\uC7AC"
-  skill_auto: 1
   skill_type: 1
   passive_type: 0
+  active_type: 5
   skill_target: 2
-  skill_pierce: 0
-  skill_dmg: 0
-  skill_cool: 18
-  skill_speed: 5
-  skill_crt: 0
+  skill_pierce: 1
+  char_type: 1
+  damage_ratio: 0.5
+  skill_cool: 10
+  skill_speed: 7
   skill_range: 1
   skill_straight_range: 14
   skill_range_type: 1
   skill_bull_amount: 1
   skill_delay: 0
+  tick_interval: 0
   skill_duration: 0
   summon_min: 0
   summon_max: 0
   summon_type: 0
   skill_eff1: 3001
-  skill_eff1_val: -1
+  skill_eff1_val: -100
   skill_eff1_duration: 3
   skill_eff2: 0
   skill_eff2_val: 0
@@ -41,9 +42,8 @@ MonoBehaviour:
   skill_eff3: 0
   skill_eff3_val: 0
   skill_eff3_duration: 0
-  info: "{skill_cool}\uCD08\uC5D0 \uD55C\uBC88 \uC529 \uB2E8\uC77C\uACF5\uACA9\uC73C\uB85C
-    \uC2E4\uBA85 \uD6A8\uACFC (\uACF5\uACA9\uB825 0\uC73C\uB85C) \uB97C {skill_eff1_duration}\uCD08\uAC04
-    \uC900\uB2E4."
+  info: "\uC9C1\uC120 \uBAA8\uC591\uC73C\uB85C \uC2E4\uBA85 \uD6A8\uACFC (\uACF5\uACA9\uB825
+    0\uC73C\uB85C) \uB97C {skill_eff1_duration}\uCD08\uAC04 \uC900\uB2E4."
   icon_prefab: FaceGeniusIcon
   skillprojectile_prefab: Light_Ball_Lv3
   skillhit_prefab: StoneHit

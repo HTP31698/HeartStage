@@ -3494,53 +3494,105 @@
             return null;
         }
 
-        function parseCSV(text) {
-            const lines = text.trim().split('\n');
-            if (lines.length < 2) return [];
+        // 원본 헤더 순서 저장용
+        const csvHeaderOrders = {};
 
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        function parseCSV(text, typeName) {
+            // Windows 줄바꿈 정규화
+            const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            const records = parseCSVRecords(normalizedText);
+
+            if (records.length < 2) return [];
+
+            const headers = records[0].map(h => h.trim());
             const data = [];
 
-            for (let i = 1; i < lines.length; i++) {
-                const values = parseCSVLine(lines[i]);
-                if (values.length === headers.length) {
-                    const obj = {};
-                    headers.forEach((h, idx) => {
-                        let val = values[idx];
-                        // Try to parse as number
-                        if (!isNaN(val) && val !== '') {
-                            val = parseFloat(val);
-                        } else if (val === 'true') {
-                            val = true;
-                        } else if (val === 'false') {
-                            val = false;
-                        }
-                        obj[h] = val;
-                    });
-                    data.push(obj);
-                }
+            // 원본 헤더 순서 저장
+            if (typeName) {
+                csvHeaderOrders[typeName] = [...headers];
+            }
+
+            for (let i = 1; i < records.length; i++) {
+                const values = records[i];
+                const obj = {};
+
+                headers.forEach((h, idx) => {
+                    let val = idx < values.length ? values[idx].trim() : '';
+                    // Try to parse as number
+                    if (!isNaN(val) && val !== '') {
+                        val = parseFloat(val);
+                    } else if (val === 'true') {
+                        val = true;
+                    } else if (val === 'false') {
+                        val = false;
+                    }
+                    obj[h] = val;
+                });
+                data.push(obj);
             }
             return data;
         }
 
-        function parseCSVLine(line) {
-            const result = [];
-            let current = '';
+        // RFC 4180 준수 CSV 파서
+        function parseCSVRecords(text) {
+            const records = [];
+            let current = [];
+            let field = '';
             let inQuotes = false;
+            let i = 0;
 
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
+            while (i < text.length) {
+                const char = text[i];
+
+                if (inQuotes) {
+                    if (char === '"') {
+                        // 다음 문자가 또 따옴표면 이스케이프된 따옴표
+                        if (i + 1 < text.length && text[i + 1] === '"') {
+                            field += '"';
+                            i += 2;
+                            continue;
+                        } else {
+                            // 따옴표 필드 종료
+                            inQuotes = false;
+                            i++;
+                            continue;
+                        }
+                    } else {
+                        field += char;
+                        i++;
+                        continue;
+                    }
+                }
+
+                // 따옴표 밖
                 if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    result.push(current.trim());
-                    current = '';
+                    inQuotes = true;
+                    i++;
+                } else if (char === ',') {
+                    current.push(field);
+                    field = '';
+                    i++;
+                } else if (char === '\n') {
+                    current.push(field);
+                    if (current.length > 0 && !(current.length === 1 && current[0] === '')) {
+                        records.push(current);
+                    }
+                    current = [];
+                    field = '';
+                    i++;
                 } else {
-                    current += char;
+                    field += char;
+                    i++;
                 }
             }
-            result.push(current.trim());
-            return result;
+
+            // 마지막 필드와 레코드 처리
+            current.push(field);
+            if (current.length > 0 && !(current.length === 1 && current[0] === '')) {
+                records.push(current);
+            }
+
+            return records;
         }
 
         async function executeImport() {
@@ -3552,7 +3604,7 @@
 
                 try {
                     const text = await file.text();
-                    const data = parseCSV(text);
+                    const data = parseCSV(text, typeName);
 
                     if (data.length > 0) {
                         currentData[typeName] = data;
@@ -3603,7 +3655,7 @@
                 const data = currentData[type];
                 if (!data || data.length === 0) return;
 
-                const csv = convertToCSV(data);
+                const csv = convertToCSV(data, type);
                 downloadCSV(csv, `${type}.csv`);
             });
 
@@ -3611,19 +3663,23 @@
             showToast(`${selectedTypes.length}개 CSV 파일을 내보냈습니다.`, 'success');
         }
 
-        function convertToCSV(data) {
+        function convertToCSV(data, typeName) {
             if (!data || data.length === 0) return '';
 
-            const headers = Object.keys(data[0]);
+            // 원본 헤더 순서가 있으면 사용, 없으면 현재 객체의 키 사용
+            const headers = csvHeaderOrders[typeName] || Object.keys(data[0]);
             const lines = [headers.join(',')];
 
             data.forEach(item => {
                 const values = headers.map(h => {
                     let val = item[h];
-                    if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+                    if (val === undefined || val === null) {
+                        return '';
+                    }
+                    if (typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))) {
                         val = `"${val.replace(/"/g, '""')}"`;
                     }
-                    return val !== undefined ? val : '';
+                    return val;
                 });
                 lines.push(values.join(','));
             });

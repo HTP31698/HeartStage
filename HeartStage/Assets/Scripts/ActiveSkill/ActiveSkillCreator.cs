@@ -46,7 +46,9 @@ public class ActiveSkillCreator : MonoBehaviour
         }
 
         float speed = data.skill_speed;
-        int damage = data.skill_dmg;
+        // 데미지계산로직변경해야함
+        // int damage = data.skill_dmg;
+        int damage = 0;
 
         proj.SetMissile(sonicAttackId, string.Empty, startPos, dir, speed, damage, PenetrationType.Penetrate);
     }

@@ -7,9 +7,11 @@ public class BooingBossSkill : MonoBehaviour, ISkillBehavior
 {
     private SkillCSVData skillData;
     private int poolId;
-    private int damage;
+    // 데미지계산로직변경해야함
+    // private int damage;
     private float coolTime;
-    private float criticalRate;
+    // 데미지계산로직변경해야함
+    // private float criticalRate;
     private float skillDuration;
     private float value;
 
@@ -30,9 +32,11 @@ public class BooingBossSkill : MonoBehaviour, ISkillBehavior
     public void Init(SkillCSVData data)
     {
         skillData = data;
-        damage = data.skill_dmg;
+        // 데미지계산로직변경해야함
+        // damage = data.skill_dmg;
         coolTime = data.skill_cool;
-        criticalRate = data.skill_crt;
+        // 데미지계산로직변경해야함
+        // criticalRate = data.skill_crt;
         skillDuration = data.skill_duration;
         //value = data.skill_eff1_val;
         value = 9.0f; // test
