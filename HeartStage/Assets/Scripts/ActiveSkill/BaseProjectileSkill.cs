@@ -114,15 +114,28 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         }
 
         // 데미지 계산
+        var characterAttack = GetComponent<CharacterAttack>();
+        float baseValue = skillData.char_type switch
+        {
+            1 => characterAttack.Data.atk_dmg,
+            2 => characterAttack.Data.atk_speed,
+            3 => characterAttack.Data.atk_range,
+            4 => characterAttack.Data.atk_addcount,
+            5 => characterAttack.Data.char_hp,
+            6 => characterAttack.Data.crt_chance,
+            7 => characterAttack.Data.crt_dmg,
+            _ => 30
+        };
+        int skillDmg = Mathf.FloorToInt(baseValue * skillData.damage_ratio);
+        //
 
-        // 데미지계산로직변경해야함
         proj.SetMissile(
             prefabName,
             skillData.skillhit_prefab,
             startPos,
             dir,
             skillData.skill_speed,
-            100, // damage_ratio 기반 계산 필요
+            skillDmg, 
             penetrationType,
             false,
             debuffList
