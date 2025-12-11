@@ -131,6 +131,8 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         bool isDOT = skillData.skill_duration > 0f;
         // 부메랑 체크
         float boomerangDist = skillData.active_type == 1 ? skillData.skill_straight_range : 0f;
+        // 블랙홀 체크
+        bool isBlackHole = skillData.active_type == 2;
         // 발사체 세팅
         proj.SetMissile(
             prefabName,
@@ -144,7 +146,8 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             debuffList,
             isDOT,
             skillData.tick_interval,
-            boomerangDist
+            boomerangDist,
+            isBlackHole
         );
 
         // 장판 스킬 시

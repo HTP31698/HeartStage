@@ -32,6 +32,9 @@ public class CharacterProjectile : MonoBehaviour
     private float boomerangDistance = 0f; // 부메랑이 날아갈 거리
     private float boomerangTravel = 0f; // 부메랑이 이동한 거리
 
+    private bool isBlackHole = false;
+    private static float pullStrength = 0.7f; // 끌어당기는 힘
+
     // 디버프 모음(몬스터에게 장착시킬) (ID, 수치, 지속시간)
     private List<(int id, float value, float duration)> debuffList = new List<(int, float, float)>();
 
@@ -88,7 +91,7 @@ public class CharacterProjectile : MonoBehaviour
     public void SetMissile(string id, string hitEffectId, Vector3 startPos,
         Vector3 dir, float speed, int dmg, PenetrationType penetration = PenetrationType.NonPenetrate,
         bool isCritical = false, List<(int, float, float)> debuffList = null, bool isDOT = false, float tickInterval = 0f,
-        float boomerangDistance = 0f)
+        float boomerangDistance = 0f, bool isBlackHole = false)
     {
         this.id = id;
         this.hitEffectId = hitEffectId;
@@ -107,6 +110,8 @@ public class CharacterProjectile : MonoBehaviour
         this.boomerangDistance = boomerangDistance;
         isBoomerang = boomerangDistance != 0f;
         boomerangTravel = 0f;
+
+        this.isBlackHole = isBlackHole;
     }
 
     // 피격시
@@ -143,12 +148,15 @@ public class CharacterProjectile : MonoBehaviour
     // 지속형 대미지일때
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (!isDOT)
-            return;
-
         if (!collision.CompareTag(Tag.Monster))
             return;
 
+        // 블랙홀 기능
+        if (isBlackHole)
+            PullMonster(collision.transform);
+
+        if (!isDOT)
+            return;
 
         stayTimer += Time.deltaTime;
         if (stayTimer >= tickInterval)
@@ -237,5 +245,12 @@ public class CharacterProjectile : MonoBehaviour
         }
 
         PoolManager.Instance.Release(id, gameObject);
+    }
+
+    // 블랙홀용 몬스터 끌어당기기
+    private void PullMonster(Transform monster)
+    {
+        Vector3 direction = (transform.position - monster.position).normalized;
+        monster.position += direction * pullStrength * Time.deltaTime;
     }
 }
