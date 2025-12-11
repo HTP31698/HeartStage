@@ -190,6 +190,26 @@ public class TitleSceneController : MonoBehaviour
             if (!authReady)
             {
                 SetStatus("서버에 연결할 수 없습니다. 앱을 재시작해주세요.", animateDots: false);
+                // ★ 연결 실패 시 무한 대기 (Touch to Start로 진행하지 않음)
+                await UniTask.WaitUntil(() => false);
+                return;
+            }
+        }
+
+        // ★ CloudSaveManager 초기화 대기 (Firebase RTDB 연결 확인)
+        SetStatus("데이터베이스 연결 중", animateDots: true);
+        bool dbReady = await WaitForCloudSaveWithTimeoutAsync();
+        if (!dbReady)
+        {
+            SetStatus("데이터베이스 연결 실패. 재시도 중...", animateDots: true);
+            await UniTask.Delay(TimeSpan.FromSeconds(2));
+
+            dbReady = await WaitForCloudSaveWithTimeoutAsync();
+            if (!dbReady)
+            {
+                SetStatus("데이터베이스에 연결할 수 없습니다. 앱을 재시작해주세요.", animateDots: false);
+                // ★ DB 연결 실패 시 무한 대기
+                await UniTask.WaitUntil(() => false);
                 return;
             }
         }
@@ -203,7 +223,10 @@ public class TitleSceneController : MonoBehaviour
             await UniTask.DelayFrame(5);
         }
 
-        if (AuthManager.Instance.IsLoggedIn)
+        // ★ 캐시된 로그인 vs 새로 로그인 구분 플래그
+        bool wasCachedLogin = AuthManager.Instance.IsLoggedIn;
+
+        if (wasCachedLogin)
         {
             Debug.Log("[Title] 이미 로그인됨 - 유효성 검증 중...");
 
@@ -214,6 +237,7 @@ public class TitleSceneController : MonoBehaviour
                 Debug.LogWarning("[Title] 캐시된 유저가 유효하지 않음 - 로그아웃 후 재로그인");
                 Firebase.Auth.FirebaseAuth.DefaultInstance.SignOut();
                 await UniTask.DelayFrame(5);
+                wasCachedLogin = false; // 새로 로그인할 예정
                 await ShowLoginUIAndWaitAsync();
             }
             else
@@ -233,21 +257,50 @@ public class TitleSceneController : MonoBehaviour
 
         SetStatus("유저 데이터 불러오는 중", animateDots: true);
 
-        // 타임아웃 10초: 데이터 로드 실패 시 로그아웃 후 재로그인
-        bool loadSuccess = await TryLoadWithTimeoutAsync(10f);
-        if (!loadSuccess)
+        // 타임아웃 10초: 데이터 로드 시도
+        bool dataExists = await TryLoadWithTimeoutAsync(10f);
+
+        if (!dataExists)
         {
-            Debug.LogWarning("[Title] 데이터 로드 타임아웃, 로그아웃 후 재로그인 시도");
+            if (wasCachedLogin)
+            {
+                // ★ 캐시된 로그인 상태인데 서버에 데이터가 없음 = "죽은" 유저
+                // → 로그아웃 후 로그인 UI 표시
+                Debug.LogWarning("[Title] 캐시된 로그인이지만 서버에 데이터 없음 - 로그아웃 후 재로그인 필요");
 
-            // 씬 리로드 없이 Auth만 로그아웃
-            Firebase.Auth.FirebaseAuth.DefaultInstance.SignOut();
+                Firebase.Auth.FirebaseAuth.DefaultInstance.SignOut();
+                await UniTask.DelayFrame(5);
 
-            await UniTask.DelayFrame(5);
+                // 로그인 UI 표시하고 대기
+                await ShowLoginUIAndWaitAsync();
 
-            await ShowLoginUIAndWaitAsync();
+                // 새로 로그인한 유저 → 다시 데이터 로드 시도
+                SetStatus("유저 데이터 불러오는 중", animateDots: true);
+                dataExists = await TryLoadWithTimeoutAsync(10f);
 
-            SetStatus("유저 데이터 불러오는 중", animateDots: true);
-            await LoadOrCreateSaveAsync();
+                if (!dataExists)
+                {
+                    // 새로 로그인했는데도 데이터 없음 = 진짜 신규 유저
+                    Debug.Log("[Title] 신규 유저 - 기본 데이터 생성");
+                    await CreateNewUserDataAsync();
+                }
+                else
+                {
+                    // 기존 유저 publicProfile 갱신
+                    await UpdatePublicProfileAsync();
+                }
+            }
+            else
+            {
+                // ★ 새로 로그인한 유저인데 데이터 없음 = 신규 유저
+                Debug.Log("[Title] 신규 유저 - 기본 데이터 생성");
+                await CreateNewUserDataAsync();
+            }
+        }
+        else
+        {
+            // 기존 유저 publicProfile 갱신
+            await UpdatePublicProfileAsync();
         }
 
         SetStatus("출석 정보 확인 중", animateDots: true);
@@ -270,6 +323,40 @@ public class TitleSceneController : MonoBehaviour
         catch (OperationCanceledException)
         {
             Debug.LogError("[Title] AuthManager 초기화 타임아웃 (10초)");
+            return false;
+        }
+        finally
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+    }
+
+    private async UniTask<bool> WaitForCloudSaveWithTimeoutAsync()
+    {
+        var cts = new CancellationTokenSource();
+        cts.CancelAfterSlim(TimeSpan.FromSeconds(AUTH_TIMEOUT_SECONDS));
+
+        try
+        {
+            // CloudSaveManager 초기화 완료 대기
+            await UniTask.WaitUntil(() =>
+                CloudSaveManager.Instance != null &&
+                CloudSaveManager.Instance.IsInitialized)
+                .AttachExternalCancellation(cts.Token);
+
+            // 초기화는 됐지만 사용 불가 상태면 실패
+            if (!CloudSaveManager.Instance.IsAvailable)
+            {
+                Debug.LogError("[Title] CloudSaveManager 초기화됐지만 사용 불가 상태");
+                return false;
+            }
+
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.LogError("[Title] CloudSaveManager 초기화 타임아웃 (10초)");
             return false;
         }
         finally
@@ -353,8 +440,8 @@ public class TitleSceneController : MonoBehaviour
 
         try
         {
-            await LoadOrCreateSaveAsync().AttachExternalCancellation(cts.Token);
-            return true;
+            bool dataExists = await TryLoadSaveDataAsync().AttachExternalCancellation(cts.Token);
+            return dataExists;
         }
         catch (OperationCanceledException)
         {
@@ -367,42 +454,63 @@ public class TitleSceneController : MonoBehaviour
         }
     }
 
-    private static async UniTask LoadOrCreateSaveAsync()
+    /// <summary>
+    /// 서버에서 세이브 데이터 로드 시도.
+    /// 데이터가 존재하면 true, 존재하지 않으면 false 반환.
+    /// (새 유저 데이터 생성은 하지 않음 - 캐시된 로그인 + 데이터 없음 = 죽은 유저 판별용)
+    /// </summary>
+    private static async UniTask<bool> TryLoadSaveDataAsync()
     {
         bool loaded = await SaveLoadManager.LoadFromServer();
+        return loaded;
+    }
 
-        if (!loaded)
+    /// <summary>
+    /// 신규 유저용 기본 데이터 생성 및 저장
+    /// </summary>
+    private static async UniTask CreateNewUserDataAsync()
+    {
+        var charTable = DataTableManager.CharacterTable;
+
+        charTable.BuildDefaultSaveDictionaries(
+            new[] { "하나", "세라", "리아" },
+            out var unlockedByName,
+            out var expById,
+            out var ownedBaseIds
+        );
+
+        SaveLoadManager.Data.unlockedByName = unlockedByName;
+        SaveLoadManager.Data.expById = expById;
+
+        foreach (var id in ownedBaseIds)
+            SaveLoadManager.Data.ownedIds.Add(id);
+
+        ItemInvenHelper.AddItem(ItemID.DreamEnergy, 100);
+
+        if (QuestManager.Instance != null)
         {
-            var charTable = DataTableManager.CharacterTable;
-
-            charTable.BuildDefaultSaveDictionaries(
-                new[] { "하나", "세라", "리아" },
-                out var unlockedByName,
-                out var expById,
-                out var ownedBaseIds
-            );
-
-            SaveLoadManager.Data.unlockedByName = unlockedByName;
-            SaveLoadManager.Data.expById = expById;
-
-            foreach (var id in ownedBaseIds)
-                SaveLoadManager.Data.ownedIds.Add(id);
-
-            ItemInvenHelper.AddItem(ItemID.DreamEnergy, 100);
-
-            if (QuestManager.Instance != null)
-            {
-                QuestManager.Instance.OnAttendance();
-            }
-            else
-            {
-                Debug.LogError("[Title] QuestManager.Instance가 null입니다! 신규 유저 출석 체크 실패.");
-            }
-
-            await SaveLoadManager.SaveToServer();
+            QuestManager.Instance.OnAttendance();
+        }
+        else
+        {
+            Debug.LogError("[Title] QuestManager.Instance가 null입니다! 신규 유저 출석 체크 실패.");
         }
 
-        // ★ publicProfiles 생성/갱신 (신규/기존 유저 모두)
+        await SaveLoadManager.SaveToServer();
+
+        // ★ publicProfiles 생성 (신규 유저)
+        if (SaveLoadManager.Data is SaveDataV1 data)
+        {
+            int achievementCount = AchievementUtil.GetCompletedAchievementCount(data);
+            await PublicProfileService.UpdateMyPublicProfileAsync(data, achievementCount);
+        }
+    }
+
+    /// <summary>
+    /// 기존 유저 publicProfile 갱신
+    /// </summary>
+    private static async UniTask UpdatePublicProfileAsync()
+    {
         if (SaveLoadManager.Data is SaveDataV1 data)
         {
             int achievementCount = AchievementUtil.GetCompletedAchievementCount(data);

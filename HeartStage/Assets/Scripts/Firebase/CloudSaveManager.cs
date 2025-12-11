@@ -11,6 +11,16 @@ public class CloudSaveManager : MonoBehaviour
     private bool isCompleted = false;   // 초기화 시도 완료 여부
     private bool isAvailable = false;   // 실제 사용 가능 여부
 
+    /// <summary>
+    /// 초기화 시도가 완료되었는지 여부 (성공/실패 관계없이)
+    /// </summary>
+    public bool IsInitialized => isCompleted;
+
+    /// <summary>
+    /// 실제 사용 가능한 상태인지 여부
+    /// </summary>
+    public bool IsAvailable => isAvailable;
+
     private const float INIT_TIMEOUT_SECONDS = 10f;
     private const float REQUEST_TIMEOUT_SECONDS = 10f;
 
