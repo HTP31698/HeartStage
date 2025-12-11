@@ -2188,6 +2188,9 @@ public class SOBalancingWindow : EditorWindow
         int savedCount = 0;
         foreach (var so in modifiedObjects)
         {
+            // 삭제된 SO 건너뛰기
+            if (so == null) continue;
+
             // pendingChanges의 CSVData를 실제 SO에 반영
             if (pendingChanges.TryGetValue(so, out var csvData))
             {
@@ -2229,6 +2232,9 @@ public class SOBalancingWindow : EditorWindow
 
         foreach (var so in modifiedObjects)
         {
+            // 삭제된 SO 건너뛰기
+            if (so == null) continue;
+
             if (pendingChanges.TryGetValue(so, out var csvData))
             {
                 ApplyPendingDataToSO(so, csvData);
@@ -2250,6 +2256,9 @@ public class SOBalancingWindow : EditorWindow
         modifiedObjects.Clear();
         pendingChanges.Clear();
 
+        // 리스트에서 null 제거 후 CSV 내보내기
+        CleanupNullFromLists();
+
         // 변경된 타입만 CSV 내보내기
         int csvCount = 0;
         foreach (var type in modifiedTypes)
@@ -2262,6 +2271,27 @@ public class SOBalancingWindow : EditorWindow
         Repaint();
     }
 
+    private void CleanupNullFromLists()
+    {
+        characterList.RemoveAll(x => x == null);
+        monsterList.RemoveAll(x => x == null);
+        skillList.RemoveAll(x => x == null);
+        itemList.RemoveAll(x => x == null);
+        stageList.RemoveAll(x => x == null);
+        stageWaveList.RemoveAll(x => x == null);
+        synergyList.RemoveAll(x => x == null);
+
+        // modifiedObjects에서도 null 제거
+        modifiedObjects.RemoveWhere(x => x == null);
+
+        // validationErrors에서 null 키 제거
+        var nullKeys = validationErrors.Keys.Where(k => k == null).ToList();
+        foreach (var key in nullKeys)
+        {
+            validationErrors.Remove(key);
+        }
+    }
+
     private bool ExportCSVByType(SOType type, bool showStatus = false)
     {
         string csvPath = Path.Combine(CSV_PATH, CSV_FILENAMES[type]);
@@ -2271,25 +2301,29 @@ public class SOBalancingWindow : EditorWindow
             switch (type)
             {
                 case SOType.Character:
-                    ExportCSV(csvPath, characterList.Select(c => c.ToCSVData()).ToList());
+                    // 인식번호(char_id 끝 2자리) 우선 정렬
+                    ExportCSV(csvPath, characterList
+                        .OrderBy(c => c.char_id % 100)
+                        .ThenBy(c => c.char_id)
+                        .Select(c => c.ToCSVData()).ToList());
                     break;
                 case SOType.Monster:
-                    ExportCSV(csvPath, monsterList.Select(m => m.ToCSVData()).ToList());
+                    ExportCSV(csvPath, monsterList.OrderBy(m => m.id).Select(m => m.ToCSVData()).ToList());
                     break;
                 case SOType.Skill:
-                    ExportCSV(csvPath, skillList.Select(s => s.ToCSVData()).ToList());
+                    ExportCSV(csvPath, skillList.OrderBy(s => s.skill_id).Select(s => s.ToCSVData()).ToList());
                     break;
                 case SOType.Item:
-                    ExportCSV(csvPath, itemList.Select(i => i.ToCSVData()).ToList());
+                    ExportCSV(csvPath, itemList.OrderBy(i => i.item_id).Select(i => i.ToCSVData()).ToList());
                     break;
                 case SOType.Stage:
-                    ExportCSV(csvPath, stageList.Select(s => s.ToCSVData()).ToList());
+                    ExportCSV(csvPath, stageList.OrderBy(s => s.stage_ID).Select(s => s.ToCSVData()).ToList());
                     break;
                 case SOType.StageWave:
-                    ExportCSV(csvPath, stageWaveList.Select(w => w.ToCSVData()).ToList());
+                    ExportCSV(csvPath, stageWaveList.OrderBy(w => w.wave_id).Select(w => w.ToCSVData()).ToList());
                     break;
                 case SOType.Synergy:
-                    ExportCSV(csvPath, synergyList.Select(s => s.ToCSVData()).ToList());
+                    ExportCSV(csvPath, synergyList.OrderBy(s => s.synergy_id).Select(s => s.ToCSVData()).ToList());
                     break;
             }
             Debug.Log($"[SOBalancingWindow] Exported: {csvPath}");
@@ -2311,7 +2345,9 @@ public class SOBalancingWindow : EditorWindow
         // 모든 수정된 SO 다시 로드
         foreach (var so in modifiedObjects)
         {
+            if (so == null) continue;
             var path = AssetDatabase.GetAssetPath(so);
+            if (string.IsNullOrEmpty(path)) continue;
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
         }
 
@@ -2536,8 +2572,15 @@ public class SOBalancingWindow : EditorWindow
 
     private void ImportCharacterCSV(string path)
     {
+        var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HeaderValidated = null,
+            MissingFieldFound = null,
+            PrepareHeaderForMatch = args => args.Header.Trim()
+        };
+
         using (var reader = new StreamReader(path))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        using (var csv = new CsvReader(reader, config))
         {
             var records = csv.GetRecords<CharacterCSVData>().ToList();
             int createdCount = 0;
@@ -2548,9 +2591,9 @@ public class SOBalancingWindow : EditorWindow
                 if (so == null)
                 {
                     so = ScriptableObject.CreateInstance<CharacterData>();
-                    string assetPath = $"{SO_PATHS[SOType.Character]}/{record.char_name}.asset";
+                    string assetPath = $"{SO_PATHS[SOType.Character]}/{record.data_AssetName}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
-                    AddToAddressables(assetPath);
+                    AddToAddressables(assetPath, SOType.Character);
                     characterList.Add(so);
                     createdCount++;
                 }
@@ -2568,8 +2611,15 @@ public class SOBalancingWindow : EditorWindow
 
     private void ImportMonsterCSV(string path)
     {
+        var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HeaderValidated = null,
+            MissingFieldFound = null,
+            PrepareHeaderForMatch = args => args.Header.Trim()
+        };
+
         using (var reader = new StreamReader(path))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        using (var csv = new CsvReader(reader, config))
         {
             var records = csv.GetRecords<MonsterCSVData>().ToList();
             int createdCount = 0;
@@ -2580,9 +2630,9 @@ public class SOBalancingWindow : EditorWindow
                 if (so == null)
                 {
                     so = ScriptableObject.CreateInstance<MonsterData>();
-                    string assetPath = $"{SO_PATHS[SOType.Monster]}/{record.mon_name}.asset";
+                    string assetPath = $"{SO_PATHS[SOType.Monster]}/MonsterData_{record.mon_id}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
-                    AddToAddressables(assetPath);
+                    AddToAddressables(assetPath, SOType.Monster);
                     monsterList.Add(so);
                     createdCount++;
                 }
@@ -2630,7 +2680,7 @@ public class SOBalancingWindow : EditorWindow
                         so = ScriptableObject.CreateInstance<SkillData>();
                         string assetPath = $"{SO_PATHS[SOType.Skill]}/{record.skill_name}.asset";
                         AssetDatabase.CreateAsset(so, assetPath);
-                        AddToAddressables(assetPath);
+                        AddToAddressables(assetPath, SOType.Skill);
                         skillList.Add(so);
                         createdCount++;
                     }
@@ -2649,8 +2699,15 @@ public class SOBalancingWindow : EditorWindow
 
     private void ImportItemCSV(string path)
     {
+        var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HeaderValidated = null,
+            MissingFieldFound = null,
+            PrepareHeaderForMatch = args => args.Header.Trim()
+        };
+
         using (var reader = new StreamReader(path))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        using (var csv = new CsvReader(reader, config))
         {
             var records = csv.GetRecords<ItemCSVData>().ToList();
             int createdCount = 0;
@@ -2663,7 +2720,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<ItemData>();
                     string assetPath = $"{SO_PATHS[SOType.Item]}/{record.item_name}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
-                    AddToAddressables(assetPath);
+                    AddToAddressables(assetPath, SOType.Item);
                     itemList.Add(so);
                     createdCount++;
                 }
@@ -2681,8 +2738,15 @@ public class SOBalancingWindow : EditorWindow
 
     private void ImportStageCSV(string path)
     {
+        var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HeaderValidated = null,
+            MissingFieldFound = null,
+            PrepareHeaderForMatch = args => args.Header.Trim()
+        };
+
         using (var reader = new StreamReader(path))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        using (var csv = new CsvReader(reader, config))
         {
             var records = csv.GetRecords<StageCSVData>().ToList();
             int createdCount = 0;
@@ -2695,7 +2759,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<StageData>();
                     string assetPath = $"{SO_PATHS[SOType.Stage]}/Stage_{record.stage_ID}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
-                    AddToAddressables(assetPath);
+                    AddToAddressables(assetPath, SOType.Stage);
                     stageList.Add(so);
                     createdCount++;
                 }
@@ -2713,8 +2777,15 @@ public class SOBalancingWindow : EditorWindow
 
     private void ImportStageWaveCSV(string path)
     {
+        var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HeaderValidated = null,
+            MissingFieldFound = null,
+            PrepareHeaderForMatch = args => args.Header.Trim()
+        };
+
         using (var reader = new StreamReader(path))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        using (var csv = new CsvReader(reader, config))
         {
             var records = csv.GetRecords<StageWaveCSVData>().ToList();
             int createdCount = 0;
@@ -2727,7 +2798,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<StageWaveData>();
                     string assetPath = $"{SO_PATHS[SOType.StageWave]}/Wave_{record.wave_id}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
-                    AddToAddressables(assetPath);
+                    AddToAddressables(assetPath, SOType.StageWave);
                     stageWaveList.Add(so);
                     createdCount++;
                 }
@@ -2745,8 +2816,15 @@ public class SOBalancingWindow : EditorWindow
 
     private void ImportSynergyCSV(string path)
     {
+        var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HeaderValidated = null,
+            MissingFieldFound = null,
+            PrepareHeaderForMatch = args => args.Header.Trim()
+        };
+
         using (var reader = new StreamReader(path))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        using (var csv = new CsvReader(reader, config))
         {
             var records = csv.GetRecords<SynergyCSVData>().ToList();
             int createdCount = 0;
@@ -2759,7 +2837,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<SynergyData>();
                     string assetPath = $"{SO_PATHS[SOType.Synergy]}/Synergy_{record.synergy_id}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
-                    AddToAddressables(assetPath);
+                    AddToAddressables(assetPath, SOType.Synergy);
                     synergyList.Add(so);
                     createdCount++;
                 }
@@ -2824,9 +2902,10 @@ public class SOBalancingWindow : EditorWindow
             changes = new Dictionary<string, string>()
         };
 
-        // 현재 수정된 항목 기록
+        // 현재 수정된 항목 기록 (삭제된 SO 제외)
         foreach (var so in modifiedObjects)
         {
+            if (so == null) continue;
             snapshot.changes[so.name] = currentType.ToString();
         }
 
@@ -2874,6 +2953,9 @@ public class SOBalancingWindow : EditorWindow
         validationErrors.Clear();
         totalValidationErrors = 0;
 
+        // null 제거 먼저
+        CleanupNullFromLists();
+
         foreach (var c in characterList) ValidateObject(c);
         foreach (var m in monsterList) ValidateObject(m);
         foreach (var s in skillList) ValidateObject(s);
@@ -2885,6 +2967,8 @@ public class SOBalancingWindow : EditorWindow
 
     private void ValidateObject(ScriptableObject so)
     {
+        if (so == null) return;
+
         var errors = new List<string>();
 
         switch (so)
@@ -3195,10 +3279,14 @@ public class SOBalancingWindow : EditorWindow
         return result;
     }
 
+    // Addressable 라벨 상수
+    private const string LABEL_STAGE_ASSETS = "StageAssets";
+    private const string LABEL_CHARACTER_DATA = "CharacterData";
+
     /// <summary>
-    /// 에셋을 Addressables에 등록
+    /// 에셋을 Addressables에 등록 (라벨 포함)
     /// </summary>
-    private void AddToAddressables(string assetPath)
+    private void AddToAddressables(string assetPath, SOType type)
     {
         var settings = AddressableAssetSettingsDefaultObject.Settings;
         if (settings == null)
@@ -3217,6 +3305,15 @@ public class SOBalancingWindow : EditorWindow
         {
             // 주소를 파일명(확장자 제외)으로 설정
             entry.address = Path.GetFileNameWithoutExtension(assetPath);
+
+            // 모든 SO에 StageAssets 라벨 적용
+            entry.SetLabel(LABEL_STAGE_ASSETS, true);
+
+            // Character만 추가로 CharacterData 라벨 적용
+            if (type == SOType.Character)
+            {
+                entry.SetLabel(LABEL_CHARACTER_DATA, true);
+            }
         }
     }
 
