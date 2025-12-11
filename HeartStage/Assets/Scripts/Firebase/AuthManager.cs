@@ -117,6 +117,25 @@ public class AuthManager : MonoBehaviour
         instance = this;
         DontDestroyOnLoad(gameObject);
 
+        // Firebase 초기화 완료 후 Auth 초기화
+        InitializeAuthAsync().Forget();
+    }
+
+    private async UniTaskVoid InitializeAuthAsync()
+    {
+        // Firebase 초기화 완료 대기
+        if (FirebaseInitializer.Instance != null)
+        {
+            await FirebaseInitializer.Instance.WaitForInitilazationAsync();
+
+            if (!FirebaseInitializer.Instance.IsAvailable)
+            {
+                Debug.LogError("[Auth] Firebase 사용 불가 - Auth 초기화 실패");
+                isInitialized = true; // 실패해도 완료 표시 (무한 대기 방지)
+                return;
+            }
+        }
+
         InitializeAuth();
     }
 
