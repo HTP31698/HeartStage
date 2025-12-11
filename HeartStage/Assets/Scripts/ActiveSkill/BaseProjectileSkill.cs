@@ -114,24 +114,13 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         }
 
         // 데미지계산로직변경해야함
-        // proj.SetMissile(
-        //     prefabName,
-        //     skillData.skillhit_prefab,
-        //     startPos,
-        //     dir,
-        //     skillData.skill_speed,
-        //     skillData.skill_dmg,
-        //     penetrationType,
-        //     false,
-        //     debuffList
-        // );
         proj.SetMissile(
             prefabName,
             skillData.skillhit_prefab,
             startPos,
             dir,
             skillData.skill_speed,
-            0, // damage_ratio 기반 계산 필요
+            100, // damage_ratio 기반 계산 필요
             penetrationType,
             false,
             debuffList
