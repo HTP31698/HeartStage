@@ -129,6 +129,8 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         int skillDmg = Mathf.FloorToInt(baseValue * skillData.damage_ratio);
         // 지속형 스킬 체크(장판형)
         bool isDOT = skillData.skill_duration > 0f;
+        // 부메랑 체크
+        float boomerangDist = skillData.active_type == 1 ? skillData.skill_straight_range : 0f;
         // 발사체 세팅
         proj.SetMissile(
             prefabName,
@@ -141,7 +143,8 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             false,
             debuffList,
             isDOT,
-            skillData.tick_interval
+            skillData.tick_interval,
+            boomerangDist
         );
 
         // 장판 스킬 시
@@ -150,12 +153,16 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
 
         // 원형 즉발형 스킬 발동시
         if (skillData.skill_duration == 0f && (skillData.skill_range_type == 2 || skillData.skill_range_type == 3))
-            AutoRelease(obj, 1f).Forget();
+            AutoRelease(obj, 0.5f).Forget();
 
         // 직선형 발동시
         if (skillData.skill_range_type == 1)
         {
             var duration = skillData.skill_straight_range / skillData.skill_speed;
+            // 부메랑이면 두배
+            if (boomerangDist != 0f)
+                duration *= 2f;
+
             AutoRelease(obj, duration).Forget();
         }
     }

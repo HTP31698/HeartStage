@@ -28,6 +28,10 @@ public class CharacterProjectile : MonoBehaviour
     private bool isDOT = false; // 지속형인지
     private float tickInterval = 0f; // 지속형일때 틱
 
+    private bool isBoomerang = false;
+    private float boomerangDistance = 0f; // 부메랑이 날아갈 거리
+    private float boomerangTravel = 0f; // 부메랑이 이동한 거리
+
     // 디버프 모음(몬스터에게 장착시킬) (ID, 수치, 지속시간)
     private List<(int id, float value, float duration)> debuffList = new List<(int, float, float)>();
 
@@ -62,6 +66,18 @@ public class CharacterProjectile : MonoBehaviour
     {
         transform.position += dir * moveSpeed * Time.deltaTime;
 
+        // 부메랑이면 거리 체크 후 방향 반전
+        if (isBoomerang)
+        {
+            boomerangTravel += moveSpeed * Time.deltaTime;
+
+            if (boomerangTravel >= boomerangDistance)
+            {
+                dir = -dir;                  // 방향 반전
+                isBoomerang = false;         // 한 번만 부메랑
+            }
+        }
+
         if (transform.position.y > 11f || transform.position.y <= -11f)
         {
             ReleaseToPool();
@@ -71,7 +87,8 @@ public class CharacterProjectile : MonoBehaviour
     // 미사일 정보 세팅
     public void SetMissile(string id, string hitEffectId, Vector3 startPos,
         Vector3 dir, float speed, int dmg, PenetrationType penetration = PenetrationType.NonPenetrate,
-        bool isCritical = false, List<(int, float, float)> debuffList = null, bool isDOT = false, float tickInterval = 0f)
+        bool isCritical = false, List<(int, float, float)> debuffList = null, bool isDOT = false, float tickInterval = 0f,
+        float boomerangDistance = 0f)
     {
         this.id = id;
         this.hitEffectId = hitEffectId;
@@ -82,9 +99,14 @@ public class CharacterProjectile : MonoBehaviour
         penetrationType = penetration;
         this.isCritical = isCritical;
         this.debuffList = debuffList;
+
         this.isDOT = isDOT;
         this.tickInterval = tickInterval;
         stayTimer = 0f;
+
+        this.boomerangDistance = boomerangDistance;
+        isBoomerang = boomerangDistance != 0f;
+        boomerangTravel = 0f;
     }
 
     // 피격시
