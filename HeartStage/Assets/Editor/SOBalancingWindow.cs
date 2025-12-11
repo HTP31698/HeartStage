@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using CsvHelper;
 using UnityEditor;
+using UnityEditor.AddressableAssets;
+using UnityEditor.AddressableAssets.Settings;
 using UnityEngine;
 
 /// <summary>
@@ -529,6 +531,16 @@ public class SOBalancingWindow : EditorWindow
             if (GUILayout.Button(saveLabel, GUILayout.Width(buttonWidth), GUILayout.Height(buttonHeight)))
             {
                 SaveAllModified();
+            }
+            GUI.backgroundColor = Color.white;
+            GUI.enabled = true;
+
+            // 적용 + CSV 내보내기 (노랑)
+            GUI.enabled = modifiedObjects.Count > 0;
+            GUI.backgroundColor = modifiedObjects.Count > 0 ? new Color(1f, 0.9f, 0.4f) : new Color(0.6f, 0.6f, 0.6f);
+            if (GUILayout.Button("적용+내보내기", GUILayout.Width(100f), GUILayout.Height(buttonHeight)))
+            {
+                SaveAllModifiedWithExport();
             }
             GUI.backgroundColor = Color.white;
             GUI.enabled = true;
@@ -1152,13 +1164,13 @@ public class SOBalancingWindow : EditorWindow
         // Passive Type with Grid (SO 연동)
         DrawSectionHeader("패시브", SECTION_SKILL);
         var (passiveNames, passiveIds) = GetPassivePatternOptions();
-        data.passive_type = (PassiveType)EditorGUILayout.IntPopup("패시브 타입", (int)data.passive_type,
+        data.passive_type = EditorGUILayout.IntPopup("패시브 타입", data.passive_type,
             passiveNames, passiveIds);
 
         // 패시브 그리드 시각화
-        if (data.passive_type != PassiveType.None)
+        if (data.passive_type != 0)
         {
-            DrawPassiveGrid((int)data.passive_type);
+            DrawPassiveGrid(data.passive_type);
         }
 
         EditorGUILayout.Space(10);
@@ -2199,7 +2211,46 @@ public class SOBalancingWindow : EditorWindow
         modifiedObjects.Clear();
         pendingChanges.Clear();
 
-        // 변경된 타입만 CSV 자동 내보내기
+        // CSV는 수동으로만 내보내기 (SO 삭제 시 CSV 데이터 손실 방지)
+        SetStatus($"{savedCount}개 SO 저장 완료! (CSV 내보내기는 별도로 해주세요)", MessageType.Info);
+
+        Repaint();
+    }
+
+    /// <summary>
+    /// SO 저장 + 변경된 타입 CSV 내보내기
+    /// </summary>
+    private void SaveAllModifiedWithExport()
+    {
+        if (modifiedObjects.Count == 0) return;
+
+        int savedCount = 0;
+        var modifiedTypes = new HashSet<SOType>();
+
+        foreach (var so in modifiedObjects)
+        {
+            if (pendingChanges.TryGetValue(so, out var csvData))
+            {
+                ApplyPendingDataToSO(so, csvData);
+            }
+            EditorUtility.SetDirty(so);
+            savedCount++;
+
+            // 변경된 타입 기록
+            if (so is CharacterData) modifiedTypes.Add(SOType.Character);
+            else if (so is MonsterData) modifiedTypes.Add(SOType.Monster);
+            else if (so is SkillData) modifiedTypes.Add(SOType.Skill);
+            else if (so is ItemData) modifiedTypes.Add(SOType.Item);
+            else if (so is StageData) modifiedTypes.Add(SOType.Stage);
+            else if (so is StageWaveData) modifiedTypes.Add(SOType.StageWave);
+            else if (so is SynergyData) modifiedTypes.Add(SOType.Synergy);
+        }
+
+        AssetDatabase.SaveAssets();
+        modifiedObjects.Clear();
+        pendingChanges.Clear();
+
+        // 변경된 타입만 CSV 내보내기
         int csvCount = 0;
         foreach (var type in modifiedTypes)
         {
@@ -2207,15 +2258,7 @@ public class SOBalancingWindow : EditorWindow
             csvCount++;
         }
 
-        if (csvCount > 0)
-        {
-            SetStatus($"{savedCount}개 SO 저장 + {csvCount}개 CSV 자동 내보내기 완료!", MessageType.Info);
-        }
-        else
-        {
-            SetStatus($"{savedCount}개 SO 저장 완료!", MessageType.Info);
-        }
-
+        SetStatus($"{savedCount}개 SO 저장 + {csvCount}개 CSV 내보내기 완료!", MessageType.Info);
         Repaint();
     }
 
@@ -2507,6 +2550,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<CharacterData>();
                     string assetPath = $"{SO_PATHS[SOType.Character]}/{record.char_name}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
+                    AddToAddressables(assetPath);
                     characterList.Add(so);
                     createdCount++;
                 }
@@ -2538,6 +2582,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<MonsterData>();
                     string assetPath = $"{SO_PATHS[SOType.Monster]}/{record.mon_name}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
+                    AddToAddressables(assetPath);
                     monsterList.Add(so);
                     createdCount++;
                 }
@@ -2555,32 +2600,49 @@ public class SOBalancingWindow : EditorWindow
 
     private void ImportSkillCSV(string path)
     {
-        using (var reader = new StreamReader(path))
-        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+        using (var reader = new StreamReader(path, Encoding.UTF8))
         {
-            var records = csv.GetRecords<SkillCSVData>().ToList();
-            int createdCount = 0;
-
-            foreach (var record in records)
+            var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                var so = skillList.FirstOrDefault(s => s.skill_id == record.skill_id);
-                if (so == null)
+                HeaderValidated = null,
+                MissingFieldFound = null,
+                PrepareHeaderForMatch = args => args.Header.Trim()
+            };
+            using (var csv = new CsvReader(reader, config))
+            {
+                var records = csv.GetRecords<SkillCSVData>().ToList();
+                Debug.Log($"[SOBalancingWindow] ImportSkillCSV - 읽은 레코드 수: {records.Count}");
+
+                if (records.Count > 0)
                 {
-                    // SO가 없으면 새로 생성
-                    so = ScriptableObject.CreateInstance<SkillData>();
-                    string assetPath = $"{SO_PATHS[SOType.Skill]}/{record.skill_name}.asset";
-                    AssetDatabase.CreateAsset(so, assetPath);
-                    skillList.Add(so);
-                    createdCount++;
+                    var first = records[0];
+                    Debug.Log($"[SOBalancingWindow] 첫 번째 레코드: skill_id={first.skill_id}, skill_name={first.skill_name}");
                 }
-                so.UpdateData(record);
-                MarkModified(so);
-            }
 
-            if (createdCount > 0)
-            {
-                skillList = skillList.OrderBy(s => s.skill_id).ToList();
-                Debug.Log($"[SOBalancingWindow] {createdCount}개의 새 SkillData SO 생성됨");
+                int createdCount = 0;
+
+                foreach (var record in records)
+                {
+                    var so = skillList.FirstOrDefault(s => s.skill_id == record.skill_id);
+                    if (so == null)
+                    {
+                        // SO가 없으면 새로 생성
+                        so = ScriptableObject.CreateInstance<SkillData>();
+                        string assetPath = $"{SO_PATHS[SOType.Skill]}/{record.skill_name}.asset";
+                        AssetDatabase.CreateAsset(so, assetPath);
+                        AddToAddressables(assetPath);
+                        skillList.Add(so);
+                        createdCount++;
+                    }
+                    so.UpdateData(record);
+                    MarkModified(so);
+                }
+
+                if (createdCount > 0)
+                {
+                    skillList = skillList.OrderBy(s => s.skill_id).ToList();
+                    Debug.Log($"[SOBalancingWindow] {createdCount}개의 새 SkillData SO 생성됨");
+                }
             }
         }
     }
@@ -2601,6 +2663,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<ItemData>();
                     string assetPath = $"{SO_PATHS[SOType.Item]}/{record.item_name}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
+                    AddToAddressables(assetPath);
                     itemList.Add(so);
                     createdCount++;
                 }
@@ -2632,6 +2695,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<StageData>();
                     string assetPath = $"{SO_PATHS[SOType.Stage]}/Stage_{record.stage_ID}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
+                    AddToAddressables(assetPath);
                     stageList.Add(so);
                     createdCount++;
                 }
@@ -2663,6 +2727,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<StageWaveData>();
                     string assetPath = $"{SO_PATHS[SOType.StageWave]}/Wave_{record.wave_id}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
+                    AddToAddressables(assetPath);
                     stageWaveList.Add(so);
                     createdCount++;
                 }
@@ -2694,6 +2759,7 @@ public class SOBalancingWindow : EditorWindow
                     so = ScriptableObject.CreateInstance<SynergyData>();
                     string assetPath = $"{SO_PATHS[SOType.Synergy]}/Synergy_{record.synergy_id}.asset";
                     AssetDatabase.CreateAsset(so, assetPath);
+                    AddToAddressables(assetPath);
                     synergyList.Add(so);
                     createdCount++;
                 }
@@ -3127,6 +3193,31 @@ public class SOBalancingWindow : EditorWindow
         result.SetPixels(pix);
         result.Apply();
         return result;
+    }
+
+    /// <summary>
+    /// 에셋을 Addressables에 등록
+    /// </summary>
+    private void AddToAddressables(string assetPath)
+    {
+        var settings = AddressableAssetSettingsDefaultObject.Settings;
+        if (settings == null)
+        {
+            Debug.LogWarning("[SOBalancingWindow] Addressable Settings not found");
+            return;
+        }
+
+        var guid = AssetDatabase.AssetPathToGUID(assetPath);
+        if (string.IsNullOrEmpty(guid)) return;
+
+        // 기본 그룹에 추가
+        var group = settings.DefaultGroup;
+        var entry = settings.CreateOrMoveEntry(guid, group, readOnly: false, postEvent: false);
+        if (entry != null)
+        {
+            // 주소를 파일명(확장자 제외)으로 설정
+            entry.address = Path.GetFileNameWithoutExtension(assetPath);
+        }
     }
 
     #endregion
