@@ -2,11 +2,13 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine.AddressableAssets;
 using System.Collections.Generic;
+using System.Threading;
 
 public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
 {
     private Dictionary<string, bool> poolsInitialized = new Dictionary<string, bool>();
     private bool isInitialized = false;
+    private CancellationTokenSource cts;
     private MonsterBehavior monsterBehavior;
     private Dictionary<int, SkillCSVData> skillDataDict = new Dictionary<int, SkillCSVData>(); // 스킬 ID별 스킬 데이터
     private Dictionary<int, MonsterData> cachedMonsterDataDict = new Dictionary<int, MonsterData>(); // 소환 몬스터 데이터 
@@ -50,6 +52,10 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
 
     private async UniTask InitializeWithData(MonsterData monsterData)
     {
+        // CancellationToken 초기화
+        cts?.Cancel();
+        cts = new CancellationTokenSource();
+
         // 모든 등록된 스킬 데이터 로드
         foreach (int skillId in registeredSkillIds)
         {
@@ -202,6 +208,9 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
 
     private async UniTask ExecuteSingleSkill(int skillId)
     {
+        if (PoolManager.Instance == null) return;
+        if (cts == null || cts.IsCancellationRequested) return;
+
         var skillData = skillDataDict[skillId];
         int summonType = skillData.summon_type;
 
@@ -216,20 +225,28 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
         // CSV에서 정의된 소환 수 사용 (min~max 범위)
         int spawnCount = Random.Range(skillData.summon_min, skillData.summon_max + 1);
 
-
-        for (int i = 0; i < spawnCount; i++)
+        try
         {
-            var monster = PoolManager.Instance.Get(poolId);
-            if (monster != null)
+            for (int i = 0; i < spawnCount; i++)
             {
-                SetupSummonedMonster(monster, cachedMonsterData);
-            }
+                if (cts == null || cts.IsCancellationRequested) return;
 
-            // 소환 간격 (0.2초)
-            if (i < spawnCount - 1)
-            {
-                await UniTask.Delay(200);
+                var monster = PoolManager.Instance.Get(poolId);
+                if (monster != null)
+                {
+                    SetupSummonedMonster(monster, cachedMonsterData);
+                }
+
+                // 소환 간격 (0.2초) - CancellationToken 사용
+                if (i < spawnCount - 1)
+                {
+                    await UniTask.Delay(200, cancellationToken: cts.Token);
+                }
             }
+        }
+        catch (System.OperationCanceledException)
+        {
+            // 씬 전환 등으로 취소됨 - 정상 종료
         }
     }
 
@@ -285,6 +302,15 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
         catch
         {
         }
+    }
+
+    private void OnDestroy()
+    {
+        // 씬 전환 시 모든 async 작업 취소
+        cts?.Cancel();
+        cts?.Dispose();
+        cts = null;
+        isInitialized = false;
     }
 
     private Vector3 GetRandomSpawnPosition()

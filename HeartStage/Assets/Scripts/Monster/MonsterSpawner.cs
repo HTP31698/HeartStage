@@ -149,7 +149,7 @@ public class MonsterSpawner : MonoBehaviour
         var monsterIds = new HashSet<int>();
         foreach (var waveId in stageWaveIds)
         {
-            var waveData = DataTableManager.StageWaveTable.Get(waveId);
+            var waveData = DataTableManager.StageWaveTable.GetWaveData(waveId);
             if (waveData != null)
             {
                 if (waveData.EnemyID1 > 0) monsterIds.Add(waveData.EnemyID1);
@@ -414,13 +414,12 @@ public class MonsterSpawner : MonoBehaviour
     // 다음 스테이지 정보 가져오기
     public StageData GetNextStage()
     {
-        var orderedStages = DataTableManager.StageTable.GetOrderedStages();
+        var orderedStages = DataTableManager.StageTable.GetOrderedStagesSO();
         int currentIndex = orderedStages.FindIndex(s => s.stage_ID == currentStageId);
 
         if (currentIndex >= 0 && currentIndex < orderedStages.Count - 1)
         {
-            // 다음 스테이지 ID로 SO 가져오기
-            return DataTableManager.StageTable.GetStageData(orderedStages[currentIndex + 1].stage_ID);
+            return orderedStages[currentIndex + 1];
         }
 
         return null;
