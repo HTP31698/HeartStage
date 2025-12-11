@@ -171,35 +171,197 @@ public class TitleSceneController : MonoBehaviour
 
     #region 로그인 / 세이브 / 출석
 
+    private const float AUTH_TIMEOUT_SECONDS = 10f;
+    private const string PREF_KEY_INSTALLED = "HeartStage_Installed";
+
     private async UniTask PostLoginFlowAsync()
     {
         SetStatus("로딩중", animateDots: true);
 
-        await UniTask.WaitUntil(() =>
-            AuthManager.Instance != null &&
-            AuthManager.Instance.IsInitialized);
+        // AuthManager 초기화 대기 (10초 타임아웃)
+        bool authReady = await WaitForAuthWithTimeoutAsync();
+        if (!authReady)
+        {
+            SetStatus("서버 연결 실패. 재시도 중...", animateDots: true);
+            await UniTask.Delay(TimeSpan.FromSeconds(2));
+
+            // 한 번 더 시도
+            authReady = await WaitForAuthWithTimeoutAsync();
+            if (!authReady)
+            {
+                SetStatus("서버에 연결할 수 없습니다. 앱을 재시작해주세요.", animateDots: false);
+                return;
+            }
+        }
+
+        // 앱 재설치 감지: PlayerPrefs에 설치 플래그 없으면 재설치로 간주
+        bool isReinstall = !PlayerPrefs.HasKey(PREF_KEY_INSTALLED);
+        if (isReinstall && AuthManager.Instance.IsLoggedIn)
+        {
+            Debug.Log("[Title] 앱 재설치 감지 - 캐시된 로그인 정리 후 로그인 화면으로");
+            Firebase.Auth.FirebaseAuth.DefaultInstance.SignOut();
+            await UniTask.DelayFrame(5);
+        }
 
         if (AuthManager.Instance.IsLoggedIn)
         {
-            Debug.Log("[Title] 이미 로그인됨");
+            Debug.Log("[Title] 이미 로그인됨 - 유효성 검증 중...");
+
+            // 캐시된 유저가 서버에서 유효한지 검증
+            bool isValid = await ValidateCachedUserAsync();
+            if (!isValid)
+            {
+                Debug.LogWarning("[Title] 캐시된 유저가 유효하지 않음 - 로그아웃 후 재로그인");
+                Firebase.Auth.FirebaseAuth.DefaultInstance.SignOut();
+                await UniTask.DelayFrame(5);
+                await ShowLoginUIAndWaitAsync();
+            }
+            else
+            {
+                // 자동 로그인 성공 시에도 설치 플래그 저장 (기존 유저 보호)
+                if (!PlayerPrefs.HasKey(PREF_KEY_INSTALLED))
+                {
+                    PlayerPrefs.SetInt(PREF_KEY_INSTALLED, 1);
+                    PlayerPrefs.Save();
+                }
+            }
         }
         else
         {
-            await UniTask.DelayFrame(2);
-
-            loginUIRoot.SetActive(true);
-            SetStatus("로그인이 필요합니다", animateDots: false);
-
-            await UniTask.WaitUntil(() => AuthManager.Instance.IsLoggedIn);
-
-            loginUIRoot.SetActive(false);
+            await ShowLoginUIAndWaitAsync();
         }
 
         SetStatus("유저 데이터 불러오는 중", animateDots: true);
-        await LoadOrCreateSaveAsync();
+
+        // 타임아웃 10초: 데이터 로드 실패 시 로그아웃 후 재로그인
+        bool loadSuccess = await TryLoadWithTimeoutAsync(10f);
+        if (!loadSuccess)
+        {
+            Debug.LogWarning("[Title] 데이터 로드 타임아웃, 로그아웃 후 재로그인 시도");
+
+            // 씬 리로드 없이 Auth만 로그아웃
+            Firebase.Auth.FirebaseAuth.DefaultInstance.SignOut();
+
+            await UniTask.DelayFrame(5);
+
+            await ShowLoginUIAndWaitAsync();
+
+            SetStatus("유저 데이터 불러오는 중", animateDots: true);
+            await LoadOrCreateSaveAsync();
+        }
 
         SetStatus("출석 정보 확인 중", animateDots: true);
         await UpdateLastLoginTimeAsync();
+    }
+
+    private async UniTask<bool> WaitForAuthWithTimeoutAsync()
+    {
+        var cts = new CancellationTokenSource();
+        cts.CancelAfterSlim(TimeSpan.FromSeconds(AUTH_TIMEOUT_SECONDS));
+
+        try
+        {
+            await UniTask.WaitUntil(() =>
+                AuthManager.Instance != null &&
+                AuthManager.Instance.IsInitialized)
+                .AttachExternalCancellation(cts.Token);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.LogError("[Title] AuthManager 초기화 타임아웃 (10초)");
+            return false;
+        }
+        finally
+        {
+            cts.Dispose();
+        }
+    }
+
+    private async UniTask ShowLoginUIAndWaitAsync()
+    {
+        await UniTask.DelayFrame(2);
+
+        loginUIRoot.SetActive(true);
+        SetStatus("로그인이 필요합니다", animateDots: false);
+
+        await UniTask.WaitUntil(() => AuthManager.Instance.IsLoggedIn);
+
+        // 로그인 성공 시 설치 플래그 저장 (재설치 감지용)
+        PlayerPrefs.SetInt(PREF_KEY_INSTALLED, 1);
+        PlayerPrefs.Save();
+
+        loginUIRoot.SetActive(false);
+    }
+
+    /// <summary>
+    /// 캐시된 유저가 Firebase에서 유효한지 검증 (토큰 갱신 시도)
+    /// 서버에서 삭제된 유저만 false 반환, 네트워크 문제는 기존 유저 유지
+    /// </summary>
+    private async UniTask<bool> ValidateCachedUserAsync()
+    {
+        var cts = new CancellationTokenSource();
+        cts.CancelAfterSlim(TimeSpan.FromSeconds(5f));
+
+        try
+        {
+            var user = Firebase.Auth.FirebaseAuth.DefaultInstance.CurrentUser;
+            if (user == null) return false;
+
+            // 토큰 강제 갱신 시도 - 유저가 삭제됐으면 여기서 에러
+            await user.ReloadAsync().AsUniTask().AttachExternalCancellation(cts.Token);
+            return true;
+        }
+        catch (Firebase.FirebaseException ex)
+        {
+            // 서버에서 삭제된 유저만 false (캐시 정리 필요)
+            string msg = ex.Message.ToLower();
+            if (msg.Contains("user-not-found") || msg.Contains("user_not_found") || msg.Contains("no user record"))
+            {
+                Debug.LogWarning($"[Title] 서버에서 삭제된 유저 - 캐시 정리 필요: {ex.Message}");
+                return false;
+            }
+
+            // 그 외 Firebase 에러는 네트워크 문제 등 → 기존 유저 유지
+            Debug.LogWarning($"[Title] Firebase 에러 (유저 유지): {ex.Message}");
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            // 타임아웃 = 네트워크 문제 → 기존 유저 유지
+            Debug.LogWarning("[Title] 유저 검증 타임아웃 - 기존 유저 유지");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // 기타 에러도 유저 유지
+            Debug.LogWarning($"[Title] 유저 검증 실패 (유저 유지): {ex.Message}");
+            return true;
+        }
+        finally
+        {
+            cts.Dispose();
+        }
+    }
+
+    private async UniTask<bool> TryLoadWithTimeoutAsync(float timeoutSeconds)
+    {
+        var cts = new CancellationTokenSource();
+        cts.CancelAfterSlim(TimeSpan.FromSeconds(timeoutSeconds));
+
+        try
+        {
+            await LoadOrCreateSaveAsync().AttachExternalCancellation(cts.Token);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+        finally
+        {
+            cts.Dispose();
+        }
     }
 
     private static async UniTask LoadOrCreateSaveAsync()

@@ -154,15 +154,18 @@ public class SkillTestManager : MonoBehaviour
 
         // Page2 - 기본 정보 / 스탯
         if (skillNameInput != null) skillNameInput.onEndEdit.AddListener(OnSkillNameChanged);
-        if (skillAutoInput != null) skillAutoInput.onEndEdit.AddListener(OnSkillAutoChanged);
+        // 데미지계산로직변경해야함
+        // if (skillAutoInput != null) skillAutoInput.onEndEdit.AddListener(OnSkillAutoChanged);
         if (skillTypeInput != null) skillTypeInput.onEndEdit.AddListener(OnSkillTypeChanged);
         if (passiveTypeDropdown != null) passiveTypeDropdown.onValueChanged.AddListener(OnPassiveTypeDropdownChanged);
         if (skillTargetInput != null) skillTargetInput.onEndEdit.AddListener(OnSkillTargetChanged);
         if (skillPierceToggle != null) skillPierceToggle.onValueChanged.AddListener(OnSkillPierceToggleChanged);
-        if (skillDmgInput != null) skillDmgInput.onEndEdit.AddListener(OnSkillDmgChanged);
+        // 데미지계산로직변경해야함
+        // if (skillDmgInput != null) skillDmgInput.onEndEdit.AddListener(OnSkillDmgChanged);
         if (skillCoolInput != null) skillCoolInput.onEndEdit.AddListener(OnSkillCoolChanged);
         if (skillSpeedInput != null) skillSpeedInput.onEndEdit.AddListener(OnSkillSpeedChanged);
-        if (skillCrtInput != null) skillCrtInput.onEndEdit.AddListener(OnSkillCrtChanged);
+        // 데미지계산로직변경해야함
+        // if (skillCrtInput != null) skillCrtInput.onEndEdit.AddListener(OnSkillCrtChanged);
         if (rangeInput != null) rangeInput.onEndEdit.AddListener(OnRangeInputChanged);
         if (rangeSlider != null) rangeSlider.onValueChanged.AddListener(OnRangeSliderChanged);
         if (skillDurationInput != null) skillDurationInput.onEndEdit.AddListener(OnSkillDurationChanged);
@@ -406,8 +409,9 @@ public class SkillTestManager : MonoBehaviour
         if (skillNameInput != null)
             skillNameInput.SetTextWithoutNotify(currentSkill.skill_name ?? "");
 
-        if (skillAutoInput != null)
-            skillAutoInput.SetTextWithoutNotify(currentSkill.skill_auto.ToString());
+        // 데미지계산로직변경해야함
+        // if (skillAutoInput != null)
+        //     skillAutoInput.SetTextWithoutNotify(currentSkill.skill_auto.ToString());
 
         if (skillTypeInput != null)
             skillTypeInput.SetTextWithoutNotify(currentSkill.skill_type.ToString());
@@ -427,8 +431,9 @@ public class SkillTestManager : MonoBehaviour
         if (skillPierceToggle != null)
             skillPierceToggle.SetIsOnWithoutNotify(currentSkill.skill_pierce);
 
-        if (skillDmgInput != null)
-            skillDmgInput.SetTextWithoutNotify(currentSkill.skill_dmg.ToString());
+        // 데미지계산로직변경해야함
+        // if (skillDmgInput != null)
+        //     skillDmgInput.SetTextWithoutNotify(currentSkill.skill_dmg.ToString());
 
         if (skillCoolInput != null)
             skillCoolInput.SetTextWithoutNotify(currentSkill.skill_cool.ToString("0.00", CultureInfo.InvariantCulture));
@@ -436,8 +441,9 @@ public class SkillTestManager : MonoBehaviour
         if (skillSpeedInput != null)
             skillSpeedInput.SetTextWithoutNotify(currentSkill.skill_speed.ToString("0.00", CultureInfo.InvariantCulture));
 
-        if (skillCrtInput != null)
-            skillCrtInput.SetTextWithoutNotify(currentSkill.skill_crt.ToString("0.00", CultureInfo.InvariantCulture));
+        // 데미지계산로직변경해야함
+        // if (skillCrtInput != null)
+        //     skillCrtInput.SetTextWithoutNotify(currentSkill.skill_crt.ToString("0.00", CultureInfo.InvariantCulture));
 
         if (rangeInput != null)
             rangeInput.SetTextWithoutNotify(currentSkill.skill_range.ToString("0.00", CultureInfo.InvariantCulture));
@@ -542,15 +548,16 @@ public class SkillTestManager : MonoBehaviour
         MarkCurrentSkillDirty();
     }
 
-    private void OnSkillAutoChanged(string newText)
-    {
-        if (currentSkill == null) return;
-        int val = ParseInt(newText, currentSkill.skill_auto);
-        currentSkill.skill_auto = val;
-        if (skillAutoInput != null)
-            skillAutoInput.SetTextWithoutNotify(val.ToString());
-        MarkCurrentSkillDirty();
-    }
+    // 데미지계산로직변경해야함
+    // private void OnSkillAutoChanged(string newText)
+    // {
+    //     if (currentSkill == null) return;
+    //     int val = ParseInt(newText, currentSkill.skill_auto);
+    //     currentSkill.skill_auto = val;
+    //     if (skillAutoInput != null)
+    //         skillAutoInput.SetTextWithoutNotify(val.ToString());
+    //     MarkCurrentSkillDirty();
+    // }
 
     private void OnSkillTypeChanged(string newText)
     {
@@ -590,15 +597,16 @@ public class SkillTestManager : MonoBehaviour
         MarkCurrentSkillDirty();
     }
 
-    private void OnSkillDmgChanged(string newText)
-    {
-        if (currentSkill == null) return;
-        int val = ParseInt(newText, currentSkill.skill_dmg);
-        currentSkill.skill_dmg = val;
-        if (skillDmgInput != null)
-            skillDmgInput.SetTextWithoutNotify(val.ToString());
-        MarkCurrentSkillDirty();
-    }
+    // 데미지계산로직변경해야함
+    // private void OnSkillDmgChanged(string newText)
+    // {
+    //     if (currentSkill == null) return;
+    //     int val = ParseInt(newText, currentSkill.skill_dmg);
+    //     currentSkill.skill_dmg = val;
+    //     if (skillDmgInput != null)
+    //         skillDmgInput.SetTextWithoutNotify(val.ToString());
+    //     MarkCurrentSkillDirty();
+    // }
 
     private void OnSkillCoolChanged(string newText)
     {
@@ -620,15 +628,16 @@ public class SkillTestManager : MonoBehaviour
         MarkCurrentSkillDirty();
     }
 
-    private void OnSkillCrtChanged(string newText)
-    {
-        if (currentSkill == null) return;
-        float val = ParseFloat(newText, currentSkill.skill_crt);
-        currentSkill.skill_crt = val;
-        if (skillCrtInput != null)
-            skillCrtInput.SetTextWithoutNotify(val.ToString("0.00", CultureInfo.InvariantCulture));
-        MarkCurrentSkillDirty();
-    }
+    // 데미지계산로직변경해야함
+    // private void OnSkillCrtChanged(string newText)
+    // {
+    //     if (currentSkill == null) return;
+    //     float val = ParseFloat(newText, currentSkill.skill_crt);
+    //     currentSkill.skill_crt = val;
+    //     if (skillCrtInput != null)
+    //         skillCrtInput.SetTextWithoutNotify(val.ToString("0.00", CultureInfo.InvariantCulture));
+    //     MarkCurrentSkillDirty();
+    // }
 
     private void OnRangeInputChanged(string newText)
     {

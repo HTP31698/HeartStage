@@ -1141,10 +1141,11 @@ public class SOBalancingWindow : EditorWindow
         EditorGUILayout.IntField("ID", data.skill_id);
         EditorGUI.EndDisabledGroup();
         data.skill_name = EditorGUILayout.TextField("이름", data.skill_name);
-        data.skill_auto = EditorGUILayout.IntField("자동 여부", data.skill_auto);
         data.skill_type = EditorGUILayout.IntField("타입", data.skill_type);
+        data.active_type = EditorGUILayout.IntField("액티브 타입", data.active_type);
         data.skill_target = EditorGUILayout.IntField("타겟", data.skill_target);
         data.skill_pierce = EditorGUILayout.Toggle("관통", data.skill_pierce);
+        data.char_type = EditorGUILayout.IntField("캐릭터 타입", data.char_type);
 
         EditorGUILayout.Space(10);
 
@@ -1163,15 +1164,15 @@ public class SOBalancingWindow : EditorWindow
         EditorGUILayout.Space(10);
 
         DrawSectionHeader("스탯", SECTION_STAT);
-        data.skill_dmg = EditorGUILayout.IntField("데미지", data.skill_dmg);
+        data.damage_ratio = EditorGUILayout.FloatField("데미지 비율", data.damage_ratio);
         data.skill_cool = EditorGUILayout.FloatField("쿨다운", data.skill_cool);
         data.skill_speed = EditorGUILayout.FloatField("속도", data.skill_speed);
-        data.skill_crt = EditorGUILayout.FloatField("치명타 확률", data.skill_crt);
         data.skill_range = EditorGUILayout.FloatField("범위", data.skill_range);
         data.skill_straight_range = EditorGUILayout.FloatField("직선 범위", data.skill_straight_range);
         data.skill_range_type = EditorGUILayout.IntField("범위 타입", data.skill_range_type);
         data.skill_bull_amount = EditorGUILayout.IntField("투사체 수", data.skill_bull_amount);
         data.skill_delay = EditorGUILayout.FloatField("딜레이", data.skill_delay);
+        data.tick_interval = EditorGUILayout.FloatField("틱 간격", data.tick_interval);
         data.skill_duration = EditorGUILayout.FloatField("지속시간", data.skill_duration);
 
         EditorGUILayout.Space(10);
@@ -1803,7 +1804,7 @@ public class SOBalancingWindow : EditorWindow
     {
         DrawCompareField("ID", s.skill_id, other?.skill_id);
         DrawCompareField("이름", s.skill_name, other?.skill_name);
-        DrawCompareField("데미지", s.skill_dmg, other?.skill_dmg);
+        DrawCompareField("데미지 비율", s.damage_ratio, other?.damage_ratio);
         DrawCompareField("쿨다운", s.skill_cool, other?.skill_cool);
         DrawCompareField("속도", s.skill_speed, other?.skill_speed);
         DrawCompareField("범위", s.skill_range, other?.skill_range);
@@ -2740,7 +2741,7 @@ public class SOBalancingWindow : EditorWindow
 
             case SkillData s:
                 if (string.IsNullOrEmpty(s.skill_name)) errors.Add("이름이 비어있습니다");
-                if (s.skill_dmg < 0) errors.Add("데미지가 음수입니다");
+                if (s.damage_ratio < 0) errors.Add("데미지 비율이 음수입니다");
                 if (s.skill_cool < 0) errors.Add("쿨다운이 음수입니다");
                 break;
 
@@ -2968,7 +2969,7 @@ public class SOBalancingWindow : EditorWindow
         {
             CharacterData c => $"Lv.{c.char_lv} Rank{c.char_rank} | HP {c.char_hp} | ATK {c.atk_dmg}",
             MonsterData m => $"Type {m.monsterType} | HP {m.hp} | ATK {m.att}",
-            SkillData s => $"DMG {s.skill_dmg} | Cool {s.skill_cool}s | Range {s.skill_range}",
+            SkillData s => $"Ratio {s.damage_ratio} | Cool {s.skill_cool}s | Range {s.skill_range}",
             ItemData i => $"Type {i.item_type}",
             StageData st => $"Step {st.stage_step1}-{st.stage_step2}",
             StageWaveData w => $"Spawn: {w.enemy_spown_time}s",
