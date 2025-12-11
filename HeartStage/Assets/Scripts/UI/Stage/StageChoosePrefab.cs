@@ -49,7 +49,7 @@ public class StageChoosePrefab : MonoBehaviour
         };
     }
 
-    public void Initialize(StageCSVData stageData)
+    public void Initialize(StageData stageData)
     {
         if (stageData == null) return;
 
@@ -57,7 +57,7 @@ public class StageChoosePrefab : MonoBehaviour
         UpdateSpotLightImages(stageData);
     }
 
-    private void UpdateSpotLightImages(StageCSVData stageData)
+    private void UpdateSpotLightImages(StageData stageData)
     {
         if (stageData == null) return;
 
@@ -77,7 +77,7 @@ public class StageChoosePrefab : MonoBehaviour
             rightSpotLightImage.gameObject.SetActive(isStageCleared);
     }
 
-    private bool IsStageCleared(StageCSVData stageData)
+    private bool IsStageCleared(StageData stageData)
     {
         var saveData = SaveLoadManager.Data as SaveDataV1;
         if (saveData == null || saveData.clearWaveList == null)

@@ -143,7 +143,7 @@ public class StageSetupWindow : MonoBehaviour
     {
         ReportStageProgress(0.2f);
 
-        // StageManager & currentStageCSVData 준비될 때까지
+        // StageManager & currentStageData 준비될 때까지
         while (StageManager.Instance == null || StageManager.Instance.GetCurrentStageData() == null)
         {
             await UniTask.Delay(10, DelayType.UnscaledDeltaTime);
@@ -151,8 +151,8 @@ public class StageSetupWindow : MonoBehaviour
 
         ReportStageProgress(0.4f);
 
-        var stageCsv = StageManager.Instance.GetCurrentStageData();
-        ApplyStage(stageCsv);
+        var stageData = StageManager.Instance.GetCurrentStageData();
+        ApplyStage(stageData);
 
         // 혹시라도 색/카운트 바로 보이게 강제 갱신
         RebuildPassiveTiles();

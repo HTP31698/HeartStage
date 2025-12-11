@@ -47,7 +47,7 @@ public class SkillData : ScriptableObject
         skill_id = csvData.skill_id;
         skill_name = csvData.skill_name;
         skill_type = csvData.skill_type;
-        passive_type = csvData.passive_type;
+        passive_type = (PassiveType)csvData.passive_type;
         active_type = csvData.active_type;
         skill_target = csvData.skill_target;
         skill_pierce = csvData.skill_pierce;
@@ -86,7 +86,7 @@ public class SkillData : ScriptableObject
         csvData.skill_id = skill_id;
         csvData.skill_name = skill_name;
         csvData.skill_type = skill_type;
-        csvData.passive_type = passive_type;
+        csvData.passive_type = (int)passive_type;
         csvData.active_type = active_type;
         csvData.skill_target = skill_target;
         csvData.skill_pierce = skill_pierce;
@@ -129,7 +129,7 @@ public class SkillCSVData
     public int skill_id { get; set; }
     public string skill_name { get; set; }
     public int skill_type { get; set; }
-    public PassiveType passive_type { get; set; }
+    public int passive_type { get; set; }
     public int active_type { get; set; }
     public int skill_target { get; set; }
     public bool skill_pierce { get; set; }

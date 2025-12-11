@@ -45,7 +45,7 @@ public class ItemTable : DataTable
             }
             else
             {
-                Debug.LogError("몬스터 아이디 중복!");
+                Debug.LogError($"아이템 아이디 중복! {item.item_name}");
             }
         }
 

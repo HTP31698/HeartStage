@@ -32,7 +32,7 @@ public class StageManager : MonoBehaviour
     public VictoryPanel VictoryPanel;
     public LosePanelUI LosePanelUI;
     [HideInInspector]
-    public StageCSVData currentStageCSVData;
+    public StageData currentStageData;
 
     private float currentTimeScale = 1f;
 
@@ -99,8 +99,8 @@ public class StageManager : MonoBehaviour
 
         if (stageID != -1)
         {
-            // DataTableManager를 통해 스테이지 데이터 로드
-            var stageData = DataTableManager.StageTable.GetStage(stageID);
+            // SO를 통해 스테이지 데이터 로드
+            var stageData = DataTableManager.StageTable.GetStageData(stageID);
 
             if (stageData != null)
             {
@@ -152,9 +152,9 @@ public class StageManager : MonoBehaviour
         }
     }
 
-    public void SetCurrentStageData(StageCSVData stageData)
+    public void SetCurrentStageData(StageData stageData)
     {
-        currentStageCSVData = stageData;
+        currentStageData = stageData;
         if (stageData != null)
         {
             stageNumber = stageData.stage_step1;
@@ -173,9 +173,9 @@ public class StageManager : MonoBehaviour
     }
 
     // 현재 스테이지 데이터 가져오기
-    public StageCSVData GetCurrentStageData()
+    public StageData GetCurrentStageData()
     {
-        return currentStageCSVData;
+        return currentStageData;
     }
 
     // 경험치 얻기
@@ -236,12 +236,12 @@ public class StageManager : MonoBehaviour
     public void Clear()
     {
         // 클리어 퀘스트 알림
-        if (QuestManager.Instance != null && currentStageCSVData != null)
+        if (QuestManager.Instance != null && currentStageData != null)
         {
-            QuestManager.Instance.OnStageClear(currentStageCSVData.stage_ID);
+            QuestManager.Instance.OnStageClear(currentStageData.stage_ID);
 
             // ★ 스테이지 최초 클리어 업적 체크 (튜토리얼 등)
-            QuestManager.Instance.OnStageFirstClear(currentStageCSVData.stage_ID);
+            QuestManager.Instance.OnStageFirstClear(currentStageData.stage_ID);
         }
 
         if (windowManager != null)
@@ -293,7 +293,7 @@ public class StageManager : MonoBehaviour
         SaveLoadManager.SaveToServer().Forget();
     }
 
-    public void SetBackgroundByStageData(StageCSVData stageData)
+    public void SetBackgroundByStageData(StageData stageData)
     {
         if (stageData == null || string.IsNullOrEmpty(stageData.prefab) || stageData.prefab == "nan")
         {
@@ -328,7 +328,7 @@ public class StageManager : MonoBehaviour
         }
     }
 
-    private void SetStagePosition(StageCSVData stageData)
+    private void SetStagePosition(StageData stageData)
     {
         if (stageData == null)
         {

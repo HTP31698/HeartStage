@@ -54,7 +54,7 @@ public class MonitoringCharacterSelectUI : GenericWindow
 
         if(gameData != null && gameData.selectedStageID != -1)
         {
-            var stageData = DataTableManager.StageTable.GetStage(gameData.selectedStageID);
+            var stageData = DataTableManager.StageTable.GetStageData(gameData.selectedStageID);
             if (stageData != null)
             {
                 currentDipatchMemberCount = stageData.dispatch_member;
@@ -371,7 +371,7 @@ public class MonitoringCharacterSelectUI : GenericWindow
             return;
         }
 
-        var stageData = DataTableManager.StageTable?.GetStage(currentStageID);
+        var stageData = DataTableManager.StageTable?.GetStageData(currentStageID);
         if (stageData == null)
         {
             return;

@@ -30,7 +30,7 @@ public class StageInfoWindow : GenericWindow
     [SerializeField] private Color defaultCircleColor = Color.white;
 
     [Header("Field")]
-    private StageCSVData currentStageData; // 현재 선택된 스테이지 데이터
+    private StageData currentStageData; // 현재 선택된 스테이지 데이터
 
     public TextMeshProUGUI energyLackText; // 에너지 부족시 텍스트
 
@@ -72,7 +72,7 @@ public class StageInfoWindow : GenericWindow
         MonsterSpawner.OnWaveCleared -= UpdateWaveProgress; 
     }
 
-    public void SetStageData(StageCSVData stageData)
+    public void SetStageData(StageData stageData)
     {
         Debug.Log($"SetStageData 호출: {stageData.stage_ID}, {stageData.stage_step1}");
 

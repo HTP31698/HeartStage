@@ -100,7 +100,7 @@ public class VictoryDefeatPanel : GenericWindow
             }
         }
 
-        var stageData = StageManager.Instance.currentStageCSVData;
+        var stageData = StageManager.Instance.currentStageData;
         //currentStageText.text = $"스테이지 {stageData.stage_step1}-{stageData.stage_step2}";
         addFansText.text = $"{StageManager.Instance.fanReward}";
 
@@ -158,15 +158,15 @@ public class VictoryDefeatPanel : GenericWindow
     /// </summary>
     private void OnRetryTestStage()
     {
-        if (StageManager.Instance == null || StageManager.Instance.currentStageCSVData == null)
+        if (StageManager.Instance == null || StageManager.Instance.currentStageData == null)
         {
-            Debug.LogWarning("[VictoryDefeatPanel] 테스트 재도전 요청, StageManager/currentStageCSVData 없음");
+            Debug.LogWarning("[VictoryDefeatPanel] 테스트 재도전 요청, StageManager/currentStageData 없음");
             Time.timeScale = 1f;
             Close();
             return;
         }
 
-        int stageId = StageManager.Instance.currentStageCSVData.stage_ID;
+        int stageId = StageManager.Instance.currentStageData.stage_ID;
 
         Time.timeScale = 1f;
         LoadSceneManager.Instance.GoTestStage(stageId, 1);
