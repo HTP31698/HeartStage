@@ -14,6 +14,8 @@ public class CharacterAttack : MonoBehaviour
     [SerializeField] 
     private CharacterData data;
 
+    public CharacterData Data => data;
+
     private List<GameObject> monsters = new List<GameObject>();
     private float nextAttackTime;
     private float cleanupTimer = 0f;

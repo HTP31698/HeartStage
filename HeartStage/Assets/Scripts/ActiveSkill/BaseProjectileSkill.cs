@@ -113,6 +113,8 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             return;
         }
 
+        // 데미지 계산
+
         // 데미지계산로직변경해야함
         proj.SetMissile(
             prefabName,

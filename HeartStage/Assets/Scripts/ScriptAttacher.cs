@@ -18,6 +18,20 @@ public static class ScriptAttacher
         { 31207, "ReverseCharmSkillV2" }, // 넘치는 반전매력
         { 31208, "HeartBombSkill" }, // 섹시 다이너마이트
         { 31209, "HeartBombSkillV2" }, // 폭룡적인 섹시 다이너마이트
+        { 31210, "MeteorMelodySkill" }, // 유성의 멜로디
+        { 31211, "MeteorMelodySkillV2" }, // 쏟아지는 유성의 멜로디
+        { 31212, "FairySkill" }, // 입덕요정
+        { 31213, "FairySkillV2" }, // 유입을 부르는 입덕요정
+        { 31214, "TwinkleSkill" }, // 시선을 끄는 눈빛
+        { 31215, "TwinkleSkillV2" }, // 시선을 집중시키는 눈빛
+        { 31216, "AcrobatSkill" }, // 곡예사
+        { 31217, "AcrobatSkillV2" }, // 비트 위에 곡예사
+        { 31218, "MaknaeOnTopSkill" }, // 막내온탑
+        { 31219, "MaknaeOnTopSkillV2" }, // 미워할 수 없는 막내온탑
+        { 31220, "AbsolutePitchSkill" }, // 절대음감
+        { 31221, "AbsolutePitchSkillV2" }, // 천재적인 절대음감
+        { 31222, "DancingMachineSkill" }, // 댄싱머신
+        { 31223, "DancingMachineSkillV2" }, // 현란한 댄싱머신
 
         { 31001, "DeceptionBossSkill" }, // 대량 현혹 튜토리얼 근접
         { 31002, "DeceptionBossSkill" }, // 대량 현혹 튜토리얼 원거리
