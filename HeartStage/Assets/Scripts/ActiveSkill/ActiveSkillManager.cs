@@ -26,10 +26,6 @@ public class ActiveSkillManager : MonoBehaviour
     private void Start()
     {
         skillDB = DataTableManager.SkillTable.GetAll();
-        foreach (var skill in skillDB)
-        {
-            skill.Value.UpdateData(DataTableManager.SkillTable.Get(skill.Value.skill_id));
-        }
     }
 
     private void Update()
