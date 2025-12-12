@@ -388,7 +388,31 @@ public class MonsterMovement : MonoBehaviour
             float finalMoveSpeed = StatCalc.GetFinalStat(gameObject, StatType.MoveSpeed, monsterData.moveSpeed);
 
             Vector3 dir = (closest.transform.position - transform.position).normalized;
-            transform.position += dir * finalMoveSpeed * Time.deltaTime; 
+            transform.position += dir * finalMoveSpeed * Time.deltaTime;
         }
+    }
+
+    // === 무한 스테이지용 강화 속도 설정 ===
+
+    private float enhancedSpeed = 0f;
+    private bool hasEnhancedSpeed = false;
+
+    /// <summary>
+    /// 무한 스테이지용 강화 속도 설정
+    /// </summary>
+    public void SetEnhancedSpeed(float speed)
+    {
+        enhancedSpeed = speed;
+        hasEnhancedSpeed = true;
+    }
+
+    /// <summary>
+    /// 강화된 이동 속도 반환 (무한 스테이지용)
+    /// </summary>
+    public float GetEnhancedMoveSpeed()
+    {
+        if (hasEnhancedSpeed)
+            return enhancedSpeed;
+        return monsterData?.moveSpeed ?? 0f;
     }
 }

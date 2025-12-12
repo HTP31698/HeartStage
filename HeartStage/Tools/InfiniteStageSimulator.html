@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>무한 스테이지 시뮬레이터 v2</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #eee;
+            min-height: 100vh;
+            padding: 15px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            gap: 15px;
+        }
+        h1 {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #f39c12;
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+        .panel {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .panel h2 {
+            color: #3498db;
+            font-size: 14px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .setting-group { margin-bottom: 8px; }
+        .setting-group label {
+            display: block;
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 3px;
+        }
+        .setting-group input, .setting-group select {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 5px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 13px;
+        }
+        .setting-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .setting-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        /* 게임 영역 */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 16px;
+            border-radius: 8px;
+        }
+        .time-display {
+            font-size: 42px;
+            font-weight: bold;
+            color: #f39c12;
+            font-family: 'Courier New', monospace;
+        }
+        .stats-row { display: flex; gap: 16px; }
+        .stat-box { text-align: center; }
+        .stat-box .label { font-size: 10px; color: #888; }
+        .stat-box .value { font-size: 18px; font-weight: bold; }
+        .stat-box .value.hp { color: #e74c3c; }
+        .stat-box .value.monsters { color: #3498db; }
+        .stat-box .value.kills { color: #2ecc71; }
+        .stat-box .value.multiplier { color: #9b59b6; }
+
+        /* 캔버스 컨테이너 */
+        .canvas-container {
+            flex: 1;
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            min-height: 500px;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 컨트롤 */
+        .controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-start { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; }
+        .btn-pause { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; }
+        .btn-reset { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
+        .btn-setup { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; }
+        .speed-btns { display: flex; gap: 4px; }
+        .btn-speed {
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            font-size: 12px;
+        }
+        .btn-speed.active { background: #3498db; border-color: #3498db; }
+
+        /* 캐릭터 슬롯 */
+        .character-slots {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .char-slot {
+            background: rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 70px;
+        }
+        .char-slot:hover { border-color: #3498db; }
+        .char-slot.selected { border-color: #f39c12; background: rgba(243,156,18,0.2); }
+        .char-slot.deployed { border-color: #2ecc71; background: rgba(46,204,113,0.2); }
+        .char-slot .name { font-size: 11px; font-weight: bold; margin-bottom: 4px; }
+        .char-slot .stats { font-size: 9px; color: #aaa; }
+        .char-slot .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin: 0 auto 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        /* 타입별 색상 */
+        .type-vocal .icon { background: #e74c3c; }
+        .type-dance .icon { background: #3498db; }
+        .type-visual .icon { background: #9b59b6; }
+        .type-charisma .icon { background: #f39c12; }
+
+        /* 로그 */
+        .log-panel { max-height: 200px; overflow-y: auto; }
+        .log-entry {
+            padding: 4px 6px;
+            border-radius: 3px;
+            margin-bottom: 3px;
+            font-size: 11px;
+            background: rgba(0,0,0,0.2);
+        }
+        .log-entry.spawn { border-left: 2px solid #3498db; }
+        .log-entry.special { border-left: 2px solid #e74c3c; background: rgba(231,76,60,0.1); }
+        .log-entry.enhance { border-left: 2px solid #9b59b6; }
+        .log-entry.damage { border-left: 2px solid #e67e22; }
+        .log-entry.kill { border-left: 2px solid #2ecc71; }
+        .log-entry.skill { border-left: 2px solid #f39c12; }
+        .log-time { color: #888; margin-right: 6px; }
+
+        /* 특수 몬스터 타이머 */
+        .special-timers { display: flex; flex-direction: column; gap: 6px; }
+        .special-timer {
+            background: rgba(0,0,0,0.3);
+            padding: 8px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .special-timer .name { font-size: 11px; color: #aaa; }
+        .special-timer .countdown { font-size: 16px; font-weight: bold; }
+        .special-timer.fast .countdown { color: #1abc9c; }
+        .special-timer.tank .countdown { color: #e74c3c; }
+        .special-timer.strong .countdown { color: #f39c12; }
+
+        /* 배치 모드 오버레이 */
+        .setup-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .setup-overlay.hidden { display: none; }
+        .setup-overlay h3 { color: #f39c12; margin-bottom: 10px; }
+        .setup-overlay p { color: #aaa; font-size: 12px; margin-bottom: 20px; }
+        .deploy-slots {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .deploy-slot {
+            width: 60px;
+            height: 60px;
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .deploy-slot:hover { border-color: #3498db; }
+        .deploy-slot.filled {
+            border-style: solid;
+            border-color: #2ecc71;
+            background: rgba(46,204,113,0.3);
+        }
+        .deploy-slot .char-icon {
+            font-size: 24px;
+        }
+
+        /* 게임 오버 */
+        .game-over {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        .game-over.show { display: flex; }
+        .game-over h2 { font-size: 48px; color: #e74c3c; margin-bottom: 20px; }
+        .game-over .final-time {
+            font-size: 64px;
+            color: #f39c12;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 20px;
+        }
+        .game-over .stats { display: flex; gap: 30px; margin-bottom: 20px; }
+        .game-over .stat { text-align: center; }
+        .game-over .stat .label { color: #888; font-size: 12px; }
+        .game-over .stat .value { font-size: 24px; font-weight: bold; color: #3498db; }
+
+        /* 탭 */
+        .tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+        .tab {
+            flex: 1;
+            padding: 6px;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            color: #888;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .tab.active { background: #3498db; color: #fff; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* HP 바 (펜스) */
+        .fence-hp-bar {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            right: 20px;
+            height: 30px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        .fence-hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fence-hp-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 30px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Unity 씬 구성 가이드 스타일 */
+        .unity-section {
+            margin-bottom: 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .unity-header {
+            font-size: 11px;
+            font-weight: bold;
+            color: #f39c12;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .unity-tree {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+        }
+        .tree-item {
+            padding: 2px 0;
+            color: #ccc;
+        }
+        .tree-item.root { color: #f39c12; font-weight: bold; }
+        .tree-item.l1 { padding-left: 8px; color: #888; }
+        .tree-item.l2 { padding-left: 20px; }
+        .tree-item.l3 { padding-left: 32px; color: #666; font-size: 9px; }
+        .tree-item.script { color: #3498db; }
+        .tree-item.prefab { color: #2ecc71; }
+
+        .unity-connect, .unity-copy, .unity-scripts {
+            font-size: 10px;
+        }
+        .connect-item, .copy-item {
+            padding: 4px 0;
+            border-bottom: 1px dotted rgba(255,255,255,0.1);
+        }
+        .connect-item:last-child, .copy-item:last-child { border-bottom: none; }
+        .connect-item .comp { color: #3498db; }
+        .connect-item .arrow { color: #888; margin: 0 4px; }
+        .connect-item .refs { color: #2ecc71; font-size: 9px; }
+        .copy-item .from { color: #9b59b6; }
+        .copy-item .what { color: #eee; display: block; margin-top: 2px; }
+
+        .unity-flow {
+            text-align: center;
+            font-size: 10px;
+        }
+        .flow-step {
+            background: rgba(52,152,219,0.2);
+            border: 1px solid rgba(52,152,219,0.3);
+            border-radius: 4px;
+            padding: 6px;
+            margin: 4px 0;
+        }
+        .flow-step.done {
+            background: rgba(46,204,113,0.3);
+            border-color: rgba(46,204,113,0.5);
+            color: #2ecc71;
+            font-weight: bold;
+        }
+        .flow-arrow { color: #888; font-size: 14px; }
+
+        .script-item {
+            padding: 3px 0;
+            font-size: 10px;
+        }
+        .script-item.exist { color: #2ecc71; }
+        .script-item.reuse { color: #9b59b6; }
+
+        /* 위치 관계 스타일 */
+        .unity-position {
+            font-size: 10px;
+        }
+        .pos-item {
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .pos-item.spawn { background: rgba(231,76,60,0.2); border-left: 3px solid #e74c3c; }
+        .pos-item.fence { background: rgba(52,152,219,0.2); border-left: 3px solid #3498db; }
+        .pos-item.char { background: rgba(46,204,113,0.2); border-left: 3px solid #2ecc71; }
+        .pos-y { font-family: 'Courier New', monospace; color: #f39c12; }
+        .pos-name { color: #ccc; }
+        .pos-arrow { text-align: center; color: #e74c3c; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>무한 스테이지 시뮬레이터 v2</h1>
+
+        <!-- 좌측: 설정 -->
+        <div class="panel">
+            <div class="tabs">
+                <button class="tab active" data-tab="stage">스테이지</button>
+                <button class="tab" data-tab="monster">몬스터</button>
+                <button class="tab" data-tab="character">캐릭터</button>
+                <button class="tab" data-tab="unity">Unity</button>
+            </div>
+
+            <!-- 스테이지 설정 -->
+            <div class="tab-content active" id="tab-stage">
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>펜스 HP</label>
+                        <input type="number" id="fenceHp" value="1000">
+                    </div>
+                    <div class="setting-group">
+                        <label>배치 인원</label>
+                        <input type="number" id="deployLimit" value="4">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>최대 몬스터</label>
+                        <input type="number" id="maxMonsters" value="30">
+                    </div>
+                    <div class="setting-group">
+                        <label>스폰 간격(초)</label>
+                        <input type="number" id="spawnInterval" value="2" step="0.5">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>강화 주기(초)</label>
+                        <input type="number" id="enhanceInterval" value="30">
+                    </div>
+                </div>
+                <h2 style="margin-top:10px;">강화 배율</h2>
+                <div class="setting-row-3">
+                    <div class="setting-group">
+                        <label>공격력</label>
+                        <input type="number" id="atkMul" value="1.1" step="0.05">
+                    </div>
+                    <div class="setting-group">
+                        <label>체력</label>
+                        <input type="number" id="hpMul" value="1.15" step="0.05">
+                    </div>
+                    <div class="setting-group">
+                        <label>이속</label>
+                        <input type="number" id="speedMul" value="1.02" step="0.01">
+                    </div>
+                </div>
+                <h2 style="margin-top:10px;">특수 몬스터</h2>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>이속형 등장(초)</label>
+                        <input type="number" id="fastSpawnTime" value="60">
+                    </div>
+                    <div class="setting-group">
+                        <label>반복 간격</label>
+                        <input type="number" id="fastInterval" value="120">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>탱커형 등장(초)</label>
+                        <input type="number" id="tankSpawnTime" value="90">
+                    </div>
+                    <div class="setting-group">
+                        <label>반복 간격</label>
+                        <input type="number" id="tankInterval" value="150">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>공격형 등장(초)</label>
+                        <input type="number" id="strongSpawnTime" value="120">
+                    </div>
+                    <div class="setting-group">
+                        <label>반복 간격</label>
+                        <input type="number" id="strongInterval" value="180">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 몬스터 설정 -->
+            <div class="tab-content" id="tab-monster">
+                <h2>기본 몬스터</h2>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>공격력</label>
+                        <input type="number" id="monAtk" value="30">
+                    </div>
+                    <div class="setting-group">
+                        <label>체력</label>
+                        <input type="number" id="monHp" value="50">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>이동속도</label>
+                        <input type="number" id="monSpeed" value="1" step="0.1">
+                    </div>
+                    <div class="setting-group">
+                        <label>공격 주기(초)</label>
+                        <input type="number" id="monAtkInterval" value="2" step="0.5">
+                    </div>
+                </div>
+                <h2 style="margin-top:10px;">특수 몬스터 배율</h2>
+                <p style="font-size:10px; color:#888; margin-bottom:8px;">기본 스탯 대비 배율</p>
+                <div class="setting-group">
+                    <label>이속형 (ATK/HP/SPD)</label>
+                    <div class="setting-row-3">
+                        <input type="number" id="fastAtkMul" value="0.7" step="0.1">
+                        <input type="number" id="fastHpMul" value="0.6" step="0.1">
+                        <input type="number" id="fastSpdMul" value="2" step="0.1">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>탱커형 (ATK/HP/SPD)</label>
+                    <div class="setting-row-3">
+                        <input type="number" id="tankAtkMul" value="1.5" step="0.1">
+                        <input type="number" id="tankHpMul" value="4" step="0.5">
+                        <input type="number" id="tankSpdMul" value="0.6" step="0.1">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>공격형 (ATK/HP/SPD)</label>
+                    <div class="setting-row-3">
+                        <input type="number" id="strongAtkMul" value="3" step="0.5">
+                        <input type="number" id="strongHpMul" value="1.5" step="0.1">
+                        <input type="number" id="strongSpdMul" value="0.8" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 캐릭터 설정 -->
+            <div class="tab-content" id="tab-character">
+                <h2>캐릭터 기본 스탯</h2>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>기본 공격력</label>
+                        <input type="number" id="charAtk" value="50">
+                    </div>
+                    <div class="setting-group">
+                        <label>공격 속도(초)</label>
+                        <input type="number" id="charAtkSpeed" value="1" step="0.1">
+                    </div>
+                </div>
+                <div class="setting-row">
+                    <div class="setting-group">
+                        <label>공격 범위</label>
+                        <input type="number" id="charRange" value="150">
+                    </div>
+                    <div class="setting-group">
+                        <label>치명타 확률(%)</label>
+                        <input type="number" id="charCrit" value="10">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>치명타 배율</label>
+                    <input type="number" id="charCritMul" value="1.5" step="0.1">
+                </div>
+                <h2 style="margin-top:10px;">타입별 보정</h2>
+                <p style="font-size:10px; color:#888; margin-bottom:8px;">기본 대비 배율</p>
+                <div class="setting-group">
+                    <label>보컬 (ATK/SPD/RNG)</label>
+                    <div class="setting-row-3">
+                        <input type="number" id="vocalAtk" value="1.2" step="0.1">
+                        <input type="number" id="vocalSpd" value="0.9" step="0.1">
+                        <input type="number" id="vocalRng" value="1.0" step="0.1">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>댄스 (ATK/SPD/RNG)</label>
+                    <div class="setting-row-3">
+                        <input type="number" id="danceAtk" value="0.8" step="0.1">
+                        <input type="number" id="danceSpd" value="1.5" step="0.1">
+                        <input type="number" id="danceRng" value="0.8" step="0.1">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>비주얼 (ATK/SPD/RNG)</label>
+                    <div class="setting-row-3">
+                        <input type="number" id="visualAtk" value="1.0" step="0.1">
+                        <input type="number" id="visualSpd" value="1.0" step="0.1">
+                        <input type="number" id="visualRng" value="1.5" step="0.1">
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <label>카리스마 (ATK/SPD/RNG)</label>
+                    <div class="setting-row-3">
+                        <input type="number" id="charismaAtk" value="1.5" step="0.1">
+                        <input type="number" id="charismaSpd" value="0.7" step="0.1">
+                        <input type="number" id="charismaRng" value="1.2" step="0.1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unity 씬 구성 가이드 -->
+            <div class="tab-content" id="tab-unity">
+                <h2>🎮 Unity 씬 구성</h2>
+                <p style="font-size:10px; color:#888; margin-bottom:12px;">무한 스테이지 테스트 씬에 필요한 오브젝트</p>
+
+                <div class="unity-section">
+                    <div class="unity-header">📁 Hierarchy 구조</div>
+                    <div class="unity-tree">
+                        <div class="tree-item root">InfiniteTestScene</div>
+                        <div class="tree-item l1">📦 ---Managers---</div>
+                        <div class="tree-item l2 script">InfiniteTestSceneController</div>
+                        <div class="tree-item l2 script">InfiniteStageManager</div>
+                        <div class="tree-item l2 script">InfiniteMonsterSpawner</div>
+                        <div class="tree-item l2 script">TestInfiniteStageController (옵션)</div>
+                        <div class="tree-item l1">📦 ---UI---</div>
+                        <div class="tree-item l2 prefab">StageSetupWindow (프리팹)</div>
+                        <div class="tree-item l3">↳ DraggableSlot[] (15개)</div>
+                        <div class="tree-item l3">↳ StartButton</div>
+                        <div class="tree-item l3">↳ BackButton</div>
+                        <div class="tree-item l2 prefab">TestCharacterDataLoad</div>
+                        <div class="tree-item l3">↳ Content (ScrollRect)</div>
+                        <div class="tree-item l3">↳ DragMe Prefab</div>
+                        <div class="tree-item l2 prefab">InfiniteStageUI</div>
+                        <div class="tree-item l3">↳ TimeText</div>
+                        <div class="tree-item l3">↳ KillCountText</div>
+                        <div class="tree-item l3">↳ EnhancePanel</div>
+                        <div class="tree-item l1">📦 ---Game---</div>
+                        <div class="tree-item l2 prefab">CharacterFence (프리팹)</div>
+                        <div class="tree-item l2">SpawnPos[] (15개 위치)</div>
+                        <div class="tree-item l2">MonsterSpawnArea</div>
+                    </div>
+                </div>
+
+                <div class="unity-section">
+                    <div class="unity-header">🔗 Inspector 연결</div>
+                    <div class="unity-connect">
+                        <div class="connect-item">
+                            <span class="comp">InfiniteTestSceneController</span>
+                            <span class="arrow">→</span>
+                            <span class="refs">stageSetup, testCharacterDataLoad</span>
+                        </div>
+                        <div class="connect-item">
+                            <span class="comp">InfiniteStageManager</span>
+                            <span class="arrow">→</span>
+                            <span class="refs">spawner, stageUI, fence</span>
+                        </div>
+                        <div class="connect-item">
+                            <span class="comp">InfiniteMonsterSpawner</span>
+                            <span class="arrow">→</span>
+                            <span class="refs">spawnArea, poolIds</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="unity-section">
+                    <div class="unity-header">📝 기존 씬에서 복사</div>
+                    <div class="unity-copy">
+                        <div class="copy-item">
+                            <span class="from">TestStageScene</span>
+                            <span class="what">StageSetupWindow 프리팹</span>
+                        </div>
+                        <div class="copy-item">
+                            <span class="from">TestStageScene</span>
+                            <span class="what">TestCharacterDataLoad</span>
+                        </div>
+                        <div class="copy-item">
+                            <span class="from">TestStageScene</span>
+                            <span class="what">CharacterFence 프리팹</span>
+                        </div>
+                        <div class="copy-item">
+                            <span class="from">TestStageScene</span>
+                            <span class="what">SpawnPos[] (슬롯 위치)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="unity-section">
+                    <div class="unity-header">⚡ 이벤트 흐름</div>
+                    <div class="unity-flow">
+                        <div class="flow-step">1. 씬 로드</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">2. TestCharacterDataLoad<br>캐릭터 목록 생성</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">3. 유저 드래그 드롭<br>DragMe → DraggableSlot</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">4. 시작 버튼 클릭<br>StageSetupWindow.OnStageStarted</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step">5. InfiniteStageManager<br>.StartGame()</div>
+                        <div class="flow-arrow">↓</div>
+                        <div class="flow-step done">6. 무한 스테이지 시작!</div>
+                    </div>
+                </div>
+
+                <div class="unity-section">
+                    <div class="unity-header">📍 Y축 위치 관계</div>
+                    <div class="unity-position">
+                        <div class="pos-item spawn">
+                            <span class="pos-y">Y = 6~10</span>
+                            <span class="pos-name">몬스터 스폰 영역</span>
+                        </div>
+                        <div class="pos-arrow">↓ Vector3.down</div>
+                        <div class="pos-item fence">
+                            <span class="pos-y">Y = 3~4</span>
+                            <span class="pos-name">펜스 (CharacterFence)</span>
+                        </div>
+                        <div class="pos-item char">
+                            <span class="pos-y">Y = -2~2</span>
+                            <span class="pos-name">캐릭터 SpawnPos[]</span>
+                        </div>
+                        <p style="font-size:9px; color:#888; margin-top:6px; text-align:center;">
+                            ※ Inspector에서 실제 씬에 맞게 조정
+                        </p>
+                    </div>
+                </div>
+
+                <div class="unity-section">
+                    <div class="unity-header">⚙️ 무한 스테이지 설정</div>
+                    <div style="font-size:10px;">
+                        <div style="padding:6px 0; border-bottom:1px dotted rgba(255,255,255,0.1);">
+                            <span style="color:#f39c12;">레이아웃:</span>
+                            <span style="color:#2ecc71;">Full (15칸 전체 활성화)</span>
+                        </div>
+                        <div style="padding:6px 0; border-bottom:1px dotted rgba(255,255,255,0.1);">
+                            <span style="color:#f39c12;">배치 제한:</span>
+                            <span style="color:#e74c3c;">5명</span>
+                            <span style="color:#888;"> (maxDeployCount)</span>
+                        </div>
+                        <div style="padding:6px 0;">
+                            <span style="color:#f39c12;">적용 메서드:</span>
+                            <code style="color:#3498db; background:rgba(0,0,0,0.3); padding:2px 4px; border-radius:3px;">ApplyInfiniteStageConfig(5)</code>
+                        </div>
+                        <p style="font-size:9px; color:#888; margin-top:8px;">
+                            InfiniteTestSceneController가 Awake에서 자동 호출<br>
+                            Inspector에서 maxDeployCount 조정 가능
+                        </p>
+                    </div>
+                </div>
+
+                <div class="unity-section">
+                    <div class="unity-header">📄 생성된 스크립트</div>
+                    <div class="unity-scripts">
+                        <div class="script-item exist">✅ InfiniteStageManager.cs</div>
+                        <div class="script-item exist">✅ InfiniteMonsterSpawner.cs</div>
+                        <div class="script-item exist">✅ InfiniteMonsterComponent.cs</div>
+                        <div class="script-item exist">✅ InfiniteStageUI.cs</div>
+                        <div class="script-item exist">✅ InfiniteTestSceneController.cs</div>
+                        <div class="script-item exist">✅ TestInfiniteStageController.cs</div>
+                        <div class="script-item reuse">♻️ StageSetupWindow.cs (재사용)</div>
+                        <div class="script-item reuse">♻️ TestCharacterDataLoad.cs (재사용)</div>
+                        <div class="script-item reuse">♻️ DragMe.cs (재사용)</div>
+                        <div class="script-item reuse">♻️ DraggableSlot.cs (재사용)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 중앙: 게임 영역 -->
+        <div class="game-area">
+            <div class="game-header">
+                <div class="time-display" id="timeDisplay">00:00</div>
+                <div class="stats-row">
+                    <div class="stat-box">
+                        <div class="label">처치</div>
+                        <div class="value kills" id="killCount">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">몬스터</div>
+                        <div class="value monsters" id="monsterCount">0/30</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="label">강화</div>
+                        <div class="value multiplier" id="enhanceCount">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+                <div class="fence-hp-bar">
+                    <div class="fence-hp-fill" id="fenceHpFill" style="width:100%"></div>
+                    <div class="fence-hp-text" id="fenceHpText">1000 / 1000</div>
+                </div>
+
+                <!-- 배치 모드 오버레이 -->
+                <div class="setup-overlay" id="setupOverlay">
+                    <h3>캐릭터 배치</h3>
+                    <p>아래에서 캐릭터를 선택하고 슬롯에 배치하세요</p>
+                    <div class="deploy-slots" id="deploySlots"></div>
+                    <button class="btn btn-start" id="btnStartBattle">전투 시작</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-setup" id="btnSetup">배치 모드</button>
+                <button class="btn btn-start" id="btnStart" disabled>시작</button>
+                <button class="btn btn-pause" id="btnPause" disabled>일시정지</button>
+                <button class="btn btn-reset" id="btnReset">리셋</button>
+                <div class="speed-btns">
+                    <button class="btn btn-speed active" data-speed="1">1x</button>
+                    <button class="btn btn-speed" data-speed="2">2x</button>
+                    <button class="btn btn-speed" data-speed="5">5x</button>
+                    <button class="btn btn-speed" data-speed="10">10x</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 우측: 정보 -->
+        <div class="panel">
+            <h2>캐릭터 선택</h2>
+            <div class="character-slots" id="characterSlots"></div>
+
+            <h2>현재 배율</h2>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; text-align:center; margin-bottom:12px;">
+                <div>
+                    <div style="font-size:10px; color:#888;">공격력</div>
+                    <div style="font-size:16px; color:#e74c3c;" id="curAtkMul">x1.00</div>
+                </div>
+                <div>
+                    <div style="font-size:10px; color:#888;">체력</div>
+                    <div style="font-size:16px; color:#2ecc71;" id="curHpMul">x1.00</div>
+                </div>
+                <div>
+                    <div style="font-size:10px; color:#888;">이속</div>
+                    <div style="font-size:16px; color:#3498db;" id="curSpeedMul">x1.00</div>
+                </div>
+            </div>
+
+            <h2>특수 몬스터</h2>
+            <div class="special-timers">
+                <div class="special-timer fast" id="fastTimer">
+                    <div class="name">이속형</div>
+                    <div class="countdown">60초</div>
+                </div>
+                <div class="special-timer tank" id="tankTimer">
+                    <div class="name">탱커형</div>
+                    <div class="countdown">90초</div>
+                </div>
+                <div class="special-timer strong" id="strongTimer">
+                    <div class="name">공격형</div>
+                    <div class="countdown">120초</div>
+                </div>
+            </div>
+
+            <h2 style="margin-top:12px;">이벤트 로그</h2>
+            <div class="log-panel" id="logPanel"></div>
+        </div>
+    </div>
+
+    <!-- 게임 오버 -->
+    <div class="game-over" id="gameOver">
+        <h2>GAME OVER</h2>
+        <div class="final-time" id="finalTime">00:00</div>
+        <div class="stats">
+            <div class="stat">
+                <div class="label">처치</div>
+                <div class="value" id="totalKills">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">강화</div>
+                <div class="value" id="totalEnhances">0</div>
+            </div>
+            <div class="stat">
+                <div class="label">최종 배율</div>
+                <div class="value" id="finalMul">x1.00</div>
+            </div>
+        </div>
+        <button class="btn btn-start" onclick="resetGame()">다시 시작</button>
+    </div>
+
+    <script>
+        // ========== 게임 상태 ==========
+        const state = {
+            running: false,
+            paused: false,
+            setupMode: true,
+            gameTime: 0,
+            speed: 1,
+
+            fenceHp: 1000,
+            fenceMaxHp: 1000,
+
+            monsters: [],
+            characters: [],
+            deployedCharacters: [],
+            maxMonsters: 30,
+            deployLimit: 4,
+
+            spawnTimer: 0,
+            spawnInterval: 2,
+
+            enhanceTimer: 0,
+            enhanceInterval: 30,
+            enhanceCount: 0,
+
+            curAtkMul: 1,
+            curHpMul: 1,
+            curSpeedMul: 1,
+
+            atkMul: 1.1,
+            hpMul: 1.15,
+            speedMul: 1.02,
+
+            baseMonAtk: 30,
+            baseMonHp: 50,
+            baseMonSpeed: 1,
+            monAtkInterval: 2,
+
+            // 특수 몬스터 배율
+            specialMul: {
+                fast: { atk: 0.7, hp: 0.6, speed: 2 },
+                tank: { atk: 1.5, hp: 4, speed: 0.6 },
+                strong: { atk: 3, hp: 1.5, speed: 0.8 }
+            },
+
+            fastSpawnTime: 60,
+            fastInterval: 120,
+            fastNextSpawn: 60,
+
+            tankSpawnTime: 90,
+            tankInterval: 150,
+            tankNextSpawn: 90,
+
+            strongSpawnTime: 120,
+            strongInterval: 180,
+            strongNextSpawn: 120,
+
+            totalKills: 0,
+
+            // 캐릭터 기본값
+            charAtk: 50,
+            charAtkSpeed: 1,
+            charRange: 150,
+            charCrit: 10,
+            charCritMul: 1.5,
+
+            // 타입별 배율
+            typeMul: {
+                vocal: { atk: 1.2, spd: 0.9, rng: 1.0 },
+                dance: { atk: 0.8, spd: 1.5, rng: 0.8 },
+                visual: { atk: 1.0, spd: 1.0, rng: 1.5 },
+                charisma: { atk: 1.5, spd: 0.7, rng: 1.2 }
+            },
+
+            selectedCharacter: null,
+        };
+
+        // 샘플 캐릭터 데이터
+        const characterData = [
+            { id: 1, name: '미나', type: 'vocal', icon: '🎤' },
+            { id: 2, name: '유나', type: 'dance', icon: '💃' },
+            { id: 3, name: '소라', type: 'visual', icon: '✨' },
+            { id: 4, name: '하나', type: 'charisma', icon: '👑' },
+            { id: 5, name: '리나', type: 'vocal', icon: '🎵' },
+            { id: 6, name: '세나', type: 'dance', icon: '🌟' },
+            { id: 7, name: '지아', type: 'visual', icon: '💎' },
+            { id: 8, name: '아라', type: 'charisma', icon: '🔥' },
+        ];
+
+        // ========== 캔버스 ==========
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ========== 클래스 ==========
+        class Monster {
+            constructor(type, x, y) {
+                this.type = type;
+                this.x = x;
+                this.y = y;
+                this.size = type === 'tank' ? 28 : (type === 'strong' ? 24 : 18);
+
+                const mult = state.specialMul[type] || { atk: 1, hp: 1, speed: 1 };
+
+                this.atk = Math.floor(state.baseMonAtk * mult.atk * state.curAtkMul);
+                this.maxHp = Math.floor(state.baseMonHp * mult.hp * state.curHpMul);
+                this.hp = this.maxHp;
+                this.speed = state.baseMonSpeed * mult.speed * state.curSpeedMul;
+
+                this.attackTimer = 0;
+                this.alive = true;
+                this.targetY = canvas.height - 75; // 펜스 위치에서 멈춤
+            }
+
+            update(dt) {
+                if (!this.alive) return;
+
+                if (this.y < this.targetY) {
+                    this.y += this.speed * 40 * dt;
+                    if (this.y > this.targetY) this.y = this.targetY;
+                }
+
+                if (this.y >= this.targetY - 5) {
+                    this.attackTimer += dt;
+                    if (this.attackTimer >= state.monAtkInterval) {
+                        this.attackTimer = 0;
+                        this.attackFence();
+                    }
+                }
+            }
+
+            attackFence() {
+                state.fenceHp -= this.atk;
+                updateFenceHP();
+                if (state.fenceHp <= 0) {
+                    gameOver();
+                }
+            }
+
+            takeDamage(dmg, isCrit = false) {
+                this.hp -= dmg;
+                if (this.hp <= 0) {
+                    this.die();
+                }
+            }
+
+            die() {
+                this.alive = false;
+                state.totalKills++;
+            }
+
+            draw() {
+                if (!this.alive) return;
+
+                const colors = {
+                    normal: '#3498db',
+                    fast: '#1abc9c',
+                    tank: '#e74c3c',
+                    strong: '#f39c12'
+                };
+
+                ctx.fillStyle = colors[this.type];
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // HP 바
+                const hpRatio = Math.max(0, this.hp / this.maxHp);
+                const barWidth = this.size + 6;
+                ctx.fillStyle = '#222';
+                ctx.fillRect(this.x - barWidth/2, this.y - this.size/2 - 10, barWidth, 4);
+                ctx.fillStyle = hpRatio > 0.5 ? '#2ecc71' : (hpRatio > 0.2 ? '#f39c12' : '#e74c3c');
+                ctx.fillRect(this.x - barWidth/2, this.y - this.size/2 - 10, barWidth * hpRatio, 4);
+            }
+        }
+
+        class Character {
+            constructor(data, slotIndex) {
+                this.data = data;
+                this.slotIndex = slotIndex;
+
+                const typeMul = state.typeMul[data.type];
+                this.atk = Math.floor(state.charAtk * typeMul.atk);
+                this.atkSpeed = state.charAtkSpeed * typeMul.spd;
+                this.range = state.charRange * typeMul.rng;
+                this.critChance = state.charCrit;
+                this.critMul = state.charCritMul;
+
+                this.attackTimer = 0;
+
+                // 위치 (슬롯 기반) - 펜스 뒤쪽 (화면 하단)
+                const spacing = canvas.width / (state.deployLimit + 1);
+                this.x = spacing * (slotIndex + 1);
+                this.y = canvas.height - 100; // 펜스보다 더 아래
+            }
+
+            update(dt) {
+                this.attackTimer += dt;
+
+                if (this.attackTimer >= this.atkSpeed) {
+                    this.attackTimer = 0;
+                    this.attack();
+                }
+            }
+
+            attack() {
+                // 범위 내 몬스터 찾기
+                let target = null;
+                let minDist = Infinity;
+
+                for (const m of state.monsters) {
+                    if (!m.alive) continue;
+                    const dist = Math.hypot(m.x - this.x, m.y - this.y);
+                    if (dist < this.range && dist < minDist) {
+                        minDist = dist;
+                        target = m;
+                    }
+                }
+
+                if (target) {
+                    const isCrit = Math.random() * 100 < this.critChance;
+                    let dmg = this.atk;
+                    if (isCrit) dmg = Math.floor(dmg * this.critMul);
+                    target.takeDamage(dmg, isCrit);
+
+                    // 공격 라인 그리기 (시각 효과)
+                    this.drawAttackLine(target.x, target.y, isCrit);
+                }
+            }
+
+            drawAttackLine(tx, ty, isCrit) {
+                ctx.strokeStyle = isCrit ? '#f39c12' : 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = isCrit ? 2 : 1;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(tx, ty);
+                ctx.stroke();
+            }
+
+            draw() {
+                const typeColors = {
+                    vocal: '#e74c3c',
+                    dance: '#3498db',
+                    visual: '#9b59b6',
+                    charisma: '#f39c12'
+                };
+
+                // 공격 범위
+                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.range, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 캐릭터 원
+                ctx.fillStyle = typeColors[this.data.type];
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 아이콘
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.data.icon, this.x, this.y);
+
+                // 이름
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px sans-serif';
+                ctx.fillText(this.data.name, this.x, this.y + 30);
+            }
+        }
+
+        // ========== 게임 로직 ==========
+        function spawnMonster(type = 'normal') {
+            if (state.monsters.filter(m => m.alive).length >= state.maxMonsters) return;
+
+            const x = 40 + Math.random() * (canvas.width - 80);
+            const y = -30;
+            state.monsters.push(new Monster(type, x, y));
+
+            if (type !== 'normal') {
+                addLog(`[특수] ${type} 등장!`, 'special');
+            }
+        }
+
+        function enhance() {
+            state.enhanceCount++;
+            state.curAtkMul *= state.atkMul;
+            state.curHpMul *= state.hpMul;
+            state.curSpeedMul *= state.speedMul;
+
+            addLog(`[강화 #${state.enhanceCount}] ATK:x${state.curAtkMul.toFixed(2)}`, 'enhance');
+            updateMultiplierDisplay();
+        }
+
+        function update(dt) {
+            if (!state.running || state.paused || state.setupMode) return;
+
+            const scaledDt = dt * state.speed;
+            state.gameTime += scaledDt;
+
+            // 일반 몬스터 스폰
+            state.spawnTimer += scaledDt;
+            if (state.spawnTimer >= state.spawnInterval) {
+                state.spawnTimer = 0;
+                spawnMonster('normal');
+            }
+
+            // 강화
+            state.enhanceTimer += scaledDt;
+            if (state.enhanceTimer >= state.enhanceInterval) {
+                state.enhanceTimer = 0;
+                enhance();
+            }
+
+            // 특수 몬스터
+            if (state.gameTime >= state.fastNextSpawn) {
+                spawnMonster('fast');
+                state.fastNextSpawn = state.gameTime + state.fastInterval;
+            }
+            if (state.gameTime >= state.tankNextSpawn) {
+                spawnMonster('tank');
+                state.tankNextSpawn = state.gameTime + state.tankInterval;
+            }
+            if (state.gameTime >= state.strongNextSpawn) {
+                spawnMonster('strong');
+                state.strongNextSpawn = state.gameTime + state.strongInterval;
+            }
+
+            // 캐릭터 업데이트
+            state.deployedCharacters.forEach(c => c.update(scaledDt));
+
+            // 몬스터 업데이트
+            state.monsters.forEach(m => m.update(scaledDt));
+
+            // 죽은 몬스터 제거
+            if (Math.random() < 0.1) {
+                state.monsters = state.monsters.filter(m => m.alive);
+            }
+
+            updateUI();
+            updateSpecialTimers();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 배경 그리드
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // 펜스 라인 (캐릭터 앞에 있는 방어선)
+            const fenceY = canvas.height - 70;
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, fenceY);
+            ctx.lineTo(canvas.width, fenceY);
+            ctx.stroke();
+
+            // 펜스 영역 표시
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.1)';
+            ctx.fillRect(0, fenceY, canvas.width, canvas.height - fenceY);
+
+            // 캐릭터 (펜스 뒤쪽)
+            state.deployedCharacters.forEach(c => c.draw());
+
+            // 몬스터 (펜스 위쪽에서 내려옴)
+            state.monsters.forEach(m => m.draw());
+        }
+
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+
+            update(dt);
+            draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+        requestAnimationFrame(gameLoop);
+
+        // ========== UI ==========
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = Math.floor(seconds % 60);
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function updateUI() {
+            document.getElementById('timeDisplay').textContent = formatTime(state.gameTime);
+            document.getElementById('killCount').textContent = state.totalKills;
+            document.getElementById('monsterCount').textContent = `${state.monsters.filter(m=>m.alive).length}/${state.maxMonsters}`;
+            document.getElementById('enhanceCount').textContent = state.enhanceCount;
+        }
+
+        function updateFenceHP() {
+            const ratio = Math.max(0, state.fenceHp / state.fenceMaxHp);
+            document.getElementById('fenceHpFill').style.width = (ratio * 100) + '%';
+            document.getElementById('fenceHpText').textContent = `${Math.max(0, Math.floor(state.fenceHp))} / ${state.fenceMaxHp}`;
+        }
+
+        function updateMultiplierDisplay() {
+            document.getElementById('curAtkMul').textContent = `x${state.curAtkMul.toFixed(2)}`;
+            document.getElementById('curHpMul').textContent = `x${state.curHpMul.toFixed(2)}`;
+            document.getElementById('curSpeedMul').textContent = `x${state.curSpeedMul.toFixed(2)}`;
+        }
+
+        function updateSpecialTimers() {
+            const fastRemain = Math.max(0, state.fastNextSpawn - state.gameTime);
+            const tankRemain = Math.max(0, state.tankNextSpawn - state.gameTime);
+            const strongRemain = Math.max(0, state.strongNextSpawn - state.gameTime);
+
+            document.querySelector('#fastTimer .countdown').textContent = `${Math.ceil(fastRemain)}초`;
+            document.querySelector('#tankTimer .countdown').textContent = `${Math.ceil(tankRemain)}초`;
+            document.querySelector('#strongTimer .countdown').textContent = `${Math.ceil(strongRemain)}초`;
+        }
+
+        function addLog(message, type = 'spawn') {
+            const panel = document.getElementById('logPanel');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `<span class="log-time">${formatTime(state.gameTime)}</span>${message}`;
+            panel.insertBefore(entry, panel.firstChild);
+            while (panel.children.length > 30) panel.removeChild(panel.lastChild);
+        }
+
+        // ========== 캐릭터 슬롯 UI ==========
+        function renderCharacterSlots() {
+            const container = document.getElementById('characterSlots');
+            container.innerHTML = '';
+
+            characterData.forEach(char => {
+                const slot = document.createElement('div');
+                slot.className = `char-slot type-${char.type}`;
+                if (state.deployedCharacters.find(c => c.data.id === char.id)) {
+                    slot.classList.add('deployed');
+                }
+                if (state.selectedCharacter === char.id) {
+                    slot.classList.add('selected');
+                }
+
+                const typeMul = state.typeMul[char.type];
+                slot.innerHTML = `
+                    <div class="icon">${char.icon}</div>
+                    <div class="name">${char.name}</div>
+                    <div class="stats">ATK:${(typeMul.atk * 100).toFixed(0)}%</div>
+                `;
+
+                slot.addEventListener('click', () => {
+                    if (slot.classList.contains('deployed')) return;
+                    state.selectedCharacter = char.id;
+                    renderCharacterSlots();
+                });
+
+                container.appendChild(slot);
+            });
+        }
+
+        function renderDeploySlots() {
+            const container = document.getElementById('deploySlots');
+            container.innerHTML = '';
+
+            for (let i = 0; i < state.deployLimit; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'deploy-slot';
+
+                const deployed = state.deployedCharacters.find(c => c.slotIndex === i);
+                if (deployed) {
+                    slot.classList.add('filled');
+                    slot.innerHTML = `<div class="char-icon">${deployed.data.icon}</div>`;
+
+                    slot.addEventListener('click', () => {
+                        // 배치 해제
+                        state.deployedCharacters = state.deployedCharacters.filter(c => c.slotIndex !== i);
+                        renderDeploySlots();
+                        renderCharacterSlots();
+                    });
+                } else {
+                    slot.innerHTML = `<div style="color:#555;font-size:20px;">+</div>`;
+
+                    slot.addEventListener('click', () => {
+                        if (state.selectedCharacter !== null) {
+                            const charData = characterData.find(c => c.id === state.selectedCharacter);
+                            if (charData && !state.deployedCharacters.find(c => c.data.id === charData.id)) {
+                                const char = new Character(charData, i);
+                                state.deployedCharacters.push(char);
+                                state.selectedCharacter = null;
+                                renderDeploySlots();
+                                renderCharacterSlots();
+                            }
+                        }
+                    });
+                }
+
+                container.appendChild(slot);
+            }
+        }
+
+        // ========== 게임 오버 ==========
+        function gameOver() {
+            state.running = false;
+            document.getElementById('gameOver').classList.add('show');
+            document.getElementById('finalTime').textContent = formatTime(state.gameTime);
+            document.getElementById('totalKills').textContent = state.totalKills;
+            document.getElementById('totalEnhances').textContent = state.enhanceCount;
+            document.getElementById('finalMul').textContent = `x${state.curAtkMul.toFixed(2)}`;
+        }
+
+        // ========== 컨트롤 ==========
+        function loadSettings() {
+            state.fenceMaxHp = parseFloat(document.getElementById('fenceHp').value);
+            state.fenceHp = state.fenceMaxHp;
+            state.deployLimit = parseInt(document.getElementById('deployLimit').value);
+            state.maxMonsters = parseInt(document.getElementById('maxMonsters').value);
+            state.spawnInterval = parseFloat(document.getElementById('spawnInterval').value);
+            state.enhanceInterval = parseFloat(document.getElementById('enhanceInterval').value);
+            state.atkMul = parseFloat(document.getElementById('atkMul').value);
+            state.hpMul = parseFloat(document.getElementById('hpMul').value);
+            state.speedMul = parseFloat(document.getElementById('speedMul').value);
+
+            state.fastSpawnTime = parseFloat(document.getElementById('fastSpawnTime').value);
+            state.fastInterval = parseFloat(document.getElementById('fastInterval').value);
+            state.tankSpawnTime = parseFloat(document.getElementById('tankSpawnTime').value);
+            state.tankInterval = parseFloat(document.getElementById('tankInterval').value);
+            state.strongSpawnTime = parseFloat(document.getElementById('strongSpawnTime').value);
+            state.strongInterval = parseFloat(document.getElementById('strongInterval').value);
+
+            state.baseMonAtk = parseFloat(document.getElementById('monAtk').value);
+            state.baseMonHp = parseFloat(document.getElementById('monHp').value);
+            state.baseMonSpeed = parseFloat(document.getElementById('monSpeed').value);
+            state.monAtkInterval = parseFloat(document.getElementById('monAtkInterval').value);
+
+            // 특수 몬스터 배율
+            state.specialMul.fast = {
+                atk: parseFloat(document.getElementById('fastAtkMul').value),
+                hp: parseFloat(document.getElementById('fastHpMul').value),
+                speed: parseFloat(document.getElementById('fastSpdMul').value)
+            };
+            state.specialMul.tank = {
+                atk: parseFloat(document.getElementById('tankAtkMul').value),
+                hp: parseFloat(document.getElementById('tankHpMul').value),
+                speed: parseFloat(document.getElementById('tankSpdMul').value)
+            };
+            state.specialMul.strong = {
+                atk: parseFloat(document.getElementById('strongAtkMul').value),
+                hp: parseFloat(document.getElementById('strongHpMul').value),
+                speed: parseFloat(document.getElementById('strongSpdMul').value)
+            };
+
+            // 캐릭터 기본 스탯
+            state.charAtk = parseFloat(document.getElementById('charAtk').value);
+            state.charAtkSpeed = parseFloat(document.getElementById('charAtkSpeed').value);
+            state.charRange = parseFloat(document.getElementById('charRange').value);
+            state.charCrit = parseFloat(document.getElementById('charCrit').value);
+            state.charCritMul = parseFloat(document.getElementById('charCritMul').value);
+
+            // 타입별 배율
+            state.typeMul.vocal = {
+                atk: parseFloat(document.getElementById('vocalAtk').value),
+                spd: parseFloat(document.getElementById('vocalSpd').value),
+                rng: parseFloat(document.getElementById('vocalRng').value)
+            };
+            state.typeMul.dance = {
+                atk: parseFloat(document.getElementById('danceAtk').value),
+                spd: parseFloat(document.getElementById('danceSpd').value),
+                rng: parseFloat(document.getElementById('danceRng').value)
+            };
+            state.typeMul.visual = {
+                atk: parseFloat(document.getElementById('visualAtk').value),
+                spd: parseFloat(document.getElementById('visualSpd').value),
+                rng: parseFloat(document.getElementById('visualRng').value)
+            };
+            state.typeMul.charisma = {
+                atk: parseFloat(document.getElementById('charismaAtk').value),
+                spd: parseFloat(document.getElementById('charismaSpd').value),
+                rng: parseFloat(document.getElementById('charismaRng').value)
+            };
+
+            state.fastNextSpawn = state.fastSpawnTime;
+            state.tankNextSpawn = state.tankSpawnTime;
+            state.strongNextSpawn = state.strongSpawnTime;
+        }
+
+        function resetGame() {
+            loadSettings();
+
+            state.gameTime = 0;
+            state.monsters = [];
+            state.spawnTimer = 0;
+            state.enhanceTimer = 0;
+            state.enhanceCount = 0;
+            state.curAtkMul = 1;
+            state.curHpMul = 1;
+            state.curSpeedMul = 1;
+            state.totalKills = 0;
+            state.running = false;
+            state.paused = false;
+            state.setupMode = true;
+            state.selectedCharacter = null;
+
+            // 배치된 캐릭터 재생성 (새 스탯 적용)
+            const deployedIds = state.deployedCharacters.map(c => ({ id: c.data.id, slot: c.slotIndex }));
+            state.deployedCharacters = [];
+            deployedIds.forEach(d => {
+                const charData = characterData.find(c => c.id === d.id);
+                if (charData) {
+                    state.deployedCharacters.push(new Character(charData, d.slot));
+                }
+            });
+
+            document.getElementById('gameOver').classList.remove('show');
+            document.getElementById('setupOverlay').classList.remove('hidden');
+            document.getElementById('logPanel').innerHTML = '';
+
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnPause').disabled = true;
+
+            updateUI();
+            updateFenceHP();
+            updateMultiplierDisplay();
+            updateSpecialTimers();
+            renderDeploySlots();
+            renderCharacterSlots();
+        }
+
+        // 이벤트 리스너
+        document.getElementById('btnSetup').addEventListener('click', () => {
+            state.setupMode = true;
+            document.getElementById('setupOverlay').classList.remove('hidden');
+        });
+
+        document.getElementById('btnStartBattle').addEventListener('click', () => {
+            if (state.deployedCharacters.length === 0) {
+                alert('최소 1명의 캐릭터를 배치해주세요!');
+                return;
+            }
+            state.setupMode = false;
+            document.getElementById('setupOverlay').classList.add('hidden');
+            document.getElementById('btnStart').disabled = false;
+        });
+
+        document.getElementById('btnStart').addEventListener('click', () => {
+            if (!state.running) {
+                loadSettings();
+                state.running = true;
+                addLog('전투 시작!', 'spawn');
+            }
+            document.getElementById('btnStart').disabled = true;
+            document.getElementById('btnPause').disabled = false;
+        });
+
+        document.getElementById('btnPause').addEventListener('click', () => {
+            state.paused = !state.paused;
+            document.getElementById('btnPause').textContent = state.paused ? '재개' : '일시정지';
+        });
+
+        document.getElementById('btnReset').addEventListener('click', resetGame);
+
+        // 배속
+        document.querySelectorAll('.btn-speed').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-speed').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.speed = parseFloat(btn.dataset.speed);
+            });
+        });
+
+        // 탭
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // 초기화
+        resetGame();
+    </script>
+</body>
+</html>

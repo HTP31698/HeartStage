@@ -158,6 +158,20 @@ public static class DataTableManager
             await table.LoadAsync(id);
             tables.Add(id, table);
         }
+
+        {
+            var table = new InfiniteStageTable();
+            var id = DataTableIds.InfiniteStage;
+            await table.LoadAsync(id);
+            tables.Add(id, table);
+        }
+
+        {
+            var table = new InfiniteMonsterTable();
+            var id = DataTableIds.InfiniteMonster;
+            await table.LoadAsync(id);
+            tables.Add(id, table);
+        }
     }
 
     public static ItemTable ItemTable
@@ -321,6 +335,22 @@ public static class DataTableManager
         get
         {
             return Get<SlangTable>(DataTableIds.Slang);
+        }
+    }
+
+    public static InfiniteStageTable InfiniteStageTable
+    {
+        get
+        {
+            return Get<InfiniteStageTable>(DataTableIds.InfiniteStage);
+        }
+    }
+
+    public static InfiniteMonsterTable InfiniteMonsterTable
+    {
+        get
+        {
+            return Get<InfiniteMonsterTable>(DataTableIds.InfiniteMonster);
         }
     }
 

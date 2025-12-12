@@ -41,4 +41,18 @@ public static class ItemInvenHelper
 
         return Items[id];
     }
+
+    /// <summary>
+    /// 아이템 추가 (저장 없이) - 무한 스테이지용
+    /// 나중에 한번에 SaveToServer() 호출할 때 사용
+    /// </summary>
+    public static void AddItemWithoutSave(int id, int amount)
+    {
+        if (Items.ContainsKey(id))
+            Items[id] += amount;
+        else
+            Items[id] = amount;
+
+        LobbyManager.Instance?.MoneyUISet();
+    }
 }

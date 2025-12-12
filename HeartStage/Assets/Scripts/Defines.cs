@@ -30,6 +30,8 @@ public static class DataTableIds
     public static string Piece => "PieceTable";
     public static string Title => "TitleTable";
     public static string Slang => "SlangTable";
+    public static string InfiniteStage => "InfiniteStageTable";
+    public static string InfiniteMonster => "InfiniteMonsterTable";
 }
 
 public class Tag
@@ -84,6 +86,7 @@ public enum SceneType
     StageScene = 2,
     TestStageScene = 3,
     TestStageWaveScene = 4,
+    InfiniteTestScene = 5,
 }
 
 public class SoundName
