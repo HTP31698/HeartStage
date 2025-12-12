@@ -62,7 +62,7 @@ public class MonsterDataTools : EditorWindow
 
             var monsterTable = DataTableManager.MonsterTable;
             if (monsterTable == null)
-             {
+            {
                 Debug.LogError("MonsterTable이 초기화되지 않았습니다.");
                 return;
             }
@@ -174,8 +174,8 @@ public class MonsterDataTools : EditorWindow
     {
         if (_isInitialized)
             return;
-        
-         await DataTableManager.Initialization;
+
+        await DataTableManager.Initialization;
         _isInitialized = true;
     }
 
@@ -196,7 +196,8 @@ public class MonsterDataTools : EditorWindow
         so.att = data.atk_dmg;
         so.attType = data.atk_type;
         so.attackSpeed = data.atk_speed;
-        so.attackRange = data.atk_range;
+        so.attackMinRange = data.atk_min_range;
+        so.attackMaxRange = data.atk_max_range;
         so.bulletSpeed = data.bullet_speed;
         so.moveSpeed = data.speed;
         so.minExp = data.min_level;
@@ -223,7 +224,7 @@ public class MonsterDataTools : EditorWindow
             string guid = UnityEditor.AssetDatabase.AssetPathToGUID(assetPath);
             var entry = settings.CreateOrMoveEntry(guid, settings.DefaultGroup);
             entry.address = $"{monsterId}";
-            
+
             Debug.Log($"Addressables 등록: {monsterId}");
         }
 #endif

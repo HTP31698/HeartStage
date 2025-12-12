@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -1111,8 +1111,9 @@ public class SOBalancingWindow : EditorWindow
         data.hp = EditorGUILayout.IntField("HP", data.hp);
         data.atk_dmg = EditorGUILayout.IntField("ATK", data.atk_dmg);
         data.atk_type = EditorGUILayout.IntField("공격 타입", data.atk_type);
-        data.atk_speed = EditorGUILayout.IntField("공격속도", data.atk_speed);
-        data.atk_range = EditorGUILayout.IntField("사거리", data.atk_range);
+        data.atk_speed = EditorGUILayout.FloatField("공격속도", data.atk_speed);
+        data.atk_min_range = EditorGUILayout.FloatField("최소 사거리", data.atk_min_range); // 변경
+        data.atk_max_range = EditorGUILayout.FloatField("최대 사거리", data.atk_max_range); // 추가
         data.bullet_speed = EditorGUILayout.IntField("투사체 속도", data.bullet_speed);
         data.speed = EditorGUILayout.FloatField("이동속도", data.speed);
 
@@ -1808,7 +1809,8 @@ public class SOBalancingWindow : EditorWindow
         DrawCompareField("HP", m.hp, other?.hp);
         DrawCompareField("ATK", m.att, other?.att);
         DrawCompareField("공격속도", m.attackSpeed, other?.attackSpeed);
-        DrawCompareField("사거리", m.attackRange, other?.attackRange);
+        DrawCompareField("최소 사거리", m.attackMinRange, other?.attackMinRange); // 변경
+        DrawCompareField("최대 사거리", m.attackMaxRange, other?.attackMaxRange); // 추가
         DrawCompareField("이동속도", m.moveSpeed, other?.moveSpeed);
     }
 

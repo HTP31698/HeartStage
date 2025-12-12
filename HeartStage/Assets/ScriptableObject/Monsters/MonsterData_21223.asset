@@ -13,14 +13,15 @@ MonoBehaviour:
   m_Name: MonsterData_21223
   m_EditorClassIdentifier: 
   id: 21223
-  monsterName: "\uBB3C\uAC74\uC744 \uB358\uC9C0\uB294 \uC545\uB9C8\uC5D0 \uD640\uB9B0\uC0AC\uB78C"
+  monsterName: "\uBB3C\uAC74\uC744 \uB358\uC9C0\uB294 \uC545\uB9C8\uC5D0 \uD640\uB9B0\uC0AC\uB78C203"
   monsterType: 1
-  hp: 100
-  att: 1
+  hp: 60
+  att: 64
   attType: 2
-  attackSpeed: 1
-  attackRange: 1
-  bulletSpeed: 1
+  attackSpeed: 2
+  attackMinRange: 3.5
+  attackMaxRange: 4.7
+  bulletSpeed: 2
   moveSpeed: 1
   minExp: 3
   maxExp: 3
@@ -33,4 +34,4 @@ MonoBehaviour:
   dropCount2: 0
   prefab1: monster_21223
   prefab2: "\uC784\uC2DC\uC774\uBBF8\uC9C0"
-  isInitialized: 0
+  isInitialized: 1

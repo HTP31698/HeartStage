@@ -159,7 +159,7 @@ public class MonsterTestPanel : MonoBehaviour
         attInput?.SetTextWithoutNotify(currentMonster.att.ToString());
         atkTypeInput?.SetTextWithoutNotify(currentMonster.attType.ToString());
         attackSpeedInput?.SetTextWithoutNotify(currentMonster.attackSpeed.ToString());
-        attackRangeInput?.SetTextWithoutNotify(currentMonster.attackRange.ToString());
+        attackRangeInput?.SetTextWithoutNotify(currentMonster.attackMinRange.ToString());
         bulletSpeedInput?.SetTextWithoutNotify(currentMonster.bulletSpeed.ToString());
         moveSpeedInput?.SetTextWithoutNotify(currentMonster.moveSpeed.ToString("0.00", CultureInfo.InvariantCulture));
         minLevelInput?.SetTextWithoutNotify(currentMonster.minExp.ToString());
@@ -228,7 +228,7 @@ public class MonsterTestPanel : MonoBehaviour
         if (attackSpeedInput != null) attackSpeedInput.onEndEdit.AddListener(v =>
         {
             if (currentMonster == null) return;
-            currentMonster.attackSpeed = ParseInt(v, currentMonster.attackSpeed);
+            currentMonster.attackSpeed = ParseFloat(v, currentMonster.attackSpeed);
             attackSpeedInput.SetTextWithoutNotify(currentMonster.attackSpeed.ToString());
             MarkDirty();
         });
@@ -236,8 +236,8 @@ public class MonsterTestPanel : MonoBehaviour
         if (attackRangeInput != null) attackRangeInput.onEndEdit.AddListener(v =>
         {
             if (currentMonster == null) return;
-            currentMonster.attackRange = ParseInt(v, currentMonster.attackRange);
-            attackRangeInput.SetTextWithoutNotify(currentMonster.attackRange.ToString());
+            currentMonster.attackMinRange = ParseFloat(v, currentMonster.attackMinRange);
+            attackRangeInput.SetTextWithoutNotify(currentMonster.attackMinRange.ToString());
             MarkDirty();
         });
 

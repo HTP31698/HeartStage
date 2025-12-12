@@ -179,7 +179,7 @@ public class MonsterMovement : MonoBehaviour
         isNearWall = Physics2D.OverlapCircle
         (
             transform.position,
-            monsterData.attackRange,
+            monsterData.attackMinRange,
             LayerMask.GetMask(Tag.Wall)
         )
 
@@ -381,7 +381,7 @@ public class MonsterMovement : MonoBehaviour
         if (closest == null)
             return;
 
-        float attackRangeSq = monsterData.attackRange * monsterData.attackRange;
+        float attackRangeSq = monsterData.attackMinRange * monsterData.attackMinRange;
 
         if (closest != null && bestDistSq > attackRangeSq)
         {
