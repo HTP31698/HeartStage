@@ -61,14 +61,15 @@ public class SOBalancingWindow : EditorWindow
         { SOType.Synergy, "SynergyTable.csv" }
     };
 
-    // Passive 패턴 - SO에서 동적으로 로드
+    // Passive 패턴 - SO에서 동적으로 로드 (ScriptableObject/Tool 폴더, Addressable: StageAssets)
     private static PassivePatternData _cachedPassiveData;
     private static PassivePatternData PassivePatternData
     {
         get
         {
+            // 에디터에서는 AssetDatabase로 로드
             if (_cachedPassiveData == null)
-                _cachedPassiveData = Resources.Load<PassivePatternData>("PassivePatterns");
+                _cachedPassiveData = AssetDatabase.LoadAssetAtPath<PassivePatternData>("Assets/ScriptableObject/Tool/PassivePatterns.asset");
             return _cachedPassiveData;
         }
     }
@@ -1428,14 +1429,15 @@ public class SOBalancingWindow : EditorWindow
 
     #region Stage Layout Grid
 
-    // ★ StageLayoutData SO 캐싱
+    // ★ StageLayoutData SO 캐싱 (ScriptableObject/Tool 폴더, Addressable: StageAssets)
     private static StageLayoutData _cachedStageLayoutData;
     private static StageLayoutData StageLayoutData
     {
         get
         {
+            // 에디터에서는 AssetDatabase로 로드
             if (_cachedStageLayoutData == null)
-                _cachedStageLayoutData = Resources.Load<StageLayoutData>("StageLayouts");
+                _cachedStageLayoutData = AssetDatabase.LoadAssetAtPath<StageLayoutData>("Assets/ScriptableObject/Tool/StageLayouts.asset");
             return _cachedStageLayoutData;
         }
     }
@@ -1820,7 +1822,7 @@ public class SOBalancingWindow : EditorWindow
         DrawCompareField("쿨다운", s.skill_cool, other?.skill_cool);
         DrawCompareField("속도", s.skill_speed, other?.skill_speed);
         DrawCompareField("범위", s.skill_range, other?.skill_range);
-        DrawCompareField("패시브 타입", (int)s.passive_type, other != null ? (int?)other.passive_type : null);
+        DrawCompareField("패시브 타입", s.passive_type, other?.passive_type);
     }
 
     private void DrawCompareField<T>(string label, T value, T? other) where T : struct

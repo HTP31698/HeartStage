@@ -572,7 +572,7 @@ public class SkillTestManager : MonoBehaviour
     private void OnPassiveTypeDropdownChanged(int index)
     {
         if (currentSkill == null) return;
-        currentSkill.passive_type = (PassiveType)index;
+        currentSkill.passive_type = index;
 
         // 패턴 미리보기 갱신
         UpdatePassivePatternPreview(currentSkill.passive_type);
@@ -1077,20 +1077,20 @@ public class SkillTestManager : MonoBehaviour
         if (passiveTiles == null || passiveTiles.Length == 0)
             return;
 
-        PassiveType type = PassiveType.None;
+        int passiveType = 0;
         if (currentSkill != null)
-            type = currentSkill.passive_type;
+            passiveType = currentSkill.passive_type;
 
-        UpdatePassivePatternPreview(type);
+        UpdatePassivePatternPreview(passiveType);
     }
 
-    private void UpdatePassivePatternPreview(PassiveType type)
+    private void UpdatePassivePatternPreview(int passiveType)
     {
-        // Type.None이면 패널 숨김
+        // passiveType이 0이면 패널 숨김
         if (passivePatternRoot != null)
-            passivePatternRoot.SetActive(type != PassiveType.None);
+            passivePatternRoot.SetActive(passiveType != 0);
 
-        if (type == PassiveType.None)
+        if (passiveType == 0)
             return;
 
         if (passiveTiles == null || passiveTiles.Length == 0)
@@ -1108,7 +1108,7 @@ public class SkillTestManager : MonoBehaviour
         }
 
         // 2) PassivePatternUtil로 실제 버프 들어가는 타일들 색칠
-        foreach (int idx in PassivePatternUtil.GetPatternTiles(PassiveCenterIndex, type, PassiveTileCount))
+        foreach (int idx in PassivePatternUtil.GetPatternTiles(PassiveCenterIndex, passiveType, PassiveTileCount))
         {
             if (idx < 0 || idx >= passiveTiles.Length)
                 continue;
