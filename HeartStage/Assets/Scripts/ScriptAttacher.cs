@@ -33,13 +33,19 @@ public static class ScriptAttacher
         { 31222, "DancingMachineSkill" }, // 댄싱머신
         { 31223, "DancingMachineSkillV2" }, // 현란한 댄싱머신
 
-        { 31001, "DeceptionBossSkill" }, // 대량 현혹 튜토리얼 근접
-        { 31002, "DeceptionBossSkill" }, // 대량 현혹 튜토리얼 원거리
-        { 31003, "DeceptionBossSkill" }, // 대량 현혹 근접
-        { 31004, "DeceptionBossSkill" }, // 대량 현혹 원거리
+        { 30001, "DeceptionBossSkill" }, // 대량 현혹 튜토리얼 근접
+        { 30002, "DeceptionBossSkill" }, // 대량 현혹 튜토리얼 원거리
+        { 30003, "DeceptionBossSkill" }, // 1스테이지 대량 현혹 근접
+        { 30004, "DeceptionBossSkill" }, // 1스테이지 대량 현혹 원거리
+        { 30005, "DeceptionBossSkill" }, // 2스테이지 대량 현혹 근접
+        { 30006, "DeceptionBossSkill" }, // 2스테이지 대량 현혹 원거리
+        { 30007, "DeceptionBossSkill" }, // 3스테이지 대량 현혹 근접
+        { 30008, "DeceptionBossSkill" }, // 3스테이지 대량 현혹 원거리
+        { 30009, "DeceptionBossSkill" }, // 4스테이지 대량 현혹 근접
+        { 30010, "DeceptionBossSkill" }, // 4스테이지 대량 현혹 원거리
 
-    { 31101, "SpeedBuffBossSkill"}, // 광기의 행진 (이동속도 버프)
-    { 31201, "BooingBossSkill"},    // 야유 공격 (공격속도 디버프)
+        { 30201, "SpeedBuffBossSkill"}, // 광기의 행진 (이동속도 버프)
+        { 30101, "BooingBossSkill"},    // 야유 공격 (공격속도 디버프)
     };
 
     // 등록된 스크립트들 캐싱

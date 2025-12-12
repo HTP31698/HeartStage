@@ -148,7 +148,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             // 혼란 상태일 때는 다른 몬스터 탐지
             Collider2D[] hits = Physics2D.OverlapCircleAll(
                 transform.position,
-                monsterData.attackRange,
+                monsterData.attackMinRange,
                 LayerMask.GetMask(Tag.Monster)
             );
 
@@ -166,7 +166,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             // 일반 상태일 때는 벽 탐지
             Collider2D hit = Physics2D.OverlapCircle(
                 transform.position,
-                monsterData.attackRange,
+                monsterData.attackMinRange,
                 LayerMask.GetMask(Tag.Wall)
             );
             return hit != null;
@@ -250,7 +250,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
     private void MeleeAttack()
     {
         // 이미 Update에서 타겟이 있다고 확인했으므로, 바로 공격 실행
-        Collider2D hit = Physics2D.OverlapCircle(transform.position, monsterData.attackRange, LayerMask.GetMask(Tag.Wall));
+        Collider2D hit = Physics2D.OverlapCircle(transform.position, monsterData.attackMinRange, LayerMask.GetMask(Tag.Wall));
 
         if (animator != null && animator.runtimeAnimatorController != null)
         {
@@ -394,7 +394,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(
         transform.position,
-        monsterData.attackRange,
+        monsterData.attackMinRange,
         LayerMask.GetMask(Tag.Monster)
     );
         Collider2D targetCollider = null;

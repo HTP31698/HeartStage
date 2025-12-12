@@ -114,15 +114,16 @@ public class CharacterFence : MonoBehaviour, IDamageable
     public void OnDamage(int damage, bool isCritical = false)
     {
         hp -= damage;
-        UpdateAllFencesHpText();
         StartShake();
 
         if (hp <= 0)
         {
-            Die();
+            hp = 0;
+            Die();            
         }
+        UpdateAllFencesHpText();
     }
-    
+
     public void Die()
     {
         StageManager.Instance.Defeat();
