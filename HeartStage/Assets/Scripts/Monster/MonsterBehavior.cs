@@ -540,9 +540,86 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
         {
             animator.ResetTrigger(attack);
 
-            animator.SetTrigger("Run");            
+            animator.SetTrigger("Run");
 
             Debug.Log($"[MonsterBehavior] {gameObject.name} 혼란 해제 - 애니메이션 리셋");
         }
+    }
+
+    // === 무한 스테이지용 강화 스탯 설정 ===
+
+    // 강화된 스탯 저장용
+    private float enhancedAtk = 0f;
+    private float enhancedHp = 0f;
+    private float enhancedSpeed = 0f;
+    private bool hasEnhancedStats = false;
+
+    /// <summary>
+    /// 무한 스테이지용 강화 스탯 설정
+    /// </summary>
+    public void SetEnhancedStats(float atk, float hp, float speed)
+    {
+        enhancedAtk = atk;
+        enhancedHp = hp;
+        enhancedSpeed = speed;
+        hasEnhancedStats = true;
+
+        // HP 적용
+        maxHP = Mathf.RoundToInt(hp);
+        currentHP = maxHP;
+
+        // 속도는 MonsterMovement에서 처리
+        var movement = GetComponent<MonsterMovement>();
+        if (movement != null)
+        {
+            movement.SetEnhancedSpeed(speed);
+        }
+
+        // 체력바 갱신
+        if (healthBar != null)
+        {
+            healthBar.Init(this, isBoss);
+        }
+    }
+
+    /// <summary>
+    /// 강화된 공격력 반환 (무한 스테이지용)
+    /// </summary>
+    public int GetEnhancedAttack()
+    {
+        if (hasEnhancedStats)
+            return Mathf.RoundToInt(enhancedAtk);
+        return monsterData?.att ?? 0;
+    }
+
+    /// <summary>
+    /// 무한 스테이지용 사망 처리 (InfiniteMonsterComponent에서 호출)
+    /// </summary>
+    public void DieForInfiniteStage()
+    {
+        if (isDead)
+            return;
+
+        isDead = true;
+
+        if (selfCollider != null)
+        {
+            selfCollider.enabled = false;
+        }
+
+        if (heartPrefab != null)
+        {
+            heartPrefab.SetActive(true);
+        }
+
+        // InfiniteMonsterComponent에 사망 알림
+        var infiniteComponent = GetComponent<InfiniteMonsterComponent>();
+        if (infiniteComponent != null)
+        {
+            infiniteComponent.OnDeath();
+        }
+
+        isFading = true;
+        fadeTimer = 0f;
     }
 }

@@ -15,6 +15,10 @@ public class CharacterFence : MonoBehaviour, IDamageable
     private static int maxHp = 0;
     private static int hp = 0;
 
+    // 외부 접근용 프로퍼티
+    public static int CurrentHp => hp;
+    public static int MaxHp => maxHp;
+
     // 흔들기 효과
     public float shakeDuration = 0.2f;
     public float shakeMagnitude = 10f;
@@ -122,10 +126,18 @@ public class CharacterFence : MonoBehaviour, IDamageable
             Die();
         }
     }
-    
+
     public void Die()
     {
-        StageManager.Instance.Defeat();
+        // 무한 스테이지 모드 체크
+        if (InfiniteStageManager.Instance != null)
+        {
+            InfiniteStageManager.Instance.GameOver();
+            return;
+        }
+
+        // 기존 스테이지 모드
+        StageManager.Instance?.Defeat();
     }
 
     private void StartShake()

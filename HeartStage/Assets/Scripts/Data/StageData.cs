@@ -80,4 +80,5 @@ public enum StageType
     Full = 0,      // 15칸 전체
     Stage1 = 1,    // Stage1 1,2,3 / 6,7,8 / 11,12,13
     Stage2 = 2,    // Stage2
+    Infinite = 10, // 무한 스테이지 - 5칸 (중앙 1줄: 5,6,7,8,9)
 }

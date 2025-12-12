@@ -75,6 +75,9 @@ public class SaveDataV1 : SaveData
 
     public int bestFanMeetingSeconds = 0;           // MM:SS로 변환해 표시
     public int specialStageBestSeconds = 0;         // 지금은 공석 → 0이면 "--:--"
+    public int infiniteStageBestSeconds = 0;        // 무한 스테이지 최고 생존 시간 (초)
+    public int infiniteStagePlayCountToday = 0;     // 무한 스테이지 오늘 플레이 횟수
+    public int infiniteStageLastPlayDate = 0;       // 무한 스테이지 마지막 플레이 날짜 (yyyyMMdd)
 
     public int dreamEnergy = 0;
 
