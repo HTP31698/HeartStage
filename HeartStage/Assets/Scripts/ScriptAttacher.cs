@@ -38,8 +38,8 @@ public static class ScriptAttacher
         { 31003, "DeceptionBossSkill" }, // 대량 현혹 근접
         { 31004, "DeceptionBossSkill" }, // 대량 현혹 원거리
 
-    { 31101, "SpeedBuffBossSkill"}, // 광기의 행진 (이동속도 버프)
-    { 31201, "BooingBossSkill"},    // 야유 공격 (공격속도 디버프)
+        { 31101, "SpeedBuffBossSkill"}, // 광기의 행진 (이동속도 버프)
+        { 31201, "BooingBossSkill"},    // 야유 공격 (공격속도 디버프)
     };
 
     // 등록된 스크립트들 캐싱

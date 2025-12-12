@@ -184,38 +184,39 @@ public class MonsterSpawner : MonoBehaviour
             ReportMonsterProgress(t);
         }
 
-        // 4) 풀 인스턴스들 실제 생성 (0.5 ~ 1.0)
-        //    먼저 전체 몇 개 만들지 계산
+        // 4) 풀 설정 미리 계산 및 실제 생성 (0.5 ~ 1.0)
+        var poolSettings = new Dictionary<int, (bool isBoss, int poolCount, AssetReference prefab)>();
         int totalToInstantiate = 0;
+
+        // 풀 설정 미리 계산
         foreach (var kvp in monsterDataCache)
         {
             int monsterId = kvp.Key;
-            var monsterDataSO = kvp.Value;
-
             bool isBoss = MonsterBehavior.IsBossMonster(monsterId);
-            int poolCount = isBoss ? 5 : poolSize / Mathf.Max(1, monsterDataCache.Count);
+            var prefab = isBoss ? bossMonsterPrefab : monsterPrefab;
+            int poolCount = isBoss ? 1 : poolSize / Mathf.Max(1, monsterDataCache.Count);
+
+            poolSettings[monsterId] = (isBoss, poolCount, prefab);
             totalToInstantiate += poolCount;
         }
 
         int createdCount = 0;
 
+        // 실제 인스턴스 생성
         foreach (var kvp in monsterDataCache)
         {
             int monsterId = kvp.Key;
             var monsterDataSO = kvp.Value;
-
-            bool isBoss = MonsterBehavior.IsBossMonster(monsterId);
-            var prefab = isBoss ? bossMonsterPrefab : monsterPrefab;
-            int poolCount = isBoss ? 5 : poolSize / Mathf.Max(1, monsterDataCache.Count);
+            var settings = poolSettings[monsterId];
 
             monsterPools[monsterId] = new List<GameObject>();
 
-            for (int i = 0; i < poolCount; i++)
+            for (int i = 0; i < settings.poolCount; i++)
             {
                 try
                 {
                     Vector3 offScreenPosition = new Vector3(-10000, -10000, 0);
-                    var handle = Addressables.InstantiateAsync(prefab, offScreenPosition, Quaternion.identity);
+                    var handle = Addressables.InstantiateAsync(settings.prefab, offScreenPosition, Quaternion.identity);
                     var monster = await handle.Task;
 
                     if (monster == null)
@@ -324,14 +325,14 @@ public class MonsterSpawner : MonoBehaviour
             (currentWaveData.EnemyID2, currentWaveData.EnemyCount2),
             (currentWaveData.EnemyID3, currentWaveData.EnemyCount3)
         };
-
+   
         bool bossWave = false;
 
         foreach (var (enemyId, enemyCount) in enemies)
         {
             if (enemyId > 0 && enemyCount > 0)
             {
-                var waveMonster = new WaveMonsterInfo(enemyId, enemyCount);
+                var waveMonster = new WaveMonsterInfo(enemyId, enemyCount); // 웨이브 테이블의 수량 까지만
                 waveMonstersToSpawn.Add(waveMonster);
 
                 if (MonsterBehavior.IsBossMonster(enemyId))
@@ -426,11 +427,11 @@ public class MonsterSpawner : MonoBehaviour
     }
 
     // 웨이브 스폰 완료 여부 확인
-    private bool IsWaveSpawnCompleted()
+    private bool IsWaveSpawnCompleted() // 웨이브 테이블 수량만큼 스폰했는지 확인
     {
         foreach (var monsterInfo in waveMonstersToSpawn)
         {
-            if (monsterInfo.spawned < monsterInfo.count)
+            if (monsterInfo.spawned < monsterInfo.count) // spawned가 count에 도달하지 못하면 false
             {
                 return false;
             }

@@ -85,7 +85,6 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
         isInitialized = true;
     }
 
-    // 자동 실행을 위한 Update 메서드 추가
     private void Update()
     {
         if (!isInitialized)
@@ -246,7 +245,6 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
         }
         catch (System.OperationCanceledException)
         {
-            // 씬 전환 등으로 취소됨 - 정상 종료
         }
     }
 
@@ -317,8 +315,8 @@ public class DeceptionBossSkill : MonoBehaviour, ISkillBehavior
     {
         Vector3 bossPosition = transform.position;
 
-        float sideDistance = Random.Range(2f, 5f);
-        float side = Random.Range(0, 2) == 0 ? -1f : 1f;
+        float sideDistance = Random.Range(1.5f, 5.5f);
+        float side = Random.Range(0, 2) == 0 ? -1f : 1f; // 왼쪽 오른쪽 랜덤
         float yOffset = Random.Range(5f, 10f);
 
         Vector3 spawnOffset = new Vector3(side * sideDistance, yOffset, 0f);
