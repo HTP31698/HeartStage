@@ -33,7 +33,7 @@ public class CharacterProjectile : MonoBehaviour
     private float boomerangTravel = 0f; // 부메랑이 이동한 거리
 
     private bool isBlackHole = false;
-    private static float pullStrength = 0.7f; // 끌어당기는 힘
+    private static float pullStrength = 0.8f; // 끌어당기는 힘
 
     // 디버프 모음(몬스터에게 장착시킬) (ID, 수치, 지속시간)
     private List<(int id, float value, float duration)> debuffList = new List<(int, float, float)>();

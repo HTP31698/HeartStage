@@ -101,7 +101,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         
         // 파티클 방향 회전
         var particle = obj.GetComponentInChildren<ParticleSystem>();
-        if (dir != Vector3.zero)
+        if (dir != Vector3.zero && skillData.active_type != 1) // 부메랑이면 회전 x
         {
             particle.transform.rotation = Quaternion.LookRotation(Vector3.forward, dir);
         }
@@ -228,23 +228,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
 
     protected virtual void SetupParticle(GameObject particle, GameObject clone)
     {
-        // 직선형
-        if (skillData.skill_range_type == 1)
-        {
-            var particleScale = particle.transform.localScale;
-            particleScale.x *= skillData.skill_range;
-            particle.transform.localScale = particleScale;
-        }
-        // 원형
-        else if (skillData.skill_range_type == 2)
-        {
-            particle.transform.localScale *= skillData.skill_range;
-        }
-        // 방사형(일단 원형이랑 똑같이 하기)
-        else if (skillData.skill_range_type == 3)
-        {
-            particle.transform.localScale *= skillData.skill_range;
-        }
+        particle.transform.localScale *= skillData.skill_range;
     }
 
     protected virtual Vector3 GetDirection()
