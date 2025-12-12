@@ -126,7 +126,15 @@ public class CharacterFence : MonoBehaviour, IDamageable
 
     public void Die()
     {
-        StageManager.Instance.Defeat();
+        // 무한 스테이지 모드 체크
+        if (InfiniteStageManager.Instance != null)
+        {
+            InfiniteStageManager.Instance.GameOver();
+            return;
+        }
+
+        // 기존 스테이지 모드
+        StageManager.Instance?.Defeat();
     }
 
     private void StartShake()
