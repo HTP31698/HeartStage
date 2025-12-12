@@ -225,8 +225,12 @@ public class StageSetupWindow : MonoBehaviour
             var cd = slot.characterData;
             StageIndexs[i] = cd.char_id;
 
-            var data = DataTableManager.SkillTable.Get(cd.skill_id1);
-            int passiveType = data.passive_type;
+            // SO에서 passive_type 가져오기
+            var csvData = DataTableManager.SkillTable.Get(cd.skill_id1);
+            if (csvData == null) continue;
+            var skillSO = ResourceManager.Instance.Get<SkillData>(csvData.skill_name);
+            if (skillSO == null) continue;
+            int passiveType = skillSO.passive_type;
 
             if (passiveType == 0)
                 continue;
@@ -243,14 +247,14 @@ public class StageSetupWindow : MonoBehaviour
                 }
 
                 // skill_eff1 ~ 3이 0이 아니면 각각 효과로 추가
-                if (data.skill_eff1 != 0)
-                    list.Add(new PassiveEffectData(data.skill_eff1, data.skill_eff1_val));
+                if (skillSO.skill_eff1 != 0)
+                    list.Add(new PassiveEffectData(skillSO.skill_eff1, skillSO.skill_eff1_val));
 
-                if (data.skill_eff2 != 0)
-                    list.Add(new PassiveEffectData(data.skill_eff2, data.skill_eff2_val));
+                if (skillSO.skill_eff2 != 0)
+                    list.Add(new PassiveEffectData(skillSO.skill_eff2, skillSO.skill_eff2_val));
 
-                if (data.skill_eff3 != 0)
-                    list.Add(new PassiveEffectData(data.skill_eff3, data.skill_eff3_val));
+                if (skillSO.skill_eff3 != 0)
+                    list.Add(new PassiveEffectData(skillSO.skill_eff3, skillSO.skill_eff3_val));
             }
         }
 
@@ -373,9 +377,12 @@ public class StageSetupWindow : MonoBehaviour
                 continue;
 
             var cd = slot.characterData;
-            var skill = DataTableManager.SkillTable.Get(cd.skill_id1);
-
-            int passiveType = skill.passive_type;
+            // SO에서 passive_type 가져오기
+            var csvData = DataTableManager.SkillTable.Get(cd.skill_id1);
+            if (csvData == null) continue;
+            var skillSO = ResourceManager.Instance.Get<SkillData>(csvData.skill_name);
+            if (skillSO == null) continue;
+            int passiveType = skillSO.passive_type;
 
             if (passiveType == 0)
                 continue;
@@ -436,8 +443,12 @@ public class StageSetupWindow : MonoBehaviour
 
         Array.Clear(_previewPassiveTiles, 0, _previewPassiveTiles.Length);
 
-        var skill = DataTableManager.SkillTable.Get(cd.skill_id1);
-        int passiveType = skill.passive_type;
+        // SO에서 passive_type 가져오기
+        var csvData = DataTableManager.SkillTable.Get(cd.skill_id1);
+        if (csvData == null) return;
+        var skillSO = ResourceManager.Instance.Get<SkillData>(csvData.skill_name);
+        if (skillSO == null) return;
+        int passiveType = skillSO.passive_type;
 
         if (passiveType == 0) return;
 
