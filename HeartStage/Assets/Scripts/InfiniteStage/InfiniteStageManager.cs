@@ -65,6 +65,12 @@ public class InfiniteStageManager : MonoBehaviour
     private Dictionary<int, int> acquiredItems = new Dictionary<int, int>();
     public Dictionary<int, int> AcquiredItems => acquiredItems;
 
+    // 보상 배율 (강화 횟수 연동)
+    [Header("Reward Settings")]
+    [SerializeField] private float rewardMulPerEnhance = 0.1f; // 강화당 보상 배율 증가량 (10%)
+    private float currentRewardMultiplier = 1f;
+    public float CurrentRewardMultiplier => currentRewardMultiplier;
+
     // 타임스케일
     private float currentTimeScale = 1f;
     public float CurrentTimeScale => currentTimeScale;
@@ -140,10 +146,13 @@ public class InfiniteStageManager : MonoBehaviour
             currentHpMultiplier *= hpMultiplier;
             currentSpeedMultiplier *= speedMultiplier;
 
+            // 보상 배율도 증가
+            currentRewardMultiplier = 1f + (enhanceCount * rewardMulPerEnhance);
+
             nextEnhanceTime += enhanceInterval;
 
             OnEnhance?.Invoke(enhanceCount);
-            Debug.Log($"[InfiniteStage] 강화 #{enhanceCount} - ATK:{currentAtkMultiplier:F2}x HP:{currentHpMultiplier:F2}x SPD:{currentSpeedMultiplier:F2}x");
+            Debug.Log($"[InfiniteStage] 강화 #{enhanceCount} - ATK:{currentAtkMultiplier:F2}x HP:{currentHpMultiplier:F2}x SPD:{currentSpeedMultiplier:F2}x 보상:{currentRewardMultiplier:F1}x");
         }
     }
 
@@ -254,6 +263,7 @@ public class InfiniteStageManager : MonoBehaviour
         currentAtkMultiplier = 1f;
         currentHpMultiplier = 1f;
         currentSpeedMultiplier = 1f;
+        currentRewardMultiplier = 1f;
         nextEnhanceTime = enhanceInterval;
         killCount = 0;
         totalCheerGained = 0;
@@ -293,16 +303,20 @@ public class InfiniteStageManager : MonoBehaviour
     {
         activeMonsters.Remove(monster);
         killCount++;
-        totalCheerGained += cheerValue;
 
-        // 드롭 아이템 수집
+        // 보상 배율 적용
+        int adjustedCheer = Mathf.RoundToInt(cheerValue * currentRewardMultiplier);
+        totalCheerGained += adjustedCheer;
+
+        // 드롭 아이템 수집 (배율 적용)
         if (dropItems != null)
         {
             foreach (var kvp in dropItems)
             {
+                int adjustedAmount = Mathf.RoundToInt(kvp.Value * currentRewardMultiplier);
                 if (!acquiredItems.ContainsKey(kvp.Key))
                     acquiredItems[kvp.Key] = 0;
-                acquiredItems[kvp.Key] += kvp.Value;
+                acquiredItems[kvp.Key] += adjustedAmount;
             }
         }
 

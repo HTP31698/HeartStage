@@ -31,6 +31,12 @@ public class InfiniteMonsterSpawner : MonoBehaviour
     [SerializeField] private float spawnMinY = 6f;
     [SerializeField] private float spawnMaxY = 10f;
 
+    [Header("Prefabs (Inspector 연결)")]
+    [Tooltip("기본 몬스터 프리팹 - 없으면 Addressables에서 로드 시도")]
+    [SerializeField] private GameObject baseMonsterPrefabInspector;
+    [SerializeField] private GameObject projectilePrefabInspector;
+    [SerializeField] private GameObject hitEffectPrefabInspector;
+
     // Pool ID 상수
     private const string NormalMonsterPoolId = "InfiniteNormalMonster";
     private const string FastMonsterPoolId = "InfiniteFastMonster";
@@ -118,30 +124,42 @@ public class InfiniteMonsterSpawner : MonoBehaviour
 
     private async UniTask LoadBasePrefabs()
     {
-        // 기본 몬스터 프리팹 로드 (기존 시스템과 동일한 프리팹 사용)
-        try
+        // 1. Inspector에서 연결된 프리팹 우선 사용
+        if (baseMonsterPrefabInspector != null)
         {
-            var handle = Addressables.LoadAssetAsync<GameObject>("BaseMonster");
-            baseMonsterPrefab = await handle.Task;
-
-            if (baseMonsterPrefab == null)
-            {
-                // 대체: 기존 몬스터 프리팹 주소로 시도
-                handle = Addressables.LoadAssetAsync<GameObject>("Assets/Prefabs/Monster/Monster.prefab");
-                baseMonsterPrefab = await handle.Task;
-            }
+            baseMonsterPrefab = baseMonsterPrefabInspector;
+            Debug.Log("[InfiniteMonsterSpawner] Inspector에서 베이스 몬스터 프리팹 사용");
         }
-        catch
+        else
         {
-            Debug.LogWarning("[InfiniteMonsterSpawner] BaseMonster 프리팹 로드 실패, ResourceManager로 대체");
-            baseMonsterPrefab = ResourceManager.Instance.Get<GameObject>("Monster");
+            // 2. Addressables에서 로드 시도
+            try
+            {
+                var handle = Addressables.LoadAssetAsync<GameObject>("BaseMonster");
+                baseMonsterPrefab = await handle.Task;
+
+                if (baseMonsterPrefab == null)
+                {
+                    handle = Addressables.LoadAssetAsync<GameObject>("MonsterPrefab");
+                    baseMonsterPrefab = await handle.Task;
+                }
+            }
+            catch
+            {
+                Debug.LogWarning("[InfiniteMonsterSpawner] Addressables 로드 실패, ResourceManager로 대체");
+                baseMonsterPrefab = ResourceManager.Instance.Get<GameObject>("MonsterPrefab");
+            }
         }
 
         // 투사체 프리팹
-        projectilePrefab = ResourceManager.Instance.Get<GameObject>("MonsterProjectile");
+        projectilePrefab = projectilePrefabInspector != null
+            ? projectilePrefabInspector
+            : ResourceManager.Instance.Get<GameObject>("Projectile");
 
         // 히트 이펙트 프리팹
-        hitEffectPrefab = ResourceManager.Instance.Get<GameObject>("monsterHitEffect");
+        hitEffectPrefab = hitEffectPrefabInspector != null
+            ? hitEffectPrefabInspector
+            : ResourceManager.Instance.Get<GameObject>("monsterHitEffect");
     }
 
     private void InitializeSpecialMonsterTimers()
