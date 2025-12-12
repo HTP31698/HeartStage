@@ -114,15 +114,21 @@ public class BossAddScript : MonoBehaviour
     {
         switch (skillId)
         {
-            case 31001: // 대량 현혹 튜토리얼 근접
-            case 31002: // 대량 현혹 튜토리얼 원거리
-            case 31003: // 대량 현혹 근접
-            case 31004: // 대량 현혹 원거리
+            case 30001: // 대량 현혹 튜토리얼 근접
+            case 30002: // 대량 현혹 튜토리얼 원거리
+            case 30003: // 1스테이지 대량 현혹 근접
+            case 30004: // 1스테이지 대량 현혹 원거리
+            case 30005: // 2스테이지 대량 현혹 근접
+            case 30006: // 2스테이지 대량 현혹 원거리
+            case 30007: // 3스테이지 대량 현혹 근접
+            case 30008: // 3스테이지 대량 현혹 원거리
+            case 30009: // 4스테이지 대량 현혹 근접
+            case 30010: // 4스테이지 대량 현혹 원거리
                 deceptionSkillIds.Add(skillId);
                 break;
 
-            case 31101: // 광기의 행진
-            case 31201: // 야유 공격
+            case 30201: // 광기의 행진
+            case 30101: // 야유 공격
                 otherSkillIds.Add(skillId);
                 break;
 
@@ -163,11 +169,11 @@ public class BossAddScript : MonoBehaviour
     {
         switch (skillId)
         {
-            case 31101:
+            case 30201:
                 RegisterSpeedBuffSkill(skillId);
                 break;
 
-            case 31201:
+            case 30101:
                 RegisterBooingSkill(skillId);
                 break;
 
