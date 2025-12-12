@@ -126,7 +126,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             7 => characterAttack.Data.crt_dmg,
             _ => 30
         };
-        int skillDmg = Mathf.FloorToInt(baseValue * skillData.damage_ratio);
+        int skillDmg = Mathf.FloorToInt(characterAttack.Data.atk_dmg + baseValue * skillData.damage_ratio);
         // 지속형 스킬 체크(장판형)
         bool isDOT = skillData.skill_duration > 0f;
         // 부메랑 체크
