@@ -25,7 +25,7 @@ public class StageUI : MonoBehaviour
             var currentStage = StageManager.Instance.GetCurrentStageData();
             if (currentStage != null)
             {
-                waveCountText.text = $"{currentStage.stage_step1}-{currentStage.stage_step2}스테이지\nWave {waveOrder}";
+                waveCountText.text = $"{currentStage.stage_step1}-{currentStage.stage_step2} 스테이지\nWave {waveOrder}";
             }
             else
             {
