@@ -12,9 +12,6 @@ public class CharacterSelectPanel : MonoBehaviour
     public Slider expSlider;
     public Image cardImage;
 
-    // Start / async 제거
-    // private void Start() { InitAsync().Forget(); }
-
     public void Init(CharacterData characterData)
     {
         if (characterData == null)
@@ -27,8 +24,7 @@ public class CharacterSelectPanel : MonoBehaviour
         characterName.text = characterData.char_name;
         idolPowerCount.text = $"{characterData.GetTotalPower()}";
         levelText.text = $"LV {characterData.char_lv}";
-
-        // TODO: attributeIcon은 타입/속성 enum 보고 바꿔주면 됨
+        CharacterAttributeIcon.ChangeIcon(attributeIcon,characterData.char_type);
 
         // 카드 이미지 세팅
         var texture2D = ResourceManager.Instance.Get<Texture2D>(characterData.card_imageName);
