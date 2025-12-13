@@ -167,7 +167,6 @@ public class DraggableSlot : MonoBehaviour,
             NotifySlotChanged();
             _window?.ClearPassivePreview();
 
-            if (characterData != null) Debug.Log($"{characterData.char_name}");
             return;
         }
 

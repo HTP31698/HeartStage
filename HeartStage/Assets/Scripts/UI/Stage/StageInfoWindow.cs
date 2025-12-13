@@ -74,8 +74,6 @@ public class StageInfoWindow : GenericWindow
 
     public void SetStageData(StageData stageData)
     {
-        Debug.Log($"SetStageData 호출: {stageData.stage_ID}, {stageData.stage_step1}");
-
         currentStageData = stageData;
         if (gameObject.activeInHierarchy)
         {
@@ -360,19 +358,14 @@ public class StageInfoWindow : GenericWindow
         gameData.selectedStageStep2 = currentStageData.stage_step2;
 
         SaveLoadManager.SaveToServer().Forget();
-
-        Debug.Log($"모니터링용 스테이지 데이터 저장: Stage ID {currentStageData.stage_ID}");
     }
 
 
     private void SetStageImage(Image targetImage, string imageName)
     {
-        Debug.Log($"SetStageImage: {imageName}");
-
         if (targetImage == null || string.IsNullOrEmpty(imageName)) return;
 
         var sprite = ResourceManager.Instance.GetSprite(imageName);
-        Debug.Log($"ResourceManager에서 불러온 Texture2D: {(sprite != null ? "성공" : "실패")}");
 
         targetImage.sprite = sprite;
     }

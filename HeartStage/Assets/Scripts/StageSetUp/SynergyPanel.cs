@@ -71,7 +71,6 @@ public class SynergyPanel : MonoBehaviour
         // 2) 발동된 시너지가 없으면 → 빈칸 3개 유지
         if (actives == null || actives.Count == 0)
         {
-            Debug.Log("[SynergyPanel] 활성 시너지 없음 → 모든 슬롯을 빈칸으로 유지");
             return;
         }
 

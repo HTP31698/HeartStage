@@ -25,6 +25,9 @@ public class CharacterSkillController : MonoBehaviour
 
     private const float LONG_PRESS_TIME = 1.5f;
 
+    private Vector3 pressStartPos;          // 최초 터치 위치
+    private bool isOverUIThisFrame = false; // UI 체크 캐싱
+
     private void Start()
     {
         characterAttack = GetComponent<CharacterAttack>();
@@ -39,16 +42,18 @@ public class CharacterSkillController : MonoBehaviour
 
     private void Update()
     {
-        if (!isReady) 
+        if (!isReady)
             return;
 
-        if (IsPointerOverUI() && !(Input.GetMouseButtonUp(0) || TouchEnded()))
+        isOverUIThisFrame = IsPointerOverUI();
+
+        if (isOverUIThisFrame && !(Input.GetMouseButtonUp(0) || TouchEnded()))
             return;
 
         if (!IsCurrentController())
             return;
 
-        if (CancelDragIfUIAppeared()) 
+        if (CancelDragIfUIAppeared())
             return;
 
         bool hasInput = TryGetTouchPosition(out Vector3 pos);
@@ -76,7 +81,7 @@ public class CharacterSkillController : MonoBehaviour
         if (Input.GetMouseButtonUp(0) || TouchEnded())
             return false;
 
-        if (!isDragging || !IsPointerOverUI())
+        if (!isDragging || !isOverUIThisFrame) 
             return false;
 
         isDragging = false;
@@ -126,7 +131,7 @@ public class CharacterSkillController : MonoBehaviour
     {
         if (hasInput && isInside && isTouchingThisCharacter)
         {
-            longPressTimer += Time.deltaTime;
+            longPressTimer += Time.unscaledDeltaTime;
             if (longPressTimer >= LONG_PRESS_TIME)
             {
                 longPressTimer = 0f;
@@ -178,7 +183,9 @@ public class CharacterSkillController : MonoBehaviour
         if (!(Input.GetMouseButtonDown(0) || TouchBegan()))
             return;
 
-        if (Vector3.Distance(pos, transform.position) < 0.7f)
+        pressStartPos = pos;
+
+        if (Vector3.Distance(pressStartPos, transform.position) < 0.7f)
         {
             current = this;
             isTouchingThisCharacter = true;
@@ -228,7 +235,6 @@ public class CharacterSkillController : MonoBehaviour
 
         ResetSkillState();
     }
-
 
     // UTIL
     private void ResetDragState()

@@ -166,8 +166,6 @@ public class GachaManager : MonoBehaviour
 
                                 //뽑기 퀘스트 완료 처리
                                 QuestManager.Instance.OnGachaDraw();
-                                Debug.Log($"중복 보상 아이템 획득: {itemData.item_name} x{selectedItem.Gacha_have_amount}");
-
                             }
                         }
                     }
@@ -180,11 +178,6 @@ public class GachaManager : MonoBehaviour
                     QuestManager.Instance.OnGachaDraw();
 
                     var itemData = DataTableManager.ItemTable.Get(selectedItem.Gacha_item);
-                    if(itemData != null)
-                    {
-                        Debug.Log($"아이템 획득: {itemData.item_name} x{selectedItem.Gacha_item_amount}");
-
-                    }
                     result.Add(new GachaResult(selectedItem, null, false));
                 }
             }
