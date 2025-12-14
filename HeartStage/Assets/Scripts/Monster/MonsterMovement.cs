@@ -175,15 +175,21 @@ public class MonsterMovement : MonoBehaviour
 
     // 벽 근접 확인
     private void CheckWallProximity()
-    {
+    {        
+        var monsterBehavior = GetComponent<MonsterBehavior>();
+        float attackRange = monsterData.attackMinRange; // 기본값
+
+        if (monsterBehavior != null)
+        {
+            attackRange = monsterBehavior.GetCurrentAttackRange(); // 개별 랜덤 사거리
+        }
+
         isNearWall = Physics2D.OverlapCircle
         (
             transform.position,
-            monsterData.attackMinRange,
+            attackRange,  // 개별 랜덤 사거리 사용
             LayerMask.GetMask(Tag.Wall)
-        )
-
-        != null;
+        ) != null;
     }
 
     // 이동 방향에 따라 앞줄 막힘 확인

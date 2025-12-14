@@ -13,7 +13,9 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
     public bool isDead = false;
 
     private bool wasConfused = false; // 혼란 상태 추적
+    private bool hasFixedAttackRange = false; // 사거리 고정 여부 체크
 
+    private float currentAttackRange;
 
     private readonly string attack = "Attack";
 
@@ -64,6 +66,13 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
         {
             maxHP = data.hp;
             currentHP = data.hp;
+        }
+
+        // 처음 한 번만 랜덤 사거리 설정
+        if (!hasFixedAttackRange)
+        {
+            currentAttackRange = data.GetRandomAttackRange();
+            hasFixedAttackRange = true;
         }
 
         isBoss = IsBossMonster(data.id);
@@ -148,7 +157,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             // 혼란 상태일 때는 다른 몬스터 탐지
             Collider2D[] hits = Physics2D.OverlapCircleAll(
                 transform.position,
-                monsterData.attackMinRange,
+                currentAttackRange, // ★ 랜덤 사거리 적용
                 LayerMask.GetMask(Tag.Monster)
             );
 
@@ -166,7 +175,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             // 일반 상태일 때는 벽 탐지
             Collider2D hit = Physics2D.OverlapCircle(
                 transform.position,
-                monsterData.attackMinRange,
+                currentAttackRange, // ★ 랜덤 사거리 적용
                 LayerMask.GetMask(Tag.Wall)
             );
             return hit != null;
@@ -250,7 +259,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
     private void MeleeAttack()
     {
         // 이미 Update에서 타겟이 있다고 확인했으므로, 바로 공격 실행
-        Collider2D hit = Physics2D.OverlapCircle(transform.position, monsterData.attackMinRange, LayerMask.GetMask(Tag.Wall));
+        Collider2D hit = Physics2D.OverlapCircle(transform.position, currentAttackRange, LayerMask.GetMask(Tag.Wall)); // ★ 수정
 
         if (animator != null && animator.runtimeAnimatorController != null)
         {
@@ -393,10 +402,10 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
     private void ConfuseAttack()
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(
-        transform.position,
-        monsterData.attackMinRange,
-        LayerMask.GetMask(Tag.Monster)
-    );
+            transform.position,
+            currentAttackRange,
+            LayerMask.GetMask(Tag.Monster)
+        );
         Collider2D targetCollider = null;
 
         foreach (var hit in hits)
@@ -621,5 +630,10 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
 
         isFading = true;
         fadeTimer = 0f;
+    }
+
+    public float GetCurrentAttackRange()
+    {
+        return currentAttackRange;
     }
 }
