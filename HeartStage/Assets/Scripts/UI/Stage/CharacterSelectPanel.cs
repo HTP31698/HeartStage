@@ -1,10 +1,11 @@
-﻿using TMPro;
+﻿using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class CharacterSelectPanel : MonoBehaviour
 {
-    public TextMeshProUGUI rankText;
+    public List<Image> rankImages;
     public Image attributeIcon;
     public TextMeshProUGUI characterName;
     public TextMeshProUGUI idolPowerCount;
@@ -20,7 +21,15 @@ public class CharacterSelectPanel : MonoBehaviour
             return;
         }
 
-        rankText.text = $"{characterData.char_rank}";
+        // 랭크 세팅
+        for (int i = 0; i < rankImages.Count; i++)
+        {
+            if (i < characterData.char_rank - 1)
+                rankImages[i].enabled = true;
+            else
+                rankImages[i].enabled = false;
+        }
+        //
         characterName.text = characterData.char_name;
         idolPowerCount.text = $"{characterData.GetTotalPower()}";
         levelText.text = $"LV {characterData.char_lv}";

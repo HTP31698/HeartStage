@@ -12,7 +12,7 @@ public class CharacterInfoWindow : GenericWindow
     public TextMeshProUGUI characterName;
     public Image attributeIcon;
     public Image activeSkillIcon;
-    public TextMeshProUGUI rankText; // 나중에 별로 변경
+    public List<Image> rankImages;
     public TextMeshProUGUI passiveDescText;
     public TextMeshProUGUI activeDescText;
     // 스탯 Value
@@ -42,7 +42,13 @@ public class CharacterInfoWindow : GenericWindow
         // 캐릭터 속성 아이콘 변경
         CharacterAttributeIcon.ChangeIcon(attributeIcon, data.char_type);
         // 랭크 세팅
-        rankText.text = $"{data.char_rank} 등급";
+        for (int i = 0; i < rankImages.Count; i++)
+        {
+            if (i < data.char_rank - 1)
+                rankImages[i].enabled = true;
+            else
+                rankImages[i].enabled = false;
+        }
         // 패시브 스킬 정보 세팅하기
         var skillIds = data.GetSkillIds();
         var passiveSkills = skillIds.Where(x => x > 32000).ToList();
