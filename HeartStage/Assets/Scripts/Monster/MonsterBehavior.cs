@@ -550,8 +550,6 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             animator.ResetTrigger(attack);
 
             animator.SetTrigger("Run");
-
-            Debug.Log($"[MonsterBehavior] {gameObject.name} 혼란 해제 - 애니메이션 리셋");
         }
     }
 

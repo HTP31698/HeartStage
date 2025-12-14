@@ -20,11 +20,22 @@ public class LobbyUI : MonoBehaviour
 
     private void Awake()
     {
+        stageUiButton.onClick.RemoveAllListeners();
         stageUiButton.onClick.AddListener(OnStageUiButtonClicked);
+
+        homeUiButton.onClick.RemoveAllListeners();
         homeUiButton.onClick.AddListener(OnLobbyHomeUiButtonClicked);
+
+        gachaButton.onClick.RemoveAllListeners();
         gachaButton.onClick.AddListener(OnGachaButtonClicked);
+
+        storeButton.onClick.RemoveAllListeners();
         storeButton.onClick.AddListener(OnShopUiButtonClicked);
+
+        characterDictButton.onClick.RemoveAllListeners();
         characterDictButton.onClick.AddListener(OnCharacterDictUiButtonClicked);
+
+        QuestButton.onClick.RemoveAllListeners();
         QuestButton.onClick.AddListener(OnQuestButtonClicked);
     }
 
@@ -123,5 +134,15 @@ public class LobbyUI : MonoBehaviour
         {
             playerProfileIcon.sprite = sprite;
         }
+    }
+
+    private void OnDisable()
+    {
+        stageUiButton?.onClick.RemoveAllListeners();
+        homeUiButton?.onClick.RemoveAllListeners();
+        gachaButton?.onClick.RemoveAllListeners();
+        storeButton?.onClick.RemoveAllListeners();
+        characterDictButton?.onClick.RemoveAllListeners();
+        QuestButton?.onClick.RemoveAllListeners();
     }
 }
