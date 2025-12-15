@@ -14,6 +14,7 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private Button storeButton;
     [SerializeField] private Button characterDictButton;
     [SerializeField] private Button QuestButton;
+    [SerializeField] private Button specialDungeonButton;
 
     [Header("ImageIcon")]
     [SerializeField] private Image playerProfileIcon;
@@ -37,6 +38,9 @@ public class LobbyUI : MonoBehaviour
 
         QuestButton.onClick.RemoveAllListeners();
         QuestButton.onClick.AddListener(OnQuestButtonClicked);
+
+        specialDungeonButton.onClick.RemoveAllListeners();
+        specialDungeonButton.onClick.AddListener(OnSpecialDungeonButtonClicked);
     }
 
     private void Start()
@@ -136,6 +140,11 @@ public class LobbyUI : MonoBehaviour
         }
     }
 
+    private void OnSpecialDungeonButtonClicked()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+        windowManager.Open(WindowType.SpecialDungeon);
+    }
     private void OnDisable()
     {
         stageUiButton?.onClick.RemoveAllListeners();

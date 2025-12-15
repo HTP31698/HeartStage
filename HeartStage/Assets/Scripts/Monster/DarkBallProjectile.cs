@@ -23,7 +23,6 @@ public class DarkBallProjectile : MonoBehaviour
         if (ownerBoss != null && ownerBoss.GetMonsterData() != null)
         {
             damage = ownerBoss.GetMonsterData().att * 3;
-            Debug.Log($"[DarkBallProjectile] 녹턴 기본공격력: {ownerBoss.GetMonsterData().att}, 계산된 데미지: {damage}");
         }
     }
 
@@ -48,9 +47,7 @@ public class DarkBallProjectile : MonoBehaviour
             var damageable = other.GetComponent<IDamageable>();
             if (damageable != null)
             {
-                Debug.Log($"[DarkBall] 데미지 처리: {damage}");
                 damageable.OnDamage(damage, false);
-                Debug.Log("[DarkBall] 데미지 처리 완료!");
             }
 
             // 히트 이펙트 재생
@@ -96,7 +93,6 @@ public class DarkBallProjectile : MonoBehaviour
         }
         catch
         {
-            // 캔슬레이션 무시
         }
 
         if (PoolManager.Instance != null && hitEffect != null)
