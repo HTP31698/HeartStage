@@ -77,6 +77,12 @@ public class BossAddScript : MonoBehaviour
 
         int bossId = monsterData.id;
 
+        // 보스 면역 시스템 추가
+        if (GetComponent<BossImmunity>() == null)
+        {
+            gameObject.AddComponent<BossImmunity>();
+        }
+
         if (bossId == 22224)
         {
             if (GetComponent<TenevisAttackEffect>() == null)
