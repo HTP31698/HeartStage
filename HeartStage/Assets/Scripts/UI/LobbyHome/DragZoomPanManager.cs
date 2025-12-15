@@ -18,7 +18,8 @@ public class DragZoomPanManager : MonoBehaviour
     [SerializeField] private float edgeSize = 150f; // RawImage edge 영역 px
     [SerializeField] private float edgePanSpeed = 1f; // 에지 패닝 속도
 
-    [SerializeField] private SpriteRenderer background;
+    [SerializeField] private SpriteRenderer background; 
+    [SerializeField] private BoxCollider2D innerBoundCollider;
 
     private bool isDraggingObject = false;
     private bool isPanning = false;
@@ -26,19 +27,8 @@ public class DragZoomPanManager : MonoBehaviour
     private Vector2 lastPos;
     private Vector3 dragOffset; // 드래그 오프셋
 
-    private float marginPercent = 0.1f; // 10% margin
     public Bounds BackgroundBounds => background.bounds;
-    public Bounds InnerBounds
-    {
-        get
-        {
-            Bounds original = background.bounds;
-            float ratio = 1f - (marginPercent * 2f);
-
-            Vector3 newSize = original.size * ratio;
-            return new Bounds(original.center, newSize);
-        }
-    }
+    public Bounds InnerBounds => innerBoundCollider.bounds;
 
     private void Awake()
     {
@@ -236,7 +226,26 @@ public class DragZoomPanManager : MonoBehaviour
         if (!TryGetWorldPositionFromRawImage(screenPos, out worldPos))
             return;
 
-        dragTarget.position = worldPos + dragOffset;
+        Vector3 targetPos = worldPos + dragOffset;
+        Bounds bounds = InnerBounds;
+
+        // 드래그 대상 스프라이트 크기
+        SpriteRenderer sr = dragTarget.GetComponent<SpriteRenderer>();
+        Vector2 extents = sr != null ? sr.bounds.extents : Vector2.zero;
+
+        targetPos.x = Mathf.Clamp(
+            targetPos.x,
+            bounds.min.x + extents.x,
+            bounds.max.x - extents.x
+        );
+
+        targetPos.y = Mathf.Clamp(
+            targetPos.y,
+            bounds.min.y + extents.y,
+            bounds.max.y - extents.y
+        );
+
+        dragTarget.position = targetPos;
     }
 
     // 카메라 이동
@@ -270,6 +279,16 @@ public class DragZoomPanManager : MonoBehaviour
         lobbyHomeCamera.transform.position += (worldBefore - worldAfter);
 
         ClampCamera();
+
+        // 줌 중에는 dragOffset 재계산
+        if (isDraggingObject && dragTarget != null)
+        {
+            Vector3 world;
+            if (TryGetWorldPositionFromRawImage(screenPos, out world))
+            {
+                dragOffset = dragTarget.position - world;
+            }
+        }
     }
 
     // 카메라가 배경 밖으로 안가게 보간
@@ -362,11 +381,7 @@ public class DragZoomPanManager : MonoBehaviour
             // 카메라 이동 후 드래그 오브젝트 위치 재보정
             if (isDraggingObject && dragTarget != null)
             {
-                Vector3 worldPos;
-                if (TryGetWorldPositionFromRawImage(screenPos, out worldPos))
-                {
-                    dragTarget.position = worldPos + dragOffset;
-                }
+                DragObject(screenPos);
             }
         }
     }

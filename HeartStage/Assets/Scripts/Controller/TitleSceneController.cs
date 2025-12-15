@@ -257,8 +257,8 @@ public class TitleSceneController : MonoBehaviour
 
         SetStatus("유저 데이터 불러오는 중", animateDots: true);
 
-        // 타임아웃 10초: 데이터 로드 시도
-        bool dataExists = await TryLoadWithTimeoutAsync(10f);
+        // 타임아웃 5초: 데이터 로드 시도
+        bool dataExists = await TryLoadWithTimeoutAsync(5f);
 
         if (!dataExists)
         {
