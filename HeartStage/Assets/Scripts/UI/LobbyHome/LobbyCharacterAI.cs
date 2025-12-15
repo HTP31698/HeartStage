@@ -132,13 +132,29 @@ public class LobbyCharacterAI : MonoBehaviour
                 animator.SetTrigger(HashIdle);
                 break;
             case LobbyActionType.Walk:
-                animator.SetTrigger(HashWalk);
-                MoveRandomDirection(walkSpeed, duration);
+            {
+                if (MoveRandomDirection(walkSpeed, duration))
+                {
+                    animator.SetTrigger(HashWalk);
+                }
+                else
+                {
+                    animator.SetTrigger(HashIdle);
+                }
                 break;
+            }
             case LobbyActionType.Run:
-                animator.SetTrigger(HashRun);
-                MoveRandomDirection(runSpeed, duration);
+            {
+                if (MoveRandomDirection(runSpeed, duration))
+                {
+                    animator.SetTrigger(HashRun);
+                }
+                else
+                {
+                    animator.SetTrigger(HashIdle);
+                }
                 break;
+            }
             case LobbyActionType.AttackPractice:
                 KillMove();
                 animator.SetTrigger(HashAttackPractice);
@@ -162,29 +178,52 @@ public class LobbyCharacterAI : MonoBehaviour
     }
 
     // 랜덤하게 움직이기
-    private void MoveRandomDirection(float speed, float duration)
+    private bool MoveRandomDirection(float speed, float duration)
     {
         KillMove();
+
         // 움직임 가능한 곳에서만
         Bounds bounds = DragZoomPanManager.Instance.InnerBounds;
-        // 랜덤 방향 얻기
-        Vector2 randomDir2D = UnityEngine.Random.insideUnitCircle.normalized;
-        Vector3 randomDir3D = new(randomDir2D.x, randomDir2D.y, 0f);
-        // 목표 좌표
-        Vector3 target = transform.position + randomDir3D * speed * duration;
-        // 보간
-        target.x = Mathf.Clamp(target.x, bounds.min.x, bounds.max.x);
-        target.y = Mathf.Clamp(target.y, bounds.min.y, bounds.max.y);
+
+        Vector3 startPos = transform.position;
+        Vector3 targetPos = startPos;
+
+        const int MaxTryCount = 8;
+        Vector3 chosenDir = Vector3.zero;
+
+        for (int i = 0; i < MaxTryCount; i++)
+        {
+            // 랜덤 방향 얻기
+            Vector2 randomDir2D = UnityEngine.Random.insideUnitCircle.normalized;
+            Vector3 randomDir3D = new(randomDir2D.x, randomDir2D.y, 0f);
+
+            // 목표 좌표
+            Vector3 candidateTarget = startPos + randomDir3D * speed * duration;
+
+            // InnerBounds 안이면 채택
+            if (bounds.Contains(candidateTarget))
+            {
+                chosenDir = randomDir3D;
+                targetPos = candidateTarget;
+                break;
+            }
+        }
+
+        // 이동 불가
+        if (chosenDir == Vector3.zero)
+            return false;
 
         // Flip(가는 방향으로 회전)
-        if (randomDir3D.x != 0)
+        if (chosenDir.x != 0)
         {
             Vector3 scale = transform.localScale;
-            scale.x = Mathf.Sign(randomDir3D.x) * Mathf.Abs(scale.x);
+            scale.x = Mathf.Sign(chosenDir.x) * Mathf.Abs(scale.x);
             transform.localScale = scale;
         }
+
         // 이동
-        moveTween = transform.DOMove(target, duration).SetEase(Ease.Linear);
+        moveTween = transform.DOMove(targetPos, duration).SetEase(Ease.Linear);
+        return true;
     }
 
     // 애니메이션 트리거 리셋
