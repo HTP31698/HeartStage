@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.UI;
 
 public class StageSetupWindow : MonoBehaviour
@@ -305,6 +306,8 @@ public class StageSetupWindow : MonoBehaviour
             var obj = PlaceCharacter(characterId, spawnPosition, slotIndex);
             allies.Add(obj);
         }
+
+        ApplySortingOrderByY(allies);
 
         return allies;
     }
@@ -665,5 +668,38 @@ public class StageSetupWindow : MonoBehaviour
         UpdateDeployCountUI();
 
         Debug.Log($"[StageSetupWindow] 무한 스테이지 설정 적용 - Full 레이아웃, 최대 배치: {maxDeployCount}명");
+    }
+
+    // 캐릭터 렌더링 순서 조정
+    private void ApplySortingOrderByY(List<GameObject> allies)
+    {
+        const int baseOrder = 201;
+
+        // y 내림차순 (위 → 아래)
+        allies.Sort((a, b) =>
+            b.transform.position.y.CompareTo(a.transform.position.y)
+        );
+
+        int currentOrder = baseOrder;
+        float? lastY = null;
+
+        foreach (var ally in allies)
+        {
+            float y = ally.transform.position.y;
+
+            // y가 다를 때만 order 증가
+            if (lastY.HasValue && !Mathf.Approximately(y, lastY.Value))
+            {
+                currentOrder++;
+            }
+
+            var sortingGroup = ally.GetComponent<SortingGroup>();
+            if (sortingGroup != null)
+            {
+                sortingGroup.sortingOrder = currentOrder;
+            }
+
+            lastY = y;
+        }
     }
 }

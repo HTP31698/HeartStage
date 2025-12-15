@@ -7,16 +7,13 @@ public class LobbyHomeInitializer : MonoBehaviour
     public GameObject characterBase; // 캐릭터 이미지 프리팹의 부모가 될 베이스 프리팹
 
     // 캐릭터 sorting order 조절
-    private readonly List<Transform> characterRoots = new();
     private readonly List<SortingGroup> sortingGroups = new();
     private const int BaseOrder = 201;
 
     public void Init()
     {
-        characterRoots.Clear();
         sortingGroups.Clear();
 
-        // 이전꺼 삭제
         var prevObjects = GameObject.FindGameObjectsWithTag(Tag.LobbyHomeObject);
         foreach (var obj in prevObjects)
         {
@@ -31,34 +28,27 @@ public class LobbyHomeInitializer : MonoBehaviour
             var imagePrefab = ResourceManager.Instance.Get<GameObject>(characterData.image_PrefabName);
 
             var root = Instantiate(characterBase, transform);
-            var image = Instantiate(imagePrefab, root.transform);
+            Instantiate(imagePrefab, root.transform);
 
             float x = Random.Range(bounds.min.x, bounds.max.x);
             float y = Random.Range(bounds.min.y, bounds.max.y);
             root.transform.position = new Vector3(x, y, 0f);
 
-            var sg = image.GetComponent<SortingGroup>();
-
-            characterRoots.Add(root.transform);
+            var sg = root.GetComponent<SortingGroup>();
             sortingGroups.Add(sg);
-
-            // 초기 정렬
             sg.sortingOrder = BaseOrder + Mathf.RoundToInt(-y);
         }
     }
 
     private void Update()
     {
-        for (int i = 0; i < characterRoots.Count; i++)
+        foreach (var sg in sortingGroups)
         {
-            var root = characterRoots[i];
-            var sg = sortingGroups[i];
-
-            if (root == null || sg == null)
+            if (sg == null)
                 continue;
 
-            sg.sortingOrder =
-                BaseOrder + Mathf.RoundToInt(-root.position.y);
+            float y = sg.transform.position.y;
+            sg.sortingOrder = BaseOrder + Mathf.RoundToInt(-y);
         }
     }
 }

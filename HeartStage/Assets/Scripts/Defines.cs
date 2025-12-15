@@ -43,6 +43,11 @@ public class Tag
     public static readonly string LobbyHomeObject = "LobbyHomeObject";
 }
 
+public class Layer
+{
+    public static readonly string Character = "Character";
+}
+
 public class AddressableLabel
 {
     public static readonly string Stage = "StageAssets";

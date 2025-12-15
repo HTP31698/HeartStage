@@ -186,21 +186,41 @@ public class CharacterSkillController : MonoBehaviour
             return;
 
         pressStartPos = pos;
-
-        if (dragCollider != null && dragCollider.OverlapPoint(pos))
+        // 내 콜라이더 안에 없으면 바로 탈락
+        if (dragCollider == null || !dragCollider.OverlapPoint(pos))
+            return;
+        // 겹친 캐릭터들만 검사
+        var hits = Physics2D.OverlapPointAll(pos, LayerMask.GetMask(Layer.Character));
+        // 여러 개 겹쳤을 때만 아래쪽 우선
+        if (hits.Length > 1)
         {
-            current = this;
-            isTouchingThisCharacter = true;
-            isDragging = true;
+            CharacterSkillController picked = null;
+            float minY = float.MaxValue;
 
-            isRangeShown = false;
-            SkillRangeDisplayer.Instance.HideRange();
-            longPressTimer = 0f;
+            foreach (var col in hits)
+            {
+                var c = col.GetComponentInParent<CharacterSkillController>();
+                if (c == null)
+                    continue;
+
+                float y = c.transform.position.y;
+                if (y < minY)
+                {
+                    minY = y;
+                    picked = c;
+                }
+            }
+
+            if (picked != this)
+                return;
         }
-        else
-        {
-            isTouchingThisCharacter = false;
-        }
+        // 선택 확정
+        current = this;
+        isTouchingThisCharacter = true;
+        isDragging = true;
+        isRangeShown = false;
+        SkillRangeDisplayer.Instance.HideRange();
+        longPressTimer = 0f;
     }
 
     private void HandleDragEnd()

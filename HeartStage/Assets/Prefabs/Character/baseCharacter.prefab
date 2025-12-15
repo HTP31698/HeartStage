@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5189390279843165133}
   - component: {fileID: 7840882084215648832}
+  - component: {fileID: -8551607110013524594}
   - component: {fileID: 1179235056669610260}
   - component: {fileID: 8871972257109757756}
   m_Layer: 0
@@ -72,6 +73,18 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 10
+--- !u!210 &-8551607110013524594
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2686928436463205721}
+  m_Enabled: 1
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 201
+  m_SortAtRoot: 0
 --- !u!114 &1179235056669610260
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -114,7 +127,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1959173641245368106}
   - component: {fileID: 6262889484299119151}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: DragHitArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}
