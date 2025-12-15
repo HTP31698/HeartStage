@@ -145,6 +145,7 @@ public class BossAddScript : MonoBehaviour
             case 30201: // 광기의 행진
             case 30101: // 야유 공격
             case 30224: // 그림자 각성
+            case 30225: // 어둠의 구체
                 otherSkillIds.Add(skillId);
                 break;
 
@@ -197,6 +198,10 @@ public class BossAddScript : MonoBehaviour
                 RegisterShadowAwakeningSkill(skillId);
                 break;
 
+            case 30225: // 어둠의 구체
+                RegisterDarkBallSkill(skillId);
+                break;
+
             default:
                 Debug.LogWarning($"정의되지 않은 스킬 ID: {skillId}");
                 break;
@@ -219,6 +224,23 @@ public class BossAddScript : MonoBehaviour
         {
             Debug.LogError($"SpeedBuffBossSkill 컴포넌트를 찾을 수 없음 (스킬 ID: {skillId})");
         }
+    }
+
+    private void RegisterDarkBallSkill(int skillId)
+    {
+        var darkBallSkill = GetComponent<DarkBallBossSkill>();
+        if (darkBallSkill == null)
+        {
+            darkBallSkill = gameObject.AddComponent<DarkBallBossSkill>();
+        }
+
+        var skillData = DataTableManager.SkillTable.Get(skillId);
+        if (skillData != null)
+        {
+            darkBallSkill.Init(skillData);
+        }
+
+        Debug.Log($"{gameObject.name}에 DarkBallBossSkill (ID: {skillId}) 등록 완료");
     }
 
     private void RegisterBooingSkill(int skillId)
