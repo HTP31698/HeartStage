@@ -144,6 +144,7 @@ public class BossAddScript : MonoBehaviour
 
             case 30201: // 광기의 행진
             case 30101: // 야유 공격
+            case 30224: // 그림자 각성
                 otherSkillIds.Add(skillId);
                 break;
 
@@ -192,6 +193,10 @@ public class BossAddScript : MonoBehaviour
                 RegisterBooingSkill(skillId);
                 break;
 
+            case 30224:
+                RegisterShadowAwakeningSkill(skillId);
+                break;
+
             default:
                 Debug.LogWarning($"정의되지 않은 스킬 ID: {skillId}");
                 break;
@@ -230,6 +235,23 @@ public class BossAddScript : MonoBehaviour
         }
     }
 
+    private void RegisterShadowAwakeningSkill(int skillId)
+    {
+        ScriptAttacher.AttachById(this.gameObject, skillId);
+
+        var shadowAwakeningSkill = GetComponent<ShadowAwakeningBossSkill>();
+        if (shadowAwakeningSkill != null)
+        {
+            var skillData = DataTableManager.SkillTable.Get(skillId);
+            shadowAwakeningSkill.Init(skillData);
+
+            Debug.Log($"{gameObject.name}에 ShadowAwakeningBossSkill (ID: {skillId}) 등록 완료");
+        }
+        else
+        {
+            Debug.LogError($"ShadowAwakeningBossSkill 컴포넌트를 찾을 수 없음 (스킬 ID: {skillId})");
+        }
+    }
     private void UnregisterSkills()
     {
         if (ActiveSkillManager.Instance == null) return;
