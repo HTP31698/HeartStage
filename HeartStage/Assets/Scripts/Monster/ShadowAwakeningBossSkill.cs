@@ -116,14 +116,13 @@ public class ShadowAwakeningBossSkill : MonoBehaviour, ISkillBehavior
 
             // 새로운 최대 체력 계산 및 적용
             int newMaxHP = Mathf.RoundToInt(originalMaxHP * (1f + healthIncreaseValue));
-            monsterData.hp = newMaxHP;
-
             // 현재 체력도 비례해서 증가
             int healthIncrease = newMaxHP - originalMaxHP;
+
             monsterBehavior.SetEnhancedStats(
-                monsterData.att, // 공격력 유지
-                currentHP + healthIncrease, // 체력 증가
-                monsterData.moveSpeed // 속도 유지
+                monsterData.att, 
+                currentHP + healthIncrease, 
+                monsterData.moveSpeed 
             );
 
             Debug.Log($"[ShadowAwakening] {monster.name} - 크기: {scaleMultiplier:F1}배, 체력: {originalMaxHP} → {newMaxHP}");
@@ -178,13 +177,9 @@ public class ShadowAwakeningBossSkill : MonoBehaviour, ISkillBehavior
                     int originalMaxHP = originalMaxHPs[monster];
                     int currentHP = monsterBehavior.GetCurrentHP();
 
-                    // 현재 체력 비율 계산
-                    float hpRatio = (float)currentHP / monsterData.hp;
+                    // 현재 체력 비율 계산 
+                    float hpRatio = (float)currentHP / (originalMaxHP * (1f + healthIncreaseValue));
 
-                    // 원래 최대 체력으로 복구
-                    monsterData.hp = originalMaxHP;
-
-                    // 체력 비율에 맞춰 현재 체력 조정
                     int newCurrentHP = Mathf.RoundToInt(originalMaxHP * hpRatio);
                     monsterBehavior.SetEnhancedStats(
                         monsterData.att,
