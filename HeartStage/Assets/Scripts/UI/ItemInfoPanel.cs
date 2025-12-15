@@ -80,24 +80,24 @@ public class ItemInfoPanel : MonoBehaviour
     }
 
     // 완전한 조각(PerfectPiece) 사용 가능 여부
-    private bool CanUsePerfectPiece(int itemId)
-    {
-        var piece = DataTableManager.PieceTable.Get(itemId);
-        string targetChar = DataTableManager.CharacterTable.Get(piece.char_id).char_name;
+    //private bool CanUsePerfectPiece(int itemId)
+    //{
+    //    var piece = DataTableManager.PieceTable.Get(itemId);
+    //    string targetChar = DataTableManager.CharacterTable.Get(piece.char_id).char_name;
 
-        // 이미 해당 캐릭터 소유 중인지 확인
-        foreach (var id in SaveLoadManager.Data.ownedIds)
-        {
-            var name = DataTableManager.CharacterTable.Get(id).char_name;
-            if (name == targetChar)
-                return false;
-        }
+    //    // 이미 해당 캐릭터 소유 중인지 확인
+    //    foreach (var id in SaveLoadManager.Data.ownedIds)
+    //    {
+    //        var name = DataTableManager.CharacterTable.Get(id).char_name;
+    //        if (name == targetChar)
+    //            return false;
+    //    }
 
-        if (piece.piece_ingrd_amount > SaveLoadManager.Data.itemList[itemId])
-            return false;
+    //    if (piece.piece_ingrd_amount > SaveLoadManager.Data.itemList[itemId])
+    //        return false;
 
-        return true;
-    }
+    //    return true;
+    //}
 
     //private void ButtonInteractable(bool active)
     //{

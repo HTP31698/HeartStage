@@ -214,4 +214,3 @@ public class GachaManager : MonoBehaviour
         return gachaItems[gachaItems.Count - 1];
     }
 }
-

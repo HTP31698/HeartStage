@@ -28,6 +28,8 @@ public class CharacterSkillController : MonoBehaviour
     private Vector3 pressStartPos;          // 최초 터치 위치
     private bool isOverUIThisFrame = false; // UI 체크 캐싱
 
+    [SerializeField] private Collider2D dragCollider;
+
     private void Start()
     {
         characterAttack = GetComponent<CharacterAttack>();
@@ -81,7 +83,7 @@ public class CharacterSkillController : MonoBehaviour
         if (Input.GetMouseButtonUp(0) || TouchEnded())
             return false;
 
-        if (!isDragging || !isOverUIThisFrame) 
+        if (!isDragging || !isOverUIThisFrame)
             return false;
 
         isDragging = false;
@@ -185,7 +187,7 @@ public class CharacterSkillController : MonoBehaviour
 
         pressStartPos = pos;
 
-        if (Vector3.Distance(pressStartPos, transform.position) < 0.7f)
+        if (dragCollider != null && dragCollider.OverlapPoint(pos))
         {
             current = this;
             isTouchingThisCharacter = true;

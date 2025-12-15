@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public static class ItemInvenHelper
 {
     private static Dictionary<int, int> Items => SaveLoadManager.Data.itemList;
-    
+
     // 아이템 개수 추가
     public static void AddItem(int id, int amount)
     {
@@ -15,6 +15,10 @@ public static class ItemInvenHelper
 
         SaveLoadManager.SaveToServer().Forget();
         LobbyManager.Instance?.MoneyUISet();
+        if (IsPieceItem(id))
+        {
+            PieceExchangePanel.Instance?.CheckPieceExchangeable();
+        }
     }
 
     // 아이템 소비 시도, 보유 개수보다 적으면 실패
@@ -40,6 +44,13 @@ public static class ItemInvenHelper
             return 0;
 
         return Items[id];
+    }
+
+    // 조각 아이템인지 체크
+    private static bool IsPieceItem(int itemId)
+    {
+        var itemData = DataTableManager.ItemTable.Get(itemId);
+        return itemData != null && itemData.item_type == ItemTypeID.Piece;
     }
 
     /// <summary>

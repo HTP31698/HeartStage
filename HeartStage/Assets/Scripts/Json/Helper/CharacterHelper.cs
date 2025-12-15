@@ -70,7 +70,6 @@ public static class CharacterHelper
         SaveLoadManager.SaveToServer().Forget();
     }
 
-
     public static void ReplaceOwnedId(int currentId, int nextId, int remainExp)
     {
         //레벨 업 후 or 랭크 업 후 호출
@@ -84,6 +83,7 @@ public static class CharacterHelper
         CharacterExpById.Remove(currentId);
         CharacterExpById[nextId] = remainExp;
     }
+
     public static void CommitUpgradeResult(int startId, int finalId, int remainExp = 0)
     {
         //레벨 업/랭크 업 결과 확정 처리
@@ -111,5 +111,4 @@ public static class CharacterHelper
         string name = row.char_name;
         return UnlockedByName.TryGetValue(name, out bool unlocked) && unlocked;
     }
-
 }

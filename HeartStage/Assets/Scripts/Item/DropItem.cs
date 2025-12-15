@@ -2,6 +2,9 @@
 
 public class DropItem : MonoBehaviour
 {
+    [Header("Size Normalize")]
+    [SerializeField] private Sprite referenceSprite;
+
     [HideInInspector]
     public int itemId;
     [HideInInspector]
@@ -24,7 +27,8 @@ public class DropItem : MonoBehaviour
     private void OnEnable()
     {
         timer = 0f;
-        isFlying = false;
+        isFlying = false; 
+        spriteRenderer.transform.localScale = Vector3.one;
     }
 
     public void Setup(int id, int amt, Vector3 spawnPos, Vector3 target)
@@ -37,6 +41,7 @@ public class DropItem : MonoBehaviour
         // sprite setting
         var texture = ResourceManager.Instance.Get<Texture2D>(DataTableManager.ItemTable.Get(id).prefab);
         spriteRenderer.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        NormalizeSpriteSize(); 
     }
 
     private void Update()
@@ -68,5 +73,27 @@ public class DropItem : MonoBehaviour
         }
 
         transform.position = Vector3.Lerp(startPos, targetPos, t);
+    }
+
+    private void NormalizeSpriteSize()
+    {
+        if (referenceSprite == null || spriteRenderer.sprite == null)
+            return;
+
+        float refPixels = Mathf.Max(
+            referenceSprite.rect.width,
+            referenceSprite.rect.height
+        );
+
+        float curPixels = Mathf.Max(
+            spriteRenderer.sprite.rect.width,
+            spriteRenderer.sprite.rect.height
+        );
+
+        if (curPixels <= 0f)
+            return;
+
+        float ratio = refPixels / curPixels;
+        spriteRenderer.transform.localScale = Vector3.one * ratio;
     }
 }
