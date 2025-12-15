@@ -251,11 +251,11 @@ public class SoundManager : MonoBehaviour
 
     public void PlayUIButtonClickSound()
     {
-        PlaySFX("SFX_UI_Button_Click", 1f, 0.15f);
+        PlaySFX(SoundName.SFX_UI_Button_Click, 1f, 0.15f);
     }
 
     public void PlayUICloseClickSound()
     {
-        PlaySFX("SFX_UI_Exit_Button_Click", 1f, 0.15f);
+        PlaySFX(SoundName.SFX_UI_Exit_Button_Click, 1f, 0.15f);
     }
 }

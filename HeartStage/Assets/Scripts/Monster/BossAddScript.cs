@@ -76,6 +76,15 @@ public class BossAddScript : MonoBehaviour
         }
 
         int bossId = monsterData.id;
+
+        if (bossId == 22224)
+        {
+            if (GetComponent<TenevisAttackEffect>() == null)
+            {
+                gameObject.AddComponent<TenevisAttackEffect>();
+            }
+        }
+
         RegisterBossSkills(bossId);
     }
 

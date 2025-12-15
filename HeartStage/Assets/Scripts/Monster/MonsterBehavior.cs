@@ -286,6 +286,15 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             animator.SetTrigger(attack);
         }
 
+        // 테네비스 전용 공격 이펙트 처리
+        var tenevisEffect = GetComponent<TenevisAttackEffect>();
+        if (tenevisEffect != null)
+        {
+            tenevisEffect.OnAttack();
+
+            return; // 테네비스는 투사체 발사하지 않음
+        }
+
         Vector3 direction = GetAttackDirectionStageType();
 
         var projectileObj = PoolManager.Instance.Get(MonsterProjectilePoolId);
