@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Demo_Project;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class MonsterMovement : MonoBehaviour
@@ -66,7 +67,7 @@ public class MonsterMovement : MonoBehaviour
         // 이동 처리
         if (!isNearWall && !isFrontBlocked)
         {
-            MoveWithSeparation(moveDirection * finalMoveSpeed * Time.deltaTime); 
+            MoveWithSeparation(moveDirection * finalMoveSpeed * Time.deltaTime);
         }
 
         else if (!isNearWall && isFrontBlocked)
@@ -135,6 +136,7 @@ public class MonsterMovement : MonoBehaviour
 
         if (EffectBase.Has<KnockbackEffect>(gameObject))
         {
+            KnockbackMove();
             return false;
         }
 
@@ -175,7 +177,7 @@ public class MonsterMovement : MonoBehaviour
 
     // 벽 근접 확인
     private void CheckWallProximity()
-    {        
+    {
         var monsterBehavior = GetComponent<MonsterBehavior>();
         float attackRange = monsterData.attackMinRange; // 기본값
 
@@ -205,7 +207,7 @@ public class MonsterMovement : MonoBehaviour
             }
 
             var boss = other.GetComponent<MonsterBehavior>();
-            if(boss != null && boss.IsBossMonster())
+            if (boss != null && boss.IsBossMonster())
             {
                 continue;
             }
@@ -269,7 +271,7 @@ public class MonsterMovement : MonoBehaviour
             }
 
             var boss = other.GetComponent<MonsterBehavior>();
-            if(boss != null && boss.IsBossMonster())
+            if (boss != null && boss.IsBossMonster())
             {
                 continue;
             }
@@ -396,6 +398,16 @@ public class MonsterMovement : MonoBehaviour
             Vector3 dir = (closest.transform.position - transform.position).normalized;
             transform.position += dir * finalMoveSpeed * Time.deltaTime;
         }
+    }
+
+    // 넉백 
+    private void KnockbackMove()
+    {
+        if (!EffectBase.TryGet<KnockbackEffect>(gameObject, out var kb))
+            return;
+
+        Vector3 dir = -moveDirection;
+        transform.position += dir * kb.Power * Time.deltaTime;
     }
 
     // === 무한 스테이지용 강화 속도 설정 ===

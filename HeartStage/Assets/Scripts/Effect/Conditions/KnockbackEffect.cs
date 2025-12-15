@@ -3,6 +3,7 @@
 public class KnockbackEffect : EffectBase, IConditionSource
 {
     private const int EffectId = 3014;
+    public float Power => magnitude;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void RegisterSelf()
