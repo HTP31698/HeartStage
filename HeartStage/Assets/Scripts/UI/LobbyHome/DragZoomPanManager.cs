@@ -20,6 +20,7 @@ public class DragZoomPanManager : MonoBehaviour
 
     [SerializeField] private SpriteRenderer background; 
     [SerializeField] private BoxCollider2D innerBoundCollider;
+    [SerializeField] private LayerMask dragTargetLayer;
 
     private bool isDraggingObject = false;
     private bool isPanning = false;
@@ -77,12 +78,12 @@ public class DragZoomPanManager : MonoBehaviour
             if (!TryGetWorldPositionFromRawImage(screen, out world))
                 return;
 
-            RaycastHit2D hit = Physics2D.Raycast(world, Vector2.zero);
+            Collider2D hitCol = Physics2D.OverlapPoint(world, dragTargetLayer);
             // 드래그 가능한 오브젝트 클릭 시
-            if (hit.collider != null && hit.collider.CompareTag(Tag.LobbyHomeObject))
+            if (hitCol != null && hitCol.CompareTag(Tag.LobbyHomeObject))
             {
                 isDraggingObject = true;
-                dragTarget = hit.collider.transform;
+                dragTarget = hitCol.transform;
 
                 dragOffset = dragTarget.position - world;
                 // 캐릭터 드래그 할 때
@@ -175,15 +176,13 @@ public class DragZoomPanManager : MonoBehaviour
                 if (!TryGetWorldPositionFromRawImage(screen, out world))
                     return;
 
-                RaycastHit2D hit = Physics2D.Raycast(world, Vector2.zero);
-
-                if (hit.collider != null && hit.collider.CompareTag(Tag.LobbyHomeObject))
+                Collider2D hitCol = Physics2D.OverlapPoint(world, dragTargetLayer);
+                if (hitCol != null && hitCol.CompareTag(Tag.LobbyHomeObject))
                 {
                     isDraggingObject = true;
-                    dragTarget = hit.collider.transform;
+                    dragTarget = hitCol.transform;
 
                     dragOffset = dragTarget.position - world;
-                    // 캐릭터 드래그 할 때
                     dragTarget.GetComponent<LobbyCharacterAI>()?.OnDragStart();
                 }
                 else
