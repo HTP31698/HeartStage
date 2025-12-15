@@ -26,6 +26,14 @@ public static class EffectRegistry
             return;
         }
 
+        // 보스 면역 체크 추가
+        var bossImmunity = target.GetComponent<BossImmunity>();
+        if (bossImmunity != null && bossImmunity.IsImmuneToEffect(effectId))
+        {
+            Debug.Log($"[EffectRegistry] Boss {target.name} is immune to effect {effectId}");
+            return;
+        }
+
         if (map.TryGetValue(effectId, out var applier))
         {
             applier(target, value, duration, tickInterval);

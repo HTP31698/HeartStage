@@ -46,6 +46,8 @@ public static class ScriptAttacher
 
         { 30201, "SpeedBuffBossSkill"}, // 광기의 행진 (이동속도 버프)
         { 30101, "BooingBossSkill"},    // 야유 공격 (공격속도 디버프)
+        { 30224, "ShadowAwakeningBossSkill"}, // 그림자 각성 (크기 + 체력 증가)
+        { 30225, "DarkBallBossSkill"}, // 어둠의 구체 (투사체 발사)
     };
 
     // 등록된 스크립트들 캐싱

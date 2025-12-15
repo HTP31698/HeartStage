@@ -122,6 +122,8 @@ public class CharacterFence : MonoBehaviour, IDamageable
             Die();            
         }
         UpdateAllFencesHpText();
+
+        Debug.Log($"{damage} 받음");
     }
 
     public void Die()

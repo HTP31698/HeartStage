@@ -68,6 +68,8 @@ public enum WindowType
     SettingPanel = 13,
     Shopping = 14,
     CharacterDict = 15,
+    SpecialDungeon = 16,
+    StoryDungeon = 17,
 
     // 인게임 윈도우
     VictoryDefeat = 50, // 위에 추가해도 안바뀌게 큰 값으로 해두기

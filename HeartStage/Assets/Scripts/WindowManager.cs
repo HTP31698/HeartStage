@@ -17,6 +17,8 @@ public class WindowManager : MonoBehaviour
     public static WindowType currentWindow { get; set; }
     private Dictionary<WindowType, GenericWindow> windows;
 
+    private List<WindowType> activeOverlays = new List<WindowType>(); // 활성화된 오버레이 목록
+
     private void Awake()
     {
         Instance = this;
@@ -49,6 +51,12 @@ public class WindowManager : MonoBehaviour
             return;
 
         windows[id].Open();
+
+        // 오버레이 목록에 추가
+        if (!activeOverlays.Contains(id))
+        {
+            activeOverlays.Add(id);
+        }
     }
 
     public void Open(WindowType id)
@@ -60,6 +68,9 @@ public class WindowManager : MonoBehaviour
             && windows[currentWindow].gameObject.activeSelf)
             return;
 
+        // 모든 활성화된 오버레이 닫기
+        CloseAllOverlays();
+
         // 현재 윈도우 닫기
         if (IsValidWindow(currentWindow))
         {            
@@ -69,6 +80,28 @@ public class WindowManager : MonoBehaviour
         currentWindow = id;
         windows[currentWindow].gameObject.SetActive(true);
         windows[currentWindow].Open();
+    }
+
+    private void CloseAllOverlays()
+    {
+        for (int i = activeOverlays.Count - 1; i >= 0; i--)
+        {
+            WindowType overlayType = activeOverlays[i];
+            if (IsValidWindow(overlayType) && windows[overlayType].gameObject.activeSelf)
+            {
+                windows[overlayType].Close();
+            }
+            activeOverlays.RemoveAt(i);
+        }
+    }
+
+    // 오버레이를 수동으로 닫을 때 사용
+    public void CloseOverlay(WindowType id)
+    {
+        if (!IsValidWindow(id)) return;
+
+        windows[id].Close();
+        activeOverlays.Remove(id);
     }
 
     private bool IsValidWindow(WindowType windowType)

@@ -1,17 +1,11 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Cysharp.Threading.Tasks;
-using static UnityEngine.GraphicsBuffer;
 
 public class BooingBossSkill : MonoBehaviour, ISkillBehavior
 {
     private SkillCSVData skillData;
     private int poolId;
-    // 데미지계산로직변경해야함
-    // private int damage;
     private float coolTime;
-    // 데미지계산로직변경해야함
-    // private float criticalRate;
     private float skillDuration;
     private float value;
 
@@ -28,22 +22,26 @@ public class BooingBossSkill : MonoBehaviour, ISkillBehavior
     private Dictionary<CharacterAttack, float> originalAttackSpeeds = new Dictionary<CharacterAttack, float>();
     private Dictionary<CharacterAttack, float> debuffEndTimes = new Dictionary<CharacterAttack, float>();
 
+    // Scream 파티클 프리팹
+    private GameObject screamParticlePrefab;
 
     public void Init(SkillCSVData data)
     {
         skillData = data;
-        // 데미지계산로직변경해야함
-        // damage = data.skill_dmg;
         coolTime = data.skill_cool;
-        // 데미지계산로직변경해야함
-        // criticalRate = data.skill_crt;
         skillDuration = data.skill_duration;
-        //value = data.skill_eff1_val;
-        value = 9.0f; // test
+        value = data.skill_eff1_val;
 
         if (player != null)
         {
             playerCharacterAttack = player.GetComponent<CharacterAttack>();
+        }
+
+        // Scream 파티클 프리팹 로드
+        screamParticlePrefab = ResourceManager.Instance.Get<GameObject>("Scream");
+        if (screamParticlePrefab == null)
+        {
+            Debug.LogWarning("[BooingBossSkill] Scream 파티클 프리팹을 찾을 수 없습니다.");
         }
 
         isInitialized = true;
@@ -58,7 +56,7 @@ public class BooingBossSkill : MonoBehaviour, ISkillBehavior
         }
 
         var bossAddScipt = GetComponent<BossAddScript>();
-        if(bossAddScipt == null || !bossAddScipt.IsBossSpawned())
+        if (bossAddScipt == null || !bossAddScipt.IsBossSpawned())
         {
             return;
         }
@@ -80,10 +78,40 @@ public class BooingBossSkill : MonoBehaviour, ISkillBehavior
         {
             return;
         }
-        BoolingSkillEffect();
+
+        // Scream 파티클 이펙트 재생
+        PlayScreamEffect();
+
+        BooingSkillEffect();
     }
 
-    private void BoolingSkillEffect()
+    private void PlayScreamEffect()
+    {
+        if (screamParticlePrefab != null)
+        {
+            // 보스 위치에서 파티클 이펙트 재생
+            Vector3 effectPosition = transform.position;
+            GameObject screamEffect = Instantiate(screamParticlePrefab, effectPosition, Quaternion.identity);
+
+            // 파티클 시스템이 있으면 자동 재생
+            var particleSystem = screamEffect.GetComponent<ParticleSystem>();
+            if (particleSystem != null)
+            {
+                particleSystem.Play();
+
+                // 파티클이 끝나면 자동으로 제거
+                float duration = particleSystem.main.duration + particleSystem.main.startLifetime.constantMax;
+                Destroy(screamEffect, duration);
+            }
+            else
+            {
+                // ParticleSystem이 없으면 3초 후 제거
+                Destroy(screamEffect, 3f);
+            }
+        }
+    }
+
+    private void BooingSkillEffect()
     {
         // null 체크 및 정리
         summonedCharacter.RemoveWhere(c => c == null);
@@ -93,7 +121,6 @@ public class BooingBossSkill : MonoBehaviour, ISkillBehavior
             ApplyAttackSpeedDebuff(character);
         }
     }
-
 
     /// 공격속도 디버프 직접 적용
     private void ApplyAttackSpeedDebuff(CharacterAttack character)
@@ -122,12 +149,11 @@ public class BooingBossSkill : MonoBehaviour, ISkillBehavior
         float newAttackSpeed = originalAttackSpeeds[character] * (1 + value);
         characterData.atk_speed = newAttackSpeed;
 
-
         // 디버프 종료 시간 설정
         debuffEndTimes[character] = Time.time + skillDuration;
     }
 
-    /// 디버프 만료 체크 및 해제
+    // 디버프 만료 체크 및 해제
     private void CheckDebuffExpiration()
     {
         var expiredCharacters = new List<CharacterAttack>();
@@ -165,7 +191,6 @@ public class BooingBossSkill : MonoBehaviour, ISkillBehavior
                 {
                     // 원래 공격속도로 복구
                     characterData.atk_speed = originalAttackSpeeds[character];
-                    //Debug.Log($"{character.gameObject.name} 공격속도 디버프 해제: 원래 속도 {originalAttackSpeeds[character]} 복구");
                 }
             }
 
