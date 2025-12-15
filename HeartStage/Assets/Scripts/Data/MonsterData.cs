@@ -10,8 +10,8 @@ public class MonsterData : ScriptableObject
     public int att;
     public int attType;
     public float attackSpeed;
-    public float attackMinRange; 
-    public float attackMaxRange; 
+    public float attackMinRange;
+    public float attackMaxRange;
     public int bulletSpeed;
     public float moveSpeed;
     public int minExp;
@@ -30,6 +30,12 @@ public class MonsterData : ScriptableObject
 
     public bool isInitialized = false;
 
+
+    public float GetRandomAttackRange()
+    {
+        return Random.Range(attackMinRange, attackMaxRange);
+    }
+
     public MonsterCSVData ToCSVData()
     {
         var csvData = new MonsterCSVData
@@ -41,8 +47,8 @@ public class MonsterData : ScriptableObject
             atk_dmg = att,
             atk_type = attType,
             atk_speed = attackSpeed,
-            atk_min_range = attackMinRange, 
-            atk_max_range = attackMaxRange, 
+            atk_min_range = attackMinRange,
+            atk_max_range = attackMaxRange,
             bullet_speed = bulletSpeed,
             speed = moveSpeed,
             skill_id1 = skillId1,
@@ -94,10 +100,10 @@ public class MonsterData : ScriptableObject
         var monsterTable = DataTableManager.MonsterTable;
         if (monsterTable == null) return;
 
-        var data = monsterTable.Get(monsterId);
+        var data = monsterTable.Get(monsterId); // 몬스터 ID로 CSV 데이터 조회
         if (data == null) return;
 
-        UpdateData(data);
+        UpdateData(data); // CSV 데이터를 ScriptableObject에 적용
         isInitialized = true;
     }
 

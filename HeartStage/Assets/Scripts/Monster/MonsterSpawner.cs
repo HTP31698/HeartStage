@@ -25,7 +25,6 @@ public class MonsterSpawner : MonoBehaviour
 {
     [Header("Reference")]
     [SerializeField] private AssetReference monsterPrefab;
-    [SerializeField] private AssetReference bossMonsterPrefab;
     [SerializeField] private GameObject monsterProjectilePrefab;
 
     [Header("Field")]
@@ -42,7 +41,6 @@ public class MonsterSpawner : MonoBehaviour
     private StageData currentStageData;         // 현재 스테이지 데이터
     private List<int> stageWaveIds = new List<int>();  // 현재 스테이지의 모든 웨이브 ID 목록
     private int currentWaveIndex = 0;
-
 
     // 웨이브 몬스터 추적
     private List<WaveMonsterInfo> waveMonstersToSpawn = new List<WaveMonsterInfo>(); // 현재 웨이브에서 스폰할 몬스터들의 정보
@@ -70,6 +68,12 @@ public class MonsterSpawner : MonoBehaviour
     private const float GlobalStart = 0.95f;
     private const float GlobalEnd = 0.99f;
 
+    // 보스 ID별 전용 프리팹 가져오는 메서드
+    private AssetReference GetBossPrefab(int bossId)
+    {
+        return new AssetReference($"Boss_{bossId}");
+    }
+
     private async void Start()
     {
         //StageManager에서 스테이지 데이터 가져오기
@@ -96,7 +100,6 @@ public class MonsterSpawner : MonoBehaviour
 
             await LoadStageDataAndInitializePool();
             isInitialized = true;
-            //await StartWaveProgression(); // 자동시작
         }
         catch
         {
@@ -184,16 +187,26 @@ public class MonsterSpawner : MonoBehaviour
             ReportMonsterProgress(t);
         }
 
-        // 4) 풀 설정 미리 계산 및 실제 생성 (0.5 ~ 1.0)
+        // 4) 풀 설정 미리 계산 및 실제 생성 (0.5 ~ 1.0) - 수정됨
         var poolSettings = new Dictionary<int, (bool isBoss, int poolCount, AssetReference prefab)>();
         int totalToInstantiate = 0;
 
-        // 풀 설정 미리 계산
+        // 풀 설정 미리 계산 - 보스별 개별 프리팹 사용
         foreach (var kvp in monsterDataCache)
         {
             int monsterId = kvp.Key;
             bool isBoss = MonsterBehavior.IsBossMonster(monsterId);
-            var prefab = isBoss ? bossMonsterPrefab : monsterPrefab;
+
+            AssetReference prefab;
+            if (isBoss)
+            {
+                prefab = GetBossPrefab(monsterId); // 보스 ID별 전용 프리팹
+            }
+            else
+            {
+                prefab = monsterPrefab; // 일반 몬스터 프리팹
+            }
+
             int poolCount = isBoss ? 1 : poolSize / Mathf.Max(1, monsterDataCache.Count);
 
             poolSettings[monsterId] = (isBoss, poolCount, prefab);
@@ -202,7 +215,7 @@ public class MonsterSpawner : MonoBehaviour
 
         int createdCount = 0;
 
-        // 실제 인스턴스 생성
+        // 실제 인스턴스 생성 - 수정됨
         foreach (var kvp in monsterDataCache)
         {
             int monsterId = kvp.Key;
@@ -223,7 +236,12 @@ public class MonsterSpawner : MonoBehaviour
                         continue;
 
                     monster.SetActive(false);
-                    AddVisualChild(monster, monsterDataSO);
+
+                    // 보스 몬스터는 이미 완성된 프리팹이므로 AddVisualChild 생략
+                    if (!MonsterBehavior.IsBossMonster(monsterId))
+                    {
+                        AddVisualChild(monster, monsterDataSO);
+                    }
 
                     var monsterBehavior = monster.GetComponent<MonsterBehavior>();
                     if (monsterBehavior != null)
@@ -257,6 +275,7 @@ public class MonsterSpawner : MonoBehaviour
         // 6) 몬스터 스포너 구간 끝
         ReportMonsterProgress(1.0f);
     }
+
     private void ReportMonsterProgress(float local01)
     {
         float clamped = Mathf.Clamp01(local01);
@@ -325,7 +344,7 @@ public class MonsterSpawner : MonoBehaviour
             (currentWaveData.EnemyID2, currentWaveData.EnemyCount2),
             (currentWaveData.EnemyID3, currentWaveData.EnemyCount3)
         };
-   
+
         bool bossWave = false;
 
         foreach (var (enemyId, enemyCount) in enemies)
@@ -524,8 +543,15 @@ public class MonsterSpawner : MonoBehaviour
         }
     }
 
+    // 수정된 AddVisualChild - 보스 몬스터 체크 추가
     private void AddVisualChild(GameObject monster, MonsterData monsterData)
     {
+        // 보스 몬스터는 이미 완성된 프리팹이므로 추가 비주얼 불필요
+        if (MonsterBehavior.IsBossMonster(monsterData.id))
+        {
+            return;
+        }
+
         if (string.IsNullOrEmpty(monsterData.prefab1))
         {
             return;
@@ -576,6 +602,7 @@ public class MonsterSpawner : MonoBehaviour
             }
         }
     }
+
     private Vector3 GetRandomSpawnPosition()
     {
         float randomX = UnityEngine.Random.Range(-4f, 4f);
@@ -618,7 +645,7 @@ public class MonsterSpawner : MonoBehaviour
     private void OnDestroy()
     {
         OnWaveCleared -= ClearAllSummonedMonsters;
-        StageSetupWindow.OnStageStarted -= OnStageStarted; 
+        StageSetupWindow.OnStageStarted -= OnStageStarted;
 
         ClearSpawnQueue();
 
@@ -782,7 +809,6 @@ public class MonsterSpawner : MonoBehaviour
         }
         if (!canSpawn) return false;
 
-
         if (!monsterPools.TryGetValue(monsterId, out var pool))
         {
             return false;
@@ -881,7 +907,7 @@ public class MonsterSpawner : MonoBehaviour
         {
             ItemManager.Instance.AcquireItem(rewardData.normal_clear3, rewardData.normal_clear3_a);
         }
-  
+
         if (needSave)
         {
             SaveLoadManager.SaveToServer().Forget();
@@ -939,7 +965,6 @@ public class MonsterSpawner : MonoBehaviour
             WindowManager.Instance.OpenOverlay(WindowType.BossAlert);
         }
     }
-
 
     // 보스 소환몬스터 정리
     private void ClearAllSummonedMonsters()
