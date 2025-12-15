@@ -10,6 +10,18 @@ public class PieceData
     public int piece_result { get; set; }
     public int piece_ingrd_amount { get; set; }
     public string info { get; set; }
+
+    // 해당 캐릭터가 4등급이면 쓸모없음 판정
+    public bool IsUseful()
+    {
+        if (!CharacterHelper.HasCharacter(piece_result))
+            return true;
+
+        int maxRank = CharacterHelper.GetOwnedMaxRankByBaseId(piece_result);
+
+        // 4등급 이상이면 쓸모없음
+        return maxRank < 4;
+    }
 }
 
 public class PieceTable : DataTable

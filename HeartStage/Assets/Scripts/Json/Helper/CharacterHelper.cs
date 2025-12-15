@@ -111,4 +111,30 @@ public static class CharacterHelper
         string name = row.char_name;
         return UnlockedByName.TryGetValue(name, out bool unlocked) && unlocked;
     }
+
+    // 보유 캐릭터 등급 Get (이름 기준)
+    public static int GetOwnedMaxRankByBaseId(int baseId)
+    {
+        var baseRow = DataTableManager.CharacterTable.Get(baseId);
+        if (baseRow == null)
+            return 0;
+
+        string name = baseRow.char_name;
+
+        int maxRank = 1;
+
+        foreach (var ownedId in SaveLoadManager.Data.ownedIds)
+        {
+            var row = DataTableManager.CharacterTable.Get(ownedId);
+            if (row == null)
+                continue;
+
+            if (row.char_name == name)
+            {
+                maxRank = Mathf.Max(maxRank, row.char_rank);
+            }
+        }
+
+        return maxRank;
+    }
 }
