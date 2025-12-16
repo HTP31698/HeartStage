@@ -13,16 +13,34 @@ public class DarkBallProjectile : MonoBehaviour
 
     private MonsterBehavior ownerBoss;
 
-    public void Initialize(Vector3 dir, float spd, MonsterBehavior boss = null)
+    //public void Initialize(Vector3 dir, float spd, MonsterBehavior boss = null)
+    //{
+    //    direction = dir.normalized;
+    //    speed = spd;
+    //    ownerBoss = boss;
+    //    currentLifeTime = 0f;
+
+    //    if (ownerBoss != null && ownerBoss.GetMonsterData() != null)
+    //    {
+    //        damage = ownerBoss.GetMonsterData().att * 3;
+    //    }
+    //}
+
+    public void Initialize(Vector3 dir, float spd, MonsterBehavior boss = null, int defaultDamage = 100) // 테스트용
     {
         direction = dir.normalized;
         speed = spd;
         ownerBoss = boss;
         currentLifeTime = 0f;
 
+        // MonsterBehavior 있으면 그걸로, 없으면 기본값 사용
         if (ownerBoss != null && ownerBoss.GetMonsterData() != null)
         {
             damage = ownerBoss.GetMonsterData().att * 3;
+        }
+        else
+        {
+            damage = defaultDamage; // 기본 데미지 사용
         }
     }
 

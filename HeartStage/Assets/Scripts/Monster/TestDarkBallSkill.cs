@@ -1,24 +1,44 @@
 ﻿using UnityEngine;
 
-public class DarkBallBossSkill : MonoBehaviour, ISkillBehavior
+public class TestDarkBallSkill : MonoBehaviour
 {
     private const string DARK_BALL_PREFAB = "DarkBall";
     private const string DARK_BALL_POOL_ID = "DarkBallPool";
 
-    private SkillCSVData skillData;
+    // 하드코딩된 기본값들 - 바로 사용 가능!
+    private float skillCool = 5f;      // 5초 쿨타임
+    private float skillSpeed = 10f;    // 투사체 속도
+    private int skillDamage = 100;     // 기본 데미지
+
     private bool isInitialized = false;
     private float nextSkillTime = 0f;
 
+    private void Start()
+    {
+        // 스크립트 붙이면 바로 초기화!
+        InitializeDefault();
+    }
+
+    private void InitializeDefault()
+    {
+        nextSkillTime = Time.time + skillCool;
+        CreateProjectilePool();
+        isInitialized = true;
+
+        Debug.Log($"[DarkBallBossSkill] 바로 사용 가능! 쿨타임: {skillCool}초");
+    }
+
+    // 기존 Init은 선택사항으로 유지
     public void Init(SkillCSVData data)
     {
-        skillData = data;
-        nextSkillTime = Time.time + skillData.skill_cool;
+        if (data != null)
+        {
+            skillCool = data.skill_cool;
+            skillSpeed = data.skill_speed;
+            skillDamage = Mathf.RoundToInt(data.skill_eff1_val);
+        }
 
-        // 투사체 풀 생성
-        CreateProjectilePool();
-
-        isInitialized = true;
-        Debug.Log($"[DarkBallBossSkill] 초기화 완료 - 쿨타임: {skillData.skill_cool}초");
+        InitializeDefault();
     }
 
     private bool CreateProjectilePool()
@@ -30,9 +50,7 @@ public class DarkBallBossSkill : MonoBehaviour, ISkillBehavior
             return false;
         }
 
-        // DarkBall 프리팹 그대로 사용 (이미 모든 컴포넌트가 붙어있음)
         PoolManager.Instance.CreatePool(DARK_BALL_POOL_ID, darkBallPrefab, 10, 20);
-
         Debug.Log("[DarkBallBossSkill] DarkBall 풀 생성 성공");
         return true;
     }
@@ -41,17 +59,13 @@ public class DarkBallBossSkill : MonoBehaviour, ISkillBehavior
     {
         if (!isInitialized) return;
 
-        var bossAddScript = GetComponent<BossAddScript>();
-        if (bossAddScript == null || !bossAddScript.IsBossSpawned()) return;
-
         // 쿨타임 체크 및 스킬 실행
         if (Time.time >= nextSkillTime)
         {
             Execute();
-            nextSkillTime = Time.time + skillData.skill_cool;
+            nextSkillTime = Time.time + skillCool;
         }
     }
-
 
     public void Execute()
     {
@@ -68,10 +82,9 @@ public class DarkBallBossSkill : MonoBehaviour, ISkillBehavior
         var darkBallProjectile = projectile.GetComponent<DarkBallProjectile>();
         if (darkBallProjectile != null)
         {
-            // 보스의 MonsterBehavior 참조 전달
-            var bossMonsterBehavior = GetComponent<MonsterBehavior>();
-
-            darkBallProjectile.Initialize(direction, skillData.skill_speed, bossMonsterBehavior);
+            // MonsterBehavior 없어도 기본 데미지 사용
+            var monsterBehavior = GetComponent<MonsterBehavior>();
+            darkBallProjectile.Initialize(direction, skillSpeed, monsterBehavior, skillDamage);
         }
 
         projectile.SetActive(true);
@@ -80,19 +93,19 @@ public class DarkBallBossSkill : MonoBehaviour, ISkillBehavior
 
     private Transform FindWall()
     {
-        var players = GameObject.FindGameObjectsWithTag(Tag.Wall);
-        if (players == null || players.Length == 0) return null;
+        var walls = GameObject.FindGameObjectsWithTag(Tag.Wall);
+        if (walls == null || walls.Length == 0) return null;
 
         Transform nearest = null;
         float minDistance = float.MaxValue;
 
-        foreach (var player in players)
+        foreach (var wall in walls)
         {
-            float distance = Vector3.Distance(transform.position, player.transform.position);
+            float distance = Vector3.Distance(transform.position, wall.transform.position);
             if (distance < minDistance)
             {
                 minDistance = distance;
-                nearest = player.transform;
+                nearest = wall.transform;
             }
         }
 
