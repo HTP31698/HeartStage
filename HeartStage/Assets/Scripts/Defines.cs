@@ -32,6 +32,9 @@ public static class DataTableIds
     public static string Slang => "SlangTable";
     public static string InfiniteStage => "InfiniteStageTable";
     public static string InfiniteMonster => "InfiniteMonsterTable";
+    public static string Story => "StoryStageTable";
+
+    public static string StoryScript => "StoryScriptTable";
 }
 
 public class Tag
@@ -75,6 +78,7 @@ public enum WindowType
     CharacterDict = 15,
     SpecialDungeon = 16,
     StoryDungeon = 17,
+    StoryDungeonInfo = 18,
 
     // 인게임 윈도우
     VictoryDefeat = 50, // 위에 추가해도 안바뀌게 큰 값으로 해두기
@@ -94,6 +98,7 @@ public enum SceneType
     TestStageScene = 3,
     TestStageWaveScene = 4,
     InfiniteTestScene = 5,
+    StoryScene = 6,
 }
 
 public class SoundName

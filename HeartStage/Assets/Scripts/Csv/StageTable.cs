@@ -87,6 +87,13 @@ public class StageTable : DataTable
 
     public List<int> GetWaveIds(int stageId)
     {
+        // 스토리 스테이지인지 확인 (66000-67000 범위)
+        if (stageId >= 66000 && stageId < 67000)
+        {
+            // 스토리 테이블에서 웨이브 ID 가져오기
+            return DataTableManager.StoryTable?.GetWaveIds(stageId) ?? new List<int>();
+        }
+
         var stage = GetStage(stageId);
         if (stage == null) return new List<int>();
 

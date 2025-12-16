@@ -99,20 +99,43 @@ public class StageManager : MonoBehaviour
 
         if (stageID != -1)
         {
-            // SO를 통해 스테이지 데이터 로드
-            var stageData = DataTableManager.StageTable.GetStageData(stageID);
+            StageData stageData = null;
+
+            //  스토리 스테이지인지 확인 
+            if (stageID >= 66000 && stageID < 67000)
+            {
+                Debug.Log($"[StageManager] 스토리 스테이지 로드: {stageID}");
+
+                // 스토리 스테이지 데이터를 StageData로 변환
+                var storyStageData = DataTableManager.StoryTable.GetStoryStage(stageID);
+                if (storyStageData != null)
+                {
+                    stageData = ConvertStoryStageToStageData(storyStageData);
+                }
+                else
+                {
+                    Debug.LogWarning($"[StageManager] 스토리 스테이지 데이터를 찾을 수 없음: {stageID}");
+                }
+            }
+            else
+            {
+                // 일반 스테이지
+                stageData = DataTableManager.StageTable.GetStageData(stageID);
+            }
 
             if (stageData != null)
             {
                 SetCurrentStageData(stageData);
-
                 SetBackgroundByStageData(stageData);
-
                 SetStagePosition(stageData);
 
                 // 현재 웨이브 설정
                 int startingWave = gameData.startingWave;
                 SetWaveInfo(stageData.stage_step1, startingWave);
+            }
+            else
+            {
+                Debug.LogError($"[StageManager] 스테이지 데이터 로드 실패: {stageID}");
             }
         }
     }
@@ -382,5 +405,33 @@ public class StageManager : MonoBehaviour
             3 => fenceDownPosition,
             _ => fenceDownPosition   // 기본값은 아래
         };
+    }
+
+    private StageData ConvertStoryStageToStageData(StoryStageCSVData storyStage)
+    {
+        // StoryStageCSVData를 StageData 형태로 변환
+        var stageData = ScriptableObject.CreateInstance<StageData>();
+
+        stageData.stage_ID = storyStage.story_stage_id;
+        stageData.stage_name = storyStage.story_stage_name;
+        stageData.stage_step1 = storyStage.story_stage_id % 10; // 66001 → 1
+        stageData.stage_step2 = 1; // 스토리는 항상 1로 설정
+        stageData.stage_type = storyStage.stage_type;
+        stageData.member_count = storyStage.member_count;
+        stageData.level_max = storyStage.level_max;
+        stageData.Fever_Time_stack = storyStage.Fever_Time_stack;
+        stageData.wave_time = storyStage.wave_time;
+        stageData.wave1_id = storyStage.wave1_id;
+        stageData.wave2_id = storyStage.wave2_id;
+        stageData.wave3_id = storyStage.wave3_id;
+        stageData.wave4_id = 0; 
+        stageData.dispatch_reward = 0; // 스토리는 파견 없음
+        stageData.fail_stamina = 0; 
+        stageData.prefab = storyStage.prefab; // 배경 프리팹
+        stageData.stage_position = 2; // 기본값 (중간)
+
+        Debug.Log($"[StageManager] 스토리 스테이지 변환 완료: {storyStage.story_stage_name}");
+
+        return stageData;
     }
 }
