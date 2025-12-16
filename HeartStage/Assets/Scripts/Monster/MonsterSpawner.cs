@@ -166,6 +166,9 @@ public class MonsterSpawner : MonoBehaviour
         int totalMonsters = monsterIds.Count;
         int loadedCount = 0;
 
+        Debug.Log($"[MonsterSpawner] 스테이지 {currentStageId}의 웨이브 IDs: [{string.Join(", ", stageWaveIds)}]");
+        Debug.Log($"[MonsterSpawner] 수집된 몬스터 IDs: [{string.Join(", ", monsterIds)}]");
+
         foreach (var monsterId in monsterIds)
         {
             try
@@ -464,6 +467,7 @@ public class MonsterSpawner : MonoBehaviour
 
         if (!monsterPools.TryGetValue(monsterId, out var pool))
         {
+
             return false;
         }
 
