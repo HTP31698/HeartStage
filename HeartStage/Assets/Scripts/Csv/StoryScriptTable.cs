@@ -11,6 +11,7 @@ public class StoryScriptCSVData
     public int Line { get; set; }
     public string Name { get; set; }
     public string Text { get; set; }
+    public string CutImage { get; set; }
     public string Voice { get; set; }
 }
 
@@ -89,7 +90,6 @@ public class StoryScriptTable : DataTable
     {
         return scriptsByStage.Keys.OrderBy(id => id).ToList();
     }
-
 
     /// 전체 스크립트 데이터 반환 
     public Dictionary<int, List<StoryScriptCSVData>> GetAllScripts()

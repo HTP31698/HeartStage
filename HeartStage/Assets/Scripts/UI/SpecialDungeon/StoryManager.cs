@@ -43,7 +43,6 @@ public class StoryManager : MonoBehaviour
         // 마우스 클릭 또는 터치 감지
         if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
-            Debug.Log("[StoryManager] 화면 클릭 감지!");
             OnScreenClicked();
         }
     }
@@ -102,8 +101,40 @@ public class StoryManager : MonoBehaviour
 
     private void SetCutsceneImage(int stageId)
     {
-        // 구현 예정
+        if (currentScripts == null || currentScriptIndex < 0 || currentScriptIndex >= currentScripts.Count)
+        {
+            return;
+        }
+
+        var currentScript = currentScripts[currentScriptIndex];
+        string cutImageName = currentScript.CutImage;
+
+        if(!string.IsNullOrEmpty(cutImageName))
+        {
+            LoadAndSetCutsceneImage(cutImageName);
+        }
     }
+    private void LoadAndSetCutsceneImage(string imageName)
+    {
+        if (cutSceneImage == null) return;
+
+        var texture = ResourceManager.Instance.Get<Texture2D>(imageName);
+        if (texture != null)
+        {
+            cutSceneImage.sprite = Sprite.Create(
+                texture,
+                new Rect(0, 0, texture.width, texture.height),
+                new Vector2(0.5f, 0.5f)
+            );
+
+            Debug.Log($"[StoryManager] 컷씬 이미지 변경: {imageName}");
+        }
+        else
+        {
+            Debug.LogWarning($"[StoryManager] 이미지를 찾을 수 없음: {imageName}");
+        }
+    }
+
 
     public void StartCutscene()
     {
@@ -131,6 +162,8 @@ public class StoryManager : MonoBehaviour
         }
 
         var script = currentScripts[currentScriptIndex];
+
+        SetCutsceneImage(selectedStageId);
 
         if (nameText != null)
             nameText.text = script.Name;
