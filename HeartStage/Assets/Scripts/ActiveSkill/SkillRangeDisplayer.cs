@@ -1,13 +1,21 @@
-﻿using UnityEngine;
+﻿using DTT.AreaOfEffectRegions;
+using UnityEngine;
 
 public class SkillRangeDisplayer : MonoBehaviour
 {
     public static SkillRangeDisplayer Instance;
 
-    public SpriteRenderer boxRangeIndicator;
-    public SpriteRenderer circleRangeIndicator;
+    [Header("Indicators")]
+    public LineRegionProjector2D lineRangeIndicator;
+    public CircleRegionProjector circleRangeIndicator;
 
-    private SpriteRenderer currentIndicator;
+    [Header("Roots (Rotation / Position Control)")]
+    public Transform lineRoot;
+    public Transform circleRoot;
+
+    private Behaviour currentIndicator;
+
+    private const float PROJECTOR_Z = -5f;
 
     private void Awake()
     {
@@ -22,41 +30,32 @@ public class SkillRangeDisplayer : MonoBehaviour
 
         HideRange();
 
+        Vector3 rootPos = new Vector3(startPos.x, startPos.y, PROJECTOR_Z);
+
         // 직선형
         if (skillData.skill_range_type == 1)
         {
-            // 크기 설정 (길이 x 폭)
-            var newLocalScale = boxRangeIndicator.transform.localScale;
-            newLocalScale.x = skillData.skill_range;            // 폭
-            newLocalScale.y = skillData.skill_straight_range;   // 앞 방향 길이
-            boxRangeIndicator.transform.localScale = newLocalScale;
-            // 방향 정렬 & 위치 설정
-            boxRangeIndicator.transform.position = startPos;
-            boxRangeIndicator.transform.localRotation = Quaternion.identity;
-            // pivot을 bottom center 처럼 보이게 앞으로 절반 이동
-            boxRangeIndicator.transform.position += boxRangeIndicator.transform.up * (skillData.skill_straight_range * 0.5f);
-            currentIndicator = boxRangeIndicator;
-        }
-        // 원형
-        else if (skillData.skill_range_type == 2)
-        {
-            var newLocalScale = circleRangeIndicator.transform.localScale;
-            newLocalScale.x = skillData.skill_range * 2;
-            newLocalScale.y = skillData.skill_range * 2;
-            circleRangeIndicator.transform.localScale = newLocalScale;
-            currentIndicator = circleRangeIndicator;
-        }
-        // 방사형(일단 원형이랑 똑같이)
-        else if (skillData.skill_range_type == 3)
-        {
-            var newLocalScale = circleRangeIndicator.transform.localScale;
-            newLocalScale.x = skillData.skill_range * 2;
-            newLocalScale.y = skillData.skill_range * 2;
-            circleRangeIndicator.transform.localScale = newLocalScale;
-            currentIndicator = circleRangeIndicator;
-        }
+            lineRangeIndicator.Length = skillData.skill_straight_range;
+            lineRangeIndicator.Width = skillData.skill_range;
+            lineRangeIndicator.FillProgress = 1f;
+            lineRangeIndicator.UpdateProjectors();
 
-        currentIndicator.enabled = true;
+            lineRoot.position = rootPos;
+            lineRoot.gameObject.SetActive(true);
+
+            currentIndicator = lineRangeIndicator;
+        }
+        // 원형 / 방사형
+        else if (skillData.skill_range_type == 2 || skillData.skill_range_type == 3)
+        {
+            circleRangeIndicator.Radius = skillData.skill_range;
+            circleRangeIndicator.FillProgress = 1f;
+
+            circleRoot.position = rootPos;
+            circleRoot.gameObject.SetActive(true);
+
+            currentIndicator = circleRangeIndicator;
+        }
     }
 
     public void MoveRangeTo(Vector3 characterPos, Vector3 touchPos, int skillId)
@@ -67,40 +66,34 @@ public class SkillRangeDisplayer : MonoBehaviour
         var skillDataName = DataTableManager.SkillTable.Get(skillId).skill_name;
         var skillData = ResourceManager.Instance.Get<SkillData>(skillDataName);
 
-        // 방향 벡터
-        Vector3 dir = (touchPos - characterPos).normalized;
+        Vector2 dir = (Vector2)(touchPos - characterPos);
 
         // 직선형
         if (skillData.skill_range_type == 1)
         {
-            currentIndicator.transform.position = characterPos;
-
-            currentIndicator.transform.up = dir;
-
-            float halfRange = skillData.skill_straight_range * 0.5f;
-            currentIndicator.transform.position += currentIndicator.transform.up * halfRange;
+            // 위치
+            lineRoot.position = new Vector3(characterPos.x, characterPos.y, PROJECTOR_Z);
+            // 각도 (XY 기준)
+            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            // X=270 고정 + Z 회전
+            lineRoot.rotation = Quaternion.Euler(-angle, 90f, -90f);
         }
-        // 원형
-        else if (skillData.skill_range_type == 2)
+        // 원형 / 방사형
+        else
         {
-            // 그냥 드래그 위치로 이동
-            currentIndicator.transform.position = touchPos;
-        }
-        // 방사형(원점 고정 + 방향 회전 필요), 일단 원형이랑 똑같이
-        else if (skillData.skill_range_type == 3)
-        {
-            currentIndicator.transform.position = touchPos;
-            //currentIndicator.transform.position = characterPos;
-            //currentIndicator.transform.up = dir;
+            Vector3 pos = new Vector3(touchPos.x, touchPos.y, PROJECTOR_Z);
+            circleRoot.position = pos;
         }
     }
 
     public void HideRange()
     {
-        boxRangeIndicator.transform.localScale = Vector3.one;
-        boxRangeIndicator.enabled = false;
-        circleRangeIndicator.transform.localScale = Vector3.one;
-        circleRangeIndicator.enabled = false;
+        if (lineRoot != null)
+            lineRoot.gameObject.SetActive(false);
+
+        if (circleRoot != null)
+            circleRoot.gameObject.SetActive(false);
+
         currentIndicator = null;
     }
 }
