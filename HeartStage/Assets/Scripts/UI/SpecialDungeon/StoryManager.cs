@@ -16,7 +16,7 @@ public class StoryManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI scriptText;
 
-    private float textSpeed = 0.05f;
+    private float textSpeed = 0.1f;
     private float autoDelay = 2.5f;
 
     // 스크립트 데이터
