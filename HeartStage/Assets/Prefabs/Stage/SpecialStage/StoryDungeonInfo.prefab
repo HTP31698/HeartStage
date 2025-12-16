@@ -12,13 +12,14 @@ GameObject:
   - component: {fileID: 9006905254167594022}
   - component: {fileID: 845471408925205657}
   - component: {fileID: 6912208189776987158}
+  - component: {fileID: 7988249703879334101}
   m_Layer: 5
   m_Name: StoryDungeonInfo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5169161325532256816
 RectTransform:
   m_ObjectHideFlags: 0
@@ -102,3 +103,17 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &7988249703879334101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2538222793771937637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc71f427fc265584082a4e03658fafe5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  content: {fileID: 5169161325532256816}
+  storyInfoPrefab: {fileID: 5524776494681071767, guid: 623dcd1c7b906674fbb0236fa7332df9, type: 3}

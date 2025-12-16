@@ -1,5 +1,6 @@
 ﻿using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -82,6 +83,13 @@ public class StoryTable : DataTable
 
     public List<int> GetWaveIds(int storyStageId)
     {
+        if (stageId >= 66000 && stageId < 67000)
+        {
+            // 스토리 테이블에서 웨이브 ID 가져오기
+            return DataTableManager.StoryTable?.GetWaveIds(stageId) ?? new List<int>();
+        }
+
+        // 기존
         var storyStage = GetStoryStage(storyStageId);
         if (storyStage == null) return new List<int>();
 
