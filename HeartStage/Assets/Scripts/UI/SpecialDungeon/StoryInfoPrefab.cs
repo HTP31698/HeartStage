@@ -108,11 +108,10 @@ public class StoryInfoPrefab : MonoBehaviour
     {
         // 게임 데이터에 선택된 스토리 스테이지 ID 저장
         var gameData = SaveLoadManager.Data;
-        gameData.selectedStageID = storyStageId; // 또는 별도의 스토리 스테이지 ID 필드가 있다면 그것을 사용
+        gameData.selectedStageID = storyStageId; 
         SaveLoadManager.SaveToServer().Forget();
 
-        // 스토리 스테이지 씬으로 이동 (씬 이름은 프로젝트에 맞게 수정)
-        //LoadSceneManager.Instance.LoadScene("StoryStageScene"); // 또는 해당하는 스토리 스테이지 씬 이름
+        GameSceneManager.ChangeScene(SceneType.StoryScene);
 
         Debug.Log($"Story Stage {storyStageId} started: {stageData.story_stage_name}");
     }
@@ -134,8 +133,6 @@ public class StoryInfoPrefab : MonoBehaviour
         // 예: SaveLoadManager.Data에서 완료된 스토리 스테이지 목록 확인
         return false; // 임시 반환값
     }
-
-
 
     /// 스테이지 잠금 상태 확인 및 UI 업데이트
     //public void UpdateLockState(string currentChar, int currentRank)

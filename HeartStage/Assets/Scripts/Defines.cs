@@ -32,8 +32,9 @@ public static class DataTableIds
     public static string Slang => "SlangTable";
     public static string InfiniteStage => "InfiniteStageTable";
     public static string InfiniteMonster => "InfiniteMonsterTable";
-
     public static string Story => "StoryStageTable";
+
+    public static string StoryScript => "StoryScriptTable";
 }
 
 public class Tag
@@ -92,6 +93,7 @@ public enum SceneType
     TestStageScene = 3,
     TestStageWaveScene = 4,
     InfiniteTestScene = 5,
+    StoryScene = 6,
 }
 
 public class SoundName

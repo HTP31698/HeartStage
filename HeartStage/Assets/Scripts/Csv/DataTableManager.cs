@@ -179,6 +179,13 @@ public static class DataTableManager
             await table.LoadAsync(id);
             tables.Add(id, table);
         }
+
+        {
+            var table = new StoryScriptTable();
+            var id = DataTableIds.StoryScript;
+            await table.LoadAsync(id);
+            tables.Add(id, table);
+        }
     }
 
     public static ItemTable ItemTable
@@ -366,6 +373,13 @@ public static class DataTableManager
         get
         {
             return Get<StoryTable>(DataTableIds.Story);
+        }
+    }
+    public static StoryScriptTable StoryScriptTable
+    {
+        get
+        {
+            return Get<StoryScriptTable>(DataTableIds.StoryScript);
         }
     }
 
