@@ -151,62 +151,62 @@ public class CurrencyIcon
 
 public static class StatPower
 {
-    // 능력치 파워 = (능력치 / 기준값(BaseLine)) * 영향도(Weight)
-    private static float vocalBaseLine = 1f;
+    // 능력치 파워 = 능력치 * 기준값(BaseLine) * 영향도(Weight)
+    private static float vocalBaseLine = 10f;
     private static float vocalWeight = 0.3f;
 
-    private static float labBaseLine = 0.01f;
+    private static float labBaseLine = 100f;
     private static float labWeight = 0.2f;
 
-    private static float charismaBaseLine = 0.05f;
+    private static float charismaBaseLine = 10f;
     private static float charismaWeight = 0.1f;
 
-    private static float cutyBaseLine = 0.05f;
+    private static float cutyBaseLine = 10f;
     private static float cutyWeight = 0.05f;
 
-    private static float danceBaseLine = 10f;
+    private static float danceBaseLine = 1f;
     private static float danceWeight = 0.15f;
 
-    private static float visualBaseLine = 0.05f;
+    private static float visualBaseLine = 10f;
     private static float visualWeight = 0.1f;
 
-    private static float sexyBaseLine = 0.01f;
+    private static float sexyBaseLine = 100f;
     private static float sexyWeight = 0.1f;
 
     //        Power Functions
     public static int GetVocalPower(float value)
     {
-        return Mathf.CeilToInt((value / vocalBaseLine) * vocalWeight);
+        return Mathf.CeilToInt(value * vocalBaseLine * vocalWeight);
     }
 
     public static int GetLabPower(float value)
     {
-        return Mathf.CeilToInt((value / labBaseLine) * labWeight);
+        return Mathf.CeilToInt(value * labBaseLine * labWeight);
     }
 
     public static int GetCharismaPower(float value)
     {
-        return Mathf.CeilToInt((value / charismaBaseLine) * charismaWeight);
+        return Mathf.CeilToInt(value * charismaBaseLine * charismaWeight);
     }
 
     public static int GetCutyPower(float value)
     {
-        return Mathf.CeilToInt((value / cutyBaseLine) * cutyWeight);
+        return Mathf.CeilToInt(value * cutyBaseLine * cutyWeight);
     }
 
     public static int GetDancePower(float value)
     {
-        return Mathf.CeilToInt((value / danceBaseLine) * danceWeight);
+        return Mathf.CeilToInt(value * danceBaseLine * danceWeight);
     }
 
     public static int GetVisualPower(float value)
     {
-        return Mathf.CeilToInt((value / visualBaseLine) * visualWeight);
+        return Mathf.CeilToInt(value * visualBaseLine * visualWeight);
     }
 
     public static int GetSexyPower(float value)
     {
-        return Mathf.CeilToInt((value / sexyBaseLine) * sexyWeight);
+        return Mathf.CeilToInt(value * sexyBaseLine * sexyWeight);
     }
 }
 

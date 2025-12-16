@@ -4,8 +4,8 @@ using UnityEngine;
 public class TestShadowSkill : MonoBehaviour
 {
     // 하드코딩된 기본값들 - 바로 사용 가능!
-    private float coolTime = 15f;           // 15초 쿨타임
-    private float skillDuration = 20f;      // 20초 지속시간
+    private float coolTime = 5f;           // 5초 쿨타임
+    private float skillDuration = 3f;      // 3초 지속시간
     private float sizeIncreaseValue = 0.5f; // 50% 크기 증가
     private float healthIncreaseValue = 0.3f; // 30% 체력 증가
 
