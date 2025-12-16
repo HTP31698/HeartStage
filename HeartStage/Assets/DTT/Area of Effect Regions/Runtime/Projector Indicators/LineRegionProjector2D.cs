@@ -26,6 +26,7 @@ namespace DTT.AreaOfEffectRegions
         [SerializeField] private float _zDepth = -0.1f;
 
         private const float ARROW_OFFSET = 2.9835f;
+        public float WIDTH_VISUAL_FIX = 1.7f;
 
         #region Properties
         public float Length
@@ -86,24 +87,28 @@ namespace DTT.AreaOfEffectRegions
 
         private void UpdateBody()
         {
-            if (_bodyProjector == null) return;
+            if (_bodyProjector == null)
+                return;
 
-            float halfHeight = _length * 0.5f;
-            _bodyProjector.orthographicSize = halfHeight;
-            _bodyProjector.aspectRatio = _width / _length;
-            _bodyProjector.transform.localPosition = new Vector3(0f, halfHeight, _zDepth);
+            float height = _length;
+            float width = _width;
+            _bodyProjector.orthographicSize = height * 0.5f;
+            _bodyProjector.aspectRatio = (width * WIDTH_VISUAL_FIX) / height;
+            _bodyProjector.transform.localPosition = new Vector3(0f, height * 0.5f, _zDepth);
 
             ApplyMaterial(_bodyProjector.material);
         }
 
         private void UpdateHead()
         {
-            if (_headProjector == null) return;
+            if (_headProjector == null)
+                return;
 
-            float halfHeight = _length * 0.5f;
-            _headProjector.orthographicSize = halfHeight;
-            _headProjector.aspectRatio = _width / _length;
-            _headProjector.transform.localPosition = new Vector3(0f, _length * ARROW_OFFSET, _zDepth);
+            float height = _length;
+            float width = _width;
+            _headProjector.orthographicSize = height * 0.5f;
+            _headProjector.aspectRatio = (width * WIDTH_VISUAL_FIX) / height;
+            _headProjector.transform.localPosition = new Vector3(0f, height, _zDepth);
 
             ApplyMaterial(_headProjector.material);
         }

@@ -65,24 +65,23 @@ public class SkillRangeDisplayer : MonoBehaviour
 
         var skillDataName = DataTableManager.SkillTable.Get(skillId).skill_name;
         var skillData = ResourceManager.Instance.Get<SkillData>(skillDataName);
-
-        Vector2 dir = (Vector2)(touchPos - characterPos);
-
+        // 2D 방향 벡터
+        Vector2 dir = (touchPos - characterPos).normalized;
         // 직선형
         if (skillData.skill_range_type == 1)
         {
-            // 위치
-            lineRoot.position = new Vector3(characterPos.x, characterPos.y, PROJECTOR_Z);
-            // 각도 (XY 기준)
+            // 회전
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-            // X=270 고정 + Z 회전
             lineRoot.rotation = Quaternion.Euler(-angle, 90f, -90f);
+            // pivot 보정 (bottom pivot처럼)
+            Vector3 pivotOffset = (Vector3)dir * (lineRangeIndicator.Length * 0.5f);
+            // 위치
+            lineRoot.position = new Vector3(characterPos.x, characterPos.y, PROJECTOR_Z) + pivotOffset;
         }
-        // 원형 / 방사형
+        // 원형
         else
         {
-            Vector3 pos = new Vector3(touchPos.x, touchPos.y, PROJECTOR_Z);
-            circleRoot.position = pos;
+            circleRoot.position = new Vector3(touchPos.x, touchPos.y, PROJECTOR_Z);
         }
     }
 
