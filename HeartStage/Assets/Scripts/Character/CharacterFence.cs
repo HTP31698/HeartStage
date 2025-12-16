@@ -122,13 +122,19 @@ public class CharacterFence : MonoBehaviour, IDamageable
             Die();            
         }
         UpdateAllFencesHpText();
-
-        Debug.Log($"{damage} 받음");
     }
 
     public void Die()
     {
-        StageManager.Instance.Defeat();
+        // 무한 모드면 InfiniteDefeat 호출
+        if (StageManager.Instance.isInfiniteMode)
+        {
+            StageManager.Instance.InfiniteDefeat();
+        }
+        else
+        {
+            StageManager.Instance.Defeat();
+        }
     }
 
     private void StartShake()

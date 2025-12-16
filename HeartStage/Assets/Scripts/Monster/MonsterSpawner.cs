@@ -32,9 +32,21 @@ public class MonsterSpawner : MonoBehaviour
     private int currentStageId;
     [SerializeField] private int spawnedMonsterCount = 3;
 
-    private bool manualStart = false; // 수동 시작 플래그 
+    private bool manualStart = false; // 수동 시작 플래그
 
-    public static System.Action OnWaveCleared; // 웨이브 클리어 이벤트 
+    public static System.Action OnWaveCleared; // 웨이브 클리어 이벤트
+
+    // ========== 무한 모드 ==========
+    private bool isInfiniteSpawning = false;
+    private float infiniteSpawnTimer = 0f;
+    private float fastMonsterTimer = 0f;
+    private float tankMonsterTimer = 0f;
+    private float strongMonsterTimer = 0f;
+    private bool fastMonsterFirstSpawned = false;
+    private bool tankMonsterFirstSpawned = false;
+    private bool strongMonsterFirstSpawned = false;
+    private List<int> infiniteBaseMonsterIds = new List<int>();
+    private int lastAlertedEnhanceLevel = 1; // 마지막으로 알림 표시한 강화 레벨 (시작 레벨과 동일하게) 
 
     // 스테이지 & 웨이브 관리
     private StageWaveData currentWaveData;      // 현재 진행 중인 웨이브 데이터
@@ -122,8 +134,16 @@ public class MonsterSpawner : MonoBehaviour
         }
 
         manualStart = true;
-        StartWaveProgression().Forget();
-        Debug.Log("[MonsterSpawner] 스테이지 시작 이벤트 받음 - 웨이브 시작!");
+
+        // 무한 모드 분기
+        if (StageManager.Instance != null && StageManager.Instance.isInfiniteMode)
+        {
+            StartInfiniteSpawning().Forget();
+        }
+        else
+        {
+            StartWaveProgression().Forget();
+        }
     }
 
     //로딩 및 초기화
@@ -143,24 +163,57 @@ public class MonsterSpawner : MonoBehaviour
         stageWaveIds = DataTableManager.StageTable.GetWaveIds(currentStageId);
         currentWaveIndex = 0;
 
-        if (stageWaveIds.Count == 0)
+        var monsterIds = new HashSet<int>();
+
+        // 무한 모드: StageManager.isInfiniteMode 체크 (SaveData 플래그는 이미 리셋됨)
+        if (StageManager.Instance != null && StageManager.Instance.isInfiniteMode)
         {
+            var infiniteData = StageManager.Instance.infiniteStageData;
+            if (infiniteData != null)
+            {
+                // 기본 몬스터 ID들
+                var baseIds = DataTableManager.InfiniteStageTable.GetBaseMonsterIds(infiniteData);
+                foreach (var id in baseIds)
+                {
+                    if (id > 0) monsterIds.Add(id);
+                }
+
+                // 특수 몬스터 ID들
+                if (infiniteData.fast_mon_id > 0) monsterIds.Add(infiniteData.fast_mon_id);
+                if (infiniteData.tank_mon_id > 0) monsterIds.Add(infiniteData.tank_mon_id);
+                if (infiniteData.strong_mon_id > 0) monsterIds.Add(infiniteData.strong_mon_id);
+            }
+        }
+
+        // 일반 모드: 웨이브 테이블에서 몬스터 ID 수집
+        if (stageWaveIds.Count > 0)
+        {
+            foreach (var waveId in stageWaveIds)
+            {
+                var waveData = DataTableManager.StageWaveTable.GetWaveData(waveId);
+                if (waveData != null)
+                {
+                    if (waveData.EnemyID1 > 0) monsterIds.Add(waveData.EnemyID1);
+                    if (waveData.EnemyID2 > 0) monsterIds.Add(waveData.EnemyID2);
+                    if (waveData.EnemyID3 > 0) monsterIds.Add(waveData.EnemyID3);
+                }
+            }
+        }
+
+        if (monsterIds.Count == 0)
+        {
+            Debug.LogWarning("[MonsterSpawner] 로드할 몬스터가 없습니다!");
             ReportMonsterProgress(1.0f);
             return;
         }
 
-        var monsterIds = new HashSet<int>();
-        foreach (var waveId in stageWaveIds)
-        {
-            var waveData = DataTableManager.StageWaveTable.GetWaveData(waveId);
-            if (waveData != null)
-            {
-                if (waveData.EnemyID1 > 0) monsterIds.Add(waveData.EnemyID1);
-                if (waveData.EnemyID2 > 0) monsterIds.Add(waveData.EnemyID2);
-                if (waveData.EnemyID3 > 0) monsterIds.Add(waveData.EnemyID3);
-            }
-        }
         ReportMonsterProgress(0.2f);
+
+        // 2.5) 무한 모드 비주얼 프리팹 프리로드
+        if (StageManager.Instance != null && StageManager.Instance.isInfiniteMode)
+        {
+            await PreloadInfiniteVisualPrefabs();
+        }
 
         // 3) MonsterData SO 로딩 (0.2 ~ 0.5)
         int totalMonsters = monsterIds.Count;
@@ -177,9 +230,14 @@ public class MonsterSpawner : MonoBehaviour
                     monsterDataSO.InitFromCSV(monsterId);
                     monsterDataCache[monsterId] = monsterDataSO;
                 }
+                else
+                {
+                    Debug.LogWarning($"[MonsterSpawner] MonsterData_{monsterId} 로드 실패 (null)");
+                }
             }
-            catch
+            catch (System.Exception ex)
             {
+                Debug.LogError($"[MonsterSpawner] MonsterData_{monsterId} 로드 오류: {ex.Message}");
             }
 
             loadedCount++;
@@ -543,7 +601,44 @@ public class MonsterSpawner : MonoBehaviour
         }
     }
 
-    // 수정된 AddVisualChild - 보스 몬스터 체크 추가
+    // 무한 모드용 랜덤 비주얼 프리팹 목록 (실제 존재하는 프리팹만)
+    private static readonly string[] infiniteVisualPrefabs = new string[]
+    {
+        "monster_21111", "monster_21112", "monster_21113",
+        "monster_21121", "monster_21122", "monster_21123",
+        "monster_21131", "monster_21132", "monster_21133",
+        "monster_21211", "monster_21212", "monster_21213",
+        "monster_21221", "monster_21222", "monster_21223",
+        "monster_21231", "monster_21232", "monster_21233"
+    };
+
+    // 프리로드된 비주얼 프리팹 캐시
+    private Dictionary<string, GameObject> visualPrefabCache = new Dictionary<string, GameObject>();
+
+    // 무한 모드 비주얼 프리팹 프리로드
+    private async UniTask PreloadInfiniteVisualPrefabs()
+    {
+        visualPrefabCache.Clear();
+
+        foreach (var prefabName in infiniteVisualPrefabs)
+        {
+            try
+            {
+                var handle = Addressables.LoadAssetAsync<GameObject>(prefabName);
+                var prefab = await handle.Task;
+                if (prefab != null)
+                {
+                    visualPrefabCache[prefabName] = prefab;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[MonsterSpawner] 비주얼 프리팹 로드 실패 ({prefabName}): {ex.Message}");
+            }
+        }
+    }
+
+    // 수정된 AddVisualChild - 무한 모드 랜덤 비주얼 지원
     private void AddVisualChild(GameObject monster, MonsterData monsterData)
     {
         // 보스 몬스터는 이미 완성된 프리팹이므로 추가 비주얼 불필요
@@ -552,26 +647,76 @@ public class MonsterSpawner : MonoBehaviour
             return;
         }
 
-        if (string.IsNullOrEmpty(monsterData.prefab1))
+        string prefabName = monsterData.prefab1;
+
+        // 무한 모드 기본 몬스터만 랜덤 비주얼 사용 (특수 몬스터는 자기 프리팹)
+        if (monsterData.id >= 24000 && monsterData.id < 25000)
         {
+            // 특수 몬스터인지 체크
+            bool isSpecialMonster = false;
+            if (StageManager.Instance != null && StageManager.Instance.infiniteStageData != null)
+            {
+                var data = StageManager.Instance.infiniteStageData;
+                isSpecialMonster = (monsterData.id == data.fast_mon_id ||
+                                    monsterData.id == data.tank_mon_id ||
+                                    monsterData.id == data.strong_mon_id);
+            }
+
+            // 특수 몬스터가 아닌 경우에만 랜덤 비주얼
+            if (!isSpecialMonster)
+            {
+                prefabName = infiniteVisualPrefabs[UnityEngine.Random.Range(0, infiniteVisualPrefabs.Length)];
+            }
+        }
+
+        if (string.IsNullOrEmpty(prefabName))
+        {
+            Debug.LogWarning($"[MonsterSpawner] 비주얼 프리팹 이름 없음: {monsterData.id}");
             return;
         }
 
-        try
+        // 1. 먼저 프리로드된 캐시에서 시도
+        GameObject visualPrefab = null;
+        if (visualPrefabCache.TryGetValue(prefabName, out var cachedPrefab))
         {
-            GameObject visualPrefab = ResourceManager.Instance.Get<GameObject>(monsterData.prefab1);
-            if (visualPrefab != null)
-            {
-                var visualChild = Instantiate(visualPrefab, monster.transform);
-                visualChild.name = $"{monsterData.prefab1}";
+            visualPrefab = cachedPrefab;
+        }
 
-                visualChild.transform.localPosition = Vector3.zero;
-                visualChild.transform.localRotation = Quaternion.identity;
+        // 2. 캐시에 없으면 ResourceManager에서 시도
+        if (visualPrefab == null)
+        {
+            try
+            {
+                visualPrefab = ResourceManager.Instance.Get<GameObject>(prefabName);
+            }
+            catch { }
+        }
+
+        // 3. 무한 모드 몬스터인데 로드 실패 시 캐시된 다른 프리팹 사용
+        if (visualPrefab == null && monsterData.id >= 24000 && monsterData.id < 25000)
+        {
+            foreach (var kvp in visualPrefabCache)
+            {
+                if (kvp.Value != null)
+                {
+                    visualPrefab = kvp.Value;
+                    prefabName = kvp.Key;
+                    break;
+                }
             }
         }
-        catch
+
+        if (visualPrefab == null)
         {
+            Debug.LogWarning($"[MonsterSpawner] 비주얼 프리팹 로드 최종 실패: {monsterData.id}");
+            return;
         }
+
+        var visualChild = Instantiate(visualPrefab, monster.transform);
+        // 이름은 monsterData.prefab1로 설정 (ActivateVisual에서 찾을 수 있도록)
+        visualChild.name = monsterData.prefab1;
+        visualChild.transform.localPosition = Vector3.zero;
+        visualChild.transform.localRotation = Quaternion.identity;
     }
 
     // 다음에 스폰할 몬스터 선택
@@ -644,6 +789,9 @@ public class MonsterSpawner : MonoBehaviour
     // 리소스 정리
     private void OnDestroy()
     {
+        // 무한 모드 스폰 중지
+        StopInfiniteSpawning();
+
         OnWaveCleared -= ClearAllSummonedMonsters;
         StageSetupWindow.OnStageStarted -= OnStageStarted;
 
@@ -984,5 +1132,234 @@ public class MonsterSpawner : MonoBehaviour
         }
 
         Debug.Log("웨이브 클리어: 모든 소환된 몬스터 정리 완료");
+    }
+
+    // ========== 무한 모드 스폰 ==========
+    private async UniTask StartInfiniteSpawning()
+    {
+        var data = StageManager.Instance.infiniteStageData;
+        if (data == null)
+        {
+            Debug.LogError("[MonsterSpawner] 무한 스테이지 데이터가 없습니다!");
+            return;
+        }
+
+        isInfiniteSpawning = true;
+        infiniteSpawnTimer = 0f;
+        fastMonsterTimer = 0f;
+        tankMonsterTimer = 0f;
+        strongMonsterTimer = 0f;
+        fastMonsterFirstSpawned = false;
+        tankMonsterFirstSpawned = false;
+        strongMonsterFirstSpawned = false;
+
+        // 기본 몬스터 ID 파싱
+        infiniteBaseMonsterIds = DataTableManager.InfiniteStageTable.GetBaseMonsterIds(data);
+
+        while (isInfiniteSpawning)
+        {
+            float elapsed = StageManager.Instance.infiniteElapsedTime;
+
+            // 기본 몬스터 스폰
+            infiniteSpawnTimer += Time.deltaTime;
+            if (infiniteSpawnTimer >= data.spawn_interval)
+            {
+                infiniteSpawnTimer = 0f;
+                TrySpawnInfiniteMonster(infiniteBaseMonsterIds, data.max_monsters);
+            }
+
+            // 이속형 특수 몬스터
+            if (data.fast_mon_id > 0 && elapsed >= data.fast_spawn_time)
+            {
+                if (!fastMonsterFirstSpawned)
+                {
+                    fastMonsterFirstSpawned = true;
+                    TrySpawnInfiniteMonster(new List<int> { data.fast_mon_id }, data.max_monsters);
+                }
+                else
+                {
+                    fastMonsterTimer += Time.deltaTime;
+                    if (fastMonsterTimer >= data.fast_spawn_interval)
+                    {
+                        fastMonsterTimer = 0f;
+                        TrySpawnInfiniteMonster(new List<int> { data.fast_mon_id }, data.max_monsters);
+                    }
+                }
+            }
+
+            // 탱커형 특수 몬스터
+            if (data.tank_mon_id > 0 && elapsed >= data.tank_spawn_time)
+            {
+                if (!tankMonsterFirstSpawned)
+                {
+                    tankMonsterFirstSpawned = true;
+                    TrySpawnInfiniteMonster(new List<int> { data.tank_mon_id }, data.max_monsters);
+                }
+                else
+                {
+                    tankMonsterTimer += Time.deltaTime;
+                    if (tankMonsterTimer >= data.tank_spawn_interval)
+                    {
+                        tankMonsterTimer = 0f;
+                        TrySpawnInfiniteMonster(new List<int> { data.tank_mon_id }, data.max_monsters);
+                    }
+                }
+            }
+
+            // 강화형 특수 몬스터
+            if (data.strong_mon_id > 0 && elapsed >= data.strong_spawn_time)
+            {
+                if (!strongMonsterFirstSpawned)
+                {
+                    strongMonsterFirstSpawned = true;
+                    TrySpawnInfiniteMonster(new List<int> { data.strong_mon_id }, data.max_monsters);
+                }
+                else
+                {
+                    strongMonsterTimer += Time.deltaTime;
+                    if (strongMonsterTimer >= data.strong_spawn_interval)
+                    {
+                        strongMonsterTimer = 0f;
+                        TrySpawnInfiniteMonster(new List<int> { data.strong_mon_id }, data.max_monsters);
+                    }
+                }
+            }
+
+            await UniTask.Yield();
+        }
+    }
+
+    private void TrySpawnInfiniteMonster(List<int> monsterIds, int maxMonsters)
+    {
+        // 현재 활성 몬스터 수 체크 (풀 기반)
+        int activeCount = GetActiveMonsterCountFromPools();
+
+        if (activeCount >= maxMonsters)
+            return;
+
+        // 랜덤 몬스터 선택
+        if (monsterIds.Count == 0) return;
+        int monsterId = monsterIds[UnityEngine.Random.Range(0, monsterIds.Count)];
+
+        // 풀에서 스폰
+        SpawnInfiniteMonster(monsterId);
+    }
+
+    private void SpawnInfiniteMonster(int monsterId)
+    {
+        if (!monsterPools.TryGetValue(monsterId, out var pool))
+        {
+            Debug.LogWarning($"[무한모드] 몬스터 풀 없음: {monsterId}");
+            return;
+        }
+
+        foreach (var monster in pool)
+        {
+            if (monster != null && !monster.activeInHierarchy)
+            {
+                Vector3? safePos = FindSpawnPosition(false);
+                if (!safePos.HasValue) return;
+
+                monster.transform.position = safePos.Value;
+
+                if (monsterDataCache.TryGetValue(monsterId, out var monsterData))
+                {
+                    var monsterBehavior = monster.GetComponent<MonsterBehavior>();
+                    if (monsterBehavior != null)
+                    {
+                        monsterBehavior.Init(monsterData);
+
+                        // 강화 배율 적용
+                        float hpMul = StageManager.Instance.GetInfiniteHpMultiplier();
+                        if (hpMul > 1f)
+                        {
+                            int newMaxHP = Mathf.RoundToInt(monsterData.hp * hpMul);
+                            monsterBehavior.SetMaxHP(newMaxHP, false);
+                            monsterBehavior.SetCurrentHP(newMaxHP);
+                        }
+
+                        float atkMul = StageManager.Instance.GetInfiniteAtkMultiplier();
+                        if (atkMul > 1f)
+                        {
+                            int newAtt = Mathf.RoundToInt(monsterData.att * atkMul);
+                            monsterBehavior.SetAtt(newAtt);
+                        }
+                    }
+
+                    var monsterMovement = monster.GetComponent<MonsterMovement>();
+                    if (monsterMovement != null)
+                    {
+                        float speedMul = StageManager.Instance.GetInfiniteSpeedMultiplier();
+                        float newSpeed = monsterData.moveSpeed * speedMul;
+                        monsterMovement.SetMoveSpeed(newSpeed);
+                    }
+                }
+
+                var renderers = monster.GetComponentsInChildren<Renderer>(true);
+                foreach (var renderer in renderers)
+                {
+                    renderer.enabled = true;
+                }
+
+                monster.SetActive(true);
+
+                // 특수 몬스터 스폰 로그
+                if (StageManager.Instance != null && StageManager.Instance.infiniteStageData != null)
+                {
+                    var data = StageManager.Instance.infiniteStageData;
+                    float elapsed = StageManager.Instance.infiniteElapsedTime;
+                    int minutes = (int)(elapsed / 60);
+                    int seconds = (int)(elapsed % 60);
+
+                    if (monsterId == data.fast_mon_id)
+                        Debug.Log($"<color=cyan>[무한모드] ⚡ 이속형 몬스터 출현! ({minutes:D2}:{seconds:D2})</color>");
+                    else if (monsterId == data.tank_mon_id)
+                        Debug.Log($"<color=orange>[무한모드] 🛡️ 탱커형 몬스터 출현! ({minutes:D2}:{seconds:D2})</color>");
+                    else if (monsterId == data.strong_mon_id)
+                        Debug.Log($"<color=red>[무한모드] 💪 강화형 몬스터 출현! ({minutes:D2}:{seconds:D2})</color>");
+                }
+
+                // 강화 레벨이 올라간 후 첫 몬스터 스폰 시 알림
+                int currentEnhanceLevel = StageManager.Instance.infiniteEnhanceLevel;
+                if (currentEnhanceLevel > lastAlertedEnhanceLevel)
+                {
+                    lastAlertedEnhanceLevel = currentEnhanceLevel;
+                    BossAlertUI.SetEnhanceAlert(currentEnhanceLevel);
+                    if (WindowManager.Instance != null)
+                    {
+                        WindowManager.Instance.OpenOverlay(WindowType.BossAlert);
+                    }
+                }
+
+                return;
+            }
+        }
+    }
+
+    public void StopInfiniteSpawning()
+    {
+        isInfiniteSpawning = false;
+    }
+
+    // 무한 모드용 몬스터 사망 처리 (기존 OnMonsterDied와 별개)
+    public void OnInfiniteMonsterDied(int monsterId)
+    {
+        // 무한 모드에서는 웨이브 카운트 무시, 퀘스트만 처리
+        QuestManager.Instance.OnMonsterKilled(monsterId);
+    }
+
+    // 풀에서 활성화된 몬스터 수 계산 (Find 대신 사용)
+    private int GetActiveMonsterCountFromPools()
+    {
+        int count = 0;
+        foreach (var pool in monsterPools.Values)
+        {
+            foreach (var monster in pool)
+            {
+                if (monster != null && monster.activeInHierarchy)
+                    count++;
+            }
+        }
+        return count;
     }
 }

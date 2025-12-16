@@ -40,6 +40,13 @@ public class StageUI : MonoBehaviour
         remainMonsterCountText.text = $"{remainMonsterCount}";
     }
 
+    // 무한 모드 UI 업데이트
+    public void SetInfiniteInfo(int minutes, int seconds, int enhanceLevel)
+    {
+        waveCountText.text = $"무한 스테이지\n{minutes:D2}:{seconds:D2}";
+        remainMonsterCountText.text = $"Lv.{enhanceLevel}";
+    }
+
     public void OnFeverButtonClicked()
     {
         StageManager.Instance.FeverStartAsync().Forget();

@@ -40,6 +40,14 @@ public class StageManager : MonoBehaviour
     public bool isFever = false;
     private int feverCount = 0;
 
+    // ========== 무한 모드 ==========
+    [HideInInspector] public bool isInfiniteMode = false;
+    [HideInInspector] public InfiniteStageCSVData infiniteStageData;
+    [HideInInspector] public float infiniteElapsedTime = 0f;      // 경과 시간
+    [HideInInspector] public int infiniteEnhanceLevel = 0;        // 강화 레벨
+    private float nextEnhanceTime = 0f;                           // 다음 강화 시간
+    private bool infiniteStageStarted = false;                    // 배치 완료 후 시작 여부
+
     public float feverDuration = 6.0f;
     public float feverValue = 0.9f; // 피버 타임시 액티브 스킬 쿨타임이 줄어드는 퍼센트 0.9 -> 90% 감소
 
@@ -81,6 +89,9 @@ public class StageManager : MonoBehaviour
         Instance = this;
 
         CharacterFence.ResetStaticHP();
+
+        // 무한 모드: 스테이지 시작 이벤트 구독
+        StageSetupWindow.OnStageStarted += OnInfiniteStageStarted;
     }
 
     private async void Start()
@@ -97,6 +108,38 @@ public class StageManager : MonoBehaviour
         var gameData = SaveLoadManager.Data;
         int stageID = gameData.selectedStageID;
 
+        // 무한 모드 체크
+        if (gameData.isInfiniteMode && gameData.infiniteStageId > 0)
+        {
+            var infiniteData = DataTableManager.InfiniteStageTable?.Get(gameData.infiniteStageId);
+            if (infiniteData != null)
+            {
+                InitInfiniteMode(infiniteData);
+
+                // 기본 스테이지 데이터 설정 (UI 등에서 사용)
+                if (stageID != -1)
+                {
+                    var stageData = DataTableManager.StageTable.GetStageData(stageID);
+                    if (stageData != null)
+                    {
+                        SetCurrentStageData(stageData);
+                    }
+                }
+
+                // 배경은 InfiniteStageTable의 prefab 직접 사용
+                SetBackgroundByPrefabName(infiniteData.prefab);
+
+                // 위치는 InfiniteStageTable의 stage_position 직접 사용
+                SetStagePosition(infiniteData.stage_position);
+
+                // 플래그 리셋 (다음 씬에서 일반 모드로)
+                gameData.isInfiniteMode = false;
+                gameData.infiniteStageId = 0;
+                return;
+            }
+        }
+
+        // 일반 모드
         if (stageID != -1)
         {
             // SO를 통해 스테이지 데이터 로드
@@ -134,9 +177,95 @@ public class StageManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    private void Update()
+    {
+        if (!isInfiniteMode || infiniteStageData == null || !infiniteStageStarted)
+            return;
+
+        infiniteElapsedTime += Time.deltaTime;
+
+        // 강화 타이머
+        if (infiniteElapsedTime >= nextEnhanceTime)
+        {
+            infiniteEnhanceLevel++;
+            nextEnhanceTime += infiniteStageData.enhance_interval;
+        }
+
+        // UI 시간 표시
+        if (stageUI != null)
+        {
+            int minutes = (int)(infiniteElapsedTime / 60);
+            int seconds = (int)(infiniteElapsedTime % 60);
+            stageUI.SetInfiniteInfo(minutes, seconds, infiniteEnhanceLevel);
+        }
+    }
+
     private void OnDestroy()
     {
         SetTimeScale(1f);
+        StageSetupWindow.OnStageStarted -= OnInfiniteStageStarted;
+    }
+
+    private void OnInfiniteStageStarted()
+    {
+        if (isInfiniteMode)
+        {
+            infiniteStageStarted = true;
+        }
+    }
+
+    // ========== 무한 모드 메서드 ==========
+    public void InitInfiniteMode(InfiniteStageCSVData data)
+    {
+        isInfiniteMode = true;
+        infiniteStageData = data;
+        infiniteElapsedTime = 0f;
+        infiniteEnhanceLevel = 1; // Lv.1부터 시작
+        nextEnhanceTime = data.enhance_interval;
+    }
+
+    public void ResetInfiniteMode()
+    {
+        isInfiniteMode = false;
+        infiniteStageData = null;
+        infiniteElapsedTime = 0f;
+        infiniteEnhanceLevel = 0;
+        nextEnhanceTime = 0f;
+        infiniteStageStarted = false;
+    }
+
+    public float GetInfiniteAtkMultiplier()
+    {
+        if (!isInfiniteMode || infiniteStageData == null) return 1f;
+        return Mathf.Pow(infiniteStageData.atk_mul, infiniteEnhanceLevel);
+    }
+
+    public float GetInfiniteHpMultiplier()
+    {
+        if (!isInfiniteMode || infiniteStageData == null) return 1f;
+        return Mathf.Pow(infiniteStageData.hp_mul, infiniteEnhanceLevel);
+    }
+
+    public float GetInfiniteSpeedMultiplier()
+    {
+        if (!isInfiniteMode || infiniteStageData == null) return 1f;
+        return Mathf.Pow(infiniteStageData.speed_mul, infiniteEnhanceLevel);
+    }
+
+    // 무한 모드 게임 오버
+    public void InfiniteDefeat()
+    {
+        if (!isInfiniteMode) return;
+
+        // 보상 계산 (초당 보상)
+        int rewardAmount = (int)(infiniteElapsedTime / infiniteStageData.reward_per_second);
+        if (rewardAmount > 0 && infiniteStageData.reward_item_id > 0)
+        {
+            ItemInvenHelper.AddItem(infiniteStageData.reward_item_id, rewardAmount);
+        }
+
+        // 패배 UI 표시
+        Defeat();
     }
 
     // 스테이지 관련 추가 한 것
@@ -300,13 +429,23 @@ public class StageManager : MonoBehaviour
             return;
         }
 
+        SetBackgroundByPrefabName(stageData.prefab);
+    }
+
+    public void SetBackgroundByPrefabName(string prefabName)
+    {
+        if (string.IsNullOrEmpty(prefabName) || prefabName == "nan")
+        {
+            return;
+        }
+
         if (backGroundSprite == null)
         {
             return;
         }
 
         // 먼저 Sprite로 시도
-        var backgroundSprite = ResourceManager.Instance.Get<Sprite>(stageData.prefab);
+        var backgroundSprite = ResourceManager.Instance.Get<Sprite>(prefabName);
         if (backgroundSprite != null)
         {
             backGroundSprite.sprite = backgroundSprite;
@@ -314,7 +453,7 @@ public class StageManager : MonoBehaviour
         }
 
         // Sprite가 없으면 Texture2D로 시도하고 Sprite로 변환
-        var backgroundTexture = ResourceManager.Instance.Get<Texture2D>(stageData.prefab);
+        var backgroundTexture = ResourceManager.Instance.Get<Texture2D>(prefabName);
         if (backgroundTexture != null)
         {
             // Texture2D를 Sprite로 변환
@@ -326,17 +465,21 @@ public class StageManager : MonoBehaviour
             backGroundSprite.sprite = sprite;
             return;
         }
+
+        Debug.LogWarning($"[StageManager] 배경 프리팹을 찾을 수 없음: {prefabName}");
     }
 
     private void SetStagePosition(StageData stageData)
     {
         if (stageData == null)
-        {
             return;
-        }
+        SetStagePosition(stageData.stage_position);
+    }
 
-        Vector3 targetPosition = GetPositionByStagePosition(stageData.stage_position);
-        Vector3 fencePosition = GetPositionByFencePosition(stageData.stage_position);
+    private void SetStagePosition(int stagePosition)
+    {
+        Vector3 targetPosition = GetPositionByStagePosition(stagePosition);
+        Vector3 fencePosition = GetPositionByFencePosition(stagePosition);
 
         if (stage != null)
         {
@@ -350,7 +493,7 @@ public class StageManager : MonoBehaviour
 
         if (characterFence2 != null)
         {
-            if (stageData.stage_position == 2)
+            if (stagePosition == 2)
             {
                 characterFence2.gameObject.SetActive(true);
                 characterFence2.transform.position = fenceMid2Position;

@@ -105,28 +105,22 @@ public class ShadowAwakeningBossSkill : MonoBehaviour, ISkillBehavior
         monster.transform.localScale = currentScale * scaleMultiplier;
 
         // 체력 증가 (MonsterBehavior)
-        var monsterData = monsterBehavior.GetMonsterData();
-        if (monsterData != null)
-        {
-            int currentHP = monsterBehavior.GetCurrentHP();
-            int originalMaxHP = monsterData.hp;
+        int originalMaxHP = monsterBehavior.GetMaxHP();
 
-            // 원본 최대 체력 저장
-            originalMaxHPs[monster] = originalMaxHP;
+        // 원본 최대 체력 저장
+        originalMaxHPs[monster] = originalMaxHP;
 
-            // 새로운 최대 체력 계산 및 적용
-            int newMaxHP = Mathf.RoundToInt(originalMaxHP * (1f + healthIncreaseValue));
-            // 현재 체력도 비례해서 증가
-            int healthIncrease = newMaxHP - originalMaxHP;
+        // 새로운 최대 체력 계산 및 적용
+        int newMaxHP = Mathf.RoundToInt(originalMaxHP * (1f + healthIncreaseValue));
 
-            monsterBehavior.SetEnhancedStats(
-                monsterData.att, 
-                currentHP + healthIncrease, 
-                monsterData.moveSpeed 
-            );
+        // 현재 체력도 비례하게 증가
+        int currentHP = monsterBehavior.GetCurrentHP();
+        int healthIncrease = newMaxHP - originalMaxHP;
 
-            Debug.Log($"[ShadowAwakening] {monster.name} - 크기: {scaleMultiplier:F1}배, 체력: {originalMaxHP} → {newMaxHP}");
-        }
+        monsterBehavior.SetMaxHP(newMaxHP, false); // 비율 조정 없이 최대치만 변경
+        monsterBehavior.SetCurrentHP(currentHP + healthIncrease);
+
+        Debug.Log($"[ShadowAwakening] {monster.name} - 크기: {scaleMultiplier:F1}배, 체력: {originalMaxHP} → {newMaxHP}");
 
         // 버프 종료 시간 설정
         buffEndTimes[monster] = Time.time + skillDuration;
@@ -171,24 +165,18 @@ public class ShadowAwakeningBossSkill : MonoBehaviour, ISkillBehavior
             var monsterBehavior = monster.GetComponent<MonsterBehavior>();
             if (monsterBehavior != null)
             {
-                var monsterData = monsterBehavior.GetMonsterData();
-                if (monsterData != null)
-                {
-                    int originalMaxHP = originalMaxHPs[monster];
-                    int currentHP = monsterBehavior.GetCurrentHP();
+                int originalMaxHP = originalMaxHPs[monster];
+                int currentHP = monsterBehavior.GetCurrentHP();
+                int buffedMaxHP = Mathf.RoundToInt(originalMaxHP * (1f + healthIncreaseValue));
 
-                    // 현재 체력 비율 계산 
-                    float hpRatio = (float)currentHP / (originalMaxHP * (1f + healthIncreaseValue));
+                // 현재 체력 비율 계산
+                float hpRatio = (float)currentHP / buffedMaxHP;
 
-                    int newCurrentHP = Mathf.RoundToInt(originalMaxHP * hpRatio);
-                    monsterBehavior.SetEnhancedStats(
-                        monsterData.att,
-                        newCurrentHP,
-                        monsterData.moveSpeed
-                    );
+                int newCurrentHP = Mathf.RoundToInt(originalMaxHP * hpRatio);
+                monsterBehavior.SetMaxHP(originalMaxHP, false);
+                monsterBehavior.SetCurrentHP(newCurrentHP);
 
-                    Debug.Log($"[ShadowAwakening] {monster.name} 버프 해제 - 원래 크기 및 체력으로 복구");
-                }
+                Debug.Log($"[ShadowAwakening] {monster.name} 버프 해제 - 원래 크기 및 체력으로 복구");
             }
 
             originalMaxHPs.Remove(monster);

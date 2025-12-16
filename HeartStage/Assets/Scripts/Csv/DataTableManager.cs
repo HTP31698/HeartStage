@@ -166,12 +166,6 @@ public static class DataTableManager
             tables.Add(id, table);
         }
 
-        {
-            var table = new InfiniteMonsterTable();
-            var id = DataTableIds.InfiniteMonster;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
     }
 
     public static ItemTable ItemTable
@@ -343,14 +337,6 @@ public static class DataTableManager
         get
         {
             return Get<InfiniteStageTable>(DataTableIds.InfiniteStage);
-        }
-    }
-
-    public static InfiniteMonsterTable InfiniteMonsterTable
-    {
-        get
-        {
-            return Get<InfiniteMonsterTable>(DataTableIds.InfiniteMonster);
         }
     }
 
