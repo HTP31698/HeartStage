@@ -39,15 +39,22 @@ public class BootSceneController : MonoBehaviour
 
         if (!BootStrap.IsInitialized)
         {
+            // 1. Addressables 초기화 (필수 선행)
             await Addressables.InitializeAsync();
-            await ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.Stage);
-            await ResourceManager.Instance.PreloadLabelAsync("SFX");
-            await DataTableManager.Initialization;
-            await LiveConfigManager.Instance.InitializeAsync();
 
-            // StageAssets 라벨로 등록된 SO 유틸리티 초기화
-            await PassivePatternUtil.InitializeAsync();
-            await StageLayoutUtil.InitializeAsync();
+            // 2. 리소스 프리로드 + 데이터테이블 병렬 로드
+            await UniTask.WhenAll(
+                ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.Stage),
+                ResourceManager.Instance.PreloadLabelAsync("SFX"),
+                DataTableManager.Initialization
+            );
+
+            // 3. 나머지 초기화 병렬 실행
+            await UniTask.WhenAll(
+                LiveConfigManager.Instance.InitializeAsync(),
+                PassivePatternUtil.InitializeAsync(),
+                StageLayoutUtil.InitializeAsync()
+            );
 
             BootStrap.IsInitialized = true;
         }
