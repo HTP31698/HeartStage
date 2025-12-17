@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 /// <summary>
 /// 던전 아이템 UI (아코디언 형태)
@@ -33,11 +34,16 @@ public class DungeonItemUI : MonoBehaviour
     [SerializeField] private int stageId;
     [SerializeField] private bool isStoryDungeon;
 
-    [Header("Animation (Optional)")]
-    [SerializeField] private RectTransform contentRect;
+    [Header("Animation")]
+    [SerializeField] private float expandDuration = 0.25f;
+    [SerializeField] private Ease expandEase = Ease.OutCubic;
+    [SerializeField] private Ease collapseEase = Ease.InCubic;
 
     private bool isExpanded = false;
     private bool isLocked = false;
+    private bool isAnimating = false;
+    private RectTransform expandedPanelRect;
+    private Tweener currentTween;
 
     private void Awake()
     {
@@ -56,8 +62,14 @@ public class DungeonItemUI : MonoBehaviour
             enterButton.onClick.AddListener(OnEnterButtonClicked);
         }
 
-        // 초기 상태: 축소
-        SetExpanded(false);
+        // ExpandedPanel RectTransform 캐싱
+        if (expandedPanel != null)
+        {
+            expandedPanelRect = expandedPanel.GetComponent<RectTransform>();
+        }
+
+        // 초기 상태: 축소 (애니메이션 없이)
+        SetExpandedImmediate(false);
     }
 
     /// <summary>
@@ -209,17 +221,79 @@ public class DungeonItemUI : MonoBehaviour
 
     public void SetExpanded(bool expanded)
     {
+        if (isExpanded == expanded || isAnimating) return;
+
+        isExpanded = expanded;
+
+        // 기존 애니메이션 중단
+        currentTween?.Kill();
+
+        if (expandedPanelRect == null)
+        {
+            // RectTransform 없으면 즉시 전환
+            SetExpandedImmediate(expanded);
+            return;
+        }
+
+        if (isExpanded)
+        {
+            // 확장: 먼저 활성화 후 ScaleY 애니메이션
+            expandedPanel.SetActive(true);
+            expandedPanelRect.localScale = new Vector3(1, 0, 1);
+            isAnimating = true;
+
+            currentTween = expandedPanelRect.DOScaleY(1f, expandDuration)
+                .SetEase(expandEase)
+                .OnUpdate(RebuildLayout)
+                .OnComplete(() =>
+                {
+                    isAnimating = false;
+                    RebuildLayout();
+                });
+
+            OnExpanded?.Invoke(this);
+        }
+        else
+        {
+            // 축소: ScaleY 애니메이션 후 비활성화
+            isAnimating = true;
+
+            currentTween = expandedPanelRect.DOScaleY(0f, expandDuration)
+                .SetEase(collapseEase)
+                .OnUpdate(RebuildLayout)
+                .OnComplete(() =>
+                {
+                    expandedPanel.SetActive(false);
+                    isAnimating = false;
+                    RebuildLayout();
+                });
+        }
+    }
+
+    private void SetExpandedImmediate(bool expanded)
+    {
         isExpanded = expanded;
 
         if (expandedPanel != null)
+        {
             expandedPanel.SetActive(isExpanded);
+            if (expandedPanelRect != null)
+                expandedPanelRect.localScale = isExpanded ? Vector3.one : new Vector3(1, 0, 1);
+        }
 
-        // 확장되었을 때 이벤트 발생 (다른 아이템 축소용)
-        if (isExpanded)
-            OnExpanded?.Invoke(this);
+        RebuildLayout();
+    }
 
-        // LayoutGroup이 있다면 레이아웃 갱신
-        LayoutRebuilder.ForceRebuildLayoutImmediate(GetComponent<RectTransform>());
+    private void RebuildLayout()
+    {
+        var selfRect = GetComponent<RectTransform>();
+        if (selfRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(selfRect);
+
+        // 부모 레이아웃도 갱신
+        var parentRect = transform.parent as RectTransform;
+        if (parentRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(parentRect);
     }
 
     public void SetLocked(bool locked, string conditionText = "")
@@ -263,6 +337,18 @@ public class DungeonItemUI : MonoBehaviour
     public void Collapse()
     {
         SetExpanded(false);
+    }
+
+    public void CollapseImmediate()
+    {
+        currentTween?.Kill();
+        isAnimating = false;
+        SetExpandedImmediate(false);
+    }
+
+    private void OnDestroy()
+    {
+        currentTween?.Kill();
     }
 
     public void SetRewardIcon(int itemId)
