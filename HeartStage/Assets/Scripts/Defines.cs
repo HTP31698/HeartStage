@@ -79,6 +79,7 @@ public enum WindowType
     SpecialDungeon = 16,
     StoryDungeon = 17,
     StoryDungeonInfo = 18,
+    SpecialStage = 19,
 
     // 인게임 윈도우
     VictoryDefeat = 50, // 위에 추가해도 안바뀌게 큰 값으로 해두기
@@ -97,7 +98,7 @@ public enum SceneType
     StageScene = 2,
     TestStageScene = 3,
     TestStageWaveScene = 4,
-    InfiniteTestScene = 5,
+    InfinityStage = 5,
     StoryScene = 6,
 }
 

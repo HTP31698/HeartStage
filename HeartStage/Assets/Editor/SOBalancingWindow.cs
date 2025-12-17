@@ -26,7 +26,8 @@ public class SOBalancingWindow : EditorWindow
         Item,
         Stage,
         StageWave,
-        Synergy
+        Synergy,
+        InfiniteStage
     }
 
     private enum ViewMode
@@ -44,7 +45,8 @@ public class SOBalancingWindow : EditorWindow
         { SOType.Item, "Assets/ScriptableObject/ItemData" },
         { SOType.Stage, "Assets/ScriptableObject/StageData" },
         { SOType.StageWave, "Assets/ScriptableObject/StageWaveData" },
-        { SOType.Synergy, "Assets/ScriptableObject/SynergyData" }
+        { SOType.Synergy, "Assets/ScriptableObject/SynergyData" },
+        { SOType.InfiniteStage, "Assets/ScriptableObject/InfiniteStageData" }
     };
 
     private const string CSV_PATH = "Assets/DataTables";
@@ -58,7 +60,8 @@ public class SOBalancingWindow : EditorWindow
         { SOType.Item, "ItemTable.csv" },
         { SOType.Stage, "StageTable.csv" },
         { SOType.StageWave, "StageWaveTable.csv" },
-        { SOType.Synergy, "SynergyTable.csv" }
+        { SOType.Synergy, "SynergyTable.csv" },
+        { SOType.InfiniteStage, "InfiniteStageTable.csv" }
     };
 
     // Passive 패턴 - SO에서 동적으로 로드 (ScriptableObject/Tool 폴더, Addressable: StageAssets)
@@ -102,7 +105,8 @@ public class SOBalancingWindow : EditorWindow
         { SOType.Item, new Color(1f, 0.85f, 0.4f) },        // 금색
         { SOType.Stage, new Color(0.5f, 0.85f, 0.5f) },     // 초록
         { SOType.StageWave, new Color(0.6f, 0.9f, 0.7f) },  // 민트
-        { SOType.Synergy, new Color(1f, 0.7f, 0.5f) }       // 주황
+        { SOType.Synergy, new Color(1f, 0.7f, 0.5f) },      // 주황
+        { SOType.InfiniteStage, new Color(0.9f, 0.4f, 0.9f) } // 자주색
     };
 
     // ★ 캐릭터 속성별 색상 (char_type)
@@ -223,6 +227,7 @@ public class SOBalancingWindow : EditorWindow
     private List<StageData> stageList = new List<StageData>();
     private List<StageWaveData> stageWaveList = new List<StageWaveData>();
     private List<SynergyData> synergyList = new List<SynergyData>();
+    private List<InfiniteStageData> infiniteStageList = new List<InfiniteStageData>();
 
     // 변경 추적
     private HashSet<ScriptableObject> modifiedObjects = new HashSet<ScriptableObject>();
@@ -1013,6 +1018,9 @@ public class SOBalancingWindow : EditorWindow
                 case SOType.Synergy:
                     DrawSynergyDetail((SynergyData)so);
                     break;
+                case SOType.InfiniteStage:
+                    DrawInfiniteStageDetail((InfiniteStageData)so);
+                    break;
             }
 
             if (EditorGUI.EndChangeCheck())
@@ -1424,6 +1432,88 @@ public class SOBalancingWindow : EditorWindow
         DrawSectionHeader("요구사항/설명", SECTION_DESC);
         data.synergy_required = EditorGUILayout.TextField("요구사항", data.synergy_required);
         data.synergy_info = EditorGUILayout.TextArea(data.synergy_info, GUILayout.Height(60));
+    }
+
+    private void DrawInfiniteStageDetail(InfiniteStageData inf)
+    {
+        var data = GetPendingInfiniteStageData(inf);
+
+        // 기본 정보
+        DrawSectionHeader("기본 정보", SECTION_BASIC);
+        EditorGUI.BeginDisabledGroup(true);
+        EditorGUILayout.IntField("ID", data.stage_id);
+        EditorGUI.EndDisabledGroup();
+        data.stage_name = EditorGUILayout.TextField("이름", data.stage_name);
+
+        EditorGUILayout.Space(10);
+
+        // 제한 설정
+        DrawSectionHeader("제한 설정", SECTION_COMBAT);
+        data.daily_limit = EditorGUILayout.IntField("일일 플레이 제한", data.daily_limit);
+        data.deploy_limit = EditorGUILayout.IntField("배치 캐릭터 수", data.deploy_limit);
+
+        EditorGUILayout.Space(10);
+
+        // 스폰 설정
+        DrawSectionHeader("스폰 설정", SECTION_COMBAT);
+        data.max_monsters = EditorGUILayout.IntField("필드 최대 몬스터", data.max_monsters);
+        data.spawn_interval = EditorGUILayout.FloatField("스폰 간격 (초)", data.spawn_interval);
+
+        EditorGUILayout.Space(10);
+
+        // 강화 설정
+        DrawSectionHeader("강화 설정", SECTION_COMBAT);
+        data.enhance_interval = EditorGUILayout.FloatField("강화 주기 (초)", data.enhance_interval);
+        data.atk_mul = EditorGUILayout.FloatField("공격력 배율", data.atk_mul);
+        data.hp_mul = EditorGUILayout.FloatField("체력 배율", data.hp_mul);
+        data.speed_mul = EditorGUILayout.FloatField("이동속도 배율", data.speed_mul);
+
+        EditorGUILayout.Space(10);
+
+        // 기본 몬스터
+        DrawSectionHeader("기본 몬스터", SECTION_LINK);
+        data.base_mon_id1 = DrawMonsterIdWithLink("기본 몬스터 1", data.base_mon_id1);
+        data.base_mon_id2 = DrawMonsterIdWithLink("기본 몬스터 2", data.base_mon_id2);
+
+        EditorGUILayout.Space(10);
+
+        // 특수 몬스터 - 이속형
+        DrawSectionHeader("특수 몬스터 - 이속형", SECTION_LINK);
+        data.fast_mon_id = DrawMonsterIdWithLink("몬스터 ID", data.fast_mon_id);
+        data.fast_spawn_time = EditorGUILayout.IntField("첫 등장 시간 (초)", data.fast_spawn_time);
+        data.fast_spawn_interval = EditorGUILayout.IntField("스폰 간격 (초)", data.fast_spawn_interval);
+
+        EditorGUILayout.Space(5);
+
+        // 특수 몬스터 - 탱커형
+        DrawSectionHeader("특수 몬스터 - 탱커형", SECTION_LINK);
+        data.tank_mon_id = DrawMonsterIdWithLink("몬스터 ID", data.tank_mon_id);
+        data.tank_spawn_time = EditorGUILayout.IntField("첫 등장 시간 (초)", data.tank_spawn_time);
+        data.tank_spawn_interval = EditorGUILayout.IntField("스폰 간격 (초)", data.tank_spawn_interval);
+
+        EditorGUILayout.Space(5);
+
+        // 특수 몬스터 - 강화형
+        DrawSectionHeader("특수 몬스터 - 강화형", SECTION_LINK);
+        data.strong_mon_id = DrawMonsterIdWithLink("몬스터 ID", data.strong_mon_id);
+        data.strong_spawn_time = EditorGUILayout.IntField("첫 등장 시간 (초)", data.strong_spawn_time);
+        data.strong_spawn_interval = EditorGUILayout.IntField("스폰 간격 (초)", data.strong_spawn_interval);
+
+        EditorGUILayout.Space(10);
+
+        // 보상 설정
+        DrawSectionHeader("보상 설정", SECTION_ITEM);
+        data.reward_per_second = EditorGUILayout.IntField("보상 누적 시간 (초)", data.reward_per_second);
+        data.reward_item_id = DrawItemIdWithLink("보상 아이템", data.reward_item_id);
+
+        EditorGUILayout.Space(10);
+
+        // 배경/위치
+        DrawSectionHeader("배경/위치", SECTION_PREFAB);
+        data.prefab = EditorGUILayout.TextField("프리팹", data.prefab);
+        data.stage_position = EditorGUILayout.IntPopup("스테이지 위치", data.stage_position,
+            new[] { "상단 (↓)", "중앙 (↕)", "하단 (↑)" },
+            new[] { 1, 2, 3 });
     }
 
     #endregion
@@ -1995,6 +2085,28 @@ public class SOBalancingWindow : EditorWindow
     }
 
     /// <summary>
+    /// 아이템 ID 필드 + 아래에 링크 박스
+    /// </summary>
+    private int DrawItemIdWithLink(string label, int itemId)
+    {
+        itemId = EditorGUILayout.IntField(label, itemId);
+
+        if (itemId > 0)
+        {
+            var item = itemList.FirstOrDefault(i => i.item_id == itemId);
+            if (item != null)
+            {
+                DrawLinkBox($"→ {item.item_name}", SECTION_ITEM, item);
+            }
+            else
+            {
+                DrawInvalidLinkBox("아이템을 찾을 수 없음");
+            }
+        }
+        return itemId;
+    }
+
+    /// <summary>
     /// 링크 박스 그리기 - 클릭하면 해당 SO로 이동
     /// </summary>
     private void DrawLinkBox(string text, Color bgColor, ScriptableObject targetSO)
@@ -2116,9 +2228,13 @@ public class SOBalancingWindow : EditorWindow
             stageWaveList = LoadSOList<StageWaveData>(SO_PATHS[SOType.StageWave])
                 .OrderBy(w => w.wave_id).ToList();
 
-            EditorUtility.DisplayProgressBar("SO Balancing Window", "Synergy 데이터 로드 중...", 0.75f);
+            EditorUtility.DisplayProgressBar("SO Balancing Window", "Synergy 데이터 로드 중...", 0.70f);
             synergyList = LoadSOList<SynergyData>(SO_PATHS[SOType.Synergy])
                 .OrderBy(s => s.synergy_id).ToList();
+
+            EditorUtility.DisplayProgressBar("SO Balancing Window", "InfiniteStage 데이터 로드 중...", 0.80f);
+            infiniteStageList = LoadSOList<InfiniteStageData>(SO_PATHS[SOType.InfiniteStage])
+                .OrderBy(s => s.stage_id).ToList();
 
             isDataLoaded = true;
             modifiedObjects.Clear();
@@ -2329,6 +2445,9 @@ public class SOBalancingWindow : EditorWindow
                 case SOType.Synergy:
                     ExportCSV(csvPath, synergyList.OrderBy(s => s.synergy_id).Select(s => s.ToCSVData()).ToList());
                     break;
+                case SOType.InfiniteStage:
+                    ExportCSV(csvPath, infiniteStageList.OrderBy(s => s.stage_id).Select(s => s.ToCSVData()).ToList());
+                    break;
             }
             Debug.Log($"[SOBalancingWindow] Exported: {csvPath}");
             if (showStatus)
@@ -2413,6 +2532,11 @@ public class SOBalancingWindow : EditorWindow
         return GetPendingData(so, () => so.ToCSVData());
     }
 
+    private InfiniteStageCSVData GetPendingInfiniteStageData(InfiniteStageData so)
+    {
+        return GetPendingData(so, () => so.ToCSVData());
+    }
+
     /// <summary>
     /// pendingChanges의 CSVData를 실제 SO에 반영
     /// </summary>
@@ -2441,6 +2565,9 @@ public class SOBalancingWindow : EditorWindow
             case SynergyData synergyData when csvData is SynergyCSVData synergyCsv:
                 synergyData.UpdateData(synergyCsv);
                 break;
+            case InfiniteStageData infData when csvData is InfiniteStageCSVData infCsv:
+                infData.FromCSVData(infCsv);
+                break;
         }
     }
 
@@ -2459,6 +2586,7 @@ public class SOBalancingWindow : EditorWindow
         menu.AddItem(new GUIContent("Stage"), false, () => ImportCSVByType(SOType.Stage));
         menu.AddItem(new GUIContent("StageWave"), false, () => ImportCSVByType(SOType.StageWave));
         menu.AddItem(new GUIContent("Synergy"), false, () => ImportCSVByType(SOType.Synergy));
+        menu.AddItem(new GUIContent("InfiniteStage"), false, () => ImportCSVByType(SOType.InfiniteStage));
         menu.AddSeparator("");
         menu.AddItem(new GUIContent("전체 가져오기"), false, ImportAllCSV);
 
@@ -2518,6 +2646,9 @@ public class SOBalancingWindow : EditorWindow
                     break;
                 case SOType.Synergy:
                     ImportSynergyCSV(csvPath);
+                    break;
+                case SOType.InfiniteStage:
+                    ImportInfiniteStageCSV(csvPath);
                     break;
             }
 
@@ -2863,6 +2994,45 @@ public class SOBalancingWindow : EditorWindow
         }
     }
 
+    private void ImportInfiniteStageCSV(string path)
+    {
+        var config = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HeaderValidated = null,
+            MissingFieldFound = null,
+            PrepareHeaderForMatch = args => args.Header.Trim()
+        };
+
+        using (var reader = new StreamReader(path))
+        using (var csv = new CsvReader(reader, config))
+        {
+            var records = csv.GetRecords<InfiniteStageCSVData>().ToList();
+            int createdCount = 0;
+
+            foreach (var record in records)
+            {
+                var so = infiniteStageList.FirstOrDefault(s => s.stage_id == record.stage_id);
+                if (so == null)
+                {
+                    so = ScriptableObject.CreateInstance<InfiniteStageData>();
+                    string assetPath = $"{SO_PATHS[SOType.InfiniteStage]}/InfiniteStage_{record.stage_id}.asset";
+                    AssetDatabase.CreateAsset(so, assetPath);
+                    AddToAddressables(assetPath, SOType.InfiniteStage);
+                    infiniteStageList.Add(so);
+                    createdCount++;
+                }
+                so.FromCSVData(record);
+                MarkModified(so);
+            }
+
+            if (createdCount > 0)
+            {
+                infiniteStageList = infiniteStageList.OrderBy(s => s.stage_id).ToList();
+                Debug.Log($"[SOBalancingWindow] {createdCount}개의 새 InfiniteStageData SO 생성됨");
+            }
+        }
+    }
+
     private void ExportCSV<T>(string path, List<T> data)
     {
         using (var writer = new StreamWriter(path, false, Encoding.UTF8))
@@ -3061,6 +3231,7 @@ public class SOBalancingWindow : EditorWindow
             SOType.Stage => stageList.Cast<ScriptableObject>(),
             SOType.StageWave => stageWaveList.Cast<ScriptableObject>(),
             SOType.Synergy => synergyList.Cast<ScriptableObject>(),
+            SOType.InfiniteStage => infiniteStageList.Cast<ScriptableObject>(),
             _ => Enumerable.Empty<ScriptableObject>()
         };
 
@@ -3201,6 +3372,7 @@ public class SOBalancingWindow : EditorWindow
             StageData st => st.stage_name ?? $"Stage {st.stage_ID}",
             StageWaveData w => w.wave_name ?? $"Wave {w.wave_id}",
             SynergyData sy => sy.synergy_name,
+            InfiniteStageData inf => inf.stage_name ?? $"Infinite {inf.stage_id}",
             _ => so.name
         };
     }
@@ -3216,6 +3388,7 @@ public class SOBalancingWindow : EditorWindow
             StageData st => st.stage_ID.ToString(),
             StageWaveData w => w.wave_id.ToString(),
             SynergyData sy => sy.synergy_id.ToString(),
+            InfiniteStageData inf => inf.stage_id.ToString(),
             _ => "?"
         };
     }
@@ -3231,6 +3404,7 @@ public class SOBalancingWindow : EditorWindow
             StageData st => $"Step {st.stage_step1}-{st.stage_step2}",
             StageWaveData w => $"Spawn: {w.enemy_spown_time}s",
             SynergyData sy => $"Units: {sy.synergy_Unit1}, {sy.synergy_Unit2}, {sy.synergy_Unit3}",
+            InfiniteStageData inf => $"배치 {inf.deploy_limit}명 | 강화 {inf.enhance_interval}s | ATK×{inf.atk_mul}",
             _ => ""
         };
     }

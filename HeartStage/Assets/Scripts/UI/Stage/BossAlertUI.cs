@@ -1,4 +1,5 @@
 ﻿using Cysharp.Threading.Tasks;
+using TMPro;
 using UnityEngine;
 
 public class BossAlertUI : GenericWindow
@@ -10,8 +11,15 @@ public class BossAlertUI : GenericWindow
     [SerializeField] private float minAlpha = 0.2f;   // 최소 투명도
     [SerializeField] private float maxAlpha = 1f;     // 최대 투명도
 
+    [Header("Optional Text (무한모드 강화용)")]
+    [SerializeField] private TextMeshProUGUI alertText;
+
     private CanvasGroup canvasGroup;
     private bool isBlinking = false;
+
+    // 강화 알림용 static 데이터
+    private static bool isEnhanceAlert = false;
+    private static int pendingEnhanceLevel = 0;
 
     private void Awake()
     {
@@ -20,11 +28,49 @@ public class BossAlertUI : GenericWindow
         {
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
+
+        // alertText가 없으면 자동으로 찾기
+        if (alertText == null)
+        {
+            alertText = GetComponentInChildren<TextMeshProUGUI>(true);
+        }
+    }
+
+    // 강화 알림 설정 (Open 전에 호출)
+    public static void SetEnhanceAlert(int level)
+    {
+        isEnhanceAlert = true;
+        pendingEnhanceLevel = level;
+    }
+
+    // 보스 알림용 (기존 동작)
+    public static void SetBossAlert()
+    {
+        isEnhanceAlert = false;
     }
 
     public override void Open()
     {
         base.Open();
+
+        Debug.Log($"[BossAlertUI] Open - isEnhanceAlert: {isEnhanceAlert}, alertText null: {alertText == null}");
+
+        // 강화 알림 모드일 때 텍스트 설정
+        if (isEnhanceAlert && alertText != null)
+        {
+            alertText.gameObject.SetActive(true);
+            alertText.text = "팬들이 더 거세게 몰려옵니다!";
+            alertText.transform.SetAsLastSibling(); // 맨 앞으로
+            Debug.Log("[BossAlertUI] 강화 알림 텍스트 표시");
+        }
+        else if (alertText != null)
+        {
+            alertText.gameObject.SetActive(false);
+            Debug.Log("[BossAlertUI] 보스 알림 모드 (텍스트 숨김)");
+        }
+
+        // static 플래그 리셋
+        isEnhanceAlert = false;
 
         // 깜빡이는 효과 시작
         StartBlinkingEffect().Forget();
@@ -90,6 +136,24 @@ public class BossAlertUI : GenericWindow
         await UniTask.Delay((int)(alertDuration * 1000), cancellationToken: this.GetCancellationTokenOnDestroy());
 
         if (this != null && gameObject != null)
+        {
+            Close();
+        }
+    }
+
+    private void Update()
+    {
+        // 스킬 사용 시 닫기 (Raycast Target=false → 터치가 스킬로 통과 + 알림 닫힘)
+        if (Input.GetMouseButton(0) || Input.touchCount > 0)
+        {
+            Close();
+        }
+    }
+
+    private void LateUpdate()
+    {
+        // 스테이지 패배 시 (Time.timeScale == 0) 알림 닫기
+        if (Time.timeScale == 0f && gameObject.activeInHierarchy)
         {
             Close();
         }

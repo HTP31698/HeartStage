@@ -32,10 +32,46 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
 
     private int currentHP;
     private int maxHP; // 최대 HP는 따로 저장 (SO 변경 시에도 유지)
+    private int currentAtt; // 현재 공격력 (무한 모드 배율 적용용)
 
     public int GetCurrentHP() => currentHP;
+    public int GetMaxHP() => maxHP;
+    public int GetCurrentAtt() => currentAtt > 0 ? currentAtt : (monsterData?.att ?? 0);
     public MonsterData GetMonsterData() => monsterData;
     public bool IsBossMonster() => isBoss;
+
+    /// <summary>
+    /// 현재 HP 직접 설정 (버프/디버프용)
+    /// </summary>
+    public void SetCurrentHP(int hp)
+    {
+        currentHP = Mathf.Max(0, hp);
+        if (currentHP > maxHP)
+            currentHP = maxHP;
+    }
+
+    /// <summary>
+    /// 최대 HP 설정 및 현재 HP 비례 조정 (버프용)
+    /// </summary>
+    public void SetMaxHP(int newMaxHP, bool adjustCurrentHP = true)
+    {
+        if (adjustCurrentHP && maxHP > 0)
+        {
+            float ratio = (float)currentHP / maxHP;
+            currentHP = Mathf.RoundToInt(newMaxHP * ratio);
+        }
+        maxHP = newMaxHP;
+        if (currentHP > maxHP)
+            currentHP = maxHP;
+    }
+
+    /// <summary>
+    /// 공격력 설정 (무한 모드 배율 적용용)
+    /// </summary>
+    public void SetAtt(int newAtt)
+    {
+        currentAtt = newAtt;
+    }
 
     private void Awake()
     {
@@ -67,6 +103,9 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             maxHP = data.hp;
             currentHP = data.hp;
         }
+
+        // 공격력 초기화
+        currentAtt = data.att;
 
         // 처음 한 번만 랜덤 사거리 설정
         if (!hasFixedAttackRange)
@@ -271,7 +310,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             var target = hit.GetComponent<IDamageable>();
             if (target != null)
             {
-                target.OnDamage(monsterData.att);
+                target.OnDamage(GetCurrentAtt());
 
                 Vector3 contactPoint = GetColliderContactPoint(selfCollider, hit);
                 PlayHitEffect(contactPoint);
@@ -306,7 +345,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             var projectile = projectileObj.GetComponent<MonsterProjectile>();
             if (projectile != null)
             {
-                projectile.Init(direction, monsterData.bulletSpeed, monsterData.att);
+                projectile.Init(direction, monsterData.bulletSpeed, GetCurrentAtt());
             }
 
             projectileObj.SetActive(true);
@@ -440,7 +479,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             var target = targetCollider.GetComponent<IDamageable>();
             if (target != null)
             {
-                target.OnDamage(monsterData.att);
+                target.OnDamage(GetCurrentAtt());
             }
         }
     }
@@ -484,11 +523,13 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             {
                 visualChild.gameObject.SetActive(true);
 
-                // 스프라이트 복원
+                // 스프라이트 복원 (무한 모드는 밝은 색, 일반 모드는 어두운 색)
                 var childRenderers = visualChild.GetComponentsInChildren<SpriteRenderer>();
+                bool isInfinite = StageManager.Instance != null && StageManager.Instance.isInfiniteMode;
+                Color targetColor = isInfinite ? Color.white : Color.gray;
                 foreach (var renderer in childRenderers)
                 {
-                    renderer.color = Color.gray;
+                    renderer.color = targetColor;
                 }
             }
         }
@@ -560,83 +601,6 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
 
             animator.SetTrigger("Run");
         }
-    }
-
-    // === 무한 스테이지용 강화 스탯 설정 ===
-
-    // 강화된 스탯 저장용
-    private float enhancedAtk = 0f;
-    private float enhancedHp = 0f;
-    private float enhancedSpeed = 0f;
-    private bool hasEnhancedStats = false;
-
-    /// <summary>
-    /// 무한 스테이지용 강화 스탯 설정
-    /// </summary>
-    public void SetEnhancedStats(float atk, float hp, float speed)
-    {
-        enhancedAtk = atk;
-        enhancedHp = hp;
-        enhancedSpeed = speed;
-        hasEnhancedStats = true;
-
-        // HP 적용
-        maxHP = Mathf.RoundToInt(hp);
-        currentHP = maxHP;
-
-        // 속도는 MonsterMovement에서 처리
-        var movement = GetComponent<MonsterMovement>();
-        if (movement != null)
-        {
-            movement.SetEnhancedSpeed(speed);
-        }
-
-        // 체력바 갱신
-        if (healthBar != null)
-        {
-            healthBar.Init(this, isBoss);
-        }
-    }
-
-    /// <summary>
-    /// 강화된 공격력 반환 (무한 스테이지용)
-    /// </summary>
-    public int GetEnhancedAttack()
-    {
-        if (hasEnhancedStats)
-            return Mathf.RoundToInt(enhancedAtk);
-        return monsterData?.att ?? 0;
-    }
-
-    /// <summary>
-    /// 무한 스테이지용 사망 처리 (InfiniteMonsterComponent에서 호출)
-    /// </summary>
-    public void DieForInfiniteStage()
-    {
-        if (isDead)
-            return;
-
-        isDead = true;
-
-        if (selfCollider != null)
-        {
-            selfCollider.enabled = false;
-        }
-
-        if (heartPrefab != null)
-        {
-            heartPrefab.SetActive(true);
-        }
-
-        // InfiniteMonsterComponent에 사망 알림
-        var infiniteComponent = GetComponent<InfiniteMonsterComponent>();
-        if (infiniteComponent != null)
-        {
-            infiniteComponent.OnDeath();
-        }
-
-        isFading = true;
-        fadeTimer = 0f;
     }
 
     public float GetCurrentAttackRange()

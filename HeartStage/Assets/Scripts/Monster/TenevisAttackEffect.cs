@@ -75,8 +75,7 @@ public class TenevisAttackEffect : MonoBehaviour
             var target = hit.GetComponent<IDamageable>();
             if (target != null)
             {
-                var monsterData = monsterBehavior.GetMonsterData();
-                target.OnDamage(monsterData.att); // 몬스터의 공격력만큼 데미지
+                target.OnDamage(monsterBehavior.GetCurrentAtt()); // 몬스터의 공격력만큼 데미지
             }
         }
     }

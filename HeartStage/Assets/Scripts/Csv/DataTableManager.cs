@@ -16,183 +16,88 @@ public static class DataTableManager
 
     public static async UniTask InitAsync()
     {
-        {
-            var table = new ItemTable();
-            await table.LoadAsync(DataTableIds.Item);
-            tables.Add(DataTableIds.Item, table);
-        }
+        // 모든 테이블 인스턴스 생성
+        var itemTable = new ItemTable();
+        var monsterTable = new MonsterTable();
+        var stageWaveTable = new StageWaveTable();
+        var characterTable = new CharacterTable();
+        var skillTable = new SkillTable();
+        var effectTable = new EffectTable();
+        var stageTable = new StageTable();
+        var selectTable = new SelectTable();
+        var synergyTable = new SynergyTable();
+        var rewardTable = new RewardTable();
+        var gachaTable = new GachaTable();
+        var gachaTypeTable = new GachaTypeTable();
+        var shopTable = new ShopTable();
+        var rankUpTable = new RankUpTable();
+        var levelUpTable = new LevelUpTable();
+        var questTable = new QuestTable();
+        var questTypeTable = new QuestTypeTable();
+        var questProgressTable = new QuestProgressTable();
+        var pieceTable = new PieceTable();
+        var titleTable = new TitleTable();
+        var slangTable = new SlangTable();
+        var infiniteStageTable = new InfiniteStageTable();
+        var storyTable = new StoryTable();
+        var storyScriptTable = new StoryScriptTable();
+        var likeabilityTable = new LikeabilityTable();
 
-        {
-            var monsterTable = new MonsterTable();
-            await monsterTable.LoadAsync(DataTableIds.Monster);
-            tables.Add(DataTableIds.Monster, monsterTable);
-        }
+        // 모든 테이블 병렬 로드
+        await UniTask.WhenAll(
+            itemTable.LoadAsync(DataTableIds.Item),
+            monsterTable.LoadAsync(DataTableIds.Monster),
+            stageWaveTable.LoadAsync(DataTableIds.StageWave),
+            characterTable.LoadAsync(DataTableIds.Character),
+            skillTable.LoadAsync(DataTableIds.Skill),
+            effectTable.LoadAsync(DataTableIds.Effect),
+            stageTable.LoadAsync(DataTableIds.Stage),
+            selectTable.LoadAsync(DataTableIds.Select),
+            synergyTable.LoadAsync(DataTableIds.Synergy),
+            rewardTable.LoadAsync(DataTableIds.Reward),
+            gachaTable.LoadAsync(DataTableIds.Gacha),
+            gachaTypeTable.LoadAsync(DataTableIds.GachaType),
+            shopTable.LoadAsync(DataTableIds.Shop),
+            rankUpTable.LoadAsync(DataTableIds.RankUp),
+            levelUpTable.LoadAsync(DataTableIds.LevelUp),
+            questTable.LoadAsync(DataTableIds.Quest),
+            questTypeTable.LoadAsync(DataTableIds.QuestType),
+            questProgressTable.LoadAsync(DataTableIds.QuestProgress),
+            pieceTable.LoadAsync(DataTableIds.Piece),
+            titleTable.LoadAsync(DataTableIds.Title),
+            slangTable.LoadAsync(DataTableIds.Slang),
+            infiniteStageTable.LoadAsync(DataTableIds.InfiniteStage),
+            storyTable.LoadAsync(DataTableIds.Story),
+            storyScriptTable.LoadAsync(DataTableIds.StoryScript),
+            likeabilityTable.LoadAsync(DataTableIds.Likeability)
+        );
 
-        {
-            var stageWaveTable = new StageWaveTable();
-            await stageWaveTable.LoadAsync(DataTableIds.StageWave);
-            tables.Add(DataTableIds.StageWave, stageWaveTable);
-        }
-
-        {
-            var table = new CharacterTable();
-            var id = DataTableIds.Character;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new SkillTable();
-            var id = DataTableIds.Skill;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        { 
-            var table = new EffectTable();
-            var id = DataTableIds.Effect;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new StageTable();
-            var id = DataTableIds.Stage;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new SelectTable();
-            var id = DataTableIds.Select;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        { 
-            var table = new SynergyTable();
-            var id = DataTableIds.Synergy;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new RewardTable();
-            var id = DataTableIds.Reward;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new GachaTable();
-            var id = DataTableIds.Gacha;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new GachaTypeTable();
-            var id = DataTableIds.GachaType;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-        
-        {
-        	var table = new ShopTable();
-            var id = DataTableIds.Shop;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new RankUpTable();
-            var id = DataTableIds.RankUp;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new LevelUpTable();
-            var id = DataTableIds.LevelUp;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new QuestTable();
-            var id = DataTableIds.Quest;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-
-        {
-            var table = new QuestTypeTable();
-            var id = DataTableIds.QuestType;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new QuestProgressTable();
-            var id = DataTableIds.QuestProgress;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new PieceTable();
-            var id = DataTableIds.Piece;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-        {
-            var table = new TitleTable();
-            var id = DataTableIds.Title;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-        {
-            var table = new SlangTable();
-            var id = DataTableIds.Slang;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new InfiniteStageTable();
-            var id = DataTableIds.InfiniteStage;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new InfiniteMonsterTable();
-            var id = DataTableIds.InfiniteMonster;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new StoryTable();
-            var id = DataTableIds.Story;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new StoryScriptTable();
-            var id = DataTableIds.StoryScript;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
-
-        {
-            var table = new LikeabilityTable();
-            var id = DataTableIds.Likeability;
-            await table.LoadAsync(id);
-            tables.Add(id, table);
-        }
+        // Dictionary에 등록
+        tables.Add(DataTableIds.Item, itemTable);
+        tables.Add(DataTableIds.Monster, monsterTable);
+        tables.Add(DataTableIds.StageWave, stageWaveTable);
+        tables.Add(DataTableIds.Character, characterTable);
+        tables.Add(DataTableIds.Skill, skillTable);
+        tables.Add(DataTableIds.Effect, effectTable);
+        tables.Add(DataTableIds.Stage, stageTable);
+        tables.Add(DataTableIds.Select, selectTable);
+        tables.Add(DataTableIds.Synergy, synergyTable);
+        tables.Add(DataTableIds.Reward, rewardTable);
+        tables.Add(DataTableIds.Gacha, gachaTable);
+        tables.Add(DataTableIds.GachaType, gachaTypeTable);
+        tables.Add(DataTableIds.Shop, shopTable);
+        tables.Add(DataTableIds.RankUp, rankUpTable);
+        tables.Add(DataTableIds.LevelUp, levelUpTable);
+        tables.Add(DataTableIds.Quest, questTable);
+        tables.Add(DataTableIds.QuestType, questTypeTable);
+        tables.Add(DataTableIds.QuestProgress, questProgressTable);
+        tables.Add(DataTableIds.Piece, pieceTable);
+        tables.Add(DataTableIds.Title, titleTable);
+        tables.Add(DataTableIds.Slang, slangTable);
+        tables.Add(DataTableIds.InfiniteStage, infiniteStageTable);
+        tables.Add(DataTableIds.Story, storyTable);
+        tables.Add(DataTableIds.StoryScript, storyScriptTable);
+        tables.Add(DataTableIds.Likeability, likeabilityTable);
     }
 
     public static ItemTable ItemTable
@@ -366,15 +271,6 @@ public static class DataTableManager
             return Get<InfiniteStageTable>(DataTableIds.InfiniteStage);
         }
     }
-
-    public static InfiniteMonsterTable InfiniteMonsterTable
-    {
-        get
-        {
-            return Get<InfiniteMonsterTable>(DataTableIds.InfiniteMonster);
-        }
-    }
-
     public static StoryTable StoryTable
     {
         get

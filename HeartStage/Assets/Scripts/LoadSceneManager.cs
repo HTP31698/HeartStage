@@ -32,6 +32,9 @@ public class LoadSceneManager : MonoBehaviour
         var gameData = SaveLoadManager.Data;
         gameData.selectedStageID = stageId;
         gameData.startingWave = startingWave;
+        // 일반 스테이지 진입 시 무한 모드 플래그 리셋
+        gameData.isInfiniteMode = false;
+        gameData.infiniteStageId = 0;
         SaveLoadManager.SaveToServer().Forget();
         GoStage();
     }
@@ -57,5 +60,21 @@ public class LoadSceneManager : MonoBehaviour
     public void GoLobby()
     {
         GameSceneManager.ChangeScene(SceneType.LobbyScene);
+    }
+
+    // ========== 무한 스테이지 ==========
+    public void GoInfiniteStage(int infiniteStageId)
+    {
+        var gameData = SaveLoadManager.Data;
+        gameData.isInfiniteMode = true;
+        gameData.infiniteStageId = infiniteStageId;
+        // 기본 스테이지 ID 설정 (UI/레이아웃 참조용)
+        gameData.selectedStageID = 601;
+        gameData.startingWave = 1;
+        SaveLoadManager.SaveToServer().Forget();
+
+        // InfinityStage 전용 씬으로 이동
+        GameSceneManager.ChangeScene(SceneType.InfinityStage);
+        Time.timeScale = 1.0f;
     }
 }

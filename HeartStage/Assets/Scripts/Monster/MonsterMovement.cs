@@ -7,6 +7,7 @@ public class MonsterMovement : MonoBehaviour
     private MonsterData monsterData;
     private bool isInitialized = false;
     private Vector3 moveDirection = Vector3.down; // 이동 방향
+    private float overrideMoveSpeed = 0f; // 무한모드용 오버라이드 속도
 
     private float separationRadius = 2.5f;   // 분리 반경
     private float separationForce = 1f;      // 분리 힘
@@ -62,7 +63,8 @@ public class MonsterMovement : MonoBehaviour
         CheckWallProximity();
         CheckFrontBlocked();
 
-        float finalMoveSpeed = StatCalc.GetFinalStat(gameObject, StatType.MoveSpeed, monsterData.moveSpeed);
+        float baseMoveSpeed = overrideMoveSpeed > 0f ? overrideMoveSpeed : monsterData.moveSpeed;
+        float finalMoveSpeed = StatCalc.GetFinalStat(gameObject, StatType.MoveSpeed, baseMoveSpeed);
 
         // 이동 처리
         if (!isNearWall && !isFrontBlocked)
@@ -163,8 +165,15 @@ public class MonsterMovement : MonoBehaviour
     {
         monsterData = data;
         isInitialized = true;
+        overrideMoveSpeed = 0f; // 초기화 시 오버라이드 리셋
 
         SetMoveDirectionStageType();
+    }
+
+    // 무한모드용 이동속도 오버라이드
+    public void SetMoveSpeed(float speed)
+    {
+        overrideMoveSpeed = speed;
     }
 
     // 화면 경계 초기화
@@ -410,27 +419,4 @@ public class MonsterMovement : MonoBehaviour
         transform.position += dir * kb.Power * Time.deltaTime;
     }
 
-    // === 무한 스테이지용 강화 속도 설정 ===
-
-    private float enhancedSpeed = 0f;
-    private bool hasEnhancedSpeed = false;
-
-    /// <summary>
-    /// 무한 스테이지용 강화 속도 설정
-    /// </summary>
-    public void SetEnhancedSpeed(float speed)
-    {
-        enhancedSpeed = speed;
-        hasEnhancedSpeed = true;
-    }
-
-    /// <summary>
-    /// 강화된 이동 속도 반환 (무한 스테이지용)
-    /// </summary>
-    public float GetEnhancedMoveSpeed()
-    {
-        if (hasEnhancedSpeed)
-            return enhancedSpeed;
-        return monsterData?.moveSpeed ?? 0f;
-    }
 }

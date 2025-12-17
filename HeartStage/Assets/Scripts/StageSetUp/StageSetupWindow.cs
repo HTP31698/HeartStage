@@ -155,6 +155,17 @@ public class StageSetupWindow : MonoBehaviour
         var stageData = StageManager.Instance.GetCurrentStageData();
         ApplyStage(stageData);
 
+        // 무한 모드일 경우 deploy_limit 오버라이드
+        if (StageManager.Instance.isInfiniteMode && StageManager.Instance.infiniteStageData != null)
+        {
+            int infiniteDeployLimit = StageManager.Instance.infiniteStageData.deploy_limit;
+            if (infiniteDeployLimit > 0)
+            {
+                _maxDeployUnits = infiniteDeployLimit;
+                Debug.Log($"[StageSetupWindow] 무한 모드 deploy_limit 적용: {infiniteDeployLimit}");
+            }
+        }
+
         // 혹시라도 색/카운트 바로 보이게 강제 갱신
         RebuildPassiveTiles();
         UpdateDeployCountUI();
@@ -284,6 +295,7 @@ public class StageSetupWindow : MonoBehaviour
         SynergyManager.ApplySynergies(DraggableSlots, allies);
 
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         StageManager.Instance.SetTimeScale(1f);
 
         OnStageStarted?.Invoke(); // 이벤트 발생
@@ -522,8 +534,8 @@ public class StageSetupWindow : MonoBehaviour
         // 1) stage_type -> mask
         _enabledMask = StageLayoutUtil.BuildMask(stage.stage_type);
 
-        // 2) max deploy units (dispatch_member 우선)
-        _maxDeployUnits = stage.dispatch_member > 0 ? stage.dispatch_member : stage.member_count;
+        // 2) max deploy units (member_count 사용)
+        _maxDeployUnits = stage.member_count;
 
         // 3) 슬롯/바닥 UI 비활성화
         for (int i = 0; i < DraggableSlots.Length; i++)
@@ -560,10 +572,8 @@ public class StageSetupWindow : MonoBehaviour
         // stage_type -> mask
         _enabledMask = StageLayoutUtil.BuildMask(stage.stage_type);
 
-        // 배치 가능 명수 (dispatch_member 우선)
-        _maxDeployUnits = stage.dispatch_member > 0
-            ? stage.dispatch_member
-            : stage.member_count;
+        // 배치 가능 명수 (member_count 사용)
+        _maxDeployUnits = stage.member_count;
 
         // 비활성 타일 처리(SetActive false 방식)
         for (int i = 0; i < DraggableSlots.Length; i++)
@@ -632,42 +642,6 @@ public class StageSetupWindow : MonoBehaviour
 
             _spawnedAllies.RemoveAt(i);
         }
-    }
-
-    /// <summary>
-    /// 무한 스테이지용 설정 적용
-    /// Full 레이아웃(15칸 전체 활성화) + 지정된 배치 제한
-    /// </summary>
-    /// <param name="maxDeployCount">최대 배치 가능 캐릭터 수 (기본값 5)</param>
-    public void ApplyInfiniteStageConfig(int maxDeployCount = 5)
-    {
-        // Full 레이아웃 마스크 적용 (StageType.Full = 0)
-        _enabledMask = StageLayoutUtil.BuildMask((int)StageType.Full);
-
-        // 배치 제한 설정
-        _maxDeployUnits = maxDeployCount;
-
-        // 슬롯/바닥 UI 활성화
-        for (int i = 0; i < DraggableSlots.Length; i++)
-        {
-            bool enabled = _enabledMask[i];
-            var slot = DraggableSlots[i];
-            if (slot == null) continue;
-
-            if (!enabled)
-                slot.characterData = null;
-
-            slot.gameObject.SetActive(enabled);
-
-            if (PassiveImages != null && i < PassiveImages.Length && PassiveImages[i] != null)
-                PassiveImages[i].gameObject.SetActive(enabled);
-        }
-
-        RebuildPassiveTiles();
-        UpdateSynergyUI();
-        UpdateDeployCountUI();
-
-        Debug.Log($"[StageSetupWindow] 무한 스테이지 설정 적용 - Full 레이아웃, 최대 배치: {maxDeployCount}명");
     }
 
     // 캐릭터 렌더링 순서 조정

@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
-using UnityEngine.ResourceManagement.AsyncOperations;
 using Cysharp.Threading.Tasks;
 
 public class CharacterDropdownFilter : MonoBehaviour
@@ -17,48 +16,48 @@ public class CharacterDropdownFilter : MonoBehaviour
     [SerializeField] private RectTransform content;   // ScrollView → Content
     [SerializeField] private DragMe characterPrefab;  // DragMe 달려있는 프리팹
 
-    // Addressables에서 불러온 전체 캐릭터 SO
-    private readonly List<CharacterData> allCharacters = new List<CharacterData>();
+    // CSV 데이터 (전체)
+    private List<CharacterCSVData> allCsvData = new List<CharacterCSVData>();
+
+    // 로드된 SO 캐시 (AssetName → CharacterData)
+    private readonly Dictionary<string, CharacterData> loadedSOCache = new Dictionary<string, CharacterData>();
 
     // 드롭다운 값 매핑용 (index -> 실제 값)
     private readonly List<int> _typeOptionValues = new List<int>();
     private readonly List<int> _rankOptionValues = new List<int>();
     private readonly List<int> _levelOptionValues = new List<int>();
 
-    private async void Start()
+    // 로딩 중 플래그
+    private bool isLoading = false;
+
+    private void Start()
     {
-        // 1) CharacterData 라벨로 SO 전부 로드 (기존 CharacterDataLoad와 동일) 
-        AsyncOperationHandle<IList<CharacterData>> handle =
-            Addressables.LoadAssetsAsync<CharacterData>(
-                "CharacterData",
-                null
-            );
-
-        IList<CharacterData> loadedList = await handle.Task;
-
-        allCharacters.Clear();
-        allCharacters.AddRange(loadedList);
-
-        Debug.Log($"[CharacterDropdownFilter] Loaded {allCharacters.Count} CharacterData SOs.");
-
-        // 2) 정렬: 이름 → 타입 → 랭크
-        allCharacters.Sort((a, b) =>
+        // 자동 바인딩: content가 null이면 ScrollRect에서 찾기
+        if (content == null)
         {
-            int cmp = a.char_name.CompareTo(b.char_name);
-            if (cmp != 0) return cmp;
+            var scrollRect = GetComponentInChildren<UnityEngine.UI.ScrollRect>(true);
+            if (scrollRect != null)
+                content = scrollRect.content;
+        }
 
-            cmp = a.char_type.CompareTo(b.char_type);
-            if (cmp != 0) return cmp;
+        // CSV 데이터 로드 (이미 메모리에 있음)
+        var charTable = DataTableManager.Get<CharacterTable>(DataTableIds.Character);
+        if (charTable != null)
+        {
+            allCsvData = charTable.GetAllCSV().ToList();
+            Debug.Log($"[CharacterDropdownFilter] CSV 데이터 {allCsvData.Count}개 로드");
+        }
+        else
+        {
+            Debug.LogWarning("[CharacterDropdownFilter] CharacterTable이 없습니다.");
+            return;
+        }
 
-            return a.char_rank.CompareTo(b.char_rank);
-        });
-
-        // 3) 드롭다운 초기화 + 리스트 그리기
+        // 드롭다운 초기화
         InitDropdowns();
-        RefreshList();
 
-        // 필요하면 나중에 Release 할 수도 있음
-        // Addressables.Release(handle);
+        // 첫 로드 (Rank1, Level1만)
+        RefreshListAsync().Forget();
     }
 
     private void InitDropdowns()
@@ -67,9 +66,9 @@ public class CharacterDropdownFilter : MonoBehaviour
         InitRankDropdown();
         InitLevelDropdown();
 
-        typeDropdown.onValueChanged.AddListener(_ => RefreshList());
-        rankDropdown.onValueChanged.AddListener(_ => RefreshList());
-        levelDropdown.onValueChanged.AddListener(_ => RefreshList());
+        typeDropdown.onValueChanged.AddListener(_ => RefreshListAsync().Forget());
+        rankDropdown.onValueChanged.AddListener(_ => RefreshListAsync().Forget());
+        levelDropdown.onValueChanged.AddListener(_ => RefreshListAsync().Forget());
     }
 
     #region Dropdown Init
@@ -86,7 +85,7 @@ public class CharacterDropdownFilter : MonoBehaviour
         _typeOptionValues.Add(-1);
 
         // 실제 타입 값들
-        var distinctTypes = allCharacters
+        var distinctTypes = allCsvData
             .Select(c => c.char_type)
             .Distinct()
             .OrderBy(t => t);
@@ -113,7 +112,7 @@ public class CharacterDropdownFilter : MonoBehaviour
         options.Add(new TMP_Dropdown.OptionData("RankAll"));
         _rankOptionValues.Add(-1);
 
-        var distinctRanks = allCharacters
+        var distinctRanks = allCsvData
             .Select(c => c.char_rank)
             .Distinct()
             .OrderBy(r => r);
@@ -125,7 +124,10 @@ public class CharacterDropdownFilter : MonoBehaviour
         }
 
         rankDropdown.AddOptions(options);
-        rankDropdown.value = 0;
+
+        // 기본값: Rank 1 선택 (index 1 = R1)
+        int defaultRankIndex = _rankOptionValues.IndexOf(1);
+        rankDropdown.value = defaultRankIndex >= 0 ? defaultRankIndex : 0;
         rankDropdown.RefreshShownValue();
     }
 
@@ -139,7 +141,7 @@ public class CharacterDropdownFilter : MonoBehaviour
         options.Add(new TMP_Dropdown.OptionData("LevelAll"));
         _levelOptionValues.Add(-1);
 
-        var distinctLevels = allCharacters
+        var distinctLevels = allCsvData
             .Select(c => c.char_lv)
             .Distinct()
             .OrderBy(lv => lv);
@@ -151,7 +153,10 @@ public class CharacterDropdownFilter : MonoBehaviour
         }
 
         levelDropdown.AddOptions(options);
-        levelDropdown.value = 0;
+
+        // 기본값: Level 1 선택 (index 1 = Lv.1)
+        int defaultLevelIndex = _levelOptionValues.IndexOf(1);
+        levelDropdown.value = defaultLevelIndex >= 0 ? defaultLevelIndex : 0;
         levelDropdown.RefreshShownValue();
     }
 
@@ -160,10 +165,6 @@ public class CharacterDropdownFilter : MonoBehaviour
     // 타입 숫자를 문자열로 바꿔주는 함수
     private string GetTypeName(int type)
     {
-        // enum 쓸 거면 이렇게:
-        // return ((CharacterType)type).ToString();
-
-        // 일단 테스트용
         return ((CharacterType)type).ToString();
     }
 
@@ -189,32 +190,76 @@ public class CharacterDropdownFilter : MonoBehaviour
         return raw == -1 ? (int?)null : raw;
     }
 
-    // 드롭다운 바뀔 때마다 호출
-    private void RefreshList()
+    // 드롭다운 바뀔 때마다 호출 (비동기)
+    private async UniTaskVoid RefreshListAsync()
     {
-        int? typeFilter = GetSelectedType();
-        int? rankFilter = GetSelectedRank();
-        int? levelFilter = GetSelectedLevel();
+        if (isLoading) return;
+        isLoading = true;
 
-        IEnumerable<CharacterData> query = allCharacters;
+        try
+        {
+            int? typeFilter = GetSelectedType();
+            int? rankFilter = GetSelectedRank();
+            int? levelFilter = GetSelectedLevel();
 
-        if (typeFilter.HasValue)
-            query = query.Where(c => c.char_type == typeFilter.Value);
+            // 1. CSV에서 필터링
+            IEnumerable<CharacterCSVData> query = allCsvData;
 
-        if (rankFilter.HasValue)
-            query = query.Where(c => c.char_rank == rankFilter.Value);
+            if (typeFilter.HasValue)
+                query = query.Where(c => c.char_type == typeFilter.Value);
 
-        if (levelFilter.HasValue)
-            query = query.Where(c => c.char_lv == levelFilter.Value);
+            if (rankFilter.HasValue)
+                query = query.Where(c => c.char_rank == rankFilter.Value);
 
-        // 정렬: 이름 → 타입 → 랭크 (필터된 것만)
-        var result = query
-            .OrderBy(c => c.char_name)
-            .ThenBy(c => c.char_type)
-            .ThenBy(c => c.char_rank)
-            .ToList();
+            if (levelFilter.HasValue)
+                query = query.Where(c => c.char_lv == levelFilter.Value);
 
-        RebuildCharacterUI(result);
+            // 정렬: 이름 → 타입 → 랭크
+            var filteredCsv = query
+                .OrderBy(c => c.char_name)
+                .ThenBy(c => c.char_type)
+                .ThenBy(c => c.char_rank)
+                .ToList();
+
+            Debug.Log($"[CharacterDropdownFilter] 필터 결과: {filteredCsv.Count}개");
+
+            // 2. 필요한 SO만 로드 (캐시 확인)
+            var characterDataList = new List<CharacterData>();
+
+            foreach (var csv in filteredCsv)
+            {
+                string assetName = csv.data_AssetName;
+
+                if (loadedSOCache.TryGetValue(assetName, out var cached))
+                {
+                    characterDataList.Add(cached);
+                }
+                else
+                {
+                    // Addressables로 개별 로드
+                    try
+                    {
+                        var so = await Addressables.LoadAssetAsync<CharacterData>(assetName);
+                        if (so != null)
+                        {
+                            loadedSOCache[assetName] = so;
+                            characterDataList.Add(so);
+                        }
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogWarning($"[CharacterDropdownFilter] SO 로드 실패: {assetName} - {e.Message}");
+                    }
+                }
+            }
+
+            // 3. UI 재생성
+            RebuildCharacterUI(characterDataList);
+        }
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private void RebuildCharacterUI(List<CharacterData> list)
@@ -229,19 +274,16 @@ public class CharacterDropdownFilter : MonoBehaviour
         foreach (var characterData in list)
         {
             var dragMeInstance = Instantiate(characterPrefab, content);
-            dragMeInstance.name = characterData.char_name; // 이게 더 직관적
+            dragMeInstance.name = characterData.char_name;
 
             // DragMe 프리팹에 CharacterData 꽂기
             dragMeInstance.characterData = characterData;
 
-            // 여기 타입을 CharacterSelectTestPanel 로 변경
+            // CharacterSelectTestPanel 초기화
             var panel = dragMeInstance.GetComponent<CharacterSelectTestPanel>();
             if (panel != null)
             {
-                // 래핑된 Init 함수: 내부에서 InitAsync().Forget() 호출
                 panel.Init(characterData);
-                // 또는 async로 하고 싶으면:
-                // panel.InitAsync(characterData).Forget();
             }
 
             if (dragMeInstance.transform is RectTransform rect)
@@ -251,5 +293,4 @@ public class CharacterDropdownFilter : MonoBehaviour
             }
         }
     }
-
 }
