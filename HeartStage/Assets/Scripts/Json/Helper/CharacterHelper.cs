@@ -66,7 +66,6 @@ public static class CharacterHelper
             Debug.LogWarning($"[CharacterHelper] icon_imageName 이 비어있음. name={name}");
         }
 
-        SaveLoadManager.Save();
         SaveLoadManager.SaveToServer().Forget();
     }
 
@@ -136,5 +135,22 @@ public static class CharacterHelper
         }
 
         return maxRank;
+    }
+
+    // 해당 캐릭터 호감도 수치 Get(이름 기준)
+    public static int GetLikeability(string characterName)
+    {
+        var dict = SaveLoadManager.Data.likeabilityDict;
+        if (!dict.ContainsKey(characterName))
+            return 0;
+
+        return dict[characterName];
+    }
+    // 해당 캐릭터 호감도 수치 세팅(이름 기준)
+    public static void SetLikeability(string characterName, int amount)
+    {
+        var dict = SaveLoadManager.Data.likeabilityDict; 
+        dict[characterName] = amount;
+        SaveLoadManager.SaveToServer().Forget();
     }
 }

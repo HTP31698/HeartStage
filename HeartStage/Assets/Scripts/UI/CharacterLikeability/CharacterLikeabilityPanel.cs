@@ -22,6 +22,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     public Image rewardImage3;
 
     private LikeabilityData likeabilityData;
+    private CharacterCSVData characterData;
 
     private void Start()
     {
@@ -30,24 +31,95 @@ public class CharacterLikeabilityPanel : MonoBehaviour
 
     public void Init(int characterId)
     {
-        var characterData = DataTableManager.CharacterTable.Get(characterId);
+        // 데이터 세팅
+        characterData = DataTableManager.CharacterTable.Get(characterId);
         likeabilityData = DataTableManager.LikeabilityTable.Get(characterData.char_name);
+        // 기본 정보 UI 세팅
         CharacterAttributeIcon.ChangeIcon(attributeIcon, characterData.char_type);
         characterName.text = characterData.char_name;
         characterLvRank.text = $"Lv{characterData.char_lv} {RankName.Get(characterData.char_rank)}";
         // 호감도 게이지 세팅
         likeabilityGuage.maxValue = likeabilityData.max_like_point;
-        // 게이지 value 세팅 코드 추가하기
-        guageAmountText.text = $"♥ {likeabilityGuage.value}";
-        // 현재 호감도 세팅 코드 추가
+        // 재화 UI 세팅
         CurrencyIcon.CurrencyIconChange(cheerCurrencyIcon, likeabilityData.User_need_Item);
         cheerPriceText.text = $"{likeabilityData.User_need_amount}";
         // 호감도 보상 UI 세팅
         SetRewardUI();
-        // 응원하기 버튼 interactable 세팅
-        UpdateCheerUpButtonInteractable();
+        // 현재 호감도 UI 반영
+        RefreshLikeabilityUI();
+    }
+    // 응원하기
+    public void CheerUp()
+    {
+        if (!ItemInvenHelper.TryConsumeItem(likeabilityData.User_need_Item, likeabilityData.User_need_amount))
+            return;
+
+        int newLike = Mathf.Min((int)likeabilityGuage.value + likeabilityData.like_point, (int)likeabilityGuage.maxValue);
+        CharacterHelper.SetLikeability(characterData.char_name, newLike);
+        RefreshLikeabilityUI();
+    }
+    // 호감도 보상 UI 세팅
+    private void SetRewardUI()
+    {
+        // 위치 세팅
+        float percent1 = (float)likeabilityData.like_amount1 / likeabilityData.max_like_point;
+        float percent2 = (float)likeabilityData.like_amount2 / likeabilityData.max_like_point;
+        float percent3 = (float)likeabilityData.like_amount3 / likeabilityData.max_like_point;
+        SetRewardPositionByPercent(rewardRoot1, percent1);
+        SetRewardPositionByPercent(rewardRoot2, percent2);
+        SetRewardPositionByPercent(rewardRoot3, percent3);
+        // 이미지 세팅
+        var rewardItemData1 = DataTableManager.ItemTable.Get(likeabilityData.like_reward_item1);
+        var rewardItemData2 = DataTableManager.ItemTable.Get(likeabilityData.like_reward_item2);
+        var rewardItemData3 = DataTableManager.ItemTable.Get(likeabilityData.like_reward_item3);
+        var texture1 = ResourceManager.Instance.Get<Texture2D>(rewardItemData1.prefab);
+        rewardImage1.sprite = Sprite.Create(texture1, new Rect(0, 0, texture1.width, texture1.height), new Vector2(0.5f, 0.5f));
+        var texture2 = ResourceManager.Instance.Get<Texture2D>(rewardItemData2.prefab);
+        rewardImage2.sprite = Sprite.Create(texture2, new Rect(0, 0, texture2.width, texture2.height), new Vector2(0.5f, 0.5f));
+        var texture3 = ResourceManager.Instance.Get<Texture2D>(rewardItemData3.prefab);
+        rewardImage3.sprite = Sprite.Create(texture3, new Rect(0, 0, texture3.width, texture3.height), new Vector2(0.5f, 0.5f));
     }
 
+    private void SetRewardPositionByPercent(RectTransform reward, float percent)
+    {
+        RectTransform sliderRect = likeabilityGuage.GetComponent<RectTransform>();
+        float width = sliderRect.rect.width;
+        float x = Mathf.Lerp(-width * 0.5f, width * 0.5f, percent);
+        Vector2 pos = reward.anchoredPosition;
+        pos.x = x;
+        reward.anchoredPosition = pos;
+    }
+    // 현재 호감도 UI 반영
+    private void RefreshLikeabilityUI()
+    {
+        likeabilityGuage.value = CharacterHelper.GetLikeability(characterData.char_name);
+        guageAmountText.text = $"♥ {likeabilityGuage.value}";
+        UpdateDialogue();
+        UpdateCheerUpButtonInteractable();
+    }
+    // 호감도 대사 업데이트
+    private void UpdateDialogue()
+    {
+        int currentLike = CharacterHelper.GetLikeability(characterData.char_name);
+
+        if (currentLike < likeabilityData.like_amount1)
+        {
+            characterDialogue.text = likeabilityData.line1;
+        }
+        else if (currentLike < likeabilityData.like_amount2)
+        {
+            characterDialogue.text = likeabilityData.line2;
+        }
+        else if (currentLike < likeabilityData.like_amount3)
+        {
+            characterDialogue.text = likeabilityData.line3;
+        }
+        else
+        {
+            characterDialogue.text = likeabilityData.line4;
+        }
+    }
+    // 응원 버튼 Interactable 세팅
     private void UpdateCheerUpButtonInteractable()
     {
         if (likeabilityGuage.value == likeabilityGuage.maxValue)
@@ -66,36 +138,21 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             cheerUpButton.interactable = false;
         }
     }
-
-    // 응원하기
-    public void CheerUp()
+    // 테스트 코드
+    // 호감도 10씩 증가
+    public void GetLikeAbility()
     {
-        if (ItemInvenHelper.TryConsumeItem(likeabilityData.User_need_Item, likeabilityData.User_need_amount))
+        foreach (var characterId in SaveLoadManager.Data.ownedIds)
         {
-            likeabilityGuage.value = Mathf.Min(likeabilityGuage.value + likeabilityData.like_point, likeabilityGuage.maxValue);
-            guageAmountText.text = $"♥ {likeabilityGuage.value}";
+            var data = DataTableManager.CharacterTable.Get(characterId);
+            var likeData = DataTableManager.LikeabilityTable.Get(data.char_name);
+            var currentAmount = CharacterHelper.GetLikeability(data.char_name);
+            currentAmount = Mathf.Min(currentAmount + 10, likeData.max_like_point);
+            CharacterHelper.SetLikeability(data.char_name, currentAmount);
         }
 
-        UpdateCheerUpButtonInteractable();
+        likeabilityGuage.value = Mathf.Min(likeabilityGuage.value + 10, likeabilityGuage.maxValue);
+        guageAmountText.text = $"♥ {likeabilityGuage.value}";
     }
-
-    private void SetRewardUI()
-    {
-        float percent1 = (float)likeabilityData.like_amount1 / likeabilityData.max_like_point;
-        float percent2 = (float)likeabilityData.like_amount2 / likeabilityData.max_like_point;
-        float percent3 = (float)likeabilityData.like_amount3 / likeabilityData.max_like_point;
-        SetRewardPositionByPercent(rewardRoot1, percent1);
-        SetRewardPositionByPercent(rewardRoot2, percent2);
-        SetRewardPositionByPercent(rewardRoot3, percent3);
-    }
-
-    private void SetRewardPositionByPercent(RectTransform reward, float percent)
-    {
-        RectTransform sliderRect = likeabilityGuage.GetComponent<RectTransform>();
-        float width = sliderRect.rect.width;
-        float x = Mathf.Lerp(-width * 0.5f, width * 0.5f, percent);
-        Vector2 pos = reward.anchoredPosition;
-        pos.x = x;
-        reward.anchoredPosition = pos;
-    }
+    //
 }
