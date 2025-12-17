@@ -30,7 +30,7 @@ public class LobbyAction
     }
 }
 
-public class LobbyCharacterAI : MonoBehaviour
+public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
 {
     private static readonly int HashIdle = Animator.StringToHash("Idle");
     private static readonly int HashWalk = Animator.StringToHash("Walk");
@@ -249,5 +249,11 @@ public class LobbyCharacterAI : MonoBehaviour
     public void OnDragEnd()
     {
         isControlledByPlayer = false;
+    }
+
+    public void OnTap()
+    {
+        Debug.Log("OnTap()");
+        CharacterLikeabilityWindow.Instance.OpenPanel();
     }
 }

@@ -27,9 +27,16 @@ public class DragZoomPanManager : MonoBehaviour
     private Transform dragTarget;
     private Vector2 lastPos;
     private Vector3 dragOffset; // 드래그 오프셋
+    private bool dragStartNotified;
 
     public Bounds BackgroundBounds => background.bounds;
     public Bounds InnerBounds => innerBoundCollider.bounds;
+
+    // 탭 구분
+    [SerializeField] private float tapThreshold = 15f; // px
+    private Vector2 pressStartScreenPos;
+    private bool isDragThresholdPassed;
+    //
 
     private void Awake()
     {
@@ -63,6 +70,8 @@ public class DragZoomPanManager : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             Vector2 screen = Input.mousePosition;
+            pressStartScreenPos = screen;
+            isDragThresholdPassed = false;
 
             // RawImage 외부면 월드 조작 무시
             if (!RectTransformUtility.RectangleContainsScreenPoint(lobbyRawImage.rectTransform, screen))
@@ -86,45 +95,70 @@ public class DragZoomPanManager : MonoBehaviour
                 dragTarget = hitCol.transform;
 
                 dragOffset = dragTarget.position - world;
-                // 캐릭터 드래그 할 때
-                dragTarget.GetComponent<LobbyCharacterAI>()?.OnDragStart();
+                dragStartNotified = false;
             }
             // 아니면 카메라 이동
             else
             {
                 isPanning = true;
             }
-
             lastPos = screen;
         }
 
         // 클릭 중
         if (Input.GetMouseButton(0))
         {
-            // RawImage 영역 밖에서 드래그해도 무시
-            if (!RectTransformUtility.RectangleContainsScreenPoint(lobbyRawImage.rectTransform, Input.mousePosition))
+            Vector2 screenPos = Input.mousePosition;
+            if (!RectTransformUtility.RectangleContainsScreenPoint(
+                lobbyRawImage.rectTransform, screenPos))
                 return;
-
-            if (isDraggingObject)
+            // Drag threshold 판정
+            if (!isDragThresholdPassed)
             {
-                DragObject(Input.mousePosition);
-                // 가장자리 체크
-                HandleDragEdgeScroll(Input.mousePosition);
+                if (Vector2.Distance(screenPos, pressStartScreenPos) > tapThreshold)
+                {
+                    isDragThresholdPassed = true;
+                }
             }
-            else if (isPanning)
+
+            if (isDragThresholdPassed && isDraggingObject && !dragStartNotified)
             {
-                PanCamera(Input.mousePosition);
+                dragStartNotified = true;
+                dragTarget.GetComponent<LobbyCharacterAI>()?.OnDragStart();
+            }
+            // threshold 넘은 뒤에만 실제 이동
+            if (isDraggingObject && isDragThresholdPassed)
+            {
+                DragObject(screenPos);
+                HandleDragEdgeScroll(screenPos);
+            }
+            else if (isPanning && isDragThresholdPassed)
+            {
+                PanCamera(screenPos);
             }
         }
 
         // 클릭 종료
         if (Input.GetMouseButtonUp(0))
         {
-            dragTarget?.GetComponent<LobbyCharacterAI>()?.OnDragEnd();
+            if (dragTarget != null)
+            {
+                if (!isDragThresholdPassed)
+                {
+                    // TAP
+                    dragTarget.GetComponent<ILobbyTapHandler>()?.OnTap();
+                }
+                else
+                {
+                    // DRAG 종료
+                    dragTarget.GetComponent<LobbyCharacterAI>()?.OnDragEnd();
+                }
+            }
 
             isDraggingObject = false;
             isPanning = false;
-            dragTarget = null;
+            dragTarget = null; 
+            dragStartNotified = false;
         }
     }
 
@@ -172,6 +206,9 @@ public class DragZoomPanManager : MonoBehaviour
 
             if (t.phase == TouchPhase.Began)
             {
+                pressStartScreenPos = screen;
+                isDragThresholdPassed = false;
+
                 Vector3 world;
                 if (!TryGetWorldPositionFromRawImage(screen, out world))
                     return;
@@ -183,7 +220,7 @@ public class DragZoomPanManager : MonoBehaviour
                     dragTarget = hitCol.transform;
 
                     dragOffset = dragTarget.position - world;
-                    dragTarget.GetComponent<LobbyCharacterAI>()?.OnDragStart();
+                    dragStartNotified = false; 
                 }
                 else
                 {
@@ -195,25 +232,45 @@ public class DragZoomPanManager : MonoBehaviour
 
             if (t.phase == TouchPhase.Moved)
             {
-                if (isDraggingObject)
+                if (!isDragThresholdPassed)
                 {
-                    DragObject(t.position);
-                    // 가장자리 체크
-                    HandleDragEdgeScroll(t.position);
+                    if (Vector2.Distance(screen, pressStartScreenPos) > tapThreshold)
+                    {
+                        isDragThresholdPassed = true;
+                    }
                 }
-                else if (isPanning)
+
+                if (isDragThresholdPassed && isDraggingObject && !dragStartNotified)
                 {
-                    PanCamera(t.position);
+                    dragStartNotified = true;
+                    dragTarget.GetComponent<LobbyCharacterAI>()?.OnDragStart();
+                }
+
+                if (isDraggingObject && isDragThresholdPassed)
+                {
+                    DragObject(screen);
+                    HandleDragEdgeScroll(screen);
+                }
+                else if (isPanning && isDragThresholdPassed)
+                {
+                    PanCamera(screen);
                 }
             }
 
             if (t.phase == TouchPhase.Ended)
             {
-                dragTarget?.GetComponent<LobbyCharacterAI>()?.OnDragEnd();
+                if (dragTarget != null)
+                {
+                    if (!isDragThresholdPassed)
+                        dragTarget.GetComponent<ILobbyTapHandler>()?.OnTap();
+                    else
+                        dragTarget.GetComponent<LobbyCharacterAI>()?.OnDragEnd();
+                }
 
                 isDraggingObject = false;
                 isPanning = false;
                 dragTarget = null;
+                dragStartNotified = false;
             }
         }
     }
