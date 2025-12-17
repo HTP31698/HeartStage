@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HeartStage - Lobby UI Prototype v2</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #FF6B9D; --primary-dark: #E85A8A;
+            --accent: #FFD93D; --accent-blue: #5BC0EB;
+            --bg-dark: #1a1a2e; --bg-card: #25253d; --bg-light: #2d2d4a;
+            --text: #ffffff; --text-dim: #a0a0b0; --text-disabled: #606070;
+            --success: #2ecc71; --danger: #e74c3c; --warning: #f39c12;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideLeft { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideRight { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes glow { 0%,100% { box-shadow: 0 0 5px var(--primary); } 50% { box-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary); } }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        @keyframes dropDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 500px; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes charIdle { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(0.98); } }
+        @keyframes notificationPing { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+
+        /* ========== TOP HEADER ========== */
+        .top-header {
+            position: fixed; top: 0; left: 0; right: 0; height: 60px;
+            background: linear-gradient(180deg, rgba(26,26,46,0.95), rgba(26,26,46,0.85));
+            display: flex; align-items: center; padding: 8px 12px;
+            z-index: 100; backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            animation: slideDown 0.5s ease;
+        }
+        .profile-section {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .profile-icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer;
+            border: 2px solid var(--primary);
+            transition: all 0.3s ease;
+            animation: pulse 3s infinite;
+        }
+        .profile-icon:hover { transform: scale(1.1); box-shadow: 0 0 15px var(--primary); }
+        .profile-info { display: flex; flex-direction: column; gap: 2px; }
+        .level-badge {
+            background: linear-gradient(135deg, var(--accent), #FFA500);
+            padding: 2px 10px; border-radius: 10px;
+            font-size: 11px; font-weight: 700; color: #333;
+        }
+        .energy-bar-container {
+            display: flex; align-items: center; gap: 4px;
+        }
+        .energy-bar {
+            width: 80px; height: 12px; background: var(--bg-card);
+            border-radius: 6px; overflow: hidden; position: relative;
+        }
+        .energy-fill {
+            height: 100%; background: linear-gradient(90deg, #4ECDC4, #44E5B8);
+            border-radius: 6px; transition: width 0.5s ease;
+            position: relative;
+        }
+        .energy-fill::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        .energy-text { font-size: 10px; color: var(--text-dim); }
+
+        .currency-section {
+            display: flex; gap: 12px; margin-left: auto; margin-right: 12px;
+        }
+        .currency-item {
+            display: flex; align-items: center; gap: 4px;
+            background: var(--bg-card); padding: 6px 12px;
+            border-radius: 20px; cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .currency-item:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(255,107,157,0.3);
+        }
+        .currency-item:active { animation: shake 0.3s; }
+        .currency-icon { font-size: 16px; }
+        .currency-value { font-size: 13px; font-weight: 600; }
+
+        /* ========== RIGHT SIDEBAR ========== */
+        .right-sidebar {
+            position: fixed; right: 12px; top: 80px;
+            display: flex; flex-direction: column; gap: 8px;
+            z-index: 90; animation: slideLeft 0.5s ease 0.2s backwards;
+        }
+        .quest-btn {
+            width: 50px; height: 50px; background: var(--primary);
+            border-radius: 12px; display: flex; align-items: center; justify-content: center;
+            font-size: 22px; cursor: pointer; margin-bottom: 8px;
+            box-shadow: 0 4px 15px rgba(255,107,157,0.4);
+            transition: all 0.3s ease;
+            animation: bounce 2s infinite;
+        }
+        .quest-btn:hover { transform: scale(1.1) rotate(5deg); }
+        .sidebar-panel {
+            background: rgba(37,37,61,0.95); border-radius: 12px;
+            padding: 8px; backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-btn {
+            width: 44px; height: 44px; background: var(--bg-light);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; cursor: pointer; margin-bottom: 6px;
+            transition: all 0.3s ease; position: relative;
+        }
+        .sidebar-btn:last-child { margin-bottom: 0; }
+        .sidebar-btn:hover { background: var(--primary); transform: scale(1.1); }
+        .notification-badge {
+            position: absolute; top: -4px; right: -4px;
+            width: 18px; height: 18px; background: var(--danger);
+            border-radius: 50%; font-size: 10px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            animation: pulse 1s infinite;
+        }
+        .notification-ping {
+            position: absolute; top: -4px; right: -4px;
+            width: 18px; height: 18px; background: var(--danger);
+            border-radius: 50%; animation: notificationPing 1.5s infinite;
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            position: fixed; top: 60px; bottom: 70px; left: 0; right: 0;
+            overflow: hidden;
+        }
+        .page {
+            position: absolute; inset: 0;
+            display: none; opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .page.active { display: block; opacity: 1; }
+
+        /* ========== 숙소 (DORM) ========== */
+        .dorm-page {
+            background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 50%, #E6D5AC 100%);
+            position: relative;
+        }
+        .dorm-window {
+            position: absolute; top: 5%; left: 50%; transform: translateX(-50%);
+            width: 70%; height: 35%;
+            background: linear-gradient(180deg, #87CEEB, #5BA3C6);
+            border-radius: 20px 20px 0 0;
+            border: 8px solid #8B7355;
+            overflow: hidden;
+        }
+        .dorm-window::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(180deg, transparent 60%, rgba(255,255,255,0.1));
+        }
+        .city-silhouette {
+            position: absolute; bottom: 0; width: 100%; height: 60%;
+            display: flex; align-items: flex-end; justify-content: center; gap: 10px;
+        }
+        .building {
+            background: linear-gradient(180deg, #4A5568, #2D3748);
+            border-radius: 5px 5px 0 0;
+            animation: float 4s ease-in-out infinite;
+        }
+        .curtain {
+            position: absolute; top: 0; width: 25%; height: 100%;
+            background: linear-gradient(180deg, #D4A574, #C4956A);
+        }
+        .curtain.left { left: 0; border-radius: 0 0 50% 0; }
+        .curtain.right { right: 0; border-radius: 0 0 0 50%; }
+        .dorm-floor {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 35%;
+            background: linear-gradient(180deg, #D4A574, #C4956A);
+        }
+        .dorm-sofa {
+            position: absolute; bottom: 35%; left: 50%; transform: translateX(-50%);
+            width: 60%; height: 20%;
+            background: linear-gradient(180deg, #8B5CF6, #7C3AED);
+            border-radius: 20px 20px 10px 10px;
+            display: flex; align-items: center; justify-content: space-around; padding: 0 20px;
+        }
+        .sofa-cushion {
+            width: 40px; height: 40px; background: linear-gradient(135deg, #F59E0B, #D97706);
+            border-radius: 8px; transform: rotate(-5deg);
+        }
+        .dorm-table {
+            position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%);
+            width: 30%; height: 8%;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+        }
+        .dorm-character {
+            position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%);
+            font-size: 80px; cursor: pointer;
+            animation: charIdle 2s infinite, float 3s ease-in-out infinite;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+        }
+        .dorm-character:hover {
+            animation: bounce 0.5s;
+            filter: drop-shadow(0 10px 30px rgba(255,107,157,0.5));
+        }
+
+        /* Storage Button */
+        .storage-btn {
+            position: absolute; bottom: 20px; right: 80px;
+            background: linear-gradient(135deg, var(--accent), #FFA500);
+            padding: 12px 20px; border-radius: 25px;
+            display: flex; align-items: center; gap: 8px;
+            font-weight: 600; color: #333; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255,217,61,0.4);
+            transition: all 0.3s ease;
+            animation: slideUp 0.5s ease 0.3s backwards;
+        }
+        .storage-btn:hover { transform: translateY(-3px) scale(1.05); }
+        .storage-btn:active { transform: scale(0.95); }
+
+        /* ========== BOTTOM NAV (6개) ========== */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
+            background: linear-gradient(0deg, rgba(26,26,46,0.98), rgba(26,26,46,0.9));
+            display: flex; justify-content: space-around; align-items: center;
+            padding: 0 10px; z-index: 100;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            animation: slideUp 0.5s ease;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 8px 12px; border-radius: 12px; cursor: pointer;
+            transition: all 0.3s ease; color: var(--text-dim);
+            position: relative;
+        }
+        .nav-item::before {
+            content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 0; height: 3px; background: var(--primary);
+            border-radius: 0 0 3px 3px; transition: width 0.3s ease;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-item.active::before { width: 30px; }
+        .nav-item:hover:not(.active) { color: var(--text); transform: translateY(-2px); }
+        .nav-icon { font-size: 24px; transition: transform 0.3s ease; }
+        .nav-item:hover .nav-icon { transform: scale(1.2); }
+        .nav-item.active .nav-icon { animation: bounce 0.5s; }
+        .nav-label { font-size: 11px; font-weight: 500; }
+
+        /* ========== SHOP PAGE ========== */
+        .shop-page { background: var(--bg-dark); padding: 16px; overflow-y: auto; }
+        .shop-banner {
+            background: linear-gradient(135deg, #FF6B9D, #C44569);
+            border-radius: 16px; padding: 20px; margin-bottom: 16px;
+            text-align: center; animation: scaleIn 0.5s ease;
+        }
+        .shop-banner h2 { font-size: 20px; margin-bottom: 4px; }
+        .shop-banner p { font-size: 12px; opacity: 0.9; }
+        .shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .shop-item {
+            background: var(--bg-card); border-radius: 12px; padding: 12px;
+            text-align: center; cursor: pointer; transition: all 0.3s ease;
+            animation: slideUp 0.5s ease backwards;
+        }
+        .shop-item:nth-child(1) { animation-delay: 0.1s; }
+        .shop-item:nth-child(2) { animation-delay: 0.15s; }
+        .shop-item:nth-child(3) { animation-delay: 0.2s; }
+        .shop-item:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .shop-item .icon { font-size: 32px; margin-bottom: 8px; }
+        .shop-item .name { font-size: 12px; margin-bottom: 4px; }
+        .shop-item .price { font-size: 13px; color: var(--accent); font-weight: 600; }
+
+        /* ========== GACHA PAGE ========== */
+        .gacha-page { background: var(--bg-dark); padding: 16px; overflow-y: auto; }
+        .gacha-banner {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 20px; padding: 30px; text-align: center;
+            margin-bottom: 20px; position: relative; overflow: hidden;
+            animation: scaleIn 0.5s ease;
+        }
+        .gacha-banner::before {
+            content: '✨'; position: absolute; top: 10px; left: 20px;
+            font-size: 24px; animation: float 2s infinite;
+        }
+        .gacha-banner::after {
+            content: '⭐'; position: absolute; bottom: 10px; right: 20px;
+            font-size: 24px; animation: float 2s infinite 0.5s;
+        }
+        .gacha-banner h2 { font-size: 24px; margin-bottom: 8px; }
+        .gacha-btns { display: flex; gap: 16px; justify-content: center; }
+        .gacha-btn {
+            background: var(--bg-card); border: 2px solid var(--primary);
+            border-radius: 16px; padding: 20px 30px; cursor: pointer;
+            transition: all 0.3s ease; text-align: center;
+        }
+        .gacha-btn:hover { background: var(--primary); transform: scale(1.05); }
+        .gacha-btn:active { transform: scale(0.95); }
+        .gacha-btn .title { font-size: 16px; font-weight: 600; }
+        .gacha-btn .cost { font-size: 12px; color: var(--accent); margin-top: 4px; }
+
+        /* ========== ENCYCLOPEDIA PAGE ========== */
+        .dict-page {
+            background: var(--bg-dark);
+            display: flex; flex-direction: column;
+            height: 100%;
+        }
+        .dict-header {
+            padding: 12px 16px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .dict-sort {
+            background: var(--bg-card); border: none; color: white;
+            padding: 8px 16px; border-radius: 20px; font-size: 12px;
+        }
+        .dict-content { display: flex; flex: 1; overflow: hidden; }
+        .dict-grid-container { width: 55%; padding: 12px; overflow-y: auto; }
+        .dict-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .dict-char {
+            aspect-ratio: 1; background: var(--bg-card); border-radius: 12px;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; cursor: pointer; transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .dict-char:hover { transform: scale(1.05); border-color: var(--primary); }
+        .dict-char.selected { border-color: var(--primary); background: rgba(255,107,157,0.2); }
+        .dict-char.locked { filter: grayscale(1); opacity: 0.5; }
+        .dict-char .icon { font-size: 36px; }
+        .dict-char .name { font-size: 11px; margin-top: 4px; }
+        .dict-detail { width: 45%; padding: 12px; border-left: 1px solid rgba(255,255,255,0.1); overflow-y: auto; }
+        .dict-detail-content { text-align: center; animation: fadeIn 0.3s ease; }
+        .dict-detail-content .sprite { font-size: 80px; margin-bottom: 12px; }
+        .dict-detail-content .name { font-size: 20px; font-weight: 700; }
+        .dict-detail-content .grade { color: var(--accent); margin: 4px 0 16px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; text-align: left; }
+        .stat-item { background: var(--bg-card); padding: 10px; border-radius: 10px; }
+        .stat-item .label { font-size: 10px; color: var(--text-dim); }
+        .stat-item .value { font-size: 16px; font-weight: 600; }
+
+        /* ========== BATTLE PAGE ========== */
+        .battle-page { background: var(--bg-dark); padding: 16px; overflow-y: auto; }
+        .battle-section { margin-bottom: 20px; }
+        .battle-section h3 { font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .stage-list { display: flex; flex-direction: column; gap: 10px; }
+        .stage-item {
+            background: var(--bg-card); border-radius: 12px; padding: 16px;
+            display: flex; align-items: center; gap: 12px;
+            cursor: pointer; transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .stage-item:hover { border-color: var(--primary); transform: translateX(5px); }
+        .stage-item .icon { font-size: 32px; }
+        .stage-item .info { flex: 1; }
+        .stage-item .name { font-size: 14px; font-weight: 600; }
+        .stage-item .meta { font-size: 11px; color: var(--text-dim); }
+        .stage-item .status { font-size: 20px; }
+
+        /* ========== DUNGEON PAGE ========== */
+        .dungeon-page { background: var(--bg-dark); display: flex; flex-direction: column; height: 100%; }
+        .dungeon-tabs {
+            display: flex; padding: 12px; gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .dungeon-tab {
+            flex: 1; padding: 14px; background: var(--bg-card);
+            border-radius: 12px; text-align: center; cursor: pointer;
+            transition: all 0.3s ease; border: 2px solid transparent;
+        }
+        .dungeon-tab.active { border-color: var(--primary); background: rgba(255,107,157,0.2); }
+        .dungeon-tab:hover:not(.active) { background: var(--bg-light); }
+        .dungeon-tab .icon { font-size: 24px; }
+        .dungeon-tab .label { font-size: 12px; margin-top: 4px; }
+        .dungeon-list { flex: 1; padding: 12px; overflow-y: auto; }
+        .dungeon-item {
+            background: var(--bg-card); border-radius: 12px; margin-bottom: 10px;
+            overflow: hidden; transition: all 0.3s ease;
+        }
+        .dungeon-item-header {
+            padding: 16px; display: flex; align-items: center; gap: 12px;
+            cursor: pointer; transition: background 0.3s ease;
+        }
+        .dungeon-item-header:hover { background: var(--bg-light); }
+        .dungeon-item .icon { font-size: 28px; }
+        .dungeon-item .info { flex: 1; }
+        .dungeon-item .name { font-size: 14px; font-weight: 600; }
+        .dungeon-item .desc { font-size: 11px; color: var(--text-dim); }
+        .dungeon-item .arrow { font-size: 16px; transition: transform 0.3s ease; }
+        .dungeon-item.expanded .arrow { transform: rotate(180deg); }
+        .dungeon-detail {
+            max-height: 0; overflow: hidden; transition: max-height 0.4s ease;
+            background: var(--bg-light);
+        }
+        .dungeon-item.expanded .dungeon-detail { max-height: 200px; }
+        .dungeon-detail-content {
+            padding: 16px; text-align: center;
+        }
+        .dungeon-detail-content .rewards {
+            display: flex; gap: 8px; justify-content: center; margin: 12px 0;
+        }
+        .dungeon-detail-content .reward {
+            background: var(--bg-card); padding: 8px 12px; border-radius: 8px;
+            font-size: 12px;
+        }
+        .dungeon-detail-content .enter-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none; padding: 12px 30px; border-radius: 25px;
+            color: white; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .dungeon-detail-content .enter-btn:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(255,107,157,0.4); }
+
+        /* ========== OVERLAYS ========== */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; align-items: center; justify-content: center;
+            z-index: 200; padding: 20px; backdrop-filter: blur(5px);
+        }
+        .overlay.open { display: flex; animation: fadeIn 0.3s ease; }
+        .modal {
+            background: var(--bg-card); border-radius: 20px;
+            width: 100%; max-width: 400px; max-height: 80vh;
+            overflow: hidden; display: flex; flex-direction: column;
+            animation: scaleIn 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            padding: 16px 20px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-title { font-size: 18px; font-weight: 600; }
+        .modal-close {
+            width: 32px; height: 32px; background: var(--bg-light);
+            border: none; border-radius: 50%; color: white; font-size: 18px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .modal-close:hover { background: var(--danger); transform: rotate(90deg); }
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+        .modal-footer {
+            padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 12px; justify-content: flex-end;
+        }
+
+        /* ========== QUEST OVERLAY ========== */
+        .quest-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .quest-tab {
+            flex: 1; padding: 12px; background: var(--bg-light);
+            border: none; border-radius: 10px; color: var(--text-dim);
+            font-size: 13px; cursor: pointer; transition: all 0.3s ease;
+        }
+        .quest-tab.active { background: var(--primary); color: white; }
+        .quest-item {
+            background: var(--bg-light); border-radius: 12px; padding: 14px;
+            margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
+            animation: slideUp 0.3s ease backwards;
+        }
+        .quest-item .icon { font-size: 28px; }
+        .quest-item .info { flex: 1; }
+        .quest-item .title { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+        .quest-item .progress-bar {
+            height: 6px; background: var(--bg-card); border-radius: 3px;
+            overflow: hidden;
+        }
+        .quest-item .progress-fill {
+            height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 3px; transition: width 0.5s ease;
+        }
+        .quest-item .reward-btn {
+            background: var(--bg-card); border: none; padding: 8px 14px;
+            border-radius: 20px; color: var(--text-dim); font-size: 12px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .quest-item .reward-btn.ready {
+            background: linear-gradient(135deg, var(--accent), #FFA500);
+            color: #333; animation: pulse 1s infinite;
+        }
+        .quest-item .reward-btn.ready:hover { transform: scale(1.1); }
+
+        /* ========== BUTTONS ========== */
+        .btn {
+            padding: 12px 24px; border: none; border-radius: 25px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s ease; display: inline-flex;
+            align-items: center; gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(255,107,157,0.4); }
+        .btn-secondary { background: var(--bg-light); color: var(--text); }
+        .btn-secondary:hover { background: var(--bg-card); }
+
+        /* ========== TOAST ========== */
+        .toast {
+            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+            background: var(--bg-card); padding: 14px 24px; border-radius: 30px;
+            font-size: 14px; z-index: 300; box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            animation: slideUp 0.3s ease, fadeIn 0.3s ease;
+            border-left: 4px solid var(--success);
+        }
+        .toast.error { border-left-color: var(--danger); }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 400px) {
+            .currency-section { gap: 6px; }
+            .currency-item { padding: 4px 8px; }
+            .currency-value { font-size: 11px; }
+            .nav-item { padding: 6px 8px; }
+            .nav-label { font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- TOP HEADER -->
+    <header class="top-header">
+        <div class="profile-section">
+            <div class="profile-icon" onclick="openOverlay('profileOverlay')">👧</div>
+            <div class="profile-info">
+                <span class="level-badge">Lv.15</span>
+                <div class="energy-bar-container">
+                    <div class="energy-bar">
+                        <div class="energy-fill" id="energyFill" style="width:76%"></div>
+                    </div>
+                    <span class="energy-text" id="energyText">1076/1400</span>
+                </div>
+            </div>
+        </div>
+        <div class="currency-section">
+            <div class="currency-item" onclick="showToast('💎 라이트스틱 충전')">
+                <span class="currency-icon">💎</span>
+                <span class="currency-value" id="lightStick">6,120</span>
+            </div>
+            <div class="currency-item" onclick="showToast('💗 하트스틱 충전')">
+                <span class="currency-icon">💗</span>
+                <span class="currency-value" id="heartStick">135</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- RIGHT SIDEBAR -->
+    <aside class="right-sidebar">
+        <div class="quest-btn" onclick="openOverlay('questOverlay')">📋</div>
+        <div class="sidebar-panel">
+            <div class="sidebar-btn" onclick="openOverlay('friendOverlay')">
+                👥
+                <span class="notification-badge">3</span>
+            </div>
+            <div class="sidebar-btn" onclick="openOverlay('noticeOverlay')">
+                📢
+                <span class="notification-ping"></span>
+            </div>
+            <div class="sidebar-btn" onclick="openOverlay('mailOverlay')">
+                ✉️
+                <span class="notification-badge">5</span>
+            </div>
+            <div class="sidebar-btn" onclick="openOverlay('settingOverlay')">⚙️</div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <!-- 숙소 -->
+        <div class="page dorm-page active" id="page-dorm">
+            <div class="dorm-window">
+                <div class="curtain left"></div>
+                <div class="curtain right"></div>
+                <div class="city-silhouette">
+                    <div class="building" style="width:30px;height:80px;animation-delay:0s"></div>
+                    <div class="building" style="width:25px;height:120px;animation-delay:0.5s"></div>
+                    <div class="building" style="width:40px;height:150px;animation-delay:1s"></div>
+                    <div class="building" style="width:20px;height:90px;animation-delay:1.5s"></div>
+                    <div class="building" style="width:35px;height:110px;animation-delay:2s"></div>
+                </div>
+            </div>
+            <div class="dorm-floor"></div>
+            <div class="dorm-sofa">
+                <div class="sofa-cushion"></div>
+                <div class="sofa-cushion" style="transform:rotate(5deg)"></div>
+                <div class="sofa-cushion"></div>
+            </div>
+            <div class="dorm-table"></div>
+            <div class="dorm-character" onclick="charInteraction()">👧</div>
+            <div class="storage-btn" onclick="openOverlay('storageOverlay')">
+                <span>📦</span>
+                <span>보관함</span>
+            </div>
+        </div>
+
+        <!-- 상점 -->
+        <div class="page shop-page" id="page-shop">
+            <div class="shop-banner">
+                <h2>✨ 스페셜 상점 ✨</h2>
+                <p>기간 한정 아이템을 만나보세요!</p>
+            </div>
+            <div class="shop-grid" id="shopGrid"></div>
+        </div>
+
+        <!-- 뽑기 -->
+        <div class="page gacha-page" id="page-gacha">
+            <div class="gacha-banner">
+                <h2>🎰 픽업 가챠</h2>
+                <p style="opacity:0.8;margin-bottom:16px">새로운 캐릭터를 만나보세요!</p>
+                <div class="gacha-btns">
+                    <div class="gacha-btn" onclick="doGacha(1)">
+                        <div class="title">1회 뽑기</div>
+                        <div class="cost">💎 50</div>
+                    </div>
+                    <div class="gacha-btn" onclick="doGacha(10)">
+                        <div class="title">10회 뽑기</div>
+                        <div class="cost">💎 450</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 캐릭터 도감 -->
+        <div class="page dict-page" id="page-dict">
+            <div class="dict-header">
+                <h3 style="font-size:16px">📖 캐릭터 도감</h3>
+                <select class="dict-sort" id="dictSort" onchange="renderDict()">
+                    <option value="grade">등급순</option>
+                    <option value="level">레벨순</option>
+                    <option value="name">이름순</option>
+                </select>
+            </div>
+            <div class="dict-content">
+                <div class="dict-grid-container">
+                    <div class="dict-grid" id="dictGrid"></div>
+                </div>
+                <div class="dict-detail" id="dictDetail">
+                    <div style="text-align:center;color:var(--text-dim);padding-top:60px">
+                        캐릭터를 선택하세요
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 전투 -->
+        <div class="page battle-page" id="page-battle">
+            <div class="battle-section">
+                <h3>🎭 메인 스테이지</h3>
+                <div class="stage-list" id="stageList"></div>
+            </div>
+        </div>
+
+        <!-- 던전 -->
+        <div class="page dungeon-page" id="page-dungeon">
+            <div class="dungeon-tabs">
+                <div class="dungeon-tab active" onclick="switchDungeonTab('infinite')">
+                    <div class="icon">♾️</div>
+                    <div class="label">무한 / 극한</div>
+                </div>
+                <div class="dungeon-tab" onclick="switchDungeonTab('story')">
+                    <div class="icon">📖</div>
+                    <div class="label">스토리</div>
+                </div>
+            </div>
+            <div class="dungeon-list" id="dungeonList"></div>
+        </div>
+    </main>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <div class="nav-item" onclick="switchPage('shop')">
+            <div class="nav-icon">🛒</div>
+            <div class="nav-label">상점</div>
+        </div>
+        <div class="nav-item" onclick="switchPage('gacha')">
+            <div class="nav-icon">🎰</div>
+            <div class="nav-label">뽑기</div>
+        </div>
+        <div class="nav-item active" onclick="switchPage('dorm')">
+            <div class="nav-icon">🏠</div>
+            <div class="nav-label">숙소</div>
+        </div>
+        <div class="nav-item" onclick="switchPage('dict')">
+            <div class="nav-icon">📖</div>
+            <div class="nav-label">캐릭터도감</div>
+        </div>
+        <div class="nav-item" onclick="switchPage('battle')">
+            <div class="nav-icon">⚔️</div>
+            <div class="nav-label">전투</div>
+        </div>
+        <div class="nav-item" onclick="switchPage('dungeon')">
+            <div class="nav-icon">🏰</div>
+            <div class="nav-label">던전</div>
+        </div>
+    </nav>
+
+    <!-- OVERLAYS -->
+    <!-- 퀘스트 -->
+    <div class="overlay" id="questOverlay" onclick="closeOverlayBg(event, 'questOverlay')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">📋 퀘스트</div>
+                <button class="modal-close" onclick="closeOverlay('questOverlay')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="quest-tabs">
+                    <button class="quest-tab active" onclick="switchQuestTab('daily', this)">일일</button>
+                    <button class="quest-tab" onclick="switchQuestTab('weekly', this)">주간</button>
+                    <button class="quest-tab" onclick="switchQuestTab('achieve', this)">업적</button>
+                </div>
+                <div id="questList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 친구 -->
+    <div class="overlay" id="friendOverlay" onclick="closeOverlayBg(event, 'friendOverlay')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">👥 친구 (5/20)</div>
+                <button class="modal-close" onclick="closeOverlay('friendOverlay')">✕</button>
+            </div>
+            <div class="modal-body" id="friendList"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">친구 추가</button>
+                <button class="btn btn-primary">모두 받기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 공지 -->
+    <div class="overlay" id="noticeOverlay" onclick="closeOverlayBg(event, 'noticeOverlay')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">📢 공지사항</div>
+                <button class="modal-close" onclick="closeOverlay('noticeOverlay')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align:center;padding:40px;color:var(--text-dim)">
+                    새로운 공지사항이 없습니다
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메일 -->
+    <div class="overlay" id="mailOverlay" onclick="closeOverlayBg(event, 'mailOverlay')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">✉️ 우편함</div>
+                <button class="modal-close" onclick="closeOverlay('mailOverlay')">✕</button>
+            </div>
+            <div class="modal-body" id="mailList"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary">읽은 메일 삭제</button>
+                <button class="btn btn-primary">모두 받기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 -->
+    <div class="overlay" id="settingOverlay" onclick="closeOverlayBg(event, 'settingOverlay')">
+        <div class="modal" style="max-width:350px" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">⚙️ 설정</div>
+                <button class="modal-close" onclick="closeOverlay('settingOverlay')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom:20px">
+                    <div style="margin-bottom:8px;font-size:13px">🔊 효과음</div>
+                    <input type="range" style="width:100%" value="100">
+                </div>
+                <div style="margin-bottom:20px">
+                    <div style="margin-bottom:8px;font-size:13px">🎵 배경음악</div>
+                    <input type="range" style="width:100%" value="80">
+                </div>
+                <div style="display:flex;gap:10px">
+                    <button class="btn btn-primary" style="flex:1">60 FPS</button>
+                    <button class="btn btn-secondary" style="flex:1">30 FPS</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로필 -->
+    <div class="overlay" id="profileOverlay" onclick="closeOverlayBg(event, 'profileOverlay')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">👤 프로필</div>
+                <button class="modal-close" onclick="closeOverlay('profileOverlay')">✕</button>
+            </div>
+            <div class="modal-body" style="text-align:center">
+                <div style="font-size:80px;margin-bottom:16px">👧</div>
+                <div style="font-size:20px;font-weight:700">Player123</div>
+                <div style="color:var(--primary);margin:8px 0">🏆 루키 프로듀서</div>
+                <div style="color:var(--text-dim);margin-bottom:20px">👥 팬: 12,500</div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+                    <div style="background:var(--bg-light);padding:12px;border-radius:10px">
+                        <div style="font-size:10px;color:var(--text-dim)">스테이지</div>
+                        <div style="font-size:16px;font-weight:600">1-3</div>
+                    </div>
+                    <div style="background:var(--bg-light);padding:12px;border-radius:10px">
+                        <div style="font-size:10px;color:var(--text-dim)">업적</div>
+                        <div style="font-size:16px;font-weight:600">15개</div>
+                    </div>
+                    <div style="background:var(--bg-light);padding:12px;border-radius:10px">
+                        <div style="font-size:10px;color:var(--text-dim)">플레이</div>
+                        <div style="font-size:16px;font-weight:600">12:34</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 보관함 -->
+    <div class="overlay" id="storageOverlay" onclick="closeOverlayBg(event, 'storageOverlay')">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">📦 보관함</div>
+                <button class="modal-close" onclick="closeOverlay('storageOverlay')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px" id="storageGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 가챠 결과 -->
+    <div class="overlay" id="gachaResultOverlay">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">🎉 뽑기 결과!</div>
+                <button class="modal-close" onclick="closeOverlay('gachaResultOverlay')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center" id="gachaResults"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeOverlay('gachaResultOverlay')">확인</button>
+                <button class="btn btn-primary" onclick="closeOverlay('gachaResultOverlay');doGacha(lastGachaCount)">한번 더!</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ===== STATE =====
+const state = {
+    currentPage: 'dorm',
+    questTab: 'daily',
+    dungeonTab: 'infinite',
+    selectedChar: null,
+    selectedDungeon: null
+};
+let lastGachaCount = 1;
+
+// ===== DATA =====
+const data = {
+    chars: [
+        {id:1,name:'지민',icon:'👧',grade:5,lv:25,owned:true,stats:{vocal:1200,dance:1100,visual:1000}},
+        {id:2,name:'수아',icon:'👩',grade:4,lv:20,owned:true,stats:{vocal:1000,dance:1200,visual:900}},
+        {id:3,name:'현우',icon:'👨',grade:4,lv:18,owned:true,stats:{vocal:900,dance:800,visual:1100}},
+        {id:4,name:'유나',icon:'👱‍♀️',grade:3,lv:15,owned:true,stats:{vocal:800,dance:900,visual:850}},
+        {id:5,name:'서연',icon:'👩‍🦰',grade:5,lv:1,owned:false},
+        {id:6,name:'준호',icon:'👦',grade:4,lv:1,owned:false}
+    ],
+    stages: [
+        {id:'1-1',name:'데뷔 첫 무대',diff:'쉬움',status:'cleared'},
+        {id:'1-2',name:'팬사인회',diff:'쉬움',status:'cleared'},
+        {id:'1-3',name:'음악방송',diff:'보통',status:'playing'},
+        {id:'1-4',name:'첫 콘서트',diff:'보통',status:'locked'},
+        {id:'1-5',name:'시상식',diff:'어려움',status:'locked'}
+    ],
+    dungeons: {
+        infinite: [
+            {id:1,name:'무한 던전',desc:'끝없는 도전!',rewards:['💎50','📦상자']},
+            {id:2,name:'극한 던전',desc:'최고 난이도',rewards:['💎100','⭐SSR 조각']}
+        ],
+        story: [
+            {id:3,name:'지민의 이야기',desc:'첫 번째 챕터',rewards:['💗50']},
+            {id:4,name:'수아의 이야기',desc:'두 번째 챕터',rewards:['💗50']},
+            {id:5,name:'현우의 이야기',desc:'세 번째 챕터',rewards:['💗50'],locked:true}
+        ]
+    },
+    quests: {
+        daily: [
+            {id:1,title:'스테이지 3회 클리어',cur:2,max:3,reward:'💗100'},
+            {id:2,title:'가챠 1회',cur:1,max:1,reward:'💎50',done:true},
+            {id:3,title:'로그인 보상',cur:1,max:1,reward:'⚡30',done:true}
+        ],
+        weekly: [
+            {id:4,title:'스테이지 20회',cur:12,max:20,reward:'💎200'},
+            {id:5,title:'캐릭터 레벨업 5회',cur:3,max:5,reward:'💎100'}
+        ],
+        achieve: [
+            {id:6,title:'첫 SSR 획득',cur:0,max:1,reward:'🏆칭호'},
+            {id:7,title:'친구 10명 달성',cur:5,max:10,reward:'💗500'}
+        ]
+    },
+    friends: [
+        {id:1,name:'Player001',icon:'😎',fans:45000,canClaim:true},
+        {id:2,name:'StarFan',icon:'⭐',fans:38000,canClaim:false},
+        {id:3,name:'MusicLover',icon:'🎵',fans:52000,canClaim:true}
+    ],
+    mails: [
+        {id:1,title:'출석 보상',reward:'💎50',read:false},
+        {id:2,title:'업데이트 기념',reward:'💗100',read:false},
+        {id:3,title:'점검 보상',reward:'⚡30',read:true}
+    ],
+    shop: [
+        {id:1,name:'💎 100',price:'₩1,100',icon:'💎'},
+        {id:2,name:'💎 500',price:'₩5,500',icon:'💎'},
+        {id:3,name:'💎 1000',price:'₩11,000',icon:'💎'},
+        {id:4,name:'스타터팩',price:'₩4,900',icon:'📦'},
+        {id:5,name:'성장팩',price:'₩9,900',icon:'🎁'},
+        {id:6,name:'스페셜팩',price:'₩29,900',icon:'👑'}
+    ],
+    storage: [
+        {icon:'🧪',name:'경험치 물약',count:25},
+        {icon:'📦',name:'골드 상자',count:10},
+        {icon:'📖',name:'스킬북',count:5},
+        {icon:'🎩',name:'정장 세트',count:1},
+        {icon:'👕',name:'캐주얼',count:1},
+        {icon:'🧩',name:'지민 조각',count:15},
+        {icon:'🧩',name:'수아 조각',count:8}
+    ],
+    gachaPool: [
+        {name:'지민',icon:'👧',grade:5},
+        {name:'서연',icon:'👩‍🦰',grade:5},
+        {name:'수아',icon:'👩',grade:4},
+        {name:'현우',icon:'👨',grade:4},
+        {name:'유나',icon:'👱‍♀️',grade:3},
+        {name:'카드',icon:'🃏',grade:2}
+    ]
+};
+
+// ===== NAVIGATION =====
+function switchPage(page) {
+    state.currentPage = page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(`page-${page}`).classList.add('active');
+    const navIndex = ['shop','gacha','dorm','dict','battle','dungeon'].indexOf(page);
+    document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
+
+    if(page === 'shop') renderShop();
+    if(page === 'dict') renderDict();
+    if(page === 'battle') renderStages();
+    if(page === 'dungeon') renderDungeons();
+}
+
+// ===== OVERLAYS =====
+function openOverlay(id) {
+    document.getElementById(id).classList.add('open');
+    if(id === 'questOverlay') renderQuests();
+    if(id === 'friendOverlay') renderFriends();
+    if(id === 'mailOverlay') renderMails();
+    if(id === 'storageOverlay') renderStorage();
+}
+function closeOverlay(id) {
+    document.getElementById(id).classList.remove('open');
+}
+function closeOverlayBg(e, id) {
+    if(e.target.classList.contains('overlay')) closeOverlay(id);
+}
+
+// ===== RENDERS =====
+function renderShop() {
+    document.getElementById('shopGrid').innerHTML = data.shop.map((item, i) => `
+        <div class="shop-item" style="animation-delay:${i*0.05}s" onclick="showToast('${item.name} 구매!')">
+            <div class="icon">${item.icon}</div>
+            <div class="name">${item.name}</div>
+            <div class="price">${item.price}</div>
+        </div>
+    `).join('');
+}
+
+function renderDict() {
+    const sorted = [...data.chars].sort((a,b) => b.grade - a.grade);
+    document.getElementById('dictGrid').innerHTML = sorted.map(c => `
+        <div class="dict-char ${c.owned?'':'locked'} ${state.selectedChar===c.id?'selected':''}"
+             onclick="selectChar(${c.id})">
+            <div class="icon">${c.icon}</div>
+            <div class="name">${c.name}</div>
+        </div>
+    `).join('');
+}
+
+function selectChar(id) {
+    state.selectedChar = id;
+    renderDict();
+    const c = data.chars.find(x => x.id === id);
+    if(!c.owned) {
+        document.getElementById('dictDetail').innerHTML = `
+            <div class="dict-detail-content">
+                <div class="sprite" style="filter:grayscale(1);opacity:0.5">${c.icon}</div>
+                <div class="name">${c.name}</div>
+                <div class="grade">${'⭐'.repeat(c.grade)}</div>
+                <div style="font-size:40px;margin:20px 0">🔒</div>
+                <p style="color:var(--text-dim)">미보유 캐릭터</p>
+                <button class="btn btn-primary" style="margin-top:16px" onclick="switchPage('gacha')">🎰 가챠 가기</button>
+            </div>
+        `;
+    } else {
+        document.getElementById('dictDetail').innerHTML = `
+            <div class="dict-detail-content">
+                <div class="sprite">${c.icon}</div>
+                <div class="name">${c.name}</div>
+                <div class="grade">${'⭐'.repeat(c.grade)} Lv.${c.lv}</div>
+                <div class="stat-grid">
+                    <div class="stat-item"><div class="label">Vocal</div><div class="value">${c.stats.vocal}</div></div>
+                    <div class="stat-item"><div class="label">Dance</div><div class="value">${c.stats.dance}</div></div>
+                    <div class="stat-item"><div class="label">Visual</div><div class="value">${c.stats.visual}</div></div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function renderStages() {
+    document.getElementById('stageList').innerHTML = data.stages.map((s, i) => `
+        <div class="stage-item" style="animation: slideUp 0.3s ease ${i*0.1}s backwards" onclick="showToast('스테이지 ${s.id} 선택!')">
+            <div class="icon">🎭</div>
+            <div class="info">
+                <div class="name">${s.id} ${s.name}</div>
+                <div class="meta">${s.diff} | ⚡10</div>
+            </div>
+            <div class="status">${s.status==='cleared'?'✅':s.status==='playing'?'▶️':'🔒'}</div>
+        </div>
+    `).join('');
+}
+
+function switchDungeonTab(tab) {
+    state.dungeonTab = tab;
+    document.querySelectorAll('.dungeon-tab').forEach(t => t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    renderDungeons();
+}
+
+function renderDungeons() {
+    const list = data.dungeons[state.dungeonTab];
+    document.getElementById('dungeonList').innerHTML = list.map((d, i) => `
+        <div class="dungeon-item ${state.selectedDungeon===d.id?'expanded':''}" id="dungeon-${d.id}">
+            <div class="dungeon-item-header" onclick="toggleDungeon(${d.id})">
+                <div class="icon">${d.locked?'🔒':'🏰'}</div>
+                <div class="info">
+                    <div class="name">${d.name}</div>
+                    <div class="desc">${d.desc}</div>
+                </div>
+                <div class="arrow">▼</div>
+            </div>
+            <div class="dungeon-detail">
+                <div class="dungeon-detail-content">
+                    <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">보상</div>
+                    <div class="rewards">
+                        ${d.rewards.map(r => `<div class="reward">${r}</div>`).join('')}
+                    </div>
+                    <button class="enter-btn" ${d.locked?'disabled':''} onclick="showToast('${d.name} 입장!')">
+                        ${d.locked?'🔒 잠김':'⚔️ 입장하기'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function toggleDungeon(id) {
+    state.selectedDungeon = state.selectedDungeon === id ? null : id;
+    renderDungeons();
+}
+
+function switchQuestTab(tab, btn) {
+    state.questTab = tab;
+    document.querySelectorAll('.quest-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    renderQuests();
+}
+
+function renderQuests() {
+    const quests = data.quests[state.questTab];
+    document.getElementById('questList').innerHTML = quests.map((q, i) => `
+        <div class="quest-item" style="animation-delay:${i*0.05}s">
+            <div class="icon">${q.done?'✅':'📋'}</div>
+            <div class="info">
+                <div class="title">${q.title}</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width:${q.cur/q.max*100}%"></div>
+                </div>
+                <div style="font-size:10px;color:var(--text-dim);margin-top:4px">${q.cur}/${q.max}</div>
+            </div>
+            <button class="reward-btn ${q.cur>=q.max?'ready':''}">${q.reward}</button>
+        </div>
+    `).join('');
+}
+
+function renderFriends() {
+    document.getElementById('friendList').innerHTML = data.friends.map(f => `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-light);border-radius:12px;margin-bottom:8px">
+            <div style="font-size:28px">${f.icon}</div>
+            <div style="flex:1">
+                <div style="font-weight:600">${f.name}</div>
+                <div style="font-size:11px;color:var(--text-dim)">👥 ${f.fans.toLocaleString()}</div>
+            </div>
+            <button class="btn ${f.canClaim?'btn-primary':'btn-secondary'}" style="padding:8px 16px;font-size:12px">
+                ${f.canClaim?'받기':'대기'}
+            </button>
+        </div>
+    `).join('');
+}
+
+function renderMails() {
+    document.getElementById('mailList').innerHTML = data.mails.map(m => `
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg-light);border-radius:12px;margin-bottom:8px;border-left:3px solid ${m.read?'transparent':'var(--primary)'}">
+            <div style="font-size:24px">📧</div>
+            <div style="flex:1">
+                <div style="font-weight:500">${m.title}</div>
+                <div style="font-size:12px;color:var(--accent)">${m.reward}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderStorage() {
+    document.getElementById('storageGrid').innerHTML = data.storage.map(s => `
+        <div style="background:var(--bg-light);border-radius:10px;padding:10px;text-align:center">
+            <div style="font-size:28px">${s.icon}</div>
+            <div style="font-size:10px;margin-top:4px">${s.name}</div>
+            <div style="font-size:11px;color:var(--text-dim)">x${s.count}</div>
+        </div>
+    `).join('');
+}
+
+// ===== GACHA =====
+function doGacha(count) {
+    lastGachaCount = count;
+    const results = [];
+    for(let i = 0; i < count; i++) {
+        const r = Math.random() * 100;
+        const grade = r < 1 ? 5 : r < 6 ? 4 : r < 26 ? 3 : 2;
+        const pool = data.gachaPool.filter(c => c.grade === grade);
+        results.push(pool[Math.floor(Math.random() * pool.length)]);
+    }
+    const colors = {5:'#FFD700',4:'#9B59B6',3:'#3498DB',2:'#95A5A6'};
+    document.getElementById('gachaResults').innerHTML = results.map((r, i) => `
+        <div style="text-align:center;animation:popIn 0.3s ease ${i*0.1}s backwards">
+            <div style="width:60px;height:60px;background:var(--bg-light);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid ${colors[r.grade]};margin-bottom:4px">${r.icon}</div>
+            <div style="font-size:11px">${r.name}</div>
+            <div style="font-size:10px;color:var(--accent)">${'⭐'.repeat(r.grade)}</div>
+        </div>
+    `).join('');
+    openOverlay('gachaResultOverlay');
+}
+
+// ===== INTERACTIONS =====
+function charInteraction() {
+    showToast('💕 안녕하세요~!');
+    document.querySelector('.dorm-character').style.animation = 'bounce 0.5s';
+    setTimeout(() => {
+        document.querySelector('.dorm-character').style.animation = 'charIdle 2s infinite, float 3s ease-in-out infinite';
+    }, 500);
+}
+
+function showToast(msg, type = 'success') {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+    renderShop();
+});
+</script>
+</body>
+</html>
