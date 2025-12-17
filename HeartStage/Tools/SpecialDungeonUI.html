@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>특수 던전 UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Malgun Gothic', sans-serif;
+        }
+
+        body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .phone-frame {
+            width: 360px;
+            height: 640px;
+            background: #f0f4f8;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        /* 상단 헤더 */
+        .header {
+            background: #fff;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            background: #ffb3ba;
+            border-radius: 10px;
+        }
+
+        .currency {
+            display: flex;
+            gap: 15px;
+        }
+
+        .currency-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* 메인 컨텐츠 */
+        .main-content {
+            padding: 15px;
+            height: calc(100% - 120px);
+            overflow-y: auto;
+        }
+
+        /* 탭 버튼 */
+        .tab-container {
+            display: flex;
+            margin-bottom: 15px;
+            background: #e8edf2;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .tab-btn.active {
+            background: #c8e0f4;
+            color: #333;
+        }
+
+        /* 던전 아이템 */
+        .dungeon-item {
+            background: #fff;
+            border-radius: 15px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .dungeon-item.locked {
+            opacity: 0.7;
+            position: relative;
+        }
+
+        .dungeon-item.locked::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .item-header {
+            display: flex;
+            padding: 12px;
+            cursor: pointer;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .item-thumbnail {
+            width: 80px;
+            height: 60px;
+            background: linear-gradient(135deg, #ffb3ba, #ffc8a2);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .item-subtitle {
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* 확장 패널 */
+        .expanded-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background: #f8f9fa;
+        }
+
+        .dungeon-item.expanded .expanded-panel {
+            max-height: 200px;
+        }
+
+        .expanded-content {
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .description {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .reward-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reward-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .reward-icon {
+            width: 24px;
+            height: 24px;
+            background: #ffd700;
+            border-radius: 4px;
+        }
+
+        .enter-btn {
+            background: #4a90d9;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .enter-btn:hover {
+            background: #357abd;
+        }
+
+        /* 잠금 오버레이 */
+        .lock-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .dungeon-item.locked .lock-overlay {
+            display: flex;
+        }
+
+        .lock-icon {
+            font-size: 32px;
+        }
+
+        .lock-text {
+            color: white;
+            font-size: 12px;
+            text-align: center;
+        }
+
+        /* 하단 네비게이션 */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            border-top: 1px solid #ddd;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            color: #888;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: #4a90d9;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        /* 컨텐츠 영역 */
+        .content-panel {
+            display: none;
+        }
+
+        .content-panel.active {
+            display: block;
+        }
+
+        /* 스토리 아이템 스타일 */
+        .story-thumbnail {
+            background: linear-gradient(135deg, #a8e6cf, #88d8b0);
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-frame">
+        <!-- 상단 헤더 -->
+        <div class="header">
+            <div class="profile">
+                <div class="profile-icon"></div>
+                <span style="font-size:12px;">123450</span>
+            </div>
+            <div class="currency">
+                <div class="currency-item">
+                    <span style="color:#ffd700;">*</span> 9999
+                </div>
+                <div class="currency-item">
+                    <span style="color:#ff69b4;">*</span> 9999
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="main-content">
+            <!-- 탭 버튼 -->
+            <div class="tab-container">
+                <button class="tab-btn active" onclick="switchTab('special')">특별 스테이지</button>
+                <button class="tab-btn" onclick="switchTab('story')">스토리</button>
+            </div>
+
+            <!-- 특별 스테이지 패널 -->
+            <div id="special-panel" class="content-panel active">
+                <!-- 팬 미팅 -->
+                <div class="dungeon-item" onclick="toggleExpand(this)">
+                    <div class="item-header">
+                        <div class="item-thumbnail">&#127911;</div>
+                        <div class="item-info">
+                            <div class="item-title">팬 미팅</div>
+                            <div class="item-subtitle">일일 도전 횟수 3/3</div>
+                        </div>
+                    </div>
+                    <div class="expanded-panel">
+                        <div class="expanded-content">
+                            <div class="description">
+                                끊임없이 몰려오는 팬들을 사랑으로 진정시키세요!
+                            </div>
+                            <div class="reward-row">
+                                <div class="reward-info">
+                                    <span>획득가능한 보상:</span>
+                                    <div class="reward-icon" title="라이트스틱"></div>
+                                </div>
+                                <button class="enter-btn" onclick="event.stopPropagation(); enterStage(90001)">스테이지 입장</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 극한 난이도 (잠금) -->
+                <div class="dungeon-item locked">
+                    <div class="item-header">
+                        <div class="item-thumbnail" style="background: linear-gradient(135deg, #2c3e50, #4a5568);">&#128293;</div>
+                        <div class="item-info">
+                            <div class="item-title">극한 난이도</div>
+                            <div class="item-subtitle"></div>
+                        </div>
+                    </div>
+                    <div class="lock-overlay">
+                        <div class="lock-icon">&#128274;</div>
+                        <div class="lock-text">4스테이지 클리어 시 해금</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 스토리 패널 -->
+            <div id="story-panel" class="content-panel">
+                <!-- 하나 스토리 -->
+                <div class="dungeon-item" onclick="toggleExpand(this)">
+                    <div class="item-header">
+                        <div class="item-thumbnail story-thumbnail">&#127800;</div>
+                        <div class="item-info">
+                            <div class="item-title">하나 스토리</div>
+                            <div class="item-subtitle"></div>
+                        </div>
+                    </div>
+                    <div class="expanded-panel">
+                        <div class="expanded-content">
+                            <div class="description">
+                                꿈은 멀리 있었고, 현실은 차가웠다.<br>
+                                하지만 하나는 매일 노래했고, 춤췄으며 포기하지 않았다.
+                            </div>
+                            <div class="reward-row">
+                                <div class="reward-info">
+                                    <span>보상: 하나 전용 의상</span>
+                                </div>
+                                <button class="enter-btn" onclick="event.stopPropagation(); enterStory(1)">스토리 입장</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 세라 스토리 -->
+                <div class="dungeon-item" onclick="toggleExpand(this)">
+                    <div class="item-header">
+                        <div class="item-thumbnail story-thumbnail" style="background: linear-gradient(135deg, #ffeaa7, #fdcb6e);">&#127803;</div>
+                        <div class="item-info">
+                            <div class="item-title">세라 스토리</div>
+                            <div class="item-subtitle"></div>
+                        </div>
+                    </div>
+                    <div class="expanded-panel">
+                        <div class="expanded-content">
+                            <div class="description">
+                                세라의 이야기가 펼쳐집니다...
+                            </div>
+                            <div class="reward-row">
+                                <div class="reward-info">
+                                    <span>보상: 세라 전용 의상</span>
+                                </div>
+                                <button class="enter-btn" onclick="event.stopPropagation(); enterStory(2)">스토리 입장</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 리아 스토리 (잠금) -->
+                <div class="dungeon-item locked">
+                    <div class="item-header">
+                        <div class="item-thumbnail story-thumbnail" style="background: linear-gradient(135deg, #dfe6e9, #b2bec3);">&#127799;</div>
+                        <div class="item-info">
+                            <div class="item-title">리아 스토리</div>
+                            <div class="item-subtitle"></div>
+                        </div>
+                    </div>
+                    <div class="lock-overlay">
+                        <div class="lock-icon">&#128274;</div>
+                        <div class="lock-text">리아 4등급 달성 시 해금</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 네비게이션 -->
+        <div class="bottom-nav">
+            <div class="nav-item">
+                <div class="nav-icon">&#128722;</div>
+                <span>MD 샵</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">&#127922;</div>
+                <span>럭키드로우</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">&#127968;</div>
+                <span>숙소</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">&#128100;</div>
+                <span>멤버관리</span>
+            </div>
+            <div class="nav-item">
+                <div class="nav-icon">&#127916;</div>
+                <span>공연</span>
+            </div>
+            <div class="nav-item active">
+                <div class="nav-icon">&#9733;</div>
+                <span>특수던전</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 탭 전환
+        function switchTab(tab) {
+            // 탭 버튼 상태
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // 패널 전환
+            document.querySelectorAll('.content-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(tab + '-panel').classList.add('active');
+
+            // 모든 확장 닫기
+            document.querySelectorAll('.dungeon-item').forEach(item => item.classList.remove('expanded'));
+        }
+
+        // 아코디언 토글
+        function toggleExpand(element) {
+            if (element.classList.contains('locked')) return;
+
+            const wasExpanded = element.classList.contains('expanded');
+
+            // 다른 아이템 모두 닫기
+            document.querySelectorAll('.dungeon-item').forEach(item => {
+                item.classList.remove('expanded');
+            });
+
+            // 클릭한 아이템 토글
+            if (!wasExpanded) {
+                element.classList.add('expanded');
+            }
+        }
+
+        // 스테이지 입장
+        function enterStage(stageId) {
+            alert('스테이지 입장: ' + stageId + '\n\nLoadSceneManager.Instance.GoInfiniteStage(' + stageId + ')');
+        }
+
+        // 스토리 입장
+        function enterStory(storyId) {
+            alert('스토리 입장: ' + storyId);
+        }
+    </script>
+</body>
+</html>

@@ -2,13 +2,22 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// 스토리 던전 UI (스토리 목록)
-/// - 각 캐릭터별 스토리 던전 아이템
-/// - 아코디언 형태 (하나 확장 시 나머지 축소)
+/// 특별 스테이지 UI (무한/극한 던전 목록)
+/// - 팬 미팅 (무한 스테이지)
+/// - 극한 난이도 (추후 추가)
 /// </summary>
-public class StoryDungeonUI : GenericWindow
+public class SpecialStageUI : GenericWindow
 {
     [SerializeField] private List<DungeonItemUI> dungeonItems;
+
+    private void Awake()
+    {
+        // 자동 바인딩: Inspector에서 연결 안된 경우 자식에서 DungeonItemUI 컴포넌트 자동 탐색
+        if (dungeonItems == null || dungeonItems.Count == 0)
+        {
+            dungeonItems = new List<DungeonItemUI>(GetComponentsInChildren<DungeonItemUI>(true));
+        }
+    }
 
     public override void Open()
     {
