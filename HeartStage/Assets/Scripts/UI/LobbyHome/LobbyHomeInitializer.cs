@@ -37,6 +37,9 @@ public class LobbyHomeInitializer : MonoBehaviour
             var sg = root.GetComponent<SortingGroup>();
             sortingGroups.Add(sg);
             sg.sortingOrder = BaseOrder + Mathf.RoundToInt(-y);
+
+            var characterAi = root.GetComponent<LobbyCharacterAI>();
+            characterAi.characterId = characterId;
         }
     }
 

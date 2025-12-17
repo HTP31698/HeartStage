@@ -33,8 +33,8 @@ public static class DataTableIds
     public static string InfiniteStage => "InfiniteStageTable";
     public static string InfiniteMonster => "InfiniteMonsterTable";
     public static string Story => "StoryStageTable";
-
     public static string StoryScript => "StoryScriptTable";
+    public static string Likeability => "LikeabilityTable";
 }
 
 public class Tag
@@ -262,5 +262,34 @@ public class CharacterAttributeIcon
             new Rect(0, 0, texture.width, texture.height),
             new Vector2(0.5f, 0.5f)
         );
+    }
+}
+
+public static class RankName
+{
+    public enum Rank
+    {
+        None = 0,
+        ChickTrainee = 1,
+        AceTrainee = 2,
+        RookieIdol = 3,
+        PopularIdol = 4
+    }
+
+    private static readonly string[] Names =
+    {
+        "없음",
+        "병아리 연습생",
+        "에이스 연습생",
+        "신인 아이돌",
+        "인기 아이돌"
+    };
+
+    public static string Get(int rank)
+    {
+        if (rank < 0 || rank >= Names.Length)
+            return "알 수 없음";
+
+        return Names[rank];
     }
 }

@@ -97,6 +97,11 @@ public class DragZoomPanManager : MonoBehaviour
                 Time.deltaTime * focusMoveSpeed
             );
 
+            // 포커스 끝나면 follow 모드로 전환
+            if (Vector3.Distance(lobbyHomeCamera.transform.position, targetPos) < 0.05f && Mathf.Abs(lobbyHomeCamera.orthographicSize - focusZoomSize) < 0.05f)
+            {
+                cameraMode = CameraMode.FollowCharacter; 
+            }
             ClampCamera();
         }
         // 캐릭터 팔로우
@@ -543,6 +548,9 @@ public class DragZoomPanManager : MonoBehaviour
 
     public void StartFollow(Transform target)
     {
+        if (cameraMode == CameraMode.FocusCharacter)
+            return;
+
         focusTarget = target;
         cameraMode = CameraMode.FollowCharacter;
     }

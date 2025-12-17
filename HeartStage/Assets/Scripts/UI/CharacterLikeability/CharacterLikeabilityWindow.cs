@@ -4,20 +4,21 @@ public class CharacterLikeabilityWindow : MonoBehaviour
 {
     public static CharacterLikeabilityWindow Instance;
 
-    public GameObject wholePanel;
+    public CharacterLikeabilityPanel wholePanel;
 
     private void Awake()
     {
         Instance = this;
     }
 
-    public void OpenPanel()
+    public void OpenPanel(int characterId)
     {
-        wholePanel.SetActive(true);
+        wholePanel.gameObject.SetActive(true);
+        wholePanel.Init(characterId);
     }
 
     public void ClosePanel()
     {
-        wholePanel.SetActive(false);
+        wholePanel.gameObject.SetActive(false);
     }
 }

@@ -186,6 +186,13 @@ public static class DataTableManager
             await table.LoadAsync(id);
             tables.Add(id, table);
         }
+
+        {
+            var table = new LikeabilityTable();
+            var id = DataTableIds.Likeability;
+            await table.LoadAsync(id);
+            tables.Add(id, table);
+        }
     }
 
     public static ItemTable ItemTable
@@ -380,6 +387,14 @@ public static class DataTableManager
         get
         {
             return Get<StoryScriptTable>(DataTableIds.StoryScript);
+        }
+    }
+
+    public static LikeabilityTable LikeabilityTable
+    {
+        get
+        {
+            return Get<LikeabilityTable>(DataTableIds.Likeability);
         }
     }
 

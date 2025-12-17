@@ -53,6 +53,9 @@ public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
 
     private bool isControlledByPlayer = false; // 드래그 중일 때
 
+    [HideInInspector]
+    public int characterId = 0;
+
     private void Start()
     {
         animator = GetComponentInChildren<Animator>();
@@ -267,7 +270,7 @@ public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
 
     public void OnTap()
     {
-        CharacterLikeabilityWindow.Instance.OpenPanel();
+        CharacterLikeabilityWindow.Instance.OpenPanel(characterId);
         DragZoomPanManager.Instance.FocusOnCharacter(transform);
         DragZoomPanManager.Instance.LockInput();
     }
