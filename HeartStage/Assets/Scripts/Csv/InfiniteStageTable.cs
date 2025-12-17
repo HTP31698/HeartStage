@@ -28,7 +28,8 @@ public class InfiniteStageCSVData
     public float speed_mul { get; set; }                // 이동속도 강화 배율 (1회당)
 
     // ========== 기본 몬스터 ==========
-    public string base_mon_ids { get; set; }            // 기본 몬스터 ID 목록 (콤마 구분)
+    public int base_mon_id1 { get; set; }               // 기본 몬스터 1
+    public int base_mon_id2 { get; set; }               // 기본 몬스터 2
 
     // ========== 이속형 특수 몬스터 ==========
     public int fast_mon_id { get; set; }                // 이속형 몬스터 ID
@@ -133,23 +134,18 @@ public class InfiniteStageTable : DataTable
     }
 
     /// <summary>
-    /// 기본 몬스터 ID 목록 반환 (base_mon_ids 파싱)
+    /// 기본 몬스터 ID 목록 반환
     /// </summary>
     public List<int> GetBaseMonsterIds(InfiniteStageCSVData data)
     {
         var result = new List<int>();
-        if (data == null || string.IsNullOrEmpty(data.base_mon_ids))
+        if (data == null)
             return result;
 
-        // | 또는 콤마로 구분된 ID 파싱
-        var ids = data.base_mon_ids.Split('|', ',');
-        foreach (var idStr in ids)
-        {
-            if (int.TryParse(idStr.Trim(), out int id) && id > 0)
-            {
-                result.Add(id);
-            }
-        }
+        if (data.base_mon_id1 > 0)
+            result.Add(data.base_mon_id1);
+        if (data.base_mon_id2 > 0)
+            result.Add(data.base_mon_id2);
 
         return result;
     }

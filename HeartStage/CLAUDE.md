@@ -1188,3 +1188,52 @@ GoInfiniteStage(90001)
 | 진입 버튼 | SpecialDungeonUI.cs (OnInfiniteButtonClicked) |
 | 패배 처리 | CharacterFence.cs (Die) |
 | CSV 설정 | InfiniteStageTable.csv (90001)
+
+---
+
+## Stage Debug Tool 삭제 가이드
+
+스테이지 디버그 도구를 제거할 때 아래 파일/코드를 삭제하세요.
+
+### 삭제할 파일
+
+| 파일 | 설명 |
+|------|------|
+| `Assets/Editor/StageDebugWindow.cs` | 에디터 윈도우 (Window > Stage Debug) |
+
+### 삭제할 코드 블록
+
+#### StageManager.cs
+
+파일 끝의 `#if UNITY_EDITOR` 블록 전체 삭제:
+
+```csharp
+// 삭제 대상 (파일 끝부분)
+#if UNITY_EDITOR
+    public void Debug_SetInfiniteEnhanceLevel(int newLevel) { ... }
+    public void Debug_SetWaveOrder(int newWave) { ... }
+    public void Debug_ClearAllMonsters() { ... }
+#endif
+```
+
+#### MonsterSpawner.cs
+
+파일 끝의 `#if UNITY_EDITOR` 블록 전체 삭제:
+
+```csharp
+// 삭제 대상 (파일 끝부분)
+#if UNITY_EDITOR
+    public void Debug_JumpToWave(int waveIndex) { ... }
+    public void Debug_ResetInfiniteSpawner() { ... }
+    public (int currentIndex, int totalWaves) Debug_GetWaveInfo() { ... }
+#endif
+```
+
+### 선택적 삭제 (구버전 F키 컨트롤러)
+
+| 파일 | 설명 |
+|------|------|
+| `Assets/Scripts/StageSetUp/DebugController/StageDebugController.cs` | F1~F4 웨이브 디버그 (일반 모드) |
+| `Assets/Scripts/StageSetUp/DebugController/InfiniteStageDebugController.cs` | F1~F4 강화 디버그 (무한 모드) |
+
+**참고**: F키 컨트롤러는 모바일 시뮬레이터에서 동작하지 않아 EditorWindow로 대체되었습니다.

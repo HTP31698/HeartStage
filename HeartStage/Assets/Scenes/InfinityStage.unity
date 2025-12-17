@@ -2674,53 +2674,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!1 &962532601
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 962532603}
-  - component: {fileID: 962532602}
-  m_Layer: 0
-  m_Name: StageDebugController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &962532602
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 962532601}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 861d6467c5d085147824512a7535561c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  targetCanvas: {fileID: 339559872}
-  testCharacterPrefab: {fileID: 5877542763965344592, guid: b51540d35211da243b8b1880aa87a3b4, type: 3}
-  dropdownFilterPrefab: {fileID: 9092903758253508998, guid: ce27b1b8443b1534e8d68ba5c4ecd0b7, type: 3}
---- !u!4 &962532603
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 962532601}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 706.4756, y: 1424.6462, z: -11.930781}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -3718,6 +3671,53 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &1492328204
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1492328206}
+  - component: {fileID: 1492328205}
+  m_Layer: 0
+  m_Name: InfinityStageDebugController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1492328205
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492328204}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19266d52f4fa9ab40908411eaec6baef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetCanvas: {fileID: 339559872}
+  testCharacterPrefab: {fileID: 5877542763965344592, guid: b51540d35211da243b8b1880aa87a3b4, type: 3}
+  dropdownFilterPrefab: {fileID: 9092903758253508998, guid: ce27b1b8443b1534e8d68ba5c4ecd0b7, type: 3}
+--- !u!4 &1492328206
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492328204}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 706.4756, y: 1424.6462, z: -11.930781}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1507693815
 GameObject:
   m_ObjectHideFlags: 0
@@ -4106,14 +4106,29 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1639264852}
-  - component: {fileID: 1639264853}
+  - component: {fileID: 1639264851}
   m_Layer: 0
-  m_Name: InfinityStageSceneController
+  m_Name: StageSceneController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &1639264851
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1639264850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 814594e2dae02a742819cc030fe5a85a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stageSetup: {fileID: 8702799472717631139}
+  ownedSetup: {fileID: 8702799472717631138}
+  monsterSpawner: {fileID: 1888274805}
 --- !u!4 &1639264852
 Transform:
   m_ObjectHideFlags: 0
@@ -4129,21 +4144,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1639264853
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1639264850}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a6834acb342565b44a0ab6cb1b691efe, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  stageSetup: {fileID: 8702799472717631139}
-  ownedSetup: {fileID: 8702799472717631138}
-  monsterSpawner: {fileID: 1888274805}
 --- !u!1 &1673663575
 GameObject:
   m_ObjectHideFlags: 0
@@ -8807,4 +8807,4 @@ SceneRoots:
   - {fileID: 1639264852}
   - {fileID: 1886183638}
   - {fileID: 7090047568631776965}
-  - {fileID: 962532603}
+  - {fileID: 1492328206}

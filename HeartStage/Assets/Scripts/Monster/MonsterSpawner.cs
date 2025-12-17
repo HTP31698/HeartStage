@@ -171,12 +171,9 @@ public class MonsterSpawner : MonoBehaviour
             var infiniteData = StageManager.Instance.infiniteStageData;
             if (infiniteData != null)
             {
-                // 기본 몬스터 ID들
-                var baseIds = DataTableManager.InfiniteStageTable.GetBaseMonsterIds(infiniteData);
-                foreach (var id in baseIds)
-                {
-                    if (id > 0) monsterIds.Add(id);
-                }
+                // 기본 몬스터 ID들 (SO 직접 접근)
+                if (infiniteData.base_mon_id1 > 0) monsterIds.Add(infiniteData.base_mon_id1);
+                if (infiniteData.base_mon_id2 > 0) monsterIds.Add(infiniteData.base_mon_id2);
 
                 // 특수 몬스터 ID들
                 if (infiniteData.fast_mon_id > 0) monsterIds.Add(infiniteData.fast_mon_id);
@@ -1153,8 +1150,10 @@ public class MonsterSpawner : MonoBehaviour
         tankMonsterFirstSpawned = false;
         strongMonsterFirstSpawned = false;
 
-        // 기본 몬스터 ID 파싱
-        infiniteBaseMonsterIds = DataTableManager.InfiniteStageTable.GetBaseMonsterIds(data);
+        // 기본 몬스터 ID (SO 직접 접근)
+        infiniteBaseMonsterIds.Clear();
+        if (data.base_mon_id1 > 0) infiniteBaseMonsterIds.Add(data.base_mon_id1);
+        if (data.base_mon_id2 > 0) infiniteBaseMonsterIds.Add(data.base_mon_id2);
 
         while (isInfiniteSpawning)
         {
@@ -1362,4 +1361,73 @@ public class MonsterSpawner : MonoBehaviour
         }
         return count;
     }
+
+    // ========== 에디터 전용 디버그 메서드 ==========
+#if UNITY_EDITOR
+    /// <summary>
+    /// [에디터 전용] 웨이브 점프 - 스포너 상태 리셋 후 새 웨이브 시작
+    /// </summary>
+    public void Debug_JumpToWave(int waveIndex)
+    {
+        if (stageWaveIds == null || stageWaveIds.Count == 0)
+        {
+            Debug.LogWarning("[Debug] 웨이브 데이터가 없습니다.");
+            return;
+        }
+
+        waveIndex = Mathf.Clamp(waveIndex, 0, stageWaveIds.Count - 1);
+
+        // 현재 스폰 중지
+        isWaveActive = false;
+        ClearSpawnQueue();
+
+        // 웨이브 인덱스 설정
+        currentWaveIndex = waveIndex;
+
+        // 새 웨이브 로드 및 시작
+        LoadCurrentWave();
+        StartWaveSpawning().Forget();
+
+        Debug.Log($"[Debug] 웨이브 {waveIndex + 1}로 점프 완료");
+    }
+
+    /// <summary>
+    /// [에디터 전용] 무한 모드 스포너 리셋 (기존 몬스터 클리어 후 재시작)
+    /// </summary>
+    public void Debug_ResetInfiniteSpawner()
+    {
+        if (!isInfiniteSpawning)
+        {
+            Debug.LogWarning("[Debug] 무한 모드 스폰 중이 아닙니다.");
+            return;
+        }
+
+        // 타이머 리셋
+        infiniteSpawnTimer = 0f;
+        fastMonsterTimer = 0f;
+        tankMonsterTimer = 0f;
+        strongMonsterTimer = 0f;
+
+        // 첫 스폰 플래그 리셋 (현재 시간 기준으로 다시 계산되도록)
+        float elapsed = StageManager.Instance?.infiniteElapsedTime ?? 0f;
+        var data = StageManager.Instance?.infiniteStageData;
+
+        if (data != null)
+        {
+            fastMonsterFirstSpawned = elapsed >= data.fast_spawn_time;
+            tankMonsterFirstSpawned = elapsed >= data.tank_spawn_time;
+            strongMonsterFirstSpawned = elapsed >= data.strong_spawn_time;
+        }
+
+        Debug.Log("[Debug] 무한 모드 스포너 리셋 완료");
+    }
+
+    /// <summary>
+    /// [에디터 전용] 현재 웨이브 정보 반환
+    /// </summary>
+    public (int currentIndex, int totalWaves) Debug_GetWaveInfo()
+    {
+        return (currentWaveIndex, stageWaveIds?.Count ?? 0);
+    }
+#endif
 }

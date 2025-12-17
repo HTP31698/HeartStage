@@ -94,7 +94,7 @@ public enum SceneType
     StageScene = 2,
     TestStageScene = 3,
     TestStageWaveScene = 4,
-    InfiniteTestScene = 5,
+    InfinityStage = 5,
 }
 
 public class SoundName

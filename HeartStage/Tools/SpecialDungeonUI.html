@@ -3,34 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>특수 던전 UI - CuteKawaiiGUIPack Style</title>
+    <title>특수 던전 UI - 애니메이션 프로토타입</title>
     <style>
         /*
         ============================================
-        CuteKawaiiGUIPack 에셋 경로 참조
+        Unity 프리팹 구조 가이드
         ============================================
-        [배경/도형]
-        - Squircle: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Shapes/Squircle.png
-        - Rectangle: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Shapes/Rectangle.png
 
-        [아이콘]
-        - Lock: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Icons/Lock.png
-        - Coin: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Icons/Coin.png
-        - Gem: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Icons/Gem.png
-        - Star-XP: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Icons/Star-XP.png
-        - Checkmark: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Icons/Checkmark.png
-        - Clock: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Icons/Clock.png
-        - Gift: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Icons/Gift.png
+        [DungeonItemUI 프리팹 구조]
+        DungeonItem (DungeonItemUI.cs, VerticalLayoutGroup, ContentSizeFitter)
+        ├── Header (Button) ─ 클릭 영역
+        │   ├── Thumbnail (Image)
+        │   ├── InfoArea
+        │   │   ├── TitleText (TMP)
+        │   │   └── SubtitleText (TMP)
+        │   └── Arrow (Image) ─ ▼ 아이콘
+        │
+        ├── ExpandedPanel ─ 애니메이션 대상 (pivot Y=1, top)
+        │   └── Content
+        │       ├── DescriptionText (TMP)
+        │       └── BottomRow
+        │           ├── RewardInfo
+        │           │   ├── RewardIcon (Image)
+        │           │   └── RewardText (TMP)
+        │           └── EnterButton (Button)
+        │
+        └── LockOverlay (비활성 시 숨김)
+            ├── LockIcon (Image)
+            └── LockText (TMP)
 
-        [버튼]
-        - Prefabs: Assets/CuteKawaiiGUIPack/Demo/Prefabs/Common/2-Components/Buttons/
+        [SpecialStageUI 프리팹 구조]
+        SpecialStageUI (SpecialStageUI.cs, GenericWindow)
+        └── Content (VerticalLayoutGroup)
+            ├── DungeonItem_FanMeeting
+            └── DungeonItem_Extreme (잠금)
 
-        [팝업]
-        - Confirmation: Assets/CuteKawaiiGUIPack/Demo/Prefabs/Common/4-Popups/Confirmation-Popup.prefab
-
-        [이펙트]
-        - Sparkles: Assets/CuteKawaiiGUIPack/Demo/Sprites/Common/Effects/Sparkles/
-        - Heart: Assets/CuteKawaiiGUIPack/Demo/Animations/Common/Effects/Heart/
         ============================================
         */
 
@@ -40,35 +47,26 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+            font-family: 'Noto Sans KR', sans-serif;
         }
 
         :root {
-            /* CuteKawaii 파스텔 컬러 팔레트 */
             --pink-light: #FFE4EC;
             --pink-main: #FFB3C6;
             --pink-dark: #FF8FAB;
             --blue-light: #E4F1FF;
             --blue-main: #A8D4FF;
-            --blue-dark: #6BB8FF;
             --purple-light: #F0E4FF;
             --purple-main: #D4B3FF;
-            --mint-light: #E4FFF4;
-            --mint-main: #A8FFD4;
-            --yellow-light: #FFF9E4;
-            --yellow-main: #FFE99A;
-            --orange-light: #FFF0E4;
-            --orange-main: #FFCBA8;
             --bg-main: #FDF6F9;
             --bg-card: #FFFFFF;
             --text-dark: #4A4A6A;
             --text-light: #8A8AAA;
             --shadow-soft: rgba(255, 179, 198, 0.3);
-            --shadow-card: rgba(106, 106, 160, 0.1);
         }
 
         body {
-            background: linear-gradient(135deg, var(--pink-light) 0%, var(--blue-light) 50%, var(--purple-light) 100%);
+            background: linear-gradient(135deg, var(--pink-light) 0%, var(--blue-light) 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -76,292 +74,149 @@
             padding: 20px;
         }
 
+        /* ========== 폰 프레임 ========== */
         .phone-frame {
             width: 375px;
-            height: 700px;
             background: var(--bg-main);
-            border-radius: 30px;
+            border-radius: 24px;
             overflow: hidden;
-            position: relative;
-            box-shadow:
-                0 20px 60px var(--shadow-soft),
-                0 0 0 8px rgba(255, 255, 255, 0.8),
-                inset 0 0 20px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 20px 60px var(--shadow-soft);
+            padding: 20px 16px;
         }
 
-        /* ========== 상단 헤더 ========== */
-        .header {
-            background: linear-gradient(180deg, #FFFFFF 0%, var(--bg-main) 100%);
-            padding: 12px 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--pink-light);
-        }
-
-        .profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .profile-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, var(--pink-main), var(--purple-main));
-            border-radius: 12px;
-            border: 3px solid white;
-            box-shadow: 0 4px 12px var(--shadow-soft);
-        }
-
-        .profile-level {
-            font-size: 13px;
+        .page-title {
+            text-align: center;
+            font-size: 18px;
             font-weight: 700;
             color: var(--text-dark);
+            margin-bottom: 20px;
         }
 
-        .currency {
+        /* ========== 던전 리스트 컨테이너 ========== */
+        .dungeon-list {
             display: flex;
+            flex-direction: column;
             gap: 12px;
         }
 
-        .currency-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: white;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-dark);
-            box-shadow: 0 2px 8px var(--shadow-card);
-        }
-
-        .currency-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-        }
-
-        .currency-icon.coin {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-        }
-
-        .currency-icon.gem {
-            background: linear-gradient(135deg, #FF69B4, #FF1493);
-        }
-
-        /* ========== 메인 컨텐츠 ========== */
-        .main-content {
-            padding: 16px;
-            height: calc(100% - 140px);
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-
-        .main-content::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .main-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .main-content::-webkit-scrollbar-thumb {
-            background: var(--pink-main);
-            border-radius: 3px;
-        }
-
-        /* ========== 탭 버튼 ========== */
-        .tab-container {
-            display: flex;
-            margin-bottom: 16px;
-            background: white;
-            border-radius: 16px;
-            padding: 4px;
-            box-shadow: 0 4px 16px var(--shadow-card);
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            background: transparent;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            color: var(--text-light);
-            border-radius: 12px;
-            position: relative;
-        }
-
-        .tab-btn.active {
-            background: linear-gradient(135deg, var(--pink-main), var(--purple-main));
-            color: white;
-            box-shadow: 0 4px 12px var(--shadow-soft);
-        }
-
-        .tab-btn:not(.active):hover {
-            background: var(--pink-light);
-            color: var(--text-dark);
-        }
-
-        /* ========== 던전 아이템 (Squircle 스타일) ========== */
+        /* ========== 던전 아이템 ========== */
         .dungeon-item {
             background: var(--bg-card);
-            border-radius: 20px;
-            margin-bottom: 14px;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 6px 20px var(--shadow-card);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
             position: relative;
-            border: 2px solid transparent;
         }
 
-        .dungeon-item:hover:not(.locked) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px var(--shadow-soft);
-            border-color: var(--pink-light);
-        }
-
-        .dungeon-item.expanded {
-            border-color: var(--pink-main);
-        }
-
-        .dungeon-item.locked {
-            opacity: 0.85;
-        }
-
-        /* ========== 아이템 헤더 ========== */
+        /* ========== 헤더 (항상 보임) ========== */
         .item-header {
             display: flex;
-            padding: 14px;
-            cursor: pointer;
             align-items: center;
-            gap: 14px;
+            padding: 14px;
+            gap: 12px;
+            cursor: pointer;
             transition: background 0.2s;
+            user-select: none;
         }
 
-        .dungeon-item:not(.locked) .item-header:hover {
+        .item-header:hover {
             background: var(--pink-light);
         }
 
-        .item-thumbnail {
-            width: 72px;
+        .item-header:active {
+            background: var(--pink-main);
+        }
+
+        .thumbnail {
+            width: 56px;
             height: 56px;
-            border-radius: 14px;
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 28px;
-            box-shadow: 0 4px 12px var(--shadow-card);
-            position: relative;
-            overflow: hidden;
+            font-size: 24px;
+            flex-shrink: 0;
         }
 
-        .item-thumbnail::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 50%);
-            border-radius: 14px;
+        .thumbnail.fan-meeting {
+            background: linear-gradient(135deg, var(--pink-main), #FFAA80);
         }
 
-        .item-thumbnail.fan-meeting {
-            background: linear-gradient(135deg, var(--pink-main), var(--orange-main));
-        }
-
-        .item-thumbnail.extreme {
+        .thumbnail.extreme {
             background: linear-gradient(135deg, #4A4A6A, #2A2A4A);
         }
 
-        .item-thumbnail.story-hana {
-            background: linear-gradient(135deg, var(--mint-main), #7FDBDA);
-        }
-
-        .item-thumbnail.story-sera {
-            background: linear-gradient(135deg, var(--yellow-main), var(--orange-main));
-        }
-
-        .item-thumbnail.story-lia {
-            background: linear-gradient(135deg, var(--purple-main), var(--blue-main));
-        }
-
-        .item-info {
+        .info-area {
             flex: 1;
+            min-width: 0;
         }
 
-        .item-title {
-            font-size: 16px;
+        .title-text {
+            font-size: 15px;
             font-weight: 700;
             color: var(--text-dark);
             margin-bottom: 4px;
         }
 
-        .item-subtitle {
+        .subtitle-text {
             font-size: 12px;
             color: var(--text-light);
-            display: flex;
-            align-items: center;
-            gap: 4px;
         }
 
-        .daily-count {
-            background: var(--blue-light);
-            color: var(--blue-dark);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-weight: 600;
-        }
-
-        .expand-arrow {
-            width: 24px;
-            height: 24px;
+        .arrow {
+            width: 20px;
+            height: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             color: var(--text-light);
-            transition: transform 0.3s;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 12px;
         }
 
-        .dungeon-item.expanded .expand-arrow {
+        .dungeon-item.expanded .arrow {
             transform: rotate(180deg);
         }
 
-        /* ========== 확장 패널 ========== */
+        /* ========== 확장 패널 (애니메이션 핵심) ========== */
         .expanded-panel {
-            max-height: 0;
+            /*
+             * Unity에서:
+             * - RectTransform pivot = (0.5, 1) → 위에서 아래로 펼쳐짐
+             * - DOTween.DOScaleY(0→1) 또는 sizeDelta.y 애니메이션
+             */
             overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            background: linear-gradient(180deg, var(--pink-light) 0%, white 100%);
+            max-height: 0;
+            opacity: 0;
+            transform-origin: top center;
+            transition:
+                max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease-out;
         }
 
         .dungeon-item.expanded .expanded-panel {
-            max-height: 180px;
+            max-height: 200px; /* 충분히 큰 값 */
+            opacity: 1;
         }
 
         .expanded-content {
-            padding: 16px;
-            border-top: 2px dashed var(--pink-light);
+            padding: 0 14px 14px 14px;
+            border-top: 1px dashed var(--pink-light);
+            margin-top: 0;
+            padding-top: 14px;
         }
 
-        .description {
+        .description-text {
             font-size: 13px;
             color: var(--text-dark);
             line-height: 1.6;
             margin-bottom: 14px;
-            padding: 10px;
-            background: white;
-            border-radius: 12px;
-            border-left: 4px solid var(--pink-main);
+            padding: 10px 12px;
+            background: var(--pink-light);
+            border-radius: 10px;
         }
 
-        .reward-row {
+        .bottom-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -379,487 +234,342 @@
             width: 28px;
             height: 28px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px var(--shadow-card);
-        }
-
-        .reward-icon.lightstick {
             background: linear-gradient(135deg, #FFD700, #FFA500);
         }
 
-        .reward-icon.costume {
-            background: linear-gradient(135deg, var(--purple-main), var(--pink-main));
-        }
-
-        /* ========== 입장 버튼 (CuteKawaii 스타일) ========== */
         .enter-btn {
             background: linear-gradient(135deg, var(--blue-main), var(--purple-main));
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 14px;
+            border-radius: 12px;
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow:
-                0 4px 12px rgba(168, 212, 255, 0.4),
-                inset 0 2px 0 rgba(255, 255, 255, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .enter-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s;
-        }
-
-        .enter-btn:hover::before {
-            left: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .enter-btn:hover {
             transform: translateY(-2px);
-            box-shadow:
-                0 6px 20px rgba(168, 212, 255, 0.5),
-                inset 0 2px 0 rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(168, 212, 255, 0.5);
         }
 
         .enter-btn:active {
             transform: translateY(0);
         }
 
-        .enter-btn.story {
-            background: linear-gradient(135deg, var(--mint-main), var(--blue-main));
-        }
-
         /* ========== 잠금 오버레이 ========== */
         .lock-overlay {
-            display: none;
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(74, 74, 106, 0.85), rgba(42, 42, 74, 0.9));
+            background: rgba(74, 74, 106, 0.9);
+            display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
-            gap: 10px;
-            border-radius: 18px;
-            backdrop-filter: blur(2px);
+            gap: 8px;
+            border-radius: 16px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
         }
 
         .dungeon-item.locked .lock-overlay {
-            display: flex;
+            opacity: 1;
+            pointer-events: auto;
         }
 
-        .lock-icon-wrapper {
-            width: 56px;
-            height: 56px;
+        .dungeon-item.locked .item-header {
+            pointer-events: none;
+        }
+
+        .lock-icon {
+            width: 48px;
+            height: 48px;
             background: white;
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        .lock-icon {
-            font-size: 28px;
+            font-size: 24px;
         }
 
         .lock-text {
             color: white;
-            font-size: 13px;
-            font-weight: 600;
-            text-align: center;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 12px;
+            font-weight: 500;
         }
 
-        /* ========== 하단 네비게이션 ========== */
-        .bottom-nav {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
+        /* ========== 코드 출력 영역 ========== */
+        .code-output {
+            margin-top: 20px;
+            padding: 16px;
+            background: #2d2d2d;
+            border-radius: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .code-output pre {
+            color: #f8f8f2;
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            margin: 0;
+        }
+
+        .code-title {
+            color: #88c0d0;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        /* ========== 컨트롤 패널 ========== */
+        .control-panel {
+            margin-top: 16px;
+            padding: 12px;
             background: white;
+            border-radius: 12px;
             display: flex;
-            justify-content: space-around;
-            padding: 10px 0 14px 0;
-            border-top: 2px solid var(--pink-light);
-            box-shadow: 0 -4px 20px var(--shadow-card);
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 10px;
-            color: var(--text-light);
+        .control-btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
-            padding: 4px 8px;
-            border-radius: 8px;
         }
 
-        .nav-item:hover {
-            background: var(--pink-light);
+        .control-btn.primary {
+            background: var(--pink-main);
+            color: white;
         }
 
-        .nav-item.active {
-            color: var(--pink-dark);
-        }
-
-        .nav-icon {
-            font-size: 22px;
-            margin-bottom: 2px;
-        }
-
-        .nav-item.active .nav-icon {
-            transform: scale(1.1);
-        }
-
-        /* ========== 컨텐츠 패널 ========== */
-        .content-panel {
-            display: none;
-        }
-
-        .content-panel.active {
-            display: block;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ========== 타이틀 ========== */
-        .page-title {
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        .page-title h1 {
-            font-size: 20px;
-            font-weight: 700;
+        .control-btn.secondary {
+            background: var(--blue-light);
             color: var(--text-dark);
-            position: relative;
-            display: inline-block;
         }
 
-        .page-title h1::after {
-            content: '';
-            position: absolute;
-            bottom: -4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 40px;
-            height: 4px;
-            background: linear-gradient(90deg, var(--pink-main), var(--purple-main));
-            border-radius: 2px;
+        .control-btn:hover {
+            transform: translateY(-1px);
         }
 
-        /* ========== 스파클 이펙트 (선택사항) ========== */
-        .sparkle {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: white;
-            border-radius: 50%;
-            animation: sparkle 1.5s ease-in-out infinite;
-        }
-
-        @keyframes sparkle {
-            0%, 100% { opacity: 0; transform: scale(0); }
-            50% { opacity: 1; transform: scale(1); }
-        }
     </style>
 </head>
 <body>
-    <div class="phone-frame">
-        <!-- 상단 헤더 -->
-        <div class="header">
-            <div class="profile">
-                <div class="profile-icon"></div>
-                <span class="profile-level">Lv.123</span>
-            </div>
-            <div class="currency">
-                <div class="currency-item">
-                    <div class="currency-icon coin"></div>
-                    <span>9,999</span>
-                </div>
-                <div class="currency-item">
-                    <div class="currency-icon gem"></div>
-                    <span>999</span>
-                </div>
-            </div>
-        </div>
+    <div>
+        <div class="phone-frame">
+            <div class="page-title">특별 스테이지</div>
 
-        <!-- 메인 컨텐츠 -->
-        <div class="main-content">
-            <!-- 페이지 타이틀 -->
-            <div class="page-title">
-                <h1>특수 던전</h1>
-            </div>
-
-            <!-- 탭 버튼 -->
-            <div class="tab-container">
-                <button class="tab-btn active" onclick="switchTab('special')">특별 스테이지</button>
-                <button class="tab-btn" onclick="switchTab('story')">스토리</button>
-            </div>
-
-            <!-- ========== 특별 스테이지 패널 ========== -->
-            <div id="special-panel" class="content-panel active">
-
+            <div class="dungeon-list">
                 <!-- 팬 미팅 (무한 스테이지) -->
-                <div class="dungeon-item" onclick="toggleExpand(this)">
-                    <div class="item-header">
-                        <div class="item-thumbnail fan-meeting">🎤</div>
-                        <div class="item-info">
-                            <div class="item-title">팬 미팅</div>
-                            <div class="item-subtitle">
-                                <span class="daily-count">3/3</span>
-                                일일 도전 횟수
-                            </div>
+                <div class="dungeon-item" id="item-fanmeeting">
+                    <div class="item-header" onclick="toggleItem('item-fanmeeting')">
+                        <div class="thumbnail fan-meeting">🎤</div>
+                        <div class="info-area">
+                            <div class="title-text">팬 미팅</div>
+                            <div class="subtitle-text">일일 도전 3/3</div>
                         </div>
-                        <div class="expand-arrow">▼</div>
+                        <div class="arrow">▼</div>
                     </div>
                     <div class="expanded-panel">
                         <div class="expanded-content">
-                            <div class="description">
+                            <div class="description-text">
                                 끊임없이 몰려오는 팬들을 사랑으로 진정시키세요!<br>
                                 오래 버틸수록 더 많은 보상을 획득합니다.
                             </div>
-                            <div class="reward-row">
+                            <div class="bottom-row">
                                 <div class="reward-info">
-                                    <div class="reward-icon lightstick"></div>
+                                    <div class="reward-icon"></div>
                                     <span>라이트스틱 획득</span>
                                 </div>
-                                <button class="enter-btn" onclick="event.stopPropagation(); enterStage(90001)">
-                                    입장하기
-                                </button>
+                                <button class="enter-btn" onclick="enterStage(90001)">입장</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 극한 난이도 (잠금) -->
-                <div class="dungeon-item locked">
-                    <div class="item-header">
-                        <div class="item-thumbnail extreme">🔥</div>
-                        <div class="item-info">
-                            <div class="item-title">극한 난이도</div>
-                            <div class="item-subtitle">최상위 도전 컨텐츠</div>
+                <div class="dungeon-item locked" id="item-extreme">
+                    <div class="item-header" onclick="toggleItem('item-extreme')">
+                        <div class="thumbnail extreme">🔥</div>
+                        <div class="info-area">
+                            <div class="title-text">극한 난이도</div>
+                            <div class="subtitle-text">최상위 도전</div>
                         </div>
-                        <div class="expand-arrow">▼</div>
+                        <div class="arrow">▼</div>
+                    </div>
+                    <div class="expanded-panel">
+                        <div class="expanded-content">
+                            <div class="description-text">
+                                극한의 난이도에 도전하세요!
+                            </div>
+                            <div class="bottom-row">
+                                <div class="reward-info">
+                                    <div class="reward-icon"></div>
+                                    <span>특별 보상</span>
+                                </div>
+                                <button class="enter-btn">입장</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="lock-overlay">
-                        <div class="lock-icon-wrapper">
-                            <div class="lock-icon">🔒</div>
-                        </div>
+                        <div class="lock-icon">🔒</div>
                         <div class="lock-text">4스테이지 클리어 시 해금</div>
                     </div>
                 </div>
             </div>
 
-            <!-- ========== 스토리 패널 ========== -->
-            <div id="story-panel" class="content-panel">
-
-                <!-- 하나 스토리 -->
-                <div class="dungeon-item" onclick="toggleExpand(this)">
-                    <div class="item-header">
-                        <div class="item-thumbnail story-hana">🌸</div>
-                        <div class="item-info">
-                            <div class="item-title">하나 스토리</div>
-                            <div class="item-subtitle">Chapter 1 ~ 5</div>
-                        </div>
-                        <div class="expand-arrow">▼</div>
-                    </div>
-                    <div class="expanded-panel">
-                        <div class="expanded-content">
-                            <div class="description">
-                                꿈은 멀리 있었고, 현실은 차가웠다.<br>
-                                하지만 하나는 매일 노래했고, 춤췄으며 포기하지 않았다.
-                            </div>
-                            <div class="reward-row">
-                                <div class="reward-info">
-                                    <div class="reward-icon costume"></div>
-                                    <span>하나 전용 의상</span>
-                                </div>
-                                <button class="enter-btn story" onclick="event.stopPropagation(); enterStory(1)">
-                                    입장하기
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 세라 스토리 -->
-                <div class="dungeon-item" onclick="toggleExpand(this)">
-                    <div class="item-header">
-                        <div class="item-thumbnail story-sera">🌻</div>
-                        <div class="item-info">
-                            <div class="item-title">세라 스토리</div>
-                            <div class="item-subtitle">Chapter 1 ~ 5</div>
-                        </div>
-                        <div class="expand-arrow">▼</div>
-                    </div>
-                    <div class="expanded-panel">
-                        <div class="expanded-content">
-                            <div class="description">
-                                밝은 미소 뒤에 숨겨진 세라의 이야기.<br>
-                                진정한 자신을 찾아가는 여정이 시작됩니다.
-                            </div>
-                            <div class="reward-row">
-                                <div class="reward-info">
-                                    <div class="reward-icon costume"></div>
-                                    <span>세라 전용 의상</span>
-                                </div>
-                                <button class="enter-btn story" onclick="event.stopPropagation(); enterStory(2)">
-                                    입장하기
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 리아 스토리 (잠금) -->
-                <div class="dungeon-item locked">
-                    <div class="item-header">
-                        <div class="item-thumbnail story-lia">🌙</div>
-                        <div class="item-info">
-                            <div class="item-title">리아 스토리</div>
-                            <div class="item-subtitle">???</div>
-                        </div>
-                        <div class="expand-arrow">▼</div>
-                    </div>
-                    <div class="lock-overlay">
-                        <div class="lock-icon-wrapper">
-                            <div class="lock-icon">🔒</div>
-                        </div>
-                        <div class="lock-text">리아 4등급 달성 시 해금</div>
-                    </div>
-                </div>
+            <!-- 컨트롤 패널 -->
+            <div class="control-panel">
+                <button class="control-btn primary" onclick="collapseAll()">모두 접기</button>
+                <button class="control-btn secondary" onclick="toggleLock('item-extreme')">잠금 토글</button>
+                <button class="control-btn secondary" onclick="showUnityCode()">Unity 코드 보기</button>
             </div>
         </div>
 
-        <!-- 하단 네비게이션 -->
-        <div class="bottom-nav">
-            <div class="nav-item">
-                <div class="nav-icon">🛒</div>
-                <span>MD샵</span>
-            </div>
-            <div class="nav-item">
-                <div class="nav-icon">🎲</div>
-                <span>럭키드로우</span>
-            </div>
-            <div class="nav-item">
-                <div class="nav-icon">🏠</div>
-                <span>숙소</span>
-            </div>
-            <div class="nav-item">
-                <div class="nav-icon">👤</div>
-                <span>멤버관리</span>
-            </div>
-            <div class="nav-item">
-                <div class="nav-icon">🎬</div>
-                <span>공연</span>
-            </div>
-            <div class="nav-item active">
-                <div class="nav-icon">⭐</div>
-                <span>특수던전</span>
-            </div>
+        <!-- Unity 코드 출력 -->
+        <div class="code-output" id="codeOutput" style="display: none;">
+            <pre id="codeContent"></pre>
         </div>
     </div>
 
     <script>
-        // ========== 탭 전환 ==========
-        function switchTab(tab) {
-            // 탭 버튼 상태
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+        let currentExpanded = null;
 
-            // 패널 전환
-            document.querySelectorAll('.content-panel').forEach(panel => panel.classList.remove('active'));
-            document.getElementById(tab + '-panel').classList.add('active');
+        function toggleItem(itemId) {
+            const item = document.getElementById(itemId);
+            if (item.classList.contains('locked')) return;
 
-            // 모든 확장 닫기
-            document.querySelectorAll('.dungeon-item').forEach(item => item.classList.remove('expanded'));
-        }
+            const wasExpanded = item.classList.contains('expanded');
 
-        // ========== 아코디언 토글 ==========
-        function toggleExpand(element) {
-            if (element.classList.contains('locked')) return;
-
-            const wasExpanded = element.classList.contains('expanded');
-
-            // 다른 아이템 모두 닫기
-            document.querySelectorAll('.dungeon-item').forEach(item => {
-                item.classList.remove('expanded');
+            // 다른 아이템 모두 접기 (아코디언)
+            document.querySelectorAll('.dungeon-item').forEach(el => {
+                el.classList.remove('expanded');
             });
 
             // 클릭한 아이템 토글
             if (!wasExpanded) {
-                element.classList.add('expanded');
+                item.classList.add('expanded');
+                currentExpanded = itemId;
+                logAction(`Expand: ${itemId}`);
+            } else {
+                currentExpanded = null;
+                logAction(`Collapse: ${itemId}`);
             }
         }
 
-        // ========== 스테이지 입장 ==========
+        function collapseAll() {
+            document.querySelectorAll('.dungeon-item').forEach(el => {
+                el.classList.remove('expanded');
+            });
+            currentExpanded = null;
+            logAction('CollapseAll');
+        }
+
+        function toggleLock(itemId) {
+            const item = document.getElementById(itemId);
+            item.classList.toggle('locked');
+            if (item.classList.contains('locked')) {
+                item.classList.remove('expanded');
+            }
+            logAction(`ToggleLock: ${itemId} → ${item.classList.contains('locked')}`);
+        }
+
         function enterStage(stageId) {
-            const info = `
-▶ 무한 스테이지 입장
-
-Stage ID: ${stageId}
-
-Unity 코드:
-LoadSceneManager.Instance.GoInfiniteStage(${stageId})
-
-DungeonItemUI에서:
-- stageId = ${stageId}
-- isStoryDungeon = false
-            `.trim();
-
-            alert(info);
-            console.log('[SpecialDungeonUI] 스테이지 입장:', stageId);
+            logAction(`EnterStage: ${stageId}`);
+            alert(`LoadSceneManager.Instance.GoInfiniteStage(${stageId})`);
         }
 
-        // ========== 스토리 입장 ==========
-        function enterStory(storyId) {
-            const info = `
-▶ 스토리 던전 입장
-
-Story ID: ${storyId}
-
-Unity 코드:
-// TODO: 스토리 씬 로드
-
-DungeonItemUI에서:
-- stageId = ${storyId}
-- isStoryDungeon = true
-            `.trim();
-
-            alert(info);
-            console.log('[SpecialDungeonUI] 스토리 입장:', storyId);
+        function logAction(action) {
+            console.log(`[DungeonUI] ${action}`);
         }
 
-        // ========== 초기화 ==========
-        console.log('===================================');
-        console.log('특수 던전 UI - CuteKawaiiGUIPack Style');
-        console.log('===================================');
-        console.log('에셋 경로는 CSS 주석 참조');
+        function showUnityCode() {
+            const output = document.getElementById('codeOutput');
+            const content = document.getElementById('codeContent');
+
+            output.style.display = output.style.display === 'none' ? 'block' : 'none';
+
+            content.innerHTML = `<span class="code-title">// DungeonItemUI.cs - DOTween 애니메이션</span>
+
+public void SetExpanded(bool expanded)
+{
+    if (isExpanded == expanded || isAnimating) return;
+    isExpanded = expanded;
+
+    currentTween?.Kill();
+
+    if (isExpanded)
+    {
+        // 확장: ScaleY 0 → 1
+        expandedPanel.SetActive(true);
+        expandedPanelRect.localScale = new Vector3(1, 0, 1);
+        isAnimating = true;
+
+        currentTween = expandedPanelRect
+            .DOScaleY(1f, 0.35f)
+            .SetEase(Ease.OutCubic)
+            .OnUpdate(RebuildLayout)
+            .OnComplete(() => {
+                isAnimating = false;
+                RebuildLayout();
+            });
+
+        OnExpanded?.Invoke(this);
+    }
+    else
+    {
+        // 축소: ScaleY 1 → 0
+        isAnimating = true;
+
+        currentTween = expandedPanelRect
+            .DOScaleY(0f, 0.25f)
+            .SetEase(Ease.InCubic)
+            .OnUpdate(RebuildLayout)
+            .OnComplete(() => {
+                expandedPanel.SetActive(false);
+                isAnimating = false;
+                RebuildLayout();
+            });
+    }
+}
+
+<span class="code-title">// SpecialStageUI.cs - 아코디언 동작</span>
+
+private void OnItemExpanded(DungeonItemUI expandedItem)
+{
+    // 다른 아이템 모두 축소
+    foreach (var item in dungeonItems)
+    {
+        if (item != null && item != expandedItem)
+            item.Collapse();
+    }
+}
+
+<span class="code-title">// Unity 프리팹 설정</span>
+// ExpandedPanel RectTransform:
+//   - Pivot: (0.5, 1) ← 위에서 아래로 펼쳐지도록
+//   - Anchor: Top-Stretch
+//
+// DungeonItem:
+//   - VerticalLayoutGroup (ChildForceExpand Height: false)
+//   - ContentSizeFitter (Vertical: PreferredSize)`;
+        }
+
+        // 초기 로그
+        console.log('=====================================');
+        console.log('특수 던전 UI - 애니메이션 프로토타입');
+        console.log('=====================================');
+        console.log('클릭하면 아코디언 동작 확인 가능');
     </script>
 </body>
 </html>

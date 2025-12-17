@@ -42,7 +42,7 @@ public class StageManager : MonoBehaviour
 
     // ========== 무한 모드 ==========
     [HideInInspector] public bool isInfiniteMode = false;
-    [HideInInspector] public InfiniteStageCSVData infiniteStageData;
+    [HideInInspector] public InfiniteStageData infiniteStageData;  // SO 직접 참조 (플레이타임 수정 가능)
     [HideInInspector] public float infiniteElapsedTime = 0f;      // 경과 시간
     [HideInInspector] public int infiniteEnhanceLevel = 0;        // 강화 레벨
     private float nextEnhanceTime = 0f;                           // 다음 강화 시간
@@ -108,10 +108,17 @@ public class StageManager : MonoBehaviour
         var gameData = SaveLoadManager.Data;
         int stageID = gameData.selectedStageID;
 
-        // 무한 모드 체크
-        if (gameData.isInfiniteMode && gameData.infiniteStageId > 0)
+        // 씬 이름으로 무한 모드 결정 (실제 로드된 씬 기준)
+        string activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        bool isInfinityScene = activeSceneName == "InfinityStage";
+
+        Debug.Log($"[StageManager] 씬: {activeSceneName}, 무한모드씬: {isInfinityScene}, infiniteStageId: {gameData.infiniteStageId}");
+
+        // 무한 모드 체크 (InfinityStage 씬일 때만)
+        if (isInfinityScene && gameData.infiniteStageId > 0)
         {
-            var infiniteData = DataTableManager.InfiniteStageTable?.Get(gameData.infiniteStageId);
+            // SO 직접 로드 (플레이타임 수정 가능)
+            var infiniteData = ResourceManager.Instance.Get<InfiniteStageData>($"InfiniteStage_{gameData.infiniteStageId}");
             if (infiniteData != null)
             {
                 InitInfiniteMode(infiniteData);
@@ -126,10 +133,10 @@ public class StageManager : MonoBehaviour
                     }
                 }
 
-                // 배경은 InfiniteStageTable의 prefab 직접 사용
+                // 배경은 SO의 prefab 직접 사용
                 SetBackgroundByPrefabName(infiniteData.prefab);
 
-                // 위치는 InfiniteStageTable의 stage_position 직접 사용
+                // 위치는 SO의 stage_position 직접 사용
                 SetStagePosition(infiniteData.stage_position);
 
                 // 플래그 리셋 (다음 씬에서 일반 모드로)
@@ -139,7 +146,11 @@ public class StageManager : MonoBehaviour
             }
         }
 
-        // 일반 모드
+        // 일반 모드 - 무한 모드 상태 확실히 리셋
+        ResetInfiniteMode();
+        gameData.isInfiniteMode = false;
+        gameData.infiniteStageId = 0;
+
         if (stageID != -1)
         {
             // SO를 통해 스테이지 데이터 로드
@@ -215,7 +226,7 @@ public class StageManager : MonoBehaviour
     }
 
     // ========== 무한 모드 메서드 ==========
-    public void InitInfiniteMode(InfiniteStageCSVData data)
+    public void InitInfiniteMode(InfiniteStageData data)
     {
         isInfiniteMode = true;
         infiniteStageData = data;
@@ -526,4 +537,78 @@ public class StageManager : MonoBehaviour
             _ => fenceDownPosition   // 기본값은 아래
         };
     }
+
+    // ========== 에디터 전용 디버그 메서드 ==========
+#if UNITY_EDITOR
+    /// <summary>
+    /// [에디터 전용] 무한 모드 강화 레벨 변경 (몬스터 클리어 + 리스폰)
+    /// </summary>
+    public void Debug_SetInfiniteEnhanceLevel(int newLevel)
+    {
+        if (!isInfiniteMode || infiniteStageData == null)
+        {
+            Debug.LogWarning("[Debug] 무한 모드가 아닙니다.");
+            return;
+        }
+
+        int oldLevel = infiniteEnhanceLevel;
+        newLevel = Mathf.Max(1, newLevel);
+
+        infiniteEnhanceLevel = newLevel;
+        infiniteElapsedTime = (newLevel - 1) * infiniteStageData.enhance_interval;
+        nextEnhanceTime = newLevel * infiniteStageData.enhance_interval;
+
+        // 몬스터 클리어
+        Debug_ClearAllMonsters();
+
+        Debug.Log($"[Debug] 무한 모드 레벨 변경: Lv.{oldLevel} → Lv.{newLevel} (시간: {infiniteElapsedTime:F1}초)");
+    }
+
+    /// <summary>
+    /// [에디터 전용] 일반 모드 웨이브 점프
+    /// </summary>
+    public void Debug_SetWaveOrder(int newWave)
+    {
+        if (isInfiniteMode)
+        {
+            Debug.LogWarning("[Debug] 무한 모드에서는 웨이브 점프 불가.");
+            return;
+        }
+
+        int oldWave = waveOrder;
+        newWave = Mathf.Max(1, newWave);
+        waveOrder = newWave;
+        waveCount = newWave;
+
+        // 몬스터 클리어
+        Debug_ClearAllMonsters();
+
+        // MonsterSpawner에 웨이브 점프 알림
+        var spawner = FindFirstObjectByType<MonsterSpawner>();
+        if (spawner != null)
+        {
+            spawner.Debug_JumpToWave(newWave - 1);
+        }
+
+        Debug.Log($"[Debug] 웨이브 변경: {oldWave} → {newWave}");
+    }
+
+    /// <summary>
+    /// [에디터 전용] 모든 활성 몬스터 클리어
+    /// </summary>
+    public void Debug_ClearAllMonsters()
+    {
+        var monsters = GameObject.FindGameObjectsWithTag(Tag.Monster);
+        int count = 0;
+        foreach (var monster in monsters)
+        {
+            if (monster != null && monster.activeInHierarchy)
+            {
+                monster.SetActive(false);
+                count++;
+            }
+        }
+        Debug.Log($"[Debug] 몬스터 {count}마리 클리어");
+    }
+#endif
 }

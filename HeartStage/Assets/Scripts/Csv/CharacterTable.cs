@@ -197,4 +197,12 @@ public class CharacterTable : DataTable
 
         return Unknown;
     }
+
+    /// <summary>
+    /// 모든 CSV 데이터 반환
+    /// </summary>
+    public IEnumerable<CharacterCSVData> GetAllCSV()
+    {
+        return table.Values;
+    }
 }
