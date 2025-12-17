@@ -52,7 +52,8 @@ public class SaveDataV1 : SaveData
     public int selectedStageStep1 = -1;
     public int selectedStageStep2 = -1;
     public int startingWave = 1;
-
+    // 스토리 컷씬 후 보상창 표시 플래그
+    public bool showStoryRewardAfterScene = false;
 
     // ================== 5. 퀘스트 진행 상태 ==================
     public DailyQuestState dailyQuest = new DailyQuestState();

@@ -144,13 +144,10 @@ public class SoundManager : MonoBehaviour
             sfxSource.Play();
 
             isVoicePlaying = true;
-            Debug.Log($"[SoundManager] 음성 재생: {clipName}");
         }
     }
 
-    /// <summary>
     /// 현재 재생 중인 음성 SFX 정지
-    /// </summary>
     public void StopVoiceSFX()
     {
         if (isVoicePlaying && sfxSource.isPlaying)
@@ -158,13 +155,10 @@ public class SoundManager : MonoBehaviour
             sfxSource.Stop();
             sfxSource.clip = null;
             isVoicePlaying = false;
-            Debug.Log("[SoundManager] 음성 정지");
         }
     }
 
-    /// <summary>
     /// 음성이 현재 재생 중인지 확인
-    /// </summary>
     public bool IsVoicePlaying()
     {
         return isVoicePlaying && sfxSource.isPlaying;

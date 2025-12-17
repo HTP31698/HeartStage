@@ -269,7 +269,30 @@ public class StageManager : MonoBehaviour
 
         if (windowManager != null)
         {
-            windowManager.OpenOverlay(WindowType.VictoryPanelUI);
+            // 전투가 없는 스토리 스테이지인지 확인 (66001, 66004만)
+            bool isNonCombatStoryStage = currentStageData != null &&
+                                       (currentStageData.stage_ID == 66001 || currentStageData.stage_ID == 66004);
+
+            // 전투가 있는 스토리 스테이지인지 확인 (66002, 66003)
+            bool isCombatStoryStage = currentStageData != null &&
+                                    (currentStageData.stage_ID == 66002 || currentStageData.stage_ID == 66003);
+
+            if (isNonCombatStoryStage)
+            {
+                // 전투 없는 스토리 스테이지 - 스테이지에서 StoryStageReward 사용
+                // (이 케이스는 실제로는 발생하지 않아야 함 - 컷씬에서 바로 로비로 가므로)
+                windowManager.OpenOverlay(WindowType.StoryStageReward);
+            }
+            else if (isCombatStoryStage)
+            {
+                // 전투 있는 스토리 스테이지 클리어 시 - StoryStageReward 사용
+                windowManager.OpenOverlay(WindowType.StoryStageReward);
+            }
+            else
+            {
+                // 일반 스테이지 클리어 시 기존 승리 패널 표시
+                windowManager.OpenOverlay(WindowType.VictoryPanelUI);
+            }
         }
 
         Time.timeScale = 1f;
