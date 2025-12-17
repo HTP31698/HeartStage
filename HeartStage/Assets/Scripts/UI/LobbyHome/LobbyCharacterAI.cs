@@ -267,7 +267,6 @@ public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
 
     public void OnTap()
     {
-        Debug.Log("OnTap()");
         CharacterLikeabilityWindow.Instance.OpenPanel();
         DragZoomPanManager.Instance.FocusOnCharacter(transform);
         DragZoomPanManager.Instance.LockInput();
