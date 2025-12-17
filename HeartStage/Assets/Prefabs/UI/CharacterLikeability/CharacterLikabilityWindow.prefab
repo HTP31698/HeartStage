@@ -158,11 +158,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Mode
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -173,15 +177,31 @@ PrefabInstance:
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: SetActive
+      objectReference: {fileID: 0}
+    - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
+      value: ResetCamera
       objectReference: {fileID: 0}
     - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: UnityEngine.GameObject, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
+      value: DragZoomPanManager, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
+    - target: {fileID: 2579596843956877220, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 4468571134232420149, guid: d647feaeb04e19043b7a560f531ef2e5, type: 3}

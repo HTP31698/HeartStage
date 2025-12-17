@@ -80,15 +80,15 @@ public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
             LobbyAction action = GetWeightedRandomAction();
             float duration = action.GetRandomDuration();
             // 행동 실행
-            ExecuteAction(action.actionType, duration);            
+            ExecuteAction(action.actionType, duration);
             await UniTask.Delay(TimeSpan.FromSeconds(duration));
 
-            if (isControlledByPlayer) 
+            if (isControlledByPlayer)
                 continue;
             // 행동 끝난 후 잠시 대기
             KillMove();
 
-            if (this == null) 
+            if (this == null)
                 return;
 
             animator.SetTrigger(HashIdle);
@@ -222,7 +222,21 @@ public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
         }
 
         // 이동
-        moveTween = transform.DOMove(targetPos, duration).SetEase(Ease.Linear);
+        moveTween = transform.DOMove(targetPos, duration).SetEase(Ease.Linear)
+        .OnStart(() =>
+        {
+            if (DragZoomPanManager.Instance.CurrentFocusTarget == transform)
+            {
+                DragZoomPanManager.Instance.StartFollow(transform);
+            }
+        })
+        .OnComplete(() =>
+        {
+            if (DragZoomPanManager.Instance.CurrentFocusTarget == transform)
+            {
+                DragZoomPanManager.Instance.StopFollow(transform);
+            }
+        });
         return true;
     }
 
@@ -255,5 +269,7 @@ public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
     {
         Debug.Log("OnTap()");
         CharacterLikeabilityWindow.Instance.OpenPanel();
+        DragZoomPanManager.Instance.FocusOnCharacter(transform);
+        DragZoomPanManager.Instance.LockInput();
     }
 }

@@ -3,6 +3,14 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+public enum CameraMode
+{
+    Free,           // 지금 상태 (드래그/줌/패닝)
+    FocusCharacter, // 캐릭터 탭했을 때
+    FollowCharacter, // 캐릭터 이동 중
+    StayOnCharacter   // 고정 추적 (연출 없음)
+}
+
 public class DragZoomPanManager : MonoBehaviour
 {
     public static DragZoomPanManager Instance;
@@ -18,7 +26,7 @@ public class DragZoomPanManager : MonoBehaviour
     [SerializeField] private float edgeSize = 150f; // RawImage edge 영역 px
     [SerializeField] private float edgePanSpeed = 1f; // 에지 패닝 속도
 
-    [SerializeField] private SpriteRenderer background; 
+    [SerializeField] private SpriteRenderer background;
     [SerializeField] private BoxCollider2D innerBoundCollider;
     [SerializeField] private LayerMask dragTargetLayer;
 
@@ -36,22 +44,83 @@ public class DragZoomPanManager : MonoBehaviour
     [SerializeField] private float tapThreshold = 15f; // px
     private Vector2 pressStartScreenPos;
     private bool isDragThresholdPassed;
-    //
+    // 탭할 시 캐릭터 중앙 + 줌인
+    private CameraMode cameraMode = CameraMode.Free;
+    [SerializeField] private float focusZoomSize = 2.5f;
+    [SerializeField] private float focusMoveSpeed = 5f;
+    private Vector3 defaultCamPos;
+    private float defaultCamSize;
+
+    private Transform focusTarget;
+    public Transform CurrentFocusTarget => focusTarget;
+
+    [SerializeField] private bool inputLocked;
+    public void LockInput() => inputLocked = true;
+    public void UnlockInput() => inputLocked = false;
 
     private void Awake()
     {
         Instance = this;
+        defaultCamPos = lobbyHomeCamera.transform.position;
+        defaultCamSize = lobbyHomeCamera.orthographicSize;
     }
 
     private void Update()
     {
+        if (inputLocked)
+            return;
+
 #if UNITY_EDITOR
         HandleEditorInput();
 #else
         HandleTouchInput();
-#endif
+#endif        
     }
+    // 캐릭터 포커스 & 팔로우 처리
+    private void LateUpdate()
+    {
+        // 포커스 + 연출
+        if (cameraMode == CameraMode.FocusCharacter && focusTarget != null)
+        {
+            Vector3 targetPos = focusTarget.position;
+            targetPos.z = lobbyHomeCamera.transform.position.z;
 
+            lobbyHomeCamera.transform.position = Vector3.Lerp(
+                lobbyHomeCamera.transform.position,
+                targetPos,
+                Time.deltaTime * focusMoveSpeed
+            );
+
+            lobbyHomeCamera.orthographicSize = Mathf.Lerp(
+                lobbyHomeCamera.orthographicSize,
+                focusZoomSize,
+                Time.deltaTime * focusMoveSpeed
+            );
+
+            ClampCamera();
+        }
+        // 캐릭터 팔로우
+        else if (cameraMode == CameraMode.FollowCharacter && focusTarget != null)
+        {
+            Vector3 pos = lobbyHomeCamera.transform.position;
+            pos = Vector3.Lerp(pos, focusTarget.position, Time.deltaTime * focusMoveSpeed);
+            pos.z = lobbyHomeCamera.transform.position.z;
+            lobbyHomeCamera.transform.position = pos;
+            ClampCamera();
+        }
+        // 캐릭터 중앙 유지
+        else if (cameraMode == CameraMode.StayOnCharacter && focusTarget != null)
+        {
+            Vector3 targetPos = focusTarget.position;
+            targetPos.z = lobbyHomeCamera.transform.position.z;
+            lobbyHomeCamera.transform.position = Vector3.Lerp(
+                lobbyHomeCamera.transform.position,
+                targetPos,
+                Time.deltaTime * (focusMoveSpeed * 0.6f) // 감속 효과
+            );
+            ClampCamera();
+        }
+    }
     // Editor 입력 처리
     private void HandleEditorInput()
     {
@@ -157,7 +226,7 @@ public class DragZoomPanManager : MonoBehaviour
 
             isDraggingObject = false;
             isPanning = false;
-            dragTarget = null; 
+            dragTarget = null;
             dragStartNotified = false;
         }
     }
@@ -220,7 +289,7 @@ public class DragZoomPanManager : MonoBehaviour
                     dragTarget = hitCol.transform;
 
                     dragOffset = dragTarget.position - world;
-                    dragStartNotified = false; 
+                    dragStartNotified = false;
                 }
                 else
                 {
@@ -452,5 +521,37 @@ public class DragZoomPanManager : MonoBehaviour
         EventSystem.current.RaycastAll(eventData, results);
 
         return results.Count > 0;
+    }
+
+    // 캐릭터 포커스
+    public void FocusOnCharacter(Transform target)
+    {
+        focusTarget = target;
+        cameraMode = CameraMode.FocusCharacter;
+        inputLocked = true;
+    }
+
+    // 카메라 원상복구
+    public void ResetCamera()
+    {
+        cameraMode = CameraMode.Free;
+        focusTarget = null;
+        lobbyHomeCamera.transform.position = defaultCamPos;
+        lobbyHomeCamera.orthographicSize = defaultCamSize;
+        inputLocked = false;
+    }
+
+    public void StartFollow(Transform target)
+    {
+        focusTarget = target;
+        cameraMode = CameraMode.FollowCharacter;
+    }
+
+    public void StopFollow(Transform target)
+    {
+        if (focusTarget != target)
+            return;
+
+        cameraMode = CameraMode.StayOnCharacter;
     }
 }
