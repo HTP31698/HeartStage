@@ -73,8 +73,6 @@ public class StoryManager : MonoBehaviour
             GameSceneManager.ChangeScene(SceneType.LobbyScene);
             return;
         }
-
-        Debug.Log($"[StoryManager] 스테이지 {selectedStageId} - {currentScripts.Count}개 스크립트 로드 완료");
     }
 
     private void SetupUI()
@@ -109,11 +107,12 @@ public class StoryManager : MonoBehaviour
         var currentScript = currentScripts[currentScriptIndex];
         string cutImageName = currentScript.CutImage;
 
-        if(!string.IsNullOrEmpty(cutImageName))
+        if (!string.IsNullOrEmpty(cutImageName))
         {
             LoadAndSetCutsceneImage(cutImageName);
         }
     }
+
     private void LoadAndSetCutsceneImage(string imageName)
     {
         if (cutSceneImage == null) return;
@@ -126,26 +125,16 @@ public class StoryManager : MonoBehaviour
                 new Rect(0, 0, texture.width, texture.height),
                 new Vector2(0.5f, 0.5f)
             );
-
-            Debug.Log($"[StoryManager] 컷씬 이미지 변경: {imageName}");
-        }
-        else
-        {
-            Debug.LogWarning($"[StoryManager] 이미지를 찾을 수 없음: {imageName}");
         }
     }
-
 
     public void StartCutscene()
     {
         if (!isInitialized || currentScripts == null || currentScripts.Count == 0)
         {
-            Debug.LogWarning("[StoryManager] 컷씬을 시작할 수 없습니다.");
             OnCutsceneComplete();
             return;
         }
-
-        Debug.Log($"[StoryManager] 컷씬 시작 - 스테이지 {selectedStageId}");
 
         isPlaying = true;
         currentScriptIndex = 0;
@@ -163,12 +152,29 @@ public class StoryManager : MonoBehaviour
 
         var script = currentScripts[currentScriptIndex];
 
+        // 이전 음성 즉시 정지 (다음 대사로 넘어갈 때마다 호출)
+        SoundManager.Instance?.StopVoiceSFX();
+
         SetCutsceneImage(selectedStageId);
 
         if (nameText != null)
             nameText.text = script.Name;
 
+        // 음성 재생 - Voice 필드에 값이 있는 경우에만
+        PlayVoiceForCurrentScript(script);
+
         StartTypingEffect(script.Text).Forget();
+    }
+
+    /// 현재 스크립트의 음성 재생
+    private void PlayVoiceForCurrentScript(StoryScriptCSVData script)
+    {
+        if (string.IsNullOrEmpty(script.Voice))
+        {
+            return;
+        }
+
+        SoundManager.Instance?.PlayVoiceSFX(script.Voice);
     }
 
     private async UniTask StartTypingEffect(string text)
@@ -192,13 +198,19 @@ public class StoryManager : MonoBehaviour
 
         isTyping = false;
 
-        if (isAutoMode && isPlaying)
+        // 타이핑 완료 후 자동 모드 체크
+        CheckAutoProgress().Forget();
+    }
+
+    private async UniTaskVoid CheckAutoProgress()
+    {
+        if (!isAutoMode || !isPlaying || isTyping) return;
+
+        await UniTask.Delay((int)(autoDelay * 1000), DelayType.UnscaledDeltaTime);
+
+        if (isAutoMode && isPlaying && !isTyping)
         {
-            await UniTask.Delay((int)(autoDelay * 1000), DelayType.UnscaledDeltaTime);
-            if (isPlaying)
-            {
-                NextScript();
-            }
+            NextScript();
         }
     }
 
@@ -211,11 +223,12 @@ public class StoryManager : MonoBehaviour
 
         if (isTyping)
         {
+            // 타이핑 중이라면 즉시 완료
             isTyping = false;
         }
-
         else
         {
+            // 다음 대사로 진행
             currentScriptIndex++;
             ShowCurrentScript();
         }
@@ -226,9 +239,14 @@ public class StoryManager : MonoBehaviour
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
         isAutoMode = !isAutoMode;
-        Debug.Log($"[StoryManager] 자동 모드: {isAutoMode}");
 
         UpdateAutoButtonVisual();
+
+        // 자동 모드를 켰고, 현재 타이핑이 완료된 상태라면 자동 진행 시작
+        if (isAutoMode && !isTyping && isPlaying)
+        {
+            CheckAutoProgress().Forget();
+        }
     }
 
     private void OnSkipButtonClicked()
@@ -241,15 +259,15 @@ public class StoryManager : MonoBehaviour
     private void UpdateAutoButtonVisual()
     {
         if (autoButton == null) return;
-
-        var colors = autoButton.colors;
-        colors.normalColor = isAutoMode ? Color.blue : Color.white;
-        autoButton.colors = colors;
+        // 이미지 교체 해야함
     }
 
     private void OnCutsceneComplete()
     {
         Debug.Log($"[StoryManager] 스테이지 {selectedStageId} 컷씬 완료 - 전투 스테이지로 이동");
+
+        // 컷씬 종료 시 음성도 정지
+        SoundManager.Instance?.StopVoiceSFX();
 
         isPlaying = false;
         isTyping = false;
