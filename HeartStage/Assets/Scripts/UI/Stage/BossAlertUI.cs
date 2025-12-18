@@ -65,8 +65,10 @@ public class BossAlertUI : GenericWindow
         }
         else if (alertText != null)
         {
-            alertText.gameObject.SetActive(false);
-            Debug.Log("[BossAlertUI] 보스 알림 모드 (텍스트 숨김)");
+            alertText.gameObject.SetActive(true);
+            alertText.text = "보스 등장!!"; 
+            alertText.transform.SetAsLastSibling(); // 맨 앞으로
+            Debug.Log("[BossAlertUI] 보스 알림 텍스트 표시");
         }
 
         // static 플래그 리셋

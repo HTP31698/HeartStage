@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using Cysharp.Threading.Tasks; // 추가 필요
+using Cysharp.Threading.Tasks; 
 
 public class MonsterProjectile : MonoBehaviour
 {
@@ -79,3 +79,4 @@ public class MonsterProjectile : MonoBehaviour
             PoolManager.Instance.Release(hitEffectPoolId, hitGo);
     }
 }
+

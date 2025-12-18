@@ -14,14 +14,12 @@ public class ItemInvenSlot : MonoBehaviour
         var itemData = DataTableManager.ItemTable.Get(id);
         if (itemData == null)
         {
-            Debug.LogError($"ItemTable에 id {id} 없음!");
             return;
         }
 
         var texture = ResourceManager.Instance.Get<Texture2D>(itemData.prefab);
         if (texture == null)
         {
-            Debug.LogError($"텍스처 로드 실패: {itemData.prefab}");
             return;
         }
 

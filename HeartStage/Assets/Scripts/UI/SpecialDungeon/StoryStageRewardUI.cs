@@ -196,16 +196,8 @@ public class StoryStageRewardUI : GenericWindow
         }
         else
         {
-            // 일반 아이템은 itemList에 저장
-            var saveItemList = SaveLoadManager.Data.itemList;
-            if (saveItemList.ContainsKey(itemId))
-            {
-                saveItemList[itemId] += itemCount;
-            }
-            else
-            {
-                saveItemList.Add(itemId, itemCount);
-            }
+            ItemInvenHelper.AddItem(itemId, itemCount);
+            Debug.Log($"[StoryStageRewardUI] 아이템 획득: {itemId} x {itemCount}");
         }
 
         // 스테이지 클리어 퀘스트 처리
@@ -216,7 +208,10 @@ public class StoryStageRewardUI : GenericWindow
         }
 
         // 저장
-        SaveLoadManager.SaveToServer().Forget();
+        if (IsTitleId(itemId))
+        {
+            SaveLoadManager.SaveToServer().Forget();
+        }
 
         Debug.Log($"[StoryStageRewardUI] 스토리 보상 지급 완료: {itemId} x {itemCount}");
     }

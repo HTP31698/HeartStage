@@ -1,5 +1,4 @@
 ﻿using Cysharp.Threading.Tasks;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -68,6 +67,9 @@ public class MonsterSpawner : MonoBehaviour
     // 스폰 대기열 시스템
     private Queue<int> spawnQueue = new Queue<int>();  // 스폰 대기 중인 몬스터 ID들의 큐
     private bool isProcessingQueue = false;            // 대기열 처리 중인지 여부
+
+    private Queue<int> recentSpawnHistory = new Queue<int>(); // 최근 스폰된 몬스터 ID 기록
+    private const int maxSpawnHistorySize = 10; // 최근 10마리 이력만 유지
 
     // 몬스터 데이터 & 오브젝트 풀
     private Dictionary<int, MonsterData> monsterDataCache = new Dictionary<int, MonsterData>();     // 몬스터 ID별 ScriptableObject 캐시
@@ -720,9 +722,50 @@ public class MonsterSpawner : MonoBehaviour
         visualChild.transform.localRotation = Quaternion.identity;
     }
 
-    // 다음에 스폰할 몬스터 선택
+    // 다음에 스폰할 몬스터 선택 - 근거리 3마리, 원거리 1마리 순서로 우선순위 부여
     private WaveMonsterInfo? GetNextMonsterToSpawn()
     {
+        // 1. 먼저 근거리 몬스터(attType == 1) 중에서 스폰 가능한 것 찾기
+        for (int i = 0; i < waveMonstersToSpawn.Count; i++)
+        {
+            var monsterInfo = waveMonstersToSpawn[i];
+            if (monsterInfo.spawned < monsterInfo.count)
+            {
+                // 몬스터 데이터에서 공격 타입 확인
+                if (monsterDataCache.TryGetValue(monsterInfo.monsterId, out var monsterData))
+                {
+                    // attType == 1이 근거리라고 가정 (필요시 조정)
+                    if (monsterData.attType == 1)
+                    {
+                        // 근거리 몬스터를 3마리까지만 연속으로 스폰
+                        int currentMeleeCount = GetConsecutiveMeleeSpawnCount();
+                        if (currentMeleeCount < 3)
+                        {
+                            return monsterInfo;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. 근거리 몬스터를 3마리 스폰했거나 더 이상 없으면 원거리 몬스터(attType == 2) 찾기
+        for (int i = 0; i < waveMonstersToSpawn.Count; i++)
+        {
+            var monsterInfo = waveMonstersToSpawn[i];
+            if (monsterInfo.spawned < monsterInfo.count)
+            {
+                if (monsterDataCache.TryGetValue(monsterInfo.monsterId, out var monsterData))
+                {
+                    // attType == 2가 원거리라고 가정 (필요시 조정)
+                    if (monsterData.attType == 2)
+                    {
+                        return monsterInfo;
+                    }
+                }
+            }
+        }
+
+        // 3. 위 조건에 맞지 않으면 기존 방식대로 첫 번째 스폰 가능한 몬스터 반환
         for (int i = 0; i < waveMonstersToSpawn.Count; i++)
         {
             var monsterInfo = waveMonstersToSpawn[i];
@@ -731,10 +774,47 @@ public class MonsterSpawner : MonoBehaviour
                 return monsterInfo;
             }
         }
+
         return null;
     }
 
-    // 몬스터 스폰 카운트 업데이트
+    // 연속으로 스폰된 근거리 몬스터 수를 계산하는 헬퍼 메서드
+    private int GetConsecutiveMeleeSpawnCount()
+    {
+        // 최근 스폰 이력을 추적하기 위한 큐 (클래스 필드로 추가 필요)
+        if (recentSpawnHistory == null)
+        {
+            recentSpawnHistory = new Queue<int>();
+        }
+
+        int consecutiveMeleeCount = 0;
+        var historyArray = recentSpawnHistory.ToArray();
+
+        // 최근 스폰 이력을 뒤에서부터 확인하여 연속된 근거리 몬스터 수 계산
+        for (int i = historyArray.Length - 1; i >= 0; i--)
+        {
+            int monsterId = historyArray[i];
+            if (monsterDataCache.TryGetValue(monsterId, out var monsterData))
+            {
+                if (monsterData.attType == 1) // 근거리
+                {
+                    consecutiveMeleeCount++;
+                }
+                else // 원거리나 다른 타입이면 연속 체인 끊김
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return consecutiveMeleeCount;
+    }
+
+    // 몬스터 스폰 카운트 업데이트 - 스폰 이력도 함께 기록
     private void UpdateSpawnCount(int monsterId)
     {
         for (int i = 0; i < waveMonstersToSpawn.Count; i++)
@@ -744,6 +824,16 @@ public class MonsterSpawner : MonoBehaviour
             {
                 monsterInfo.spawned++;
                 waveMonstersToSpawn[i] = monsterInfo;
+
+                // 스폰 이력에 추가
+                recentSpawnHistory.Enqueue(monsterId);
+
+                // 이력 크기 제한
+                while (recentSpawnHistory.Count > maxSpawnHistorySize)
+                {
+                    recentSpawnHistory.Dequeue();
+                }
+
                 break;
             }
         }
@@ -823,6 +913,12 @@ public class MonsterSpawner : MonoBehaviour
         }
 
         PoolManager.Instance.CreatePool(MonsterProjectilePoolId, monsterProjectilePrefab, 100);
+
+        GameObject nocturnProjectilePrefab = ResourceManager.Instance.Get<GameObject>("NocturnProjectile");
+        if (nocturnProjectilePrefab != null)
+        {
+            PoolManager.Instance.CreatePool("NocturnProjectile", nocturnProjectilePrefab, 20);
+        }
     }
 
     // 스테이지 UI 업데이트
@@ -911,7 +1007,7 @@ public class MonsterSpawner : MonoBehaviour
         }
     }
 
-    // 대기열 처리기
+    // 대기열 처리기 - 우선순위 로직 적용
     private async UniTask StartQueueProcessor()
     {
         if (isProcessingQueue) return;
@@ -919,19 +1015,49 @@ public class MonsterSpawner : MonoBehaviour
 
         try
         {
-            while (spawnQueue.Count > 0 && isWaveActive && !IsWaveSpawnCompleted()) // && isWaveActive && !IsWaveSpawnCompleted()
+            while (spawnQueue.Count > 0 && isWaveActive && !IsWaveSpawnCompleted())
             {
-                var monsterId = spawnQueue.Dequeue();
-                bool spawnSuccess = SpawnFromQueue(monsterId);
-
-                if (!spawnSuccess)
+                // 대기열에서 직접 가져오는 대신 우선순위 로직 사용
+                var nextMonster = GetNextMonsterToSpawn();
+                if (nextMonster.HasValue)
                 {
-                    // 재시도 (간단하게 다시 대기열에 추가)
-                    spawnQueue.Enqueue(monsterId);
+                    // 해당 몬스터가 대기열에 있는지 확인
+                    if (spawnQueue.Contains(nextMonster.Value.monsterId))
+                    {
+                        bool spawnSuccess = SpawnFromQueue(nextMonster.Value.monsterId);
+
+                        if (spawnSuccess)
+                        {
+                            // 대기열에서 해당 몬스터 제거
+                            RemoveFromSpawnQueue(nextMonster.Value.monsterId);
+                            UpdateSpawnCount(nextMonster.Value.monsterId);
+                        }
+                        else
+                        {
+                            // 스폰 실패시 잠시 대기 후 재시도
+                            await UniTask.Delay((int)(spawnTime * 1000));
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        // 우선순위 몬스터가 대기열에 없으면 일반 방식으로 처리
+                        var monsterId = spawnQueue.Dequeue();
+                        bool spawnSuccess = SpawnFromQueue(monsterId);
+
+                        if (!spawnSuccess)
+                        {
+                            spawnQueue.Enqueue(monsterId);
+                        }
+                        else
+                        {
+                            UpdateSpawnCount(monsterId);
+                        }
+                    }
                 }
                 else
                 {
-                    UpdateSpawnCount(monsterId);
+                    break; // 더 이상 스폰할 몬스터가 없음
                 }
 
                 await UniTask.Delay((int)(spawnTime * 1000));
@@ -941,6 +1067,29 @@ public class MonsterSpawner : MonoBehaviour
         {
             isProcessingQueue = false;
         }
+    }
+
+    // 대기열에서 특정 몬스터 제거하는 헬퍼 메서드
+    private void RemoveFromSpawnQueue(int monsterId)
+    {
+        var tempQueue = new Queue<int>();
+        bool found = false;
+
+        while (spawnQueue.Count > 0)
+        {
+            var id = spawnQueue.Dequeue();
+            if (id == monsterId && !found)
+            {
+                found = true; // 첫 번째 발견된 것만 제거
+            }
+            else
+            {
+                tempQueue.Enqueue(id);
+            }
+        }
+
+        // 큐 복원
+        spawnQueue = tempQueue;
     }
 
     // 대기열에서의 스폰

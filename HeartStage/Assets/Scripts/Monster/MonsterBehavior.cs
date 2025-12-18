@@ -196,7 +196,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             // 혼란 상태일 때는 다른 몬스터 탐지
             Collider2D[] hits = Physics2D.OverlapCircleAll(
                 transform.position,
-                currentAttackRange, // ★ 랜덤 사거리 적용
+                currentAttackRange, // 랜덤 사거리 적용
                 LayerMask.GetMask(Tag.Monster)
             );
 
@@ -214,7 +214,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             // 일반 상태일 때는 벽 탐지
             Collider2D hit = Physics2D.OverlapCircle(
                 transform.position,
-                currentAttackRange, // ★ 랜덤 사거리 적용
+                currentAttackRange, // 랜덤 사거리 적용
                 LayerMask.GetMask(Tag.Wall)
             );
             return hit != null;
@@ -330,22 +330,40 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
         if (tenevisEffect != null)
         {
             tenevisEffect.OnAttack();
-
             return; // 테네비스는 투사체 발사하지 않음
         }
 
         Vector3 direction = GetAttackDirectionStageType();
 
-        var projectileObj = PoolManager.Instance.Get(MonsterProjectilePoolId);
+        // 녹턴 보스 전용 투사체 체크
+        string projectilePoolId = MonsterProjectilePoolId;
+        if (IsNocturnBoss())
+        {
+            projectilePoolId = "NocturnProjectile";
+        }
+
+        var projectileObj = PoolManager.Instance.Get(projectilePoolId);
         if (projectileObj != null)
         {
             projectileObj.transform.position = transform.position;
             projectileObj.transform.rotation = Quaternion.identity;
 
-            var projectile = projectileObj.GetComponent<MonsterProjectile>();
-            if (projectile != null)
+            // 녹턴 투사체인 경우 다른 초기화 방식 사용
+            if (IsNocturnBoss())
             {
-                projectile.Init(direction, monsterData.bulletSpeed, GetCurrentAtt());
+                var nocturnProjectile = projectileObj.GetComponent<NocturnProjectile>();
+                if (nocturnProjectile != null)
+                {
+                    nocturnProjectile.Init(direction, monsterData.bulletSpeed, GetCurrentAtt());
+                }
+            }
+            else
+            {
+                var projectile = projectileObj.GetComponent<MonsterProjectile>();
+                if (projectile != null)
+                {
+                    projectile.Init(direction, monsterData.bulletSpeed, GetCurrentAtt());
+                }
             }
 
             projectileObj.SetActive(true);
@@ -606,5 +624,10 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
     public float GetCurrentAttackRange()
     {
         return currentAttackRange;
+    }
+
+    private bool IsNocturnBoss()
+    {
+        return monsterData != null && monsterData.id == 22241;
     }
 }

@@ -82,14 +82,10 @@ public class StoryInfoPrefab : MonoBehaviour
         string iconName = GetItemIconName(itemId);
         if (!string.IsNullOrEmpty(iconName))
         {
-            var texture = ResourceManager.Instance.Get<Texture2D>(iconName);
-            if (texture != null)
+            var sprite = ResourceManager.Instance.GetSprite(iconName);
+            if (sprite != null)
             {
-                rewardIconImage.sprite = Sprite.Create(
-                    texture,
-                    new Rect(0, 0, texture.width, texture.height),
-                    new Vector2(0.5f, 0.5f)
-                );
+                rewardIconImage.sprite = sprite;
             }
         }
     }
