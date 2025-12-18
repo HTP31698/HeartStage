@@ -8,7 +8,7 @@ public class StoryStageRewardUI : GenericWindow
     [SerializeField] private TextMeshProUGUI itemNameText;
     [SerializeField] private Image itemIcon;
     [SerializeField] private TextMeshProUGUI itemCountText;
-    [SerializeField] private Button exitButton; // 화면 전체를 덮는 투명 버튼
+    [SerializeField] private Button exitButton; 
 
     private void Awake()
     {
@@ -31,25 +31,19 @@ public class StoryStageRewardUI : GenericWindow
     public override void Close()
     {
         base.Close();
-        // 로비로 이동
         GoToLobby();
     }
 
     /// 스토리 스테이지 보상 정보 설정
     private void SetupStoryReward()
     {
-        Debug.Log($"[StoryStageRewardUI] SetupStoryReward 시작");
-
         // SaveLoadManager에서 selectedStageID 가져오기
         var gameData = SaveLoadManager.Data;
         int storyStageId = gameData.selectedStageID;
 
-        Debug.Log($"[StoryStageRewardUI] selectedStageID: {storyStageId}");
-
         // 스토리 스테이지가 아니면 처리하지 않음
         if (storyStageId < 66000 || storyStageId >= 67000)
         {
-            Debug.LogError($"[StoryStageRewardUI] 스토리 스테이지가 아닙니다: {storyStageId}");
             return;
         }
 
@@ -57,7 +51,6 @@ public class StoryStageRewardUI : GenericWindow
         var storyStageData = DataTableManager.StoryTable.GetStoryStage(storyStageId);
         if (storyStageData == null)
         {
-            Debug.LogError($"[StoryStageRewardUI] 스토리 스테이지 데이터를 찾을 수 없음: {storyStageId}");
             return;
         }
 
@@ -81,24 +74,24 @@ public class StoryStageRewardUI : GenericWindow
     {
         if (itemNameText == null) return;
 
-        string itemName = GetItemName(itemId);
-        if (!string.IsNullOrEmpty(itemName))
+        if (IsTitleId(itemId))
         {
-            itemNameText.text = itemName;
+            // 칭호인 경우
+            var titleData = DataTableManager.TitleTable?.Get(itemId);
+            if (titleData != null)
+            {
+                itemNameText.text = titleData.Title_name;
+            }
         }
-    }
-
-    /// 아이템 ID에 따른 이름 반환
-    private string GetItemName(int itemId)
-    {
-        return itemId switch
+        else
         {
-            7105 => "트레이닝 포인트",
-            7701 => "특별 아이템",
-            41006 => "칭호",
-            7801 => "포토카드",
-            _ => "보상 아이템"
-        };
+            // ItemTable에서 아이템 데이터 가져오기
+            var itemData = DataTableManager.ItemTable.Get(itemId);
+            if (itemData != null && !string.IsNullOrEmpty(itemData.item_name))
+            {
+                itemNameText.text = itemData.item_name;
+            }
+        }
     }
 
     /// 보상 아이템 아이콘 설정
@@ -106,33 +99,40 @@ public class StoryStageRewardUI : GenericWindow
     {
         if (itemIcon == null) return;
 
-        string iconName = GetItemIconName(itemId);
+        string iconName = null;
+
+        // 칭호인지 확인
+        if (IsTitleId(itemId))
+        {
+            // TitleTable에서 칭호 데이터 가져오기
+            var titleData = DataTableManager.TitleTable?.Get(itemId);
+            if (titleData != null && !string.IsNullOrEmpty(titleData.prefab))
+            {
+                iconName = titleData.prefab;
+                Debug.Log($"[StoryStageRewardUI] 칭호 아이콘: {iconName} (칭호 ID: {itemId})");
+            }
+        }
+        else
+        {
+            // ItemTable에서 아이템 데이터 가져오기
+            var itemData = DataTableManager.ItemTable.Get(itemId);
+            if (itemData != null && !string.IsNullOrEmpty(itemData.prefab))
+            {
+                iconName = itemData.prefab;
+                Debug.Log($"[StoryStageRewardUI] 아이템 아이콘: {iconName} (아이템 ID: {itemId})");
+            }
+        }
+
         if (!string.IsNullOrEmpty(iconName))
         {
-            var texture = ResourceManager.Instance.Get<Texture2D>(iconName);
-            if (texture != null)
+            var sprite = ResourceManager.Instance.GetSprite(iconName);
+            if (sprite != null)
             {
-                itemIcon.sprite = Sprite.Create(
-                    texture,
-                    new Rect(0, 0, texture.width, texture.height),
-                    new Vector2(0.5f, 0.5f)
-                );
+                itemIcon.sprite = sprite;
             }
         }
     }
 
-    /// 아이템 ID에 따른 아이콘 이름 반환
-    private string GetItemIconName(int itemId)
-    {
-        return itemId switch
-        {
-            7105 => "TrainingPointIcon",
-            7701 => "SpecialItemIcon1",
-            41006 => "TitleIcon",
-            7801 => "PhotoCardIcon",
-            _ => null
-        };
-    }
 
     /// 화면 클릭 시 호출 
     private void OnScreenClicked()
@@ -168,29 +168,44 @@ public class StoryStageRewardUI : GenericWindow
         // 스토리 스테이지가 아니면 처리하지 않음
         if (storyStageId < 66000 || storyStageId >= 67000)
         {
-            Debug.LogError($"[StoryStageRewardUI] 스토리 스테이지가 아닙니다: {storyStageId}");
             return;
         }
 
         var storyStageData = DataTableManager.StoryTable.GetStoryStage(storyStageId);
         if (storyStageData == null)
         {
-            Debug.LogError($"[StoryStageRewardUI] 스토리 스테이지 데이터를 찾을 수 없음: {storyStageId}");
             return;
         }
 
-        // 보상 아이템을 인벤토리에 추가
-        var saveItemList = SaveLoadManager.Data.itemList;
         int itemId = storyStageData.reward_item_id;
         int itemCount = storyStageData.reward_count;
 
-        if (saveItemList.ContainsKey(itemId))
+        // 칭호인지 확인
+        if (IsTitleId(itemId))
         {
-            saveItemList[itemId] += itemCount;
+            // 칭호는 ownedTitleIds에 저장
+            var saveData = SaveLoadManager.Data as SaveDataV1;
+            if (saveData != null)
+            {
+                if (!saveData.ownedTitleIds.Contains(itemId))
+                {
+                    saveData.ownedTitleIds.Add(itemId);
+                    Debug.Log($"[StoryStageRewardUI] 칭호 획득: {itemId}");
+                }
+            }
         }
         else
         {
-            saveItemList.Add(itemId, itemCount);
+            // 일반 아이템은 itemList에 저장
+            var saveItemList = SaveLoadManager.Data.itemList;
+            if (saveItemList.ContainsKey(itemId))
+            {
+                saveItemList[itemId] += itemCount;
+            }
+            else
+            {
+                saveItemList.Add(itemId, itemCount);
+            }
         }
 
         // 스테이지 클리어 퀘스트 처리
@@ -205,4 +220,11 @@ public class StoryStageRewardUI : GenericWindow
 
         Debug.Log($"[StoryStageRewardUI] 스토리 보상 지급 완료: {itemId} x {itemCount}");
     }
+
+    private bool IsTitleId(int itemId)
+    {
+        var titleData = DataTableManager.TitleTable?.Get(itemId);
+        return titleData != null;
+    }
+
 }

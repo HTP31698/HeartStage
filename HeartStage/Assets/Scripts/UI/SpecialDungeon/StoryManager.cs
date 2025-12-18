@@ -69,7 +69,6 @@ public class StoryManager : MonoBehaviour
 
         if (currentScripts == null || currentScripts.Count == 0)
         {
-            Debug.LogWarning($"[StoryManager] 스테이지 {selectedStageId}의 스크립트를 찾을 수 없습니다!");
             GameSceneManager.ChangeScene(SceneType.LobbyScene);
             return;
         }
