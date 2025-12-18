@@ -78,10 +78,10 @@ public class StoryInfoPrefab : MonoBehaviour
     {
         return itemId switch
         {
-            7105 => "TrainingPointIcon", // 트레이닝 포인트
-            7701 => "SpecialItemIcon1", // 특별 아이템 1
-            41006 => "TitleIcon", // 칭호
-            7801 => "PhotoCardIcon", // 포토카드
+            7105 => "Candy-Blue-256",      // 트레이닝 포인트
+            7701 => "SpecialItemIcon1",    // 특별 아이템 1 (ItemTable에서 확인 필요)
+            41006 => "TitleIcon",          // 칭호 (ItemTable에서 확인 필요)
+            7801 => "PhotoCardIcon",       // 포토카드 (ItemTable에서 확인 필요)
             _ => null
         };
     }
@@ -108,13 +108,15 @@ public class StoryInfoPrefab : MonoBehaviour
     {
         // 게임 데이터에 선택된 스토리 스테이지 ID 저장
         var gameData = SaveLoadManager.Data;
-        gameData.selectedStageID = storyStageId; 
+        gameData.selectedStageID = storyStageId;
         SaveLoadManager.SaveToServer().Forget();
 
+        // 모든 스토리 스테이지는 컷씬부터 시작
         GameSceneManager.ChangeScene(SceneType.StoryScene);
 
         Debug.Log($"Story Stage {storyStageId} started: {stageData.story_stage_name}");
     }
+
 
     /// 완료 도장/알림 이미지 업데이트 (선택적 구현)
     private void UpdateStampImage()
@@ -130,7 +132,6 @@ public class StoryInfoPrefab : MonoBehaviour
     private bool CheckStageCompleted()
     {
         // 게임 데이터에서 해당 스테이지의 완료 상태를 확인하는 로직
-        // 예: SaveLoadManager.Data에서 완료된 스토리 스테이지 목록 확인
         return false; // 임시 반환값
     }
 

@@ -5,7 +5,7 @@ using UnityEngine.Audio;
 
 public class SoundManager : MonoBehaviour
 {
-    public static SoundManager Instance { get; private set; } 
+    public static SoundManager Instance { get; private set; }
 
     [Header("Field")]
     [SerializeField] private AudioSource sfxSource;
@@ -27,6 +27,9 @@ public class SoundManager : MonoBehaviour
 
     [SerializeField] private float defaultCooldownTime = 0.2f; // 기본 쿨타임 
     private float lastHitSoundTime = 0f;
+
+    // 현재 재생 중인 음성 추적
+    private bool isVoicePlaying = false;
 
     private void Awake()
     {
@@ -77,14 +80,14 @@ public class SoundManager : MonoBehaviour
     {
         AudioSource availableSource = null;
 
-        for(int i = 0; i < hitSoundPoolSize; i++)
+        for (int i = 0; i < hitSoundPoolSize; i++)
         {
             int index = (currentHitSoundIndex + i) % hitSoundPoolSize;
             if (!hitSoundPool[index].isPlaying)
             {
                 availableSource = hitSoundPool[index];
                 currentHitSoundIndex = (index + 1) % hitSoundPoolSize;
-                break;  
+                break;
             }
         }
         // 모든 AudioSource가 사용 중이면 가장 오래된 것을 교체
@@ -102,6 +105,9 @@ public class SoundManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 일반 SFX 재생 (PlayOneShot 사용 - 여러개 동시 재생 가능)
+    /// </summary>
     public void PlaySFX(string clipName, float volume = 1f, float cooldownTime = -1f)
     {
         // 쿨타임 확인
@@ -121,6 +127,43 @@ public class SoundManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 음성 SFX 재생 (sfxSource의 clip 사용 - 이전 음성 정지 가능)
+    /// </summary>
+    public void PlayVoiceSFX(string clipName, float volume = 1f)
+    {
+        // 현재 음성이 재생 중이면 정지
+        StopVoiceSFX();
+
+        var clip = GetSFXClip(clipName);
+        if (clip != null)
+        {
+            // 음성은 clip을 직접 할당해서 재생 (정지 가능하도록)
+            sfxSource.clip = clip;
+            sfxSource.volume = volume;
+            sfxSource.Play();
+
+            isVoicePlaying = true;
+        }
+    }
+
+    /// 현재 재생 중인 음성 SFX 정지
+    public void StopVoiceSFX()
+    {
+        if (isVoicePlaying && sfxSource.isPlaying)
+        {
+            sfxSource.Stop();
+            sfxSource.clip = null;
+            isVoicePlaying = false;
+        }
+    }
+
+    /// 음성이 현재 재생 중인지 확인
+    public bool IsVoicePlaying()
+    {
+        return isVoicePlaying && sfxSource.isPlaying;
+    }
+
     public void PlayBGM(string clipName, bool loop = true)
     {
         AudioClip clip = GetBGMClip(clipName);
@@ -134,9 +177,9 @@ public class SoundManager : MonoBehaviour
 
     private AudioClip GetSFXClip(string clipName)
     {
-        if(sfxDictionary.TryGetValue(clipName, out AudioClip cachedClip))
+        if (sfxDictionary.TryGetValue(clipName, out AudioClip cachedClip))
         {
-            return cachedClip;  
+            return cachedClip;
         }
 
         var clip = ResourceManager.Instance.Get<AudioClip>(clipName);
@@ -200,7 +243,7 @@ public class SoundManager : MonoBehaviour
         if (Time.time - lastHitSoundTime < defaultCooldownTime)
             return;
 
-        string[] hitSounds = 
+        string[] hitSounds =
         {
             "mon_hit_01",
             "mon_hit_02",

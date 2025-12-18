@@ -80,6 +80,7 @@ public enum WindowType
     StoryDungeon = 17,
     StoryDungeonInfo = 18,
     SpecialStage = 19,
+    StoryStageRewardUI = 20,
 
     // 인게임 윈도우
     VictoryDefeat = 50, // 위에 추가해도 안바뀌게 큰 값으로 해두기
@@ -88,6 +89,7 @@ public enum WindowType
     LosePanelUI,
     VictoryPanelUI,
     BossAlert,
+    StoryStageReward,
 }
 
 public enum SceneType
