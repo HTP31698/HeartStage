@@ -17,6 +17,6 @@ public class LikeabilityRewardBubble : MonoBehaviour
 
     private void OnClick()
     {
-        panel.ReceiveNextLikeabilityReward();
+        panel.OpenRewardPopup();
     }
 }

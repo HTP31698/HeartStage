@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
@@ -42,7 +42,7 @@ public class SpecialDungeonUI : GenericWindow
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
         // 스토리 오버레이가 열려있으면 먼저 닫기
-        WindowManager.Instance.CloseOverlay(WindowType.StoryDungeon);
+        WindowManager.Instance.CloseAllOverlays();
         WindowManager.Instance.OpenOverlay(WindowType.SpecialStage);
     }
 

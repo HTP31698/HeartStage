@@ -82,7 +82,7 @@ public class WindowManager : MonoBehaviour
         windows[currentWindow].Open();
     }
 
-    private void CloseAllOverlays()
+    public void CloseAllOverlays()
     {
         for (int i = activeOverlays.Count - 1; i >= 0; i--)
         {

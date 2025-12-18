@@ -145,21 +145,25 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     // 응원 버튼 Interactable 세팅
     private void UpdateCheerUpButtonInteractable()
     {
+        bool interactable = true;
+
         if (likeabilityGuage.value == likeabilityGuage.maxValue)
         {
-            cheerUpButton.interactable = false;
-            return;
+            interactable = false;
         }
-
-        if (SaveLoadManager.Data.itemList.ContainsKey(likeabilityData.User_need_Item))
+        else if (SaveLoadManager.Data.itemList.ContainsKey(likeabilityData.User_need_Item))
         {
             var myItemCount = SaveLoadManager.Data.itemList[likeabilityData.User_need_Item];
-            cheerUpButton.interactable = myItemCount >= likeabilityData.User_need_amount;
+            interactable = myItemCount >= likeabilityData.User_need_amount;
         }
         else
         {
-            cheerUpButton.interactable = false;
+            interactable = false;
         }
+
+        cheerUpButton.interactable = interactable;
+        var canvasGroup = cheerUpButton.GetComponent<CanvasGroup>();
+        canvasGroup.alpha = interactable ? 1f : 0.5f;
     }
     // 보상 말풍선 업데이트
     public void UpdateRewardBubble()
@@ -217,15 +221,15 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         // 다음 받을 보상 하나 찾기 (기존 순서 그대로)
         if (currentLike >= likeabilityData.like_amount1 && !state.reward1Received)
         {
-            rewardPopup.Open(this, likeabilityData.like_reward_item1, likeabilityData.reward_amount1);
+            rewardPopup.Open(this, likeabilityData.like_amount1, likeabilityData.like_reward_item1, likeabilityData.reward_amount1);
         }
         else if (currentLike >= likeabilityData.like_amount2 && !state.reward2Received)
         {
-            rewardPopup.Open(this, likeabilityData.like_reward_item2, likeabilityData.reward_amount2);
+            rewardPopup.Open(this, likeabilityData.like_amount2, likeabilityData.like_reward_item2, likeabilityData.reward_amount2);
         }
         else if (currentLike >= likeabilityData.like_amount3 && !state.reward3Received)
         {
-            rewardPopup.Open(this, likeabilityData.like_reward_item3, likeabilityData.reward_amount3);
+            rewardPopup.Open(this, likeabilityData.like_amount3, likeabilityData.like_reward_item3, likeabilityData.reward_amount3);
         }
     }
     // 테스트 코드
