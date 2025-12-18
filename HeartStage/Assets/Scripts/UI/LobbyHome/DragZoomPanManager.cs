@@ -557,6 +557,9 @@ public class DragZoomPanManager : MonoBehaviour
 
     public void StopFollow(Transform target)
     {
+        if (cameraMode == CameraMode.FocusCharacter)
+            return;
+
         if (focusTarget != target)
             return;
 
