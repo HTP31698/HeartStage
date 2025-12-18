@@ -1,23 +1,34 @@
-﻿using UnityEngine;
-using Cysharp.Threading.Tasks; 
+﻿using Cysharp.Threading.Tasks;
+using UnityEngine;
 
-public class MonsterProjectile : MonoBehaviour
+public class NocturnProjectile : MonoBehaviour
 {
     private Vector3 direction;
     public float speed;
     public int damage;
+    private float lifeTime = 5f; // 생존 시간 제한
+    private float currentLifeTime = 0f;
 
     private readonly string hitEffectPoolId = "monsterHitEffectPool";
 
     public void Init(Vector3 direction, float bulletSpeed, int damage)
     {
-        speed = bulletSpeed;
+        this.speed = bulletSpeed;
         this.direction = direction.normalized;
         this.damage = damage;
+        this.currentLifeTime = 0f; // 생존 시간 초기화
     }
 
     private void Update()
     {
+        // 생존 시간 체크
+        currentLifeTime += Time.deltaTime;
+        if (currentLifeTime >= lifeTime)
+        {
+            ReturnToPool();
+            return;
+        }
+
         transform.position += direction * speed * Time.deltaTime;
     }
 
@@ -25,21 +36,28 @@ public class MonsterProjectile : MonoBehaviour
     {
         if (other.CompareTag(Tag.Wall))
         {
-            var testObj = other.GetComponent<IDamageable>();
-            if (testObj != null)
+            Debug.Log($"[NocturnProjectile] 벽에 충돌! 데미지: {damage}");
+
+            var damageable = other.GetComponent<IDamageable>();
+            if (damageable != null)
             {
-                testObj.OnDamage(damage);
+                damageable.OnDamage(damage);
             }
 
-            // 캐릭터와 동일한 방식으로 이펙트 재생
+            // 히트 이펙트 재생
             PlayHitEffectAsync(transform.position).Forget();
 
-            PoolManager.Instance.Release(MonsterSpawner.GetMonsterProjectilePoolId(), gameObject);
-            gameObject.SetActive(false);
+            ReturnToPool();
         }
     }
 
-    // 캐릭터 CharacterProjectile과 동일한 방식
+    private void ReturnToPool()
+    {
+        // 녹턴 전용 풀로 반환
+        PoolManager.Instance.Release("NocturnProjectile", gameObject);
+        gameObject.SetActive(false);
+    }
+
     private async UniTask PlayHitEffectAsync(Vector3 hitPos)
     {
         if (PoolManager.Instance == null)
@@ -71,7 +89,7 @@ public class MonsterProjectile : MonoBehaviour
                 this.GetCancellationTokenOnDestroy()
             );
         }
-        catch 
+        catch
         {
         }
 
@@ -79,4 +97,3 @@ public class MonsterProjectile : MonoBehaviour
             PoolManager.Instance.Release(hitEffectPoolId, hitGo);
     }
 }
-

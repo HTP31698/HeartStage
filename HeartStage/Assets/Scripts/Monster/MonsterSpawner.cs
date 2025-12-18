@@ -913,6 +913,12 @@ public class MonsterSpawner : MonoBehaviour
         }
 
         PoolManager.Instance.CreatePool(MonsterProjectilePoolId, monsterProjectilePrefab, 100);
+
+        GameObject nocturnProjectilePrefab = ResourceManager.Instance.Get<GameObject>("NocturnProjectile");
+        if (nocturnProjectilePrefab != null)
+        {
+            PoolManager.Instance.CreatePool("NocturnProjectile", nocturnProjectilePrefab, 20);
+        }
     }
 
     // 스테이지 UI 업데이트
