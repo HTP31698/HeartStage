@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using DG.Tweening;
 
 [System.Serializable]
 public class WindowPair
@@ -71,9 +72,23 @@ public class WindowManager : MonoBehaviour
         // 모든 활성화된 오버레이 닫기
         CloseAllOverlays();
 
-        // 현재 윈도우 닫기
+        // 메인 네비게이션 윈도우 전환 (슬라이드 애니메이션)
+        if (LobbySlideAnimation.IsMainNavWindow(id) &&
+            LobbySlideAnimation.IsMainNavWindow(currentWindow) &&
+            IsValidWindow(currentWindow))
+        {
+            var outRect = windows[currentWindow].GetComponent<RectTransform>();
+            var inRect = windows[id].GetComponent<RectTransform>();
+
+            LobbySlideAnimation.TransitionWindows(outRect, inRect, currentWindow, id);
+            windows[id].Open();
+            currentWindow = id;
+            return;
+        }
+
+        // 일반 윈도우 전환 (기존 방식)
         if (IsValidWindow(currentWindow))
-        {            
+        {
             windows[currentWindow].Close();
         }
 
