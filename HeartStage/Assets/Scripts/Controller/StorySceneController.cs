@@ -24,7 +24,6 @@ public class StorySceneController : MonoBehaviour
         // 2) StoryManager 참조 확인 및 대기
         while (storyManager == null)
         {
-            storyManager = FindObjectOfType<StoryManager>();
             await UniTask.Yield();
         }
 

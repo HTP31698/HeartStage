@@ -93,6 +93,7 @@ public class SaveDataV1 : SaveData
 
     // ================== 9. 캐릭터 호감도 관련  ==================
     public Dictionary<string, int> likeabilityDict = new Dictionary<string, int>(); // 캐릭터 이름, 호감도 수치
+    public Dictionary<string, LikeabilityRewardState> likeabilityRewardStates = new Dictionary<string, LikeabilityRewardState>(); // 캐릭터 이름, 보상 받았는지 상태 여부
 
     // ================== 생성자 / 버전업 ==================
     public SaveDataV1()

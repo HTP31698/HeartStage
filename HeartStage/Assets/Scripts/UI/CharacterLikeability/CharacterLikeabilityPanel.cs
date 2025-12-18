@@ -1,6 +1,15 @@
-﻿using TMPro;
+﻿using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
+[Serializable]
+public class LikeabilityRewardState
+{
+    public bool reward1Received;
+    public bool reward2Received;
+    public bool reward3Received;
+}
 
 public class CharacterLikeabilityPanel : MonoBehaviour
 {
@@ -21,8 +30,17 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     public Image rewardImage2;
     public Image rewardImage3;
 
+    public GameObject rewardSpeechBubble;
+    public TextMeshProUGUI rewardCountText;
+
     private LikeabilityData likeabilityData;
     private CharacterCSVData characterData;
+
+    private LikeabilityRewardBubble rewardBubble;
+    private void Awake()
+    {
+        rewardBubble = rewardSpeechBubble.GetComponent<LikeabilityRewardBubble>();
+    }
 
     private void Start()
     {
@@ -47,6 +65,8 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         SetRewardUI();
         // 현재 호감도 UI 반영
         RefreshLikeabilityUI();
+        UpdateRewardBubble();
+        rewardBubble.Init(this);
     }
     // 응원하기
     public void CheerUp()
@@ -96,6 +116,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         guageAmountText.text = $"♥ {likeabilityGuage.value}";
         UpdateDialogue();
         UpdateCheerUpButtonInteractable();
+        UpdateRewardBubble();
     }
     // 호감도 대사 업데이트
     private void UpdateDialogue()
@@ -138,21 +159,66 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             cheerUpButton.interactable = false;
         }
     }
+    // 보상 말풍선 업데이트
+    public void UpdateRewardBubble()
+    {
+        int count = GetAvailableRewardCount();
+
+        rewardSpeechBubble.gameObject.SetActive(count > 0);
+        rewardCountText.text = count.ToString(); // TMP
+    }
+    // 받을 수 있는 호감도 보상 개수 리턴
+    private int GetAvailableRewardCount()
+    {
+        int currentLike = CharacterHelper.GetLikeability(characterData.char_name);
+        var state = CharacterHelper.GetLikeabilityRewardState(characterData.char_name);
+
+        int count = 0;
+        if (currentLike >= likeabilityData.like_amount1 && !state.reward1Received)
+            count++;
+        if (currentLike >= likeabilityData.like_amount2 && !state.reward2Received)
+            count++;
+        if (currentLike >= likeabilityData.like_amount3 && !state.reward3Received)
+            count++;
+        return count;
+    }
+    // 호감도 보상 받기
+    public void ReceiveNextLikeabilityReward()
+    {
+        int currentLike = CharacterHelper.GetLikeability(characterData.char_name);
+        var state = CharacterHelper.GetLikeabilityRewardState(characterData.char_name);
+        // 1번 보상
+        if (currentLike >= likeabilityData.like_amount1 && !state.reward1Received)
+        {
+            CharacterHelper.ReceiveLikeabilityReward(characterData.char_name, 1, likeabilityData.like_reward_item1, likeabilityData.reward_amount1);
+        }
+        // 2번 보상
+        else if (currentLike >= likeabilityData.like_amount2 && !state.reward2Received)
+        {
+            CharacterHelper.ReceiveLikeabilityReward(characterData.char_name, 2, likeabilityData.like_reward_item2, likeabilityData.reward_amount2);
+        }
+        // 3번 보상
+        else if (currentLike >= likeabilityData.like_amount3 && !state.reward3Received)
+        {
+            CharacterHelper.ReceiveLikeabilityReward(characterData.char_name, 3, likeabilityData.like_reward_item3, likeabilityData.reward_amount3);
+        }
+        else
+        {
+            return;
+        }
+        RefreshLikeabilityUI();
+    }
     // 테스트 코드
-    // 호감도 10씩 증가
+    // 선택된 캐릭터 호감도 10씩 증가
     public void GetLikeAbility()
     {
-        foreach (var characterId in SaveLoadManager.Data.ownedIds)
-        {
-            var data = DataTableManager.CharacterTable.Get(characterId);
-            var likeData = DataTableManager.LikeabilityTable.Get(data.char_name);
-            var currentAmount = CharacterHelper.GetLikeability(data.char_name);
-            currentAmount = Mathf.Min(currentAmount + 10, likeData.max_like_point);
-            CharacterHelper.SetLikeability(data.char_name, currentAmount);
-        }
+        if (characterData == null || likeabilityData == null)
+            return;
 
-        likeabilityGuage.value = Mathf.Min(likeabilityGuage.value + 10, likeabilityGuage.maxValue);
-        guageAmountText.text = $"♥ {likeabilityGuage.value}";
+        int currentAmount = CharacterHelper.GetLikeability(characterData.char_name);
+        currentAmount = Mathf.Min(currentAmount + 10, likeabilityData.max_like_point);
+        CharacterHelper.SetLikeability(characterData.char_name, currentAmount);
+        RefreshLikeabilityUI();
     }
     //
 }
