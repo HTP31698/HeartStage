@@ -32,11 +32,13 @@ public class CharacterLikeabilityPanel : MonoBehaviour
 
     public GameObject rewardSpeechBubble;
     public TextMeshProUGUI rewardCountText;
+    public LikeabilityRewardPopup rewardPopup;
 
     private LikeabilityData likeabilityData;
     private CharacterCSVData characterData;
 
     private LikeabilityRewardBubble rewardBubble;
+
     private void Awake()
     {
         rewardBubble = rewardSpeechBubble.GetComponent<LikeabilityRewardBubble>();
@@ -163,7 +165,6 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     public void UpdateRewardBubble()
     {
         int count = GetAvailableRewardCount();
-
         rewardSpeechBubble.gameObject.SetActive(count > 0);
         rewardCountText.text = count.ToString(); // TMP
     }
@@ -207,6 +208,25 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             return;
         }
         RefreshLikeabilityUI();
+    }
+    // 보상 획득창 열기
+    public void OpenRewardPopup()
+    {
+        int currentLike = CharacterHelper.GetLikeability(characterData.char_name);
+        var state = CharacterHelper.GetLikeabilityRewardState(characterData.char_name);
+        // 다음 받을 보상 하나 찾기 (기존 순서 그대로)
+        if (currentLike >= likeabilityData.like_amount1 && !state.reward1Received)
+        {
+            rewardPopup.Open(this, likeabilityData.like_reward_item1, likeabilityData.reward_amount1);
+        }
+        else if (currentLike >= likeabilityData.like_amount2 && !state.reward2Received)
+        {
+            rewardPopup.Open(this, likeabilityData.like_reward_item2, likeabilityData.reward_amount2);
+        }
+        else if (currentLike >= likeabilityData.like_amount3 && !state.reward3Received)
+        {
+            rewardPopup.Open(this, likeabilityData.like_reward_item3, likeabilityData.reward_amount3);
+        }
     }
     // 테스트 코드
     // 선택된 캐릭터 호감도 10씩 증가

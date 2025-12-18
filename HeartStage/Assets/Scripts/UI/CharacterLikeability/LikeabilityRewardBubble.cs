@@ -9,6 +9,7 @@ public class LikeabilityRewardBubble : MonoBehaviour
 
     public void Init(CharacterLikeabilityPanel owner)
     {
+        // 버튼 이벤트 재등록 해야함
         panel = owner;
         button.onClick.RemoveAllListeners();
         button.onClick.AddListener(OnClick);
