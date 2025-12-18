@@ -24,7 +24,6 @@ public class FriendAddItemUI : MonoBehaviour
 
     private PublicProfileSummary _profileData;
     private CancellationTokenSource _cts;
-    private MessageWindow _messageWindow;
 
     private const string DEFAULT_ICON_KEY = "hanaicon";
 
@@ -34,10 +33,9 @@ public class FriendAddItemUI : MonoBehaviour
         _cts?.Dispose();
     }
 
-    public void Setup(PublicProfileSummary profileData, MessageWindow messageWindow = null)
+    public void Setup(PublicProfileSummary profileData)
     {
         _profileData = profileData;
-        _messageWindow = messageWindow;
 
         _cts?.Cancel();
         _cts?.Dispose();
@@ -121,15 +119,11 @@ public class FriendAddItemUI : MonoBehaviour
                 if (requestButtonText != null)
                     requestButtonText.text = "신청\n완료";
 
-                if (FriendAddWindow.Instance != null)
-                    FriendAddWindow.Instance.OnFriendRequestSent();
-
-                _messageWindow?.OpenSuccess("친구 신청", $"{displayName}님에게\n친구 신청을 보냈습니다!");
+                FriendWindow.Instance?.OnFriendRequestSent();
+                ToastUI.Success($"{displayName}님에게 친구 신청을 보냈습니다!");
             }
             else
             {
-                // 에러 코드별로 상세한 메시지 제공
-                string errorTitle = "친구 신청 실패";
                 string errorMessage = GetErrorMessage(errorCode, displayName);
 
                 // 일부 에러는 버튼을 다시 활성화하지 않음
@@ -143,20 +137,18 @@ public class FriendAddItemUI : MonoBehaviour
                     requestButton.interactable = true;
                 }
 
-                _messageWindow?.OpenFail(errorTitle, errorMessage);
+                ToastUI.Warning(errorMessage);
             }
         }
         catch (OperationCanceledException)
         {
-            // 취소는 무시
             requestButton.interactable = true;
         }
         catch (Exception e)
         {
             Debug.LogError($"[FriendAddItemUI] OnClickRequestAsync Error: {e}");
             requestButton.interactable = true;
-
-            _messageWindow?.OpenFail("오류", "친구 신청 중 오류가 발생했습니다.");
+            ToastUI.Error("친구 신청 중 오류가 발생했습니다");
         }
     }
 
