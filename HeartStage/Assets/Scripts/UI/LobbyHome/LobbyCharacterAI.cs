@@ -273,5 +273,6 @@ public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
         CharacterLikeabilityWindow.Instance.OpenPanel(characterId);
         DragZoomPanManager.Instance.FocusOnCharacter(transform);
         DragZoomPanManager.Instance.LockInput();
+        CharacterLikeabilityWindow.Instance.SetBubbleTarget(transform);
     }
 }

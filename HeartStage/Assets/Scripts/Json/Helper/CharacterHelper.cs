@@ -136,7 +136,6 @@ public static class CharacterHelper
 
         return maxRank;
     }
-
     // 해당 캐릭터 호감도 수치 Get(이름 기준)
     public static int GetLikeability(string characterName)
     {
@@ -149,8 +148,47 @@ public static class CharacterHelper
     // 해당 캐릭터 호감도 수치 세팅(이름 기준)
     public static void SetLikeability(string characterName, int amount)
     {
-        var dict = SaveLoadManager.Data.likeabilityDict; 
+        var dict = SaveLoadManager.Data.likeabilityDict;
         dict[characterName] = amount;
+        SaveLoadManager.SaveToServer().Forget();
+    }
+    // 호감도 보상 받았는지 상태 Return
+    public static LikeabilityRewardState GetLikeabilityRewardState(string characterName)
+    {
+        var dict = SaveLoadManager.Data.likeabilityRewardStates;
+
+        if (!dict.TryGetValue(characterName, out var state))
+        {
+            state = new LikeabilityRewardState();
+            dict[characterName] = state;
+        }
+
+        return state;
+    }
+    // 호감도 보상 받기
+    public static void ReceiveLikeabilityReward(string characterName, int rewardIndex, int itemId, int itemAmount)
+    {
+        var state = GetLikeabilityRewardState(characterName);
+
+        switch (rewardIndex)
+        {
+            case 1:
+                if (state.reward1Received) 
+                    return;
+                state.reward1Received = true;
+                break;
+            case 2:
+                if (state.reward2Received) 
+                    return;
+                state.reward2Received = true;
+                break;
+            case 3:
+                if (state.reward3Received)
+                    return;
+                state.reward3Received = true;
+                break;
+        }
+        ItemInvenHelper.AddItem(itemId, itemAmount);
         SaveLoadManager.SaveToServer().Forget();
     }
 }

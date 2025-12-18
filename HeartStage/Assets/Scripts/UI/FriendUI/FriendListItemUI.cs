@@ -107,7 +107,8 @@ public class FriendListItemUI : MonoBehaviour
         if (visitHouseButton != null)
         {
             visitHouseButton.onClick.RemoveAllListeners();
-            visitHouseButton.interactable = false;
+            visitHouseButton.onClick.AddListener(OnClickVisitHouse);
+            visitHouseButton.interactable = true; 
         }
 
         LoadPublicProfileAsync().Forget();
@@ -320,4 +321,8 @@ public class FriendListItemUI : MonoBehaviour
         }
     }
 
+    private void OnClickVisitHouse()
+    {
+        FriendService.VisitFriendHouseAsync(_friendUid).Forget();
+    }
 }
