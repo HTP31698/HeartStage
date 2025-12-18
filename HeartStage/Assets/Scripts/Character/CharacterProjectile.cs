@@ -152,7 +152,7 @@ public class CharacterProjectile : MonoBehaviour
             return;
 
         // 블랙홀 기능
-        if (isBlackHole)
+        if (isBlackHole && collision.gameObject.layer != LayerMask.NameToLayer(Layer.Boss))
             PullMonster(collision.transform);
 
         if (!isDOT)

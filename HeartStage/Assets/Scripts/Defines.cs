@@ -49,6 +49,7 @@ public class Tag
 public class Layer
 {
     public static readonly string Character = "Character";
+    public static readonly string Boss = "Boss";
 }
 
 public class AddressableLabel

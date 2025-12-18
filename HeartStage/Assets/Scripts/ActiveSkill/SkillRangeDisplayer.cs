@@ -50,6 +50,7 @@ public class SkillRangeDisplayer : MonoBehaviour
         {
             circleRangeIndicator.Radius = skillData.skill_range;
             circleRangeIndicator.FillProgress = 1f;
+            circleRangeIndicator.UpdateProjectors();
 
             circleRoot.position = rootPos;
             circleRoot.gameObject.SetActive(true);

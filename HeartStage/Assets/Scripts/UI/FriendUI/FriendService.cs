@@ -618,4 +618,30 @@ public static class FriendService
             Debug.LogError($"[FriendService] CleanupOrphanRequestsAsync Error: {e}");
         }
     }
+
+    // 친구 숙소 방문
+    public static async UniTask VisitFriendHouseAsync(string friendUid)
+    {
+        if (string.IsNullOrEmpty(friendUid))
+            return;
+
+        // 탈퇴 유저 방어
+        bool exists = await PublicProfileService.ExistsAsync(friendUid);
+        if (!exists)
+        {
+            Debug.LogWarning("[FriendService] 탈퇴 유저의 집은 방문할 수 없습니다.");
+            return;
+        }
+        // 2. 친구 세이브 데이터 로드
+        //var friendSaveData = await SaveLoadManager.LoadOtherUserSaveDataAsync(friendUid);
+        //if (friendSaveData == null)
+        //{
+        //    Debug.LogWarning("[FriendService] 친구 세이브 데이터 로드 실패");
+        //    return;
+        //}
+        // 3. 방문 컨텍스트 세팅
+        //LobbyVisitContext.SetFriendVisit(friendUid, friendSaveData);
+        // 4. 로비 씬 이동
+        //SceneLoader.Load(SceneName.Lobby);
+    }
 }
