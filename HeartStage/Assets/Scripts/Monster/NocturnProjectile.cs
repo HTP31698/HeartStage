@@ -36,8 +36,6 @@ public class NocturnProjectile : MonoBehaviour
     {
         if (other.CompareTag(Tag.Wall))
         {
-            Debug.Log($"[NocturnProjectile] 벽에 충돌! 데미지: {damage}");
-
             var damageable = other.GetComponent<IDamageable>();
             if (damageable != null)
             {
