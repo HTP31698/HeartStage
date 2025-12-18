@@ -42,15 +42,36 @@ public class StoryInfoPrefab : MonoBehaviour
         if (nameText != null)
             nameText.text = data.story_stage_name;
 
-        // 보상 표시
-        if (rewardText != null)
-            rewardText.text = data.reward_count.ToString();
+        // 보상 정보 설정
+        SetRewardInfo(data.reward_item_id, data.reward_count);
 
         // 보상 아이콘 설정
         SetRewardIcon(data.reward_item_id);
 
         // 완료 상태 표시
         UpdateStampImage();
+    }
+
+    private void SetRewardInfo(int itemId, int count)
+    {
+        if (rewardText == null) return;
+
+        if(IsTitleId(itemId))
+        {
+            var titleData = DataTableManager.TitleTable?.Get(itemId);
+            if(titleData != null)
+            {
+                rewardText.text = $"{titleData.Title_name} x{count}";
+                return;
+            }
+        }
+
+        var itemData = DataTableManager.ItemTable.Get(itemId);
+
+        if (itemData != null)
+        {
+            rewardText.text = $"{itemData.item_name} x{count}";
+        }
     }
 
     /// 보상 아이템 ID에 따른 아이콘 설정
@@ -76,14 +97,31 @@ public class StoryInfoPrefab : MonoBehaviour
     /// 아이템 ID에 따른 아이콘 이름 반환
     private string GetItemIconName(int itemId)
     {
-        return itemId switch
+        if (IsTitleId(itemId))
         {
-            7105 => "Candy-Blue-256",      // 트레이닝 포인트
-            7701 => "SpecialItemIcon1",    // 특별 아이템 1 (ItemTable에서 확인 필요)
-            41006 => "TitleIcon",          // 칭호 (ItemTable에서 확인 필요)
-            7801 => "PhotoCardIcon",       // 포토카드 (ItemTable에서 확인 필요)
-            _ => null
-        };
+            var titleData = DataTableManager.TitleTable?.Get(itemId);
+
+            if (titleData == null)
+            {
+                return null;
+            }
+
+            // Prefab 필드가 아이콘 이미지 이름
+            return titleData.prefab;
+        }
+        else
+        {
+            // ItemTable에서 아이템 데이터 조회
+            var itemData = DataTableManager.ItemTable.Get(itemId);
+
+            if (itemData == null)
+            {
+                return null;
+            }
+
+            // prefab 필드가 아이콘 이미지 이름
+            return itemData.prefab;
+        }
     }
 
     /// 스테이지 버튼 클릭 시 호출
@@ -131,28 +169,34 @@ public class StoryInfoPrefab : MonoBehaviour
     /// 스테이지 완료 상태 확인 (구현 필요)
     private bool CheckStageCompleted()
     {
-        // 게임 데이터에서 해당 스테이지의 완료 상태를 확인하는 로직
-        return false; // 임시 반환값
+        if (stageData == null)
+            return false;
+
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData == null || saveData.clearWaveList == null)
+            return false;
+
+        // 스토리 스테이지의 웨이브들이 모두 클리어되었는지 확인
+        int[] waveIds = {
+        stageData.wave1_id,
+        stageData.wave2_id,
+        stageData.wave3_id
+    };
+
+        foreach (int waveId in waveIds)
+        {
+            if (waveId > 0 && !saveData.clearWaveList.Contains(waveId))
+            {
+                return false; // 하나라도 클리어되지 않았으면 false
+            }
+        }
+
+        return true; // 모든 웨이브가 클리어되었으면 true
     }
 
-    /// 스테이지 잠금 상태 확인 및 UI 업데이트
-    //public void UpdateLockState(string currentChar, int currentRank)
-    //{
-    //    if (stageData == null) return;
-
-    //    bool isUnlocked = DataTableManager.StoryTable.IsStoryStageUnlocked(
-    //        stageData.story_stage_id,
-    //        currentChar,
-    //        currentRank
-    //    );
-
-    //    // 버튼 상호작용 설정
-    //    if (stageButton != null)
-    //        stageButton.interactable = isUnlocked;
-
-    //    // 잠금 상태에 따른 UI 표시 변경 (선택적)
-    //    var canvasGroup = GetComponent<CanvasGroup>();
-    //    if (canvasGroup != null)
-    //        canvasGroup.alpha = isUnlocked ? 1.0f : 0.5f;
-    //}
+    private bool IsTitleId(int itemId)
+    {
+        var titleData = DataTableManager.TitleTable?.Get(itemId);
+        return titleData != null; // 타이틀 데이터가 존재하면 타이틀 ID로 간주
+    }
 }

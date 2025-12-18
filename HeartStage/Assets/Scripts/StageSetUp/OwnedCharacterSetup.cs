@@ -33,7 +33,8 @@ public class OwnedCharacterSetup : MonoBehaviour
         // 1) 세이브 데이터 / 캐릭터 테이블 준비까지 기다리기
         await UniTask.WaitUntil(() =>
             SaveLoadManager.Data != null &&
-            DataTableManager.CharacterTable != null
+            DataTableManager.CharacterTable != null &&
+            DataTableManager.StoryTable != null
         );
         ReportOwnedProgress(0.2f);
 
@@ -55,6 +56,7 @@ public class OwnedCharacterSetup : MonoBehaviour
     }
 
     /// Save 데이터 기준으로 '보유 중인 캐릭터'만 SO 리스트로 만든다.
+    /// 스토리 던전인 경우 need_char 필드에 따라 특정 캐릭터만 필터링
     private void BuildOwnedCharacterList()
     {
         _ownedCharacters.Clear();
@@ -73,6 +75,9 @@ public class OwnedCharacterSetup : MonoBehaviour
             return;
         }
 
+        // 스토리 던전 특정 캐릭터 필터링 체크
+        string requiredCharacterName = GetRequiredCharacterForStoryStage(saveData.selectedStageID);
+
         // ownedIds 안에 현재 보유 캐릭터 ID가 들어있음
         foreach (int id in saveData.ownedIds)
         {
@@ -81,6 +86,13 @@ public class OwnedCharacterSetup : MonoBehaviour
             {
                 Debug.LogWarning($"[OwnedCharacterSetup] CharacterTable row null: id={id}");
                 continue;
+            }
+
+            // 스토리 던전에서 특정 캐릭터만 필요한 경우 필터링
+            if (!string.IsNullOrEmpty(requiredCharacterName) &&
+                !row.char_name.Equals(requiredCharacterName, System.StringComparison.OrdinalIgnoreCase))
+            {
+                continue; // 필요한 캐릭터가 아니면 스킵
             }
 
             // CSV에 있는 data_AssetName 기준으로 SO 로드 (너가 쓰는 패턴)
@@ -106,7 +118,14 @@ public class OwnedCharacterSetup : MonoBehaviour
             return b.char_name.CompareTo(a.char_name);
         });
 
-        Debug.Log($"[OwnedCharacterSetup] OwnedCharacters = {_ownedCharacters.Count}");
+        if (!string.IsNullOrEmpty(requiredCharacterName))
+        {
+            Debug.Log($"[OwnedCharacterSetup] 스토리 던전 필터링: {requiredCharacterName} 캐릭터만 표시, 총 {_ownedCharacters.Count}개");
+        }
+        else
+        {
+            Debug.Log($"[OwnedCharacterSetup] OwnedCharacters = {_ownedCharacters.Count}");
+        }
     }
 
     /// ScrollView Content 밑에 DragMe 프리팹들 생성
@@ -144,6 +163,37 @@ public class OwnedCharacterSetup : MonoBehaviour
                 rect.anchoredPosition3D = Vector3.zero;
             }
         }
+    }
+
+    /// 스토리 스테이지에서 필요한 특정 캐릭터 이름을 반환
+    private string GetRequiredCharacterForStoryStage(int stageId)
+    {
+        // 스토리 던전 ID 범위 확인 (66001~66004 등)
+        if (stageId < 66000 || stageId >= 67000)
+        {
+            return null; // 스토리 던전이 아님
+        }
+
+        var storyTable = DataTableManager.StoryTable;
+        if (storyTable == null)
+        {
+            return null;
+        }
+
+        var storyStageData = storyTable.GetStoryStage(stageId);
+        if (storyStageData == null)
+        {
+            return null;
+        }
+
+        // need_char 필드에서 필요한 캐릭터 이름 추출
+        string needChar = storyStageData.need_char;
+        if (string.IsNullOrEmpty(needChar) || needChar.Equals("none", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return null; // 특정 캐릭터 제한 없음
+        }
+
+        return needChar;
     }
 
     /// 나중에 새 캐릭 획득 후 리스트 갱신하고 싶을 때 호출용

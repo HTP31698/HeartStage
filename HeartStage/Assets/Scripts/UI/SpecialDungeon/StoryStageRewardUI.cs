@@ -74,11 +74,23 @@ public class StoryStageRewardUI : GenericWindow
     {
         if (itemNameText == null) return;
 
-        // ItemTable에서 아이템 데이터 가져오기
-        var itemData = DataTableManager.ItemTable.Get(itemId);
-        if (itemData != null && !string.IsNullOrEmpty(itemData.item_name))
+        if (IsTitleId(itemId))
         {
-            itemNameText.text = itemData.item_name;
+            // 칭호인 경우
+            var titleData = DataTableManager.TitleTable?.Get(itemId);
+            if (titleData != null)
+            {
+                itemNameText.text = titleData.Title_name;
+            }
+        }
+        else
+        {
+            // ItemTable에서 아이템 데이터 가져오기
+            var itemData = DataTableManager.ItemTable.Get(itemId);
+            if (itemData != null && !string.IsNullOrEmpty(itemData.item_name))
+            {
+                itemNameText.text = itemData.item_name;
+            }
         }
     }
 
@@ -87,25 +99,36 @@ public class StoryStageRewardUI : GenericWindow
     {
         if (itemIcon == null) return;
 
-        // ItemTable에서 아이템 데이터 가져오기
-        var itemData = DataTableManager.ItemTable.Get(itemId);
         string iconName = null;
 
-        if (itemData != null && !string.IsNullOrEmpty(itemData.prefab))
+        // 칭호인지 확인
+        if (IsTitleId(itemId))
         {
-            iconName = itemData.prefab;
+            // TitleTable에서 칭호 데이터 가져오기
+            var titleData = DataTableManager.TitleTable?.Get(itemId);
+            if (titleData != null && !string.IsNullOrEmpty(titleData.prefab))
+            {
+                iconName = titleData.prefab;
+                Debug.Log($"[StoryStageRewardUI] 칭호 아이콘: {iconName} (칭호 ID: {itemId})");
+            }
+        }
+        else
+        {
+            // ItemTable에서 아이템 데이터 가져오기
+            var itemData = DataTableManager.ItemTable.Get(itemId);
+            if (itemData != null && !string.IsNullOrEmpty(itemData.prefab))
+            {
+                iconName = itemData.prefab;
+                Debug.Log($"[StoryStageRewardUI] 아이템 아이콘: {iconName} (아이템 ID: {itemId})");
+            }
         }
 
         if (!string.IsNullOrEmpty(iconName))
         {
-            var texture = ResourceManager.Instance.Get<Texture2D>(iconName);
-            if (texture != null)
+            var sprite = ResourceManager.Instance.GetSprite(iconName);
+            if (sprite != null)
             {
-                itemIcon.sprite = Sprite.Create(
-                    texture,
-                    new Rect(0, 0, texture.width, texture.height),
-                    new Vector2(0.5f, 0.5f)
-                );
+                itemIcon.sprite = sprite;
             }
         }
     }
@@ -154,18 +177,35 @@ public class StoryStageRewardUI : GenericWindow
             return;
         }
 
-        // 보상 아이템을 인벤토리에 추가
-        var saveItemList = SaveLoadManager.Data.itemList;
         int itemId = storyStageData.reward_item_id;
         int itemCount = storyStageData.reward_count;
 
-        if (saveItemList.ContainsKey(itemId))
+        // 칭호인지 확인
+        if (IsTitleId(itemId))
         {
-            saveItemList[itemId] += itemCount;
+            // 칭호는 ownedTitleIds에 저장
+            var saveData = SaveLoadManager.Data as SaveDataV1;
+            if (saveData != null)
+            {
+                if (!saveData.ownedTitleIds.Contains(itemId))
+                {
+                    saveData.ownedTitleIds.Add(itemId);
+                    Debug.Log($"[StoryStageRewardUI] 칭호 획득: {itemId}");
+                }
+            }
         }
         else
         {
-            saveItemList.Add(itemId, itemCount);
+            // 일반 아이템은 itemList에 저장
+            var saveItemList = SaveLoadManager.Data.itemList;
+            if (saveItemList.ContainsKey(itemId))
+            {
+                saveItemList[itemId] += itemCount;
+            }
+            else
+            {
+                saveItemList.Add(itemId, itemCount);
+            }
         }
 
         // 스테이지 클리어 퀘스트 처리
@@ -180,4 +220,11 @@ public class StoryStageRewardUI : GenericWindow
 
         Debug.Log($"[StoryStageRewardUI] 스토리 보상 지급 완료: {itemId} x {itemCount}");
     }
+
+    private bool IsTitleId(int itemId)
+    {
+        var titleData = DataTableManager.TitleTable?.Get(itemId);
+        return titleData != null;
+    }
+
 }

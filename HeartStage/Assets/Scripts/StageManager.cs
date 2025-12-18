@@ -166,10 +166,6 @@ public class StageManager : MonoBehaviour
                 {
                     stageData = ConvertStoryStageToStageData(storyStageData);
                 }
-                else
-                {
-                    Debug.LogWarning($"[StageManager] 스토리 스테이지 데이터를 찾을 수 없음: {stageID}");
-                }
             }
             else
             {
@@ -186,10 +182,6 @@ public class StageManager : MonoBehaviour
                 // 현재 웨이브 설정
                 int startingWave = gameData.startingWave;
                 SetWaveInfo(stageData.stage_step1, startingWave);
-            }
-            else
-            {
-                Debug.LogError($"[StageManager] 스테이지 데이터 로드 실패: {stageID}");
             }
         }
     }
@@ -605,7 +597,7 @@ public class StageManager : MonoBehaviour
         stageData.dispatch_reward = 0; // 스토리는 파견 없음
         stageData.fail_stamina = 0; 
         stageData.prefab = storyStage.prefab; // 배경 프리팹
-        stageData.stage_position = 2; // 기본값 (중간)
+        stageData.stage_position = 3; // 기본값
 
         Debug.Log($"[StageManager] 스토리 스테이지 변환 완료: {storyStage.story_stage_name}");
 
