@@ -1,13 +1,12 @@
 ﻿using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class FriendProfileWindow : MonoBehaviour
+public class FriendProfileWindow : GenericWindow
 {
     public static FriendProfileWindow Instance;
-
-    [SerializeField] private GameObject root;
 
     [Header("프로필 정보")]
     [SerializeField] private Image iconImage;
@@ -21,16 +20,20 @@ public class FriendProfileWindow : MonoBehaviour
 
     [Header("버튼")]
     [SerializeField] private Button closeButton;
+    [SerializeField] private Button deleteButton;
+
+    private string _currentUid;
+    private string _currentNickname;
 
     private void Awake()
     {
         Instance = this;
 
-        if (root != null)
-            root.SetActive(false);
-
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
+
+        if (deleteButton != null)
+            deleteButton.onClick.AddListener(OnClickDelete);
     }
 
     public void Open(string uid)
@@ -41,17 +44,53 @@ public class FriendProfileWindow : MonoBehaviour
             return;
         }
 
-        if (root != null)
-            root.SetActive(true);
+        _currentUid = uid;
+        _currentNickname = "하트스테이지팬";
+
+        base.Open();
+
+        // ScaleIn 애니메이션 적용
+        var rect = AnimationTarget;
+        if (rect != null)
+        {
+            rect.DOKill();
+            rect.localScale = Vector3.one * 0.9f;
+            rect.DOScale(1f, 0.25f).SetEase(Ease.OutBack);
+        }
 
         SetLoadingState();
+        UpdateDeleteButtonVisibility();
         LoadAsync(uid).Forget();
     }
 
-    public void Close()
+    private void UpdateDeleteButtonVisibility()
     {
-        if (root != null)
-            root.SetActive(false);
+        if (deleteButton == null) return;
+
+        // 친구인 경우에만 삭제 버튼 표시
+        bool isFriend = FriendService.GetCachedFriendUids().Contains(_currentUid);
+        deleteButton.gameObject.SetActive(isFriend);
+    }
+
+    public override void Close()
+    {
+        // ScaleOut 애니메이션 후 닫기
+        var rect = AnimationTarget;
+        if (rect != null)
+        {
+            rect.DOKill();
+            rect.DOScale(0.9f, 0.2f)
+                .SetEase(Ease.InBack)
+                .OnComplete(() =>
+                {
+                    base.Close();
+                    rect.localScale = Vector3.one;
+                });
+        }
+        else
+        {
+            base.Close();
+        }
     }
 
     private void SetLoadingState()
@@ -89,8 +128,9 @@ public class FriendProfileWindow : MonoBehaviour
             LobbySceneController.UpdateCachedProfile(uid, data);
 
             // 닉네임
+            _currentNickname = GetDisplayNickname(data.nickname, uid);
             if (nicknameText != null)
-                nicknameText.text = GetDisplayNickname(data.nickname, uid);
+                nicknameText.text = _currentNickname;
 
             // 상태메시지
             if (statusMessageText != null)
@@ -188,4 +228,55 @@ public class FriendProfileWindow : MonoBehaviour
         if (sec <= 0) return "팬미팅: 기록 없음";
         return $"팬미팅: {sec / 60:00}:{sec % 60:00}";
     }
+
+    #region 친구 삭제
+
+    private void OnClickDelete()
+    {
+        if (string.IsNullOrEmpty(_currentUid))
+            return;
+
+        ConfirmDialog.ShowDelete(
+            "친구 삭제",
+            $"{_currentNickname}님을\n친구 목록에서 삭제하시겠습니까?",
+            onConfirm: () => RemoveFriendAsync().Forget()
+        );
+    }
+
+    private async UniTaskVoid RemoveFriendAsync()
+    {
+        if (string.IsNullOrEmpty(_currentUid))
+            return;
+
+        if (deleteButton != null)
+            deleteButton.interactable = false;
+
+        try
+        {
+            bool success = await FriendService.RemoveFriendAsync(_currentUid);
+
+            if (success)
+            {
+                ToastUI.Success($"{_currentNickname}님이 친구 목록에서 삭제되었습니다");
+                FriendService.InvalidateCache();
+                FriendWindow.Instance?.RequestRefresh();
+                Close();
+            }
+            else
+            {
+                ToastUI.Error("친구 삭제에 실패했습니다");
+                if (deleteButton != null)
+                    deleteButton.interactable = true;
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[FriendProfileWindow] RemoveFriendAsync Error: {e}");
+            ToastUI.Error("친구 삭제 중 오류가 발생했습니다");
+            if (deleteButton != null)
+                deleteButton.interactable = true;
+        }
+    }
+
+    #endregion
 }

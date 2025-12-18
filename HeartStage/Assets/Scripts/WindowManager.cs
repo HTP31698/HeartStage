@@ -15,6 +15,11 @@ public class WindowManager : MonoBehaviour
     [Header("Reference")]
     public List<WindowPair> windowList;
 
+    [Header("오버레이 애니메이션 설정")]
+    [SerializeField] private float overlayAnimDuration = 0.25f;
+    [SerializeField] private Ease overlayOpenEase = Ease.OutBack;
+    [SerializeField] private Ease overlayCloseEase = Ease.InBack;
+
     public static WindowType currentWindow { get; set; }
     private Dictionary<WindowType, GenericWindow> windows;
 
@@ -52,6 +57,15 @@ public class WindowManager : MonoBehaviour
             return;
 
         windows[id].Open();
+
+        // ScaleIn 애니메이션 (contentPanel이 있으면 그것만, 없으면 전체)
+        var rect = windows[id].AnimationTarget;
+        if (rect != null)
+        {
+            rect.DOKill();
+            rect.localScale = Vector3.one * 0.9f;
+            rect.DOScale(1f, overlayAnimDuration).SetEase(overlayOpenEase);
+        }
 
         // 오버레이 목록에 추가
         if (!activeOverlays.Contains(id))
@@ -104,7 +118,7 @@ public class WindowManager : MonoBehaviour
             WindowType overlayType = activeOverlays[i];
             if (IsValidWindow(overlayType) && windows[overlayType].gameObject.activeSelf)
             {
-                windows[overlayType].Close();
+                CloseOverlayImmediate(overlayType);
             }
             activeOverlays.RemoveAt(i);
         }
@@ -115,8 +129,40 @@ public class WindowManager : MonoBehaviour
     {
         if (!IsValidWindow(id)) return;
 
-        windows[id].Close();
+        // ScaleOut 애니메이션 (contentPanel이 있으면 그것만, 없으면 전체)
+        var rect = windows[id].AnimationTarget;
+        if (rect != null)
+        {
+            rect.DOKill();
+            rect.DOScale(0.9f, overlayAnimDuration * 0.8f)
+                .SetEase(overlayCloseEase)
+                .OnComplete(() =>
+                {
+                    windows[id].Close();
+                    rect.localScale = Vector3.one; // 리셋
+                });
+        }
+        else
+        {
+            windows[id].Close();
+        }
+
         activeOverlays.Remove(id);
+    }
+
+    // 애니메이션 없이 즉시 닫기 (CloseAllOverlays용)
+    private void CloseOverlayImmediate(WindowType id)
+    {
+        if (!IsValidWindow(id)) return;
+
+        var rect = windows[id].AnimationTarget;
+        if (rect != null)
+        {
+            rect.DOKill();
+            rect.localScale = Vector3.one;
+        }
+
+        windows[id].Close();
     }
 
     private bool IsValidWindow(WindowType windowType)

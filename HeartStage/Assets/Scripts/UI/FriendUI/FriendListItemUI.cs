@@ -23,7 +23,6 @@ public class FriendListItemUI : MonoBehaviour
     private string _friendUid;
     private string _displayNickname;
     private CancellationTokenSource _cts;
-    private MessageWindow _messageWindow;
 
     public string FriendUid => _friendUid;
 
@@ -55,7 +54,7 @@ public class FriendListItemUI : MonoBehaviour
         _cts?.Dispose();
     }
 
-    public void Setup(string friendUid, MessageWindow messageWindow = null)
+    public void Setup(string friendUid)
     {
         if (string.IsNullOrEmpty(friendUid))
         {
@@ -64,7 +63,6 @@ public class FriendListItemUI : MonoBehaviour
         }
 
         _friendUid = friendUid;
-        _messageWindow = messageWindow;
         _displayNickname = "하트스테이지팬";
 
         _cts?.Cancel();
@@ -247,22 +245,14 @@ public class FriendListItemUI : MonoBehaviour
 
             if (success)
             {
-                if (FriendListWindow.Instance != null)
-                {
-                    FriendListWindow.Instance.RefreshHeader();
-                    FriendListWindow.Instance.ResortByGiftState();
-                }
-
-                // 내 버튼 상태도 즉시 갱신
+                FriendWindow.Instance?.RequestRefresh();
                 UpdateButtonStates();
-
-                _messageWindow?.OpenSuccess("선물 전송", $"{_displayNickname}님에게\n드림 에너지를 보냈습니다!");
+                ToastUI.Success($"{_displayNickname}님에게 하트를 보냈습니다!");
             }
             else
             {
                 UpdateButtonStates();
-
-                _messageWindow?.OpenFail("선물 전송 실패", $"오늘 이미 {_displayNickname}님에게\n선물을 보냈거나 일일 한도에 도달했습니다.");
+                ToastUI.Warning("이미 보냈거나 일일 한도에 도달했습니다");
             }
         }
         catch (OperationCanceledException)
@@ -272,8 +262,7 @@ public class FriendListItemUI : MonoBehaviour
         {
             Debug.LogError($"[FriendListItemUI] OnClickSendAsync Error: {e}");
             UpdateButtonStates();
-
-            _messageWindow?.OpenFail("오류", "선물 전송 중 오류가 발생했습니다.");
+            ToastUI.Error("전송 중 오류가 발생했습니다");
         }
     }
 
@@ -290,20 +279,13 @@ public class FriendListItemUI : MonoBehaviour
 
             if (received > 0)
             {
-                if (LobbyManager.Instance != null)
-                    LobbyManager.Instance.MoneyUISet();
-
-                if (FriendListWindow.Instance != null)
-                {
-                    FriendListWindow.Instance.RefreshHeader();
-                    FriendListWindow.Instance.ResortByGiftState();
-                }
-
-                _messageWindow?.OpenSuccess("선물 수령", $"{_displayNickname}님에게서\n드림 에너지 +{received} 획득!");
+                LobbyManager.Instance?.MoneyUISet();
+                FriendWindow.Instance?.RequestRefresh();
+                ToastUI.Success($"드림 에너지 +{received} 획득!");
             }
             else
             {
-                _messageWindow?.Open("알림", $"{_displayNickname}님에게서\n받을 선물이 없습니다.");
+                ToastUI.Info("받을 하트가 없습니다");
             }
 
             UpdateButtonStates();
@@ -315,9 +297,7 @@ public class FriendListItemUI : MonoBehaviour
         {
             Debug.LogError($"[FriendListItemUI] OnClickReceiveAsync Error: {e}");
             UpdateButtonStates();
-
-            _messageWindow?.OpenFail("오류", "선물 수령 중 오류가 발생했습니다.");
+            ToastUI.Error("수령 중 오류가 발생했습니다");
         }
     }
-
 }
