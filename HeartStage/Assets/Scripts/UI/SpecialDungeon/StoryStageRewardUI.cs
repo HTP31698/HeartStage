@@ -26,7 +26,7 @@ public class StoryStageRewardUI : GenericWindow
     {
         base.Open();
 
-        // 로비 에서 열렸는지 확인
+        // 로비에서 열렸는지 확인
         CheckOpenLobby();
 
         SetupStoryReward();
@@ -38,10 +38,26 @@ public class StoryStageRewardUI : GenericWindow
     {
         base.Close();
 
-        if (!isFromLobby)
+        if (isFromLobby)
         {
-            GoToLobby();
+            // 로비에서 열린 경우: 스토리 던전 UI 복원 (씬 이동 없이)
+            RestoreStoryDungeonUI();
         }
+        else
+        {
+            // 스테이지에서 열린 경우: 로비로 이동 후 스토리 던전 UI 복원
+            GoToLobbyWithStoryDungeonUI();
+        }
+    }
+
+    private void RestoreStoryDungeonUI()
+    {
+        // 로비에서 바로 스토리 던전 UI 계층 열기
+        WindowManager.Instance.Open(WindowType.SpecialDungeon);
+        WindowManager.Instance.OpenOverlay(WindowType.StoryDungeon);
+        WindowManager.Instance.OpenOverlay(WindowType.StoryDungeonInfo);
+
+        Debug.Log("[StoryStageRewardUI] 로비에서 스토리 던전 UI 계층 복원");
     }
 
     /// 스토리 스테이지 보상 정보 설정
@@ -151,19 +167,19 @@ public class StoryStageRewardUI : GenericWindow
         Close();
     }
 
-    /// 로비로 이동
-    private void GoToLobby()
+    /// 스토리 던전 UI 계층과 함께 로비로 이동
+    private void GoToLobbyWithStoryDungeonUI()
     {
-        if (StageManager.Instance != null)
-        {
-            StageManager.Instance.GoLobby();
-        }
-        else
-        {
-            WindowManager.currentWindow = WindowType.LobbyHome;
-            LoadSceneManager.Instance.GoLobby();
-        }
+        // 스토리 던전 UI 복원 플래그 설정
+        var gameData = SaveLoadManager.Data;
+        gameData.StoryAfterLobby = true;
+        SaveLoadManager.SaveToServer().Forget();
+
+        // SpecialDungeon 윈도우로 설정하고 로비 이동
+        WindowManager.currentWindow = WindowType.SpecialDungeon;
+        LoadSceneManager.Instance.GoLobby();
     }
+
 
     private void GiveStoryReward()
     {
@@ -231,7 +247,6 @@ public class StoryStageRewardUI : GenericWindow
         var titleData = DataTableManager.TitleTable?.Get(itemId);
         return titleData != null;
     }
-
 
     private void CheckOpenLobby()
     {
