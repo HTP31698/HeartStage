@@ -23,6 +23,7 @@ public class ThemedTMPText : MonoBehaviour
     [SerializeField] private ThemeColorToken _underlayColorToken = ThemeColorToken.TextSecondary;
 
     private TMP_Text _text;
+    private ThemeManager _cachedManager;
 
     public ThemeColorToken ColorToken
     {
@@ -44,16 +45,21 @@ public class ThemedTMPText : MonoBehaviour
         if (_text == null)
             _text = GetComponent<TMP_Text>();
 
-        if (ThemeManager.Instance != null)
-            ThemeManager.Instance.OnThemeChanged += ApplyTheme;
+        _cachedManager = ThemeManager.Instance;
+        if (_cachedManager != null)
+            _cachedManager.OnThemeChanged += ApplyTheme;
 
         ApplyTheme();
     }
 
     private void OnDisable()
     {
-        if (ThemeManager.Instance != null)
-            ThemeManager.Instance.OnThemeChanged -= ApplyTheme;
+        // 캐싱된 참조 사용 (Instance 접근 안함 → 종료 시 새 생성 방지)
+        if (_cachedManager != null)
+        {
+            _cachedManager.OnThemeChanged -= ApplyTheme;
+            _cachedManager = null;
+        }
     }
 
     public void ApplyTheme()

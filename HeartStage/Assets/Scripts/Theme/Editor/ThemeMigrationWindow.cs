@@ -91,7 +91,7 @@ public class ThemeMigrationWindow : EditorWindow
         // 윈도우 열릴 때 테마 자동 적용
         if (_targetTheme != null)
         {
-            ThemeManager.EditorPreviewTheme = _targetTheme;
+            ThemeManager.SetEditorPreviewTheme(_targetTheme);
             SceneView.RepaintAll();
         }
     }
@@ -136,7 +136,7 @@ public class ThemeMigrationWindow : EditorWindow
         // 테마가 선택되면 에디터 프리뷰에 자동 적용
         if (_targetTheme != null)
         {
-            ThemeManager.EditorPreviewTheme = _targetTheme;
+            ThemeManager.SetEditorPreviewTheme(_targetTheme);
         }
     }
 
@@ -229,7 +229,7 @@ public class ThemeMigrationWindow : EditorWindow
             {
                 _targetTheme = _availableThemes[_selectedThemeIndex];
                 // 에디터 프리뷰 테마 자동 설정
-                ThemeManager.EditorPreviewTheme = _targetTheme;
+                ThemeManager.SetEditorPreviewTheme(_targetTheme);
                 SceneView.RepaintAll();
             }
         }
@@ -924,7 +924,11 @@ public class ThemeMigrationWindow : EditorWindow
                 if (txt.GetComponent<ThemedTMPText>() != null) continue;
 
                 var themed = Undo.AddComponent<ThemedTMPText>(txt.gameObject);
-                themed.ColorToken = RecommendToken(txt.color);
+                // 버튼 안의 텍스트는 TextOnPrimary (흰색)
+                if (txt.GetComponentInParent<Button>() != null)
+                    themed.ColorToken = ThemeColorToken.TextOnPrimary;
+                else
+                    themed.ColorToken = RecommendToken(txt.color);
             }
 
             // Button
@@ -1151,14 +1155,19 @@ public class ThemeMigrationWindow : EditorWindow
     }
 
     /// <summary>
-    /// 스캔 결과에서 토큰 가져오기 (OverrideToken 우선)
+    /// 스캔 결과에서 토큰 가져오기 (OverrideToken > RecommendedToken > 색상 기반 순)
     /// </summary>
     private ThemeColorToken GetTokenForResult(ColorScanResult result)
     {
-        // ThemeOverrideToken 컴포넌트가 있으면 우선 사용
+        // 1. ThemeOverrideToken 컴포넌트가 있으면 최우선 사용
         if (result.OverrideToken.HasValue)
             return result.OverrideToken.Value;
 
+        // 2. 컴포넌트 기반 추천 토큰이 있으면 사용 (버튼 내 텍스트 등)
+        if (result.RecommendedToken != default)
+            return result.RecommendedToken;
+
+        // 3. 색상 기반 매칭 (폴백)
         return GetTokenForColor(result.Color);
     }
 

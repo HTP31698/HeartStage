@@ -214,28 +214,12 @@ public static class ThemeColorGenerator
     }
 
     /// <summary>
-    /// 대비가 충분한 텍스트 색상 선택 (흰색 고정 금지)
-    /// WCAG 기준 대비비 4.5:1 이상
+    /// TextOnPrimary, TextOnSurface용 색상 - 항상 흰색
     /// </summary>
     private static Color GetContrastingTextColor(Color background, Color preferredText)
     {
-        float bgLuminance = GetRelativeLuminance(background);
-        float textLuminance = GetRelativeLuminance(preferredText);
-
-        float contrastRatio = GetContrastRatio(bgLuminance, textLuminance);
-
-        // 대비비 4.5 이상이면 preferredText 사용
-        if (contrastRatio >= 4.5f)
-            return preferredText;
-
-        // 흰색과 검정 중 대비 높은 것 선택
-        float whiteContrast = GetContrastRatio(bgLuminance, 1f);
-        float blackContrast = GetContrastRatio(bgLuminance, 0f);
-
-        if (whiteContrast > blackContrast)
-            return Color.white;
-        else
-            return new Color(0.1f, 0.1f, 0.1f, 1f); // 순수 검정보다 약간 부드럽게
+        // 강제 흰색 (사용자 요청)
+        return Color.white;
     }
 
     /// <summary>

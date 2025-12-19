@@ -46,7 +46,7 @@ public class ThemeEditor : Editor
     private void OnEnable()
     {
         _theme = (Theme)target;
-        ThemeManager.EditorPreviewTheme = _theme;
+        ThemeManager.SetEditorPreviewTheme(_theme);
     }
 
     private void OnDisable()
