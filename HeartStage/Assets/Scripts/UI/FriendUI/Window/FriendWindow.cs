@@ -26,9 +26,11 @@ public class FriendWindow : GenericWindow
     [SerializeField] private Button requestTabButton;
     [SerializeField] private Button addTabButton;
 
-    [Header("탭 색상")]
-    [SerializeField] private Color selectedTabColor = new Color(0.6f, 0.4f, 0.8f, 1f);    // 진한 바이올렛
-    [SerializeField] private Color unselectedTabColor = new Color(0.8f, 0.7f, 0.9f, 1f);  // 연한 바이올렛
+    [Header("탭 색상 - 디자인 가이드 기준")]
+    [SerializeField] private Color selectedTabBg = new Color(0.72f, 0.54f, 0.84f, 1f);      // #B889D6 선택탭 (더 진하게)
+    [SerializeField] private Color selectedTabShading = new Color(0.77f, 0.56f, 0.86f, 1f); // #C58EDC
+    [SerializeField] private Color unselectedTabBg = new Color(0.83f, 0.65f, 0.89f, 1f);    // #D4A7E4 비선택탭
+    [SerializeField] private Color unselectedTabShading = new Color(0.77f, 0.56f, 0.86f, 1f); // #C58EDC
 
     [Header("헤더")]
     [SerializeField] private TMP_Text titleText;
@@ -146,11 +148,15 @@ public class FriendWindow : GenericWindow
     {
         if (button == null) return;
 
+        // 버튼 메인 이미지 (BG)
         var image = button.GetComponent<Image>();
         if (image != null)
         {
-            image.color = isSelected ? selectedTabColor : unselectedTabColor;
+            image.color = isSelected ? selectedTabBg : unselectedTabBg;
         }
+
+        // 선택된 탭은 스케일 살짝 키워서 강조
+        button.transform.localScale = isSelected ? Vector3.one * 1.05f : Vector3.one;
     }
 
     private void UpdateUIForTab()
