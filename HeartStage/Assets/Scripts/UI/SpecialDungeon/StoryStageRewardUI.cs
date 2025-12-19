@@ -8,7 +8,9 @@ public class StoryStageRewardUI : GenericWindow
     [SerializeField] private TextMeshProUGUI itemNameText;
     [SerializeField] private Image itemIcon;
     [SerializeField] private TextMeshProUGUI itemCountText;
-    [SerializeField] private Button exitButton; 
+    [SerializeField] private Button exitButton;
+
+    private bool isFromLobby = false; // 로비에서 열린 보상창인지 구분
 
     private void Awake()
     {
@@ -23,6 +25,10 @@ public class StoryStageRewardUI : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        // 로비 에서 열렸는지 확인
+        CheckOpenLobby();
+
         SetupStoryReward();
         // 보상 지급
         GiveStoryReward();
@@ -31,7 +37,11 @@ public class StoryStageRewardUI : GenericWindow
     public override void Close()
     {
         base.Close();
-        GoToLobby();
+
+        if (!isFromLobby)
+        {
+            GoToLobby();
+        }
     }
 
     /// 스토리 스테이지 보상 정보 설정
@@ -222,4 +232,10 @@ public class StoryStageRewardUI : GenericWindow
         return titleData != null;
     }
 
+
+    private void CheckOpenLobby()
+    {
+        isFromLobby = (GameSceneManager.Instance != null &&
+                      GameSceneManager.Instance.CurrentSceneType == SceneType.LobbyScene);
+    }
 }
