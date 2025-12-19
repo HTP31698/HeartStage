@@ -8,7 +8,9 @@ public class StoryStageRewardUI : GenericWindow
     [SerializeField] private TextMeshProUGUI itemNameText;
     [SerializeField] private Image itemIcon;
     [SerializeField] private TextMeshProUGUI itemCountText;
-    [SerializeField] private Button exitButton; 
+    [SerializeField] private Button exitButton;
+
+    private bool isFromLobby = false; // 로비에서 열린 보상창인지 구분
 
     private void Awake()
     {
@@ -23,6 +25,10 @@ public class StoryStageRewardUI : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        // 로비에서 열렸는지 확인
+        CheckOpenLobby();
+
         SetupStoryReward();
         // 보상 지급
         GiveStoryReward();
@@ -31,7 +37,29 @@ public class StoryStageRewardUI : GenericWindow
     public override void Close()
     {
         base.Close();
-        GoToLobby();
+
+        if (isFromLobby)
+        {
+            if (ItemInventoryUI.Instance != null)
+            {
+                ItemInventoryUI.Instance.ShowAll();
+            }
+            RestoreStoryDungeonUI();
+        }
+        else
+        {
+            GoToLobbyWithStoryDungeonUI();
+        }
+    }
+
+    private void RestoreStoryDungeonUI()
+    {
+        // 로비에서 바로 스토리 던전 UI 계층 열기
+        WindowManager.Instance.Open(WindowType.SpecialDungeon);
+        WindowManager.Instance.OpenOverlay(WindowType.StoryDungeon);
+        WindowManager.Instance.OpenOverlay(WindowType.StoryDungeonInfo);
+
+        Debug.Log("[StoryStageRewardUI] 로비에서 스토리 던전 UI 계층 복원");
     }
 
     /// 스토리 스테이지 보상 정보 설정
@@ -141,24 +169,22 @@ public class StoryStageRewardUI : GenericWindow
         Close();
     }
 
-    /// 로비로 이동
-    private void GoToLobby()
+    /// 스토리 던전 UI 계층과 함께 로비로 이동
+    private void GoToLobbyWithStoryDungeonUI()
     {
-        if (StageManager.Instance != null)
-        {
-            StageManager.Instance.GoLobby();
-        }
-        else
-        {
-            WindowManager.currentWindow = WindowType.LobbyHome;
-            LoadSceneManager.Instance.GoLobby();
-        }
+        // 스토리 던전 UI 복원 플래그 설정
+        var gameData = SaveLoadManager.Data;
+        gameData.StoryAfterLobby = true;
+        SaveLoadManager.SaveToServer().Forget();
+
+        // SpecialDungeon 윈도우로 설정하고 로비 이동
+        WindowManager.currentWindow = WindowType.SpecialDungeon;
+        LoadSceneManager.Instance.GoLobby();
     }
+
 
     private void GiveStoryReward()
     {
-        Debug.Log($"[StoryStageRewardUI] GiveStoryReward 시작");
-
         // SaveLoadManager에서 selectedStageID 가져오기
         var gameData = SaveLoadManager.Data;
         int storyStageId = gameData.selectedStageID;
@@ -193,6 +219,9 @@ public class StoryStageRewardUI : GenericWindow
                     Debug.Log($"[StoryStageRewardUI] 칭호 획득: {itemId}");
                 }
             }
+
+            SaveLoadManager.SaveToServer().Forget();
+            LobbyManager.Instance?.MoneyUISet(); 
         }
         else
         {
@@ -207,12 +236,6 @@ public class StoryStageRewardUI : GenericWindow
             QuestManager.Instance.OnStageFirstClear(storyStageId);
         }
 
-        // 저장
-        if (IsTitleId(itemId))
-        {
-            SaveLoadManager.SaveToServer().Forget();
-        }
-
         Debug.Log($"[StoryStageRewardUI] 스토리 보상 지급 완료: {itemId} x {itemCount}");
     }
 
@@ -222,4 +245,9 @@ public class StoryStageRewardUI : GenericWindow
         return titleData != null;
     }
 
+    private void CheckOpenLobby()
+    {
+        isFromLobby = (GameSceneManager.Instance != null &&
+                      GameSceneManager.Instance.CurrentSceneType == SceneType.LobbyScene);
+    }
 }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class LobbyUI : MonoBehaviour
@@ -50,6 +51,9 @@ public class LobbyUI : MonoBehaviour
 
         // 셋업 윈도우에서 돌아온 경우 StageInfoWindow 자동 오픈
         CheckReturnToStageInfo();
+
+        // 스토리 던전 패배 후 돌아온 경우 스토리 던전 UI들 자동 오픈
+        CheckReturnToStoryDungeon();
     }
 
     private void CheckReturnToStageInfo()
@@ -79,6 +83,31 @@ public class LobbyUI : MonoBehaviour
             stageInfoWindow.SetStageData(stageData);
             windowManager.OpenOverlay(WindowType.StageInfo);
         }
+    }
+
+    /// <summary>
+    /// 스토리 던전 패배 후 돌아온 경우 스토리 던전 UI들을 순차적으로 열기
+    /// </summary>
+    private void CheckReturnToStoryDungeon()
+    {
+        var saveData = SaveLoadManager.Data;
+        if (saveData == null || !saveData.StoryAfterLobby)
+            return;
+
+        // 플래그 초기화
+        saveData.StoryAfterLobby = false;
+        SaveLoadManager.SaveToServer().Forget(); // 플래그 저장
+
+        // 1) SpecialDungeon 윈도우 열기 (이미 currentWindow로 설정됨)
+        windowManager.Open(WindowType.SpecialDungeon);
+
+        // 2) StoryDungeon 오버레이 열기
+        windowManager.OpenOverlay(WindowType.StoryDungeon);
+
+        // 3) StoryDungeonInfo 오버레이 열기
+        windowManager.OpenOverlay(WindowType.StoryDungeonInfo);
+
+        Debug.Log("[LobbyUI] 스토리 던전 UI 계층 복원 완료: SpecialDungeon → StoryDungeon → StoryDungeonInfo");
     }
 
     private void OnShopUiButtonClicked()
@@ -145,6 +174,7 @@ public class LobbyUI : MonoBehaviour
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         windowManager.Open(WindowType.SpecialDungeon);
     }
+
     private void OnDisable()
     {
         stageUiButton?.onClick.RemoveAllListeners();

@@ -44,8 +44,10 @@ public class SaveDataV1 : SaveData
     public int startingWave = 1;
     public bool isInfiniteMode = false;      // 무한 모드 진입 플래그
     public int infiniteStageId = 0;          // 무한 스테이지 ID
+
     // 스토리 컷씬 후 보상창 표시 플래그
     public bool showStoryRewardAfterScene = false;
+    public bool StoryAfterLobby = false;
 
     // ================== 5. 퀘스트 진행 상태 ==================
     public DailyQuestState dailyQuest = new DailyQuestState();
