@@ -96,9 +96,6 @@ public class ThemeEditor : Editor
 
         EditorGUILayout.EndVertical();
 
-        // 입력값 검증 (항상 표시)
-        DrawInputValidation();
-
         // 생성된 팔레트 미리보기
         EditorGUILayout.Space(10);
         _showPalette = EditorGUILayout.Foldout(_showPalette, "생성된 팔레트", true);

@@ -63,7 +63,7 @@ public class ThemeMigrationWindow : EditorWindow
     // ===== UI 상태 =====
     private Vector2 _scrollPosition;
     private bool _showAdvancedOptions = false;
-    private bool _dryRunMode = true;
+    private bool _dryRunMode = false;
     private bool _includeNestedPrefabs = false;
 
     // ===== Nested Prefab 처리 =====
@@ -524,7 +524,8 @@ public class ThemeMigrationWindow : EditorWindow
                     Color = color,
                     GameObject = img.gameObject,
                     OverrideToken = overrideToken,
-                    RecommendedToken = recommended
+                    RecommendedToken = recommended,
+                    HasRecommendedToken = true
                 });
 
                 AddUniqueColor(color);
@@ -576,7 +577,8 @@ public class ThemeMigrationWindow : EditorWindow
                     Color = txt.color,
                     GameObject = txt.gameObject,
                     OverrideToken = overrideToken,
-                    RecommendedToken = recommended
+                    RecommendedToken = recommended,
+                    HasRecommendedToken = true
                 });
 
                 AddUniqueColor(txt.color);
@@ -606,7 +608,8 @@ public class ThemeMigrationWindow : EditorWindow
                     Color = colors.normalColor,
                     GameObject = btn.gameObject,
                     OverrideToken = overrideToken,
-                    RecommendedToken = recommended
+                    RecommendedToken = recommended,
+                    HasRecommendedToken = true
                 });
 
                 AddUniqueColor(colors.normalColor);
@@ -636,7 +639,8 @@ public class ThemeMigrationWindow : EditorWindow
                     Color = outline.effectColor,
                     GameObject = outline.gameObject,
                     OverrideToken = overrideToken,
-                    RecommendedToken = recommended
+                    RecommendedToken = recommended,
+                    HasRecommendedToken = true
                 });
 
                 AddUniqueColor(outline.effectColor);
@@ -666,7 +670,8 @@ public class ThemeMigrationWindow : EditorWindow
                     Color = shadow.effectColor,
                     GameObject = shadow.gameObject,
                     OverrideToken = overrideToken,
-                    RecommendedToken = recommended
+                    RecommendedToken = recommended,
+                    HasRecommendedToken = true
                 });
 
                 AddUniqueColor(shadow.effectColor);
@@ -1164,7 +1169,8 @@ public class ThemeMigrationWindow : EditorWindow
             return result.OverrideToken.Value;
 
         // 2. 컴포넌트 기반 추천 토큰이 있으면 사용 (버튼 내 텍스트 등)
-        if (result.RecommendedToken != default)
+        // Note: HasRecommendedToken 플래그 사용 (Primary == 0 == default 문제 해결)
+        if (result.HasRecommendedToken)
             return result.RecommendedToken;
 
         // 3. 색상 기반 매칭 (폴백)
@@ -1507,6 +1513,7 @@ public class ThemeMigrationWindow : EditorWindow
         public GameObject GameObject;
         public ThemeColorToken? OverrideToken; // ThemeOverrideToken 컴포넌트에서 지정된 토큰
         public ThemeColorToken RecommendedToken; // 컴포넌트 기반 추천 토큰
+        public bool HasRecommendedToken; // RecommendedToken이 설정되었는지 여부 (Primary == 0 == default 문제 해결)
     }
 }
 
