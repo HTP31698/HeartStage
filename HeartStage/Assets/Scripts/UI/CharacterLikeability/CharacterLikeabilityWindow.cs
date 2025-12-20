@@ -16,6 +16,7 @@ public class CharacterLikeabilityWindow : MonoBehaviour
     {
         wholePanel.gameObject.SetActive(true);
         wholePanel.Init(characterId);
+        Debug.Log(characterId);
     }
 
     public void ClosePanel()

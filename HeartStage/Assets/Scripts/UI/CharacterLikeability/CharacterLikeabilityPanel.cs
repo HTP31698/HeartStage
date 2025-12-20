@@ -94,12 +94,9 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         var rewardItemData1 = DataTableManager.ItemTable.Get(likeabilityData.like_reward_item1);
         var rewardItemData2 = DataTableManager.ItemTable.Get(likeabilityData.like_reward_item2);
         var rewardItemData3 = DataTableManager.ItemTable.Get(likeabilityData.like_reward_item3);
-        var texture1 = ResourceManager.Instance.Get<Texture2D>(rewardItemData1.prefab);
-        rewardImage1.sprite = Sprite.Create(texture1, new Rect(0, 0, texture1.width, texture1.height), new Vector2(0.5f, 0.5f));
-        var texture2 = ResourceManager.Instance.Get<Texture2D>(rewardItemData2.prefab);
-        rewardImage2.sprite = Sprite.Create(texture2, new Rect(0, 0, texture2.width, texture2.height), new Vector2(0.5f, 0.5f));
-        var texture3 = ResourceManager.Instance.Get<Texture2D>(rewardItemData3.prefab);
-        rewardImage3.sprite = Sprite.Create(texture3, new Rect(0, 0, texture3.width, texture3.height), new Vector2(0.5f, 0.5f));
+        rewardImage1.sprite = ResourceManager.Instance.GetSprite(rewardItemData1.prefab);
+        rewardImage2.sprite = ResourceManager.Instance.GetSprite(rewardItemData2.prefab);
+        rewardImage3.sprite = ResourceManager.Instance.GetSprite(rewardItemData3.prefab);
     }
 
     private void SetRewardPositionByPercent(RectTransform reward, float percent)

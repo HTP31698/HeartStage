@@ -10,12 +10,6 @@ public class CharacterSpeechBubbleFollower : MonoBehaviour
 
     public Camera lobbyHomeCamera;
     private Transform target;
-    private RectTransform canvasRect;
-
-    private void Awake()
-    {
-        canvasRect = GetComponentInParent<Canvas>().GetComponent<RectTransform>();
-    }
 
     public void SetTarget(Transform targetTransform)
     {
@@ -34,16 +28,19 @@ public class CharacterSpeechBubbleFollower : MonoBehaviour
 
     private void UpdateBubble(RectTransform bubble, Vector3 worldOffset)
     {
+        // 월드 좌표
         Vector3 worldPos = target.position + worldOffset;
-        Vector3 screenPos = lobbyHomeCamera.WorldToScreenPoint(worldPos);
+        // Viewport 좌표 (0~1)
+        Vector3 viewportPos = lobbyHomeCamera.WorldToViewportPoint(worldPos);
+        // RawImage 크기 기준 로컬 좌표로 변환
+        RectTransform parentRect = bubble.parent as RectTransform;
+        Vector2 size = parentRect.rect.size;
 
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvasRect,
-            screenPos,
-            null,
-            out Vector2 localPos
+        Vector2 localPos = new Vector2(
+            (viewportPos.x - 0.5f) * size.x,
+            (viewportPos.y - 0.5f) * size.y
         );
-
-        bubble.anchoredPosition = localPos;
+        // 위치 적용
+        bubble.localPosition = localPos;
     }
 }

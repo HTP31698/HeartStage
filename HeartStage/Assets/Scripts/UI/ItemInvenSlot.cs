@@ -17,13 +17,7 @@ public class ItemInvenSlot : MonoBehaviour
             return;
         }
 
-        var texture = ResourceManager.Instance.Get<Texture2D>(itemData.prefab);
-        if (texture == null)
-        {
-            return;
-        }
-
-        itemImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        itemImage.sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
         amountText.text = $"X{amount}";
         itemImage.enabled = true;
         amountText.enabled = true;
