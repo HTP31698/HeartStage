@@ -10,8 +10,7 @@ public class TrainingPointAcquirePanel : MonoBehaviour
     private void Awake()
     {
         var trainingPointData = DataTableManager.ItemTable.Get(ItemID.TrainingPoint);
-        var texture = ResourceManager.Instance.Get<Texture2D>(trainingPointData.prefab);
-        trainingPointImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        trainingPointImage.sprite = ResourceManager.Instance.GetSprite(trainingPointData.prefab);
     }
 
     public void Open(int amount)

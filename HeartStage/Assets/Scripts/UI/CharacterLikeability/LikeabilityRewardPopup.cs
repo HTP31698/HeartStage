@@ -26,8 +26,7 @@ public class LikeabilityRewardPopup : MonoBehaviour
         // 아이템 이미지 세팅
         var itemData = DataTableManager.ItemTable.Get(itemId);
         itemName.text = $"{itemData.item_name}";
-        var texture = ResourceManager.Instance.Get<Texture2D>(itemData.prefab);
-        itemImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        itemImage.sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
         amountText.text = $"x{amount}";
         gameObject.SetActive(true);
     }

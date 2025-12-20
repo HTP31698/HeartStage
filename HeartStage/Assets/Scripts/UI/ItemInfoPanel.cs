@@ -42,11 +42,7 @@ public class ItemInfoPanel : MonoBehaviour
     // 이미지/텍스트 로드
     private void LoadItemVisual(ItemCSVData data)
     {
-        var texture = ResourceManager.Instance.Get<Texture2D>(data.prefab);
-        itemImage.sprite = Sprite.Create(texture,
-            new Rect(0, 0, texture.width, texture.height),
-            new Vector2(0.5f, 0.5f));
-
+        itemImage.sprite = ResourceManager.Instance.GetSprite(data.prefab);
         itemName.text = data.item_name;
         itemDescription.text = data.item_desc;
     }

@@ -140,7 +140,7 @@ public class ProfileWindow : MonoBehaviour
         }
 
         if (fanCountText != null)
-            fanCountText.text = $"♥ 팬: {data.fanAmount}";
+            fanCountText.text = $"Fan: {data.fanAmount}";
 
         RefreshTitleDropdown(data);
     }

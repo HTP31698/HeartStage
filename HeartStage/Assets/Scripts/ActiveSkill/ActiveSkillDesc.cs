@@ -11,8 +11,7 @@ public class ActiveSkillDesc : MonoBehaviour
     public void ShowDesc(int skillId)
     {
         var skillData = DataTableManager.SkillTable.Get(skillId);
-        var texture = ResourceManager.Instance.Get<Texture2D>(skillData.icon_prefab);
-        skillIconImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        skillIconImage.sprite = ResourceManager.Instance.GetSprite(skillData.icon_prefab);
         skillNameText.text = skillData.skill_name;
         skillDescText.text = skillData.GetFormattedInfo();
         gameObject.SetActive(true);

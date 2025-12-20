@@ -14,8 +14,7 @@ public class CharacterAcquirePanel : MonoBehaviour
         this.characterId = characterId;
         var characterData = DataTableManager.CharacterTable.Get(characterId);
         characterAcquireText.text = $"{characterData.char_name} 획득";
-        var texture = ResourceManager.Instance.Get<Texture2D>(characterData.card_imageName);
-        characterCardImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        characterCardImage.sprite = ResourceManager.Instance.GetSprite(characterData.card_imageName);
     }
 
     public void Close()

@@ -31,3 +31,43 @@
 - [x] filterCharRank UI 추가
 - [x] 색상 테마 적용 (섹션 헤더)
 - [x] 바로가기 버튼 추가 (웨이브, 스킬, 몬스터, 캐릭터)
+
+---
+
+## UI 시스템
+
+### ToastUI (2025-12)
+범용 토스트 알림 시스템 구현 완료
+
+**파일:**
+- `Scripts/UI/Common/ToastUI.cs` - 메인 싱글톤
+- `Scripts/UI/Common/ToastItemView.cs` - 개별 토스트 뷰
+- `Prefabs/UI/ToastCanvas.prefab` - 캔버스 프리팹
+- `Prefabs/UI/ToastItem.prefab` - 토스트 아이템 프리팹
+
+**특징:**
+- DontDestroyOnLoad (씬 전환 시 유지)
+- 동시 표시 1개 (새 메시지 오면 교체)
+- 슬라이드 다운 + 페이드 애니메이션 (DOTween)
+- 다크 그레이 배경 `rgba(0.12, 0.12, 0.12, 0.8)`
+- RaycastTarget = false (터치 안 막음)
+- 2줄 텍스트 지원 (예: "정말대단한토스트유아이탄생\n정말대단한토스트유아이탄생")
+
+**사용법:**
+```csharp
+ToastUI.Show("메시지");
+ToastUI.Show("메시지", 3f);  // 3초 표시
+ToastUI.Warning("재화가 부족합니다");  // 하위 호환
+```
+
+**프리팹 연결 (수동):**
+1. ToastItem 프리팹:
+   - ToastItemView.backgroundImage → Image
+   - ToastItemView.messageText → MessageText (TMP)
+   - ToastItemView.canvasGroup → CanvasGroup
+2. ToastCanvas 프리팹:
+   - ToastUI.toastItemPrefab → ToastItem.prefab
+   - ToastUI.toastContainer → ToastContainer (또는 자기 자신)
+
+### NoteLoadingUI (2025-12)
+- [x] DontDestroyOnLoad 추가

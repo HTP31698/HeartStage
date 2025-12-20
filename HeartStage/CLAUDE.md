@@ -1,4 +1,305 @@
-# HeartStage HTML 프로토타입 작업 로그
+# HeartStage 개발 문서
+
+---
+
+## 프로젝트 개요
+
+**HeartStage**는 K-POP 아이돌 테마 타워 디펜스 게임. Unity 기반, Firebase 백엔드.
+
+### 기술 스택
+| 영역 | 기술 |
+|------|------|
+| 엔진 | Unity 2022 LTS+ |
+| 비동기 | UniTask (Cysharp) |
+| 백엔드 | Firebase (Auth, Realtime DB) |
+| 리소스 | Addressable Assets |
+| 애니메이션 | DOTween |
+| UI | Canvas + TextMeshPro |
+
+---
+
+## 폴더 구조 (Assets/Scripts/)
+
+```
+Scripts/
+├── 코어 시스템
+│   ├── BootStrap.cs              - 게임 초기화
+│   ├── GameSceneManager.cs       - 씬 전환
+│   ├── WindowManager.cs          - 윈도우 관리
+│   ├── ResourceManager.cs        - Addressable 로드
+│   ├── PoolManager.cs            - 객체 풀링
+│   ├── SoundManager.cs           - 음성/SFX
+│   ├── GenericWindow.cs          - 윈도우 기본 클래스
+│   └── Defines.cs                - 상수/열거형
+│
+├── Animation/                    - 애니메이션
+│   └── WindowAnimator.cs         - 범용 윈도우 애니메이션
+│
+├── Character/                    - 캐릭터 게임플레이
+├── Monster/                      - 몬스터/보스 AI
+├── ActiveSkill/                  - 액티브 스킬
+├── Effect/                       - 상태이상/스탯 변조
+│
+├── Csv/                          - 데이터 테이블 (24개)
+│   └── DataTableManager.cs       - 테이블 관리자
+├── Data/                         - 데이터 구조체
+├── Firebase/                     - Firebase 연동
+│   ├── AuthManager.cs            - 인증
+│   └── CloudSaveManager.cs       - 클라우드 저장
+│
+├── Theme/                        - 테마 시스템
+│   ├── ThemeManager.cs           - 테마 싱글톤
+│   ├── ThemeColorToken.cs        - 색상 토큰 (29개)
+│   └── Components/               - ThemedButton, ThemedImage 등
+│
+└── UI/                           - UI 시스템 (가장 큼)
+    ├── FriendUI/                 - 친구 시스템
+    ├── Profile/                  - 프로필
+    ├── Stage/                    - 스테이지
+    ├── Gacha/                    - 뽑기
+    ├── Shopping/                 - 상점
+    ├── Quest/                    - 퀘스트
+    ├── Encyclopedia/             - 도감
+    ├── Mail/                     - 우편함
+    └── Common/                   - 공통 (Toast, Dialog)
+```
+
+---
+
+## 주요 시스템
+
+### 1. 친구 시스템 (FriendUI/)
+- `FriendWindow.cs` - 통합 친구 창 (목록/요청/추가 탭)
+- `FriendService.cs` - 친구 추가/삭제 로직
+- `DreamEnergyGiftService.cs` - 드림 에너지 선물
+
+### 2. 상점 시스템 (Shopping/)
+- `DailyShop.cs` - 24시간 리셋 데일리 상점
+- `ShopItemSlot.cs` - 상점 아이템
+- `PurchaseConfirmPanel.cs` - 구매 확인
+
+### 3. 뽑기 시스템 (Gacha/)
+- `GachaUI.cs` - 1회/5회 뽑기
+- `GachaResultUI.cs` - 결과 표시
+- 비용: 1회 50, 5회 250 하트스틱
+
+### 4. 스테이지 시스템 (Stage/)
+- `StageWindow.cs` - 지그재그 스테이지 선택
+- `StageInfoWindow.cs` - 웨이브 진행도
+- `CharacterSelectPanel.cs` - 캐릭터 배치
+
+### 5. 퀘스트 시스템 (Quest/)
+- 일일/주간/업적 3탭
+- 7가지 이벤트: 출석, 스테이지클리어, 몬스터처치, 보스처치, 뽑기, 상점구매, 팬수달성
+
+### 6. 도감 (Encyclopedia/)
+- 포토카드 바인더 (3x2 그리드)
+- 등급 강화: 연습생 → 에이스 → 신인 → 인기
+- 레벨업: 트레이닝 포인트 + 라이트스틱
+
+---
+
+## 테마 시스템
+
+### 색상 토큰 (29개)
+```
+Primary (4): Primary, PrimaryHover, PrimaryPressed, PrimaryDisabled
+Secondary (4): Secondary, SecondaryHover, SecondaryPressed, SecondaryDisabled
+Surface (3): Surface, SurfaceAlt, Panel
+Border (2): Border, Divider
+Text (4): TextPrimary, TextSecondary, TextOnPrimary, TextOnSurface
+Tab (4): TabActiveBg, TabInactiveBg, TabActiveText, TabInactiveText
+Input (3): InputBg, InputBorder, Placeholder
+Semantic (3): Success, Warning, Error
+Special (2): Transparent, DimmedOverlay
+```
+
+### 사용법
+```csharp
+var button = GetComponent<ThemedButton>();
+button.NormalToken = ThemeColorToken.Primary;
+```
+
+---
+
+## 데이터 테이블 (24개)
+
+| 카테고리 | 테이블 |
+|----------|--------|
+| 캐릭터 | CharacterTable, SkillTable, EffectTable, RankUpTable, LevelUpTable |
+| 스테이지 | StageTable, StageWaveTable, MonsterTable, InfiniteStageTable, StoryTable |
+| 아이템 | ItemTable, ShopTable, PieceTable |
+| 뽑기 | GachaTable, GachaTypeTable |
+| 퀘스트 | QuestTable, QuestTypeTable, QuestProgressTable |
+| 기타 | TitleTable, SynergyTable, RewardTable, LikeabilityTable, StringTable |
+
+---
+
+## 씬 구조
+
+| 씬 | 용도 |
+|----|------|
+| TitleScene | 타이틀/로그인 |
+| LobbyScene | 로비 메인 |
+| StageScene | 일반 스테이지 |
+| InfinityStage | 무한 스테이지 |
+| StoryScene | 스토리 |
+
+---
+
+## 윈도우 타입 (WindowType)
+
+```
+로비: LobbyHome, StageSelect, Gacha, Quest, Shopping, CharacterDict, SpecialDungeon
+친구: Friend (30), FriendProfile (33)
+인게임: VictoryDefeat, CharacterInfo, BossAlert
+```
+
+---
+
+## 초기화 순서 (BootStrap.cs)
+
+1. Addressables 초기화
+2. ResourceManager 프리로드
+3. DataTableManager 24개 테이블 로드
+4. Firebase 로그인
+5. SaveLoadManager 로드
+6. 씬 전환
+
+---
+
+## Unity MCP 연결 (Claude Code)
+
+### 1. Unity에서 MCP 서버 시작
+1. Unity 메뉴: `Window > MCP for Unity`
+2. Transport: **HTTP** 선택
+3. **Start Local HTTP Server** 클릭
+4. 포트 확인 (기본: 8080)
+
+### 2. Claude Code에서 MCP 등록
+```bash
+# Claude CLI 경로 (VSCode Extension)
+C:\Users\Kim\.vscode\extensions\anthropic.claude-code-{버전}-win32-x64\resources\native-binary\claude.exe
+
+# MCP 서버 등록
+claude mcp add --transport http UnityMCP http://localhost:8080/mcp
+
+# MCP 서버 제거
+claude mcp remove UnityMCP
+
+# 등록된 서버 확인
+claude mcp list
+```
+
+### 3. 연결 확인
+- Claude Code 재시작 필요
+- Unity HTTP 서버가 실행 중이어야 함
+
+---
+
+## WindowAnimator 시스템 (2024-12-20)
+
+### 개요
+범용 윈도우 애니메이션 컴포넌트. 컴포넌트만 붙이면 열기/닫기 애니메이션 자동 적용.
+
+### 파일 위치
+- `Assets/Scripts/Animation/WindowAnimator.cs`
+
+### 지원 애니메이션
+- Scale, Fade, SlideUp, SlideDown, SlideLeft, SlideRight
+
+### Origin 옵션
+- Center, FromButton, TopCenter, BottomCenter
+
+### 사용법
+1. 윈도우 오브젝트에 `WindowAnimator` 컴포넌트 추가
+2. Inspector에서 설정:
+   - Open Type: Scale
+   - Open Start Scale: 0.8
+   - Open Duration: 0.25
+   - Open Ease: OutBack
+   - Close Type: Scale
+   - Close End Scale: 0.8
+   - Close Duration: 0.15
+   - Close Ease: InBack
+   - Auto Play On Enable: true
+
+### GenericWindow 연동
+```csharp
+// GenericWindow.cs에서 자동 처리
+protected virtual void Awake()
+{
+    _windowAnimator = GetComponent<WindowAnimator>();
+}
+
+public virtual void Close()
+{
+    if (_windowAnimator != null)
+        _windowAnimator.PlayClose(() => gameObject.SetActive(false));
+    else
+        gameObject.SetActive(false);
+}
+```
+
+---
+
+## FriendWindow 수정 사항 (2024-12-20)
+
+### ClaimAllButton 투명/깜빡임 수정
+- `button.interactable = false` 대신 `_isClaimingAll` 플래그 사용
+- ThemedButton이 interactable 상태에 따라 색상을 변경하기 때문
+
+### 탭 버튼 색상/선택 상태
+- `ThemedButton.NormalToken`으로 동적 테마 색상 변경
+- `button.interactable = !isSelected`로 선택된 탭 비활성화
+- ThemeColorToken: `TabActiveBg`, `TabInactiveBg` 사용
+
+### 요청 탭 InfoBar 추가
+- `requestInfoBar` GameObject
+- `requestInfoText` 받은 요청 개수 표시
+
+### ListInfoBar 활성화 수정
+- `Open()`에서 `UpdateUIForTab()` 호출 추가
+
+---
+
+## NoteLoadingUI 시스템 (2024-12-20)
+
+### 개요
+전역 음표 로딩 인디케이터. 음표 3개(빨강, 노랑, 파랑)가 순차적으로 통통 튀는 애니메이션.
+
+### 파일 위치
+- `Assets/Scripts/UI/Common/NoteLoadingUI.cs` - 전역 싱글톤
+- `Assets/Scripts/Animation/LoadingIndicator.cs` - 바운스 애니메이션
+
+### 사용법
+```csharp
+NoteLoadingUI.Show();    // 로딩 표시 (카운터 +1)
+NoteLoadingUI.Hide();    // 로딩 숨기기 (카운터 -1)
+NoteLoadingUI.ForceHide(); // 강제 숨기기 (카운터 리셋)
+```
+
+### Unity 설정
+```
+NoteLoadingUI (GameObject) - NoteLoadingUI.cs
+  └── LoadingIndicator (자식, 기본 비활성화) - LoadingIndicator.cs
+        ├── RedNote (Image)
+        ├── YellowNote (Image)
+        └── BlueNote (Image)
+```
+
+### 카운터 시스템
+- 중복 호출 방지: Show() 여러 번 호출해도 마지막 Hide()까지 로딩 유지
+- ForceHide(): 윈도우 열 때 카운터 리셋용
+
+### LoadingIndicator 설정값
+- bounceHeight: 15
+- bounceDuration: 0.15
+- delayBetweenNotes: 0.08
+
+---
+
+# HTML 프로토타입 작업 로그
 
 ## 프로젝트 정보
 - **파일 위치**: `Tools/LobbyPanelPrototype_v3.html`

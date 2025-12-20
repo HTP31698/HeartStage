@@ -75,18 +75,7 @@ public class Gacha5TryResultPrefabUI : MonoBehaviour
             currentSprite = null;
         }
 
-        var texture = ResourceManager.Instance.Get<Texture2D>(imageName);
-        if (texture != null)
-        {
-            currentSprite = Sprite.Create(texture,
-                new Rect(0, 0, texture.width, texture.height),
-                new Vector2(0.5f, 0.5f));
-            characterImage.sprite = currentSprite;
-        }
-        else
-        {
-            Debug.LogWarning($"이미지를 로드할 수 없습니다: {imageName}");
-        }
+        characterImage.sprite = ResourceManager.Instance.GetSprite(imageName);
     }
 
     private void OnDestroy()

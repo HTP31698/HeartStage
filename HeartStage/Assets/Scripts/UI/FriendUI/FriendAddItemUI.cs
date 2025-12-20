@@ -47,16 +47,11 @@ public class FriendAddItemUI : MonoBehaviour
 
         // 레벨(팬 수 기준)
         if (fanAmountText != null)
-            fanAmountText.text = $"팬: {CalculateLevel(profileData.fanAmount)}";
+            fanAmountText.text = $"Fan: {CalculateLevel(profileData.fanAmount)}";
 
-        // 🔹 최근 접속 시간 (네가 준 포맷 그대로)
+        // 최근 접속 시간
         if (lastLoginText != null)
-        {
-            if (_profileData != null && _profileData.lastLoginUnixMillis > 0)
-                SetLastLoginTime(_profileData.lastLoginUnixMillis);
-            else
-                lastLoginText.text = "방금 전";
-        }
+            lastLoginText.text = TimeFormatUtil.FormatLastLogin(_profileData?.lastLoginUnixMillis ?? 0);
 
         // 🔹 아이콘 (GetSprite 사용)
         SetProfileIconSafe(_profileData.profileIconKey);
@@ -77,7 +72,7 @@ public class FriendAddItemUI : MonoBehaviour
         }
 
         if (requestButtonText != null)
-            requestButtonText.text = "친구\n신청";
+            requestButtonText.text = "친구신청";
     }
 
     private void OnClickIcon()
@@ -109,6 +104,10 @@ public class FriendAddItemUI : MonoBehaviour
         requestButton.interactable = false;
         string displayName = GetDisplayNickname(_profileData.nickname, _profileData.uid);
 
+        // 즉시 텍스트 변경 (사용자 반응성 향상)
+        if (requestButtonText != null)
+            requestButtonText.text = "신청중...";
+
         try
         {
             var (success, errorCode) = await FriendService.SendFriendRequestAsync(_profileData.uid)
@@ -117,7 +116,7 @@ public class FriendAddItemUI : MonoBehaviour
             if (success)
             {
                 if (requestButtonText != null)
-                    requestButtonText.text = "신청\n완료";
+                    requestButtonText.text = "신청완료";
 
                 FriendWindow.Instance?.OnFriendRequestSent();
                 ToastUI.Success($"{displayName}님에게 친구 신청을 보냈습니다!");
@@ -130,11 +129,13 @@ public class FriendAddItemUI : MonoBehaviour
                 if (errorCode == "ALREADY_SENT" || errorCode == "ALREADY_FRIEND" || errorCode == "ALREADY_PROCESSING")
                 {
                     if (requestButtonText != null)
-                        requestButtonText.text = "신청\n완료";
+                        requestButtonText.text = "신청완료";
                 }
                 else
                 {
                     requestButton.interactable = true;
+                    if (requestButtonText != null)
+                        requestButtonText.text = "친구신청";
                 }
 
                 ToastUI.Warning(errorMessage);
@@ -143,11 +144,15 @@ public class FriendAddItemUI : MonoBehaviour
         catch (OperationCanceledException)
         {
             requestButton.interactable = true;
+            if (requestButtonText != null)
+                requestButtonText.text = "친구신청";
         }
         catch (Exception e)
         {
             Debug.LogError($"[FriendAddItemUI] OnClickRequestAsync Error: {e}");
             requestButton.interactable = true;
+            if (requestButtonText != null)
+                requestButtonText.text = "친구신청";
             ToastUI.Error("친구 신청 중 오류가 발생했습니다");
         }
     }
@@ -168,29 +173,12 @@ public class FriendAddItemUI : MonoBehaviour
         };
     }
 
-    // 🔹 네가 요구한 포맷 그대로
     public void SetLastLoginTime(long unixMillis)
     {
         if (lastLoginText == null)
             return;
 
-        var lastLogin = DateTimeOffset.FromUnixTimeMilliseconds(unixMillis).LocalDateTime;
-        var now = DateTime.Now;
-        var diff = now - lastLogin;
-
-        string timeText;
-        if (diff.TotalMinutes < 1)
-            timeText = "방금 전";
-        else if (diff.TotalHours < 1)
-            timeText = $"{(int)diff.TotalMinutes}분 전";
-        else if (diff.TotalDays < 1)
-            timeText = $"{(int)diff.TotalHours}시간 전";
-        else if (diff.TotalDays < 7)
-            timeText = $"{(int)diff.TotalDays}일 전";
-        else
-            timeText = lastLogin.ToString("yyyy-MM-dd");
-
-        lastLoginText.text = $"{timeText}";
+        lastLoginText.text = TimeFormatUtil.FormatLastLogin(unixMillis);
     }
 
     /// <summary>

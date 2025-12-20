@@ -36,8 +36,7 @@ public class ShopItemSlot : MonoBehaviour
 
         itemNameText.text = shopTableData.Shop_item_name;
 
-        var texture = ResourceManager.Instance.Get<Texture2D>(shopTableData.Shop_icon);
-        itemImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        itemImage.sprite = ResourceManager.Instance.GetSprite(shopTableData.Shop_icon);
 
         priceText.text = $"{shopTableData.Shop_price}";
 
