@@ -39,8 +39,7 @@ public class DropItem : MonoBehaviour
         this.targetPos = target;
 
         // sprite setting
-        var texture = ResourceManager.Instance.Get<Texture2D>(DataTableManager.ItemTable.Get(id).prefab);
-        spriteRenderer.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        spriteRenderer.sprite = ResourceManager.Instance.GetSprite(DataTableManager.ItemTable.Get(id).prefab);
         NormalizeSpriteSize(); 
     }
 
