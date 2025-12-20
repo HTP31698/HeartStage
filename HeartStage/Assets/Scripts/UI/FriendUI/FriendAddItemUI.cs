@@ -49,14 +49,9 @@ public class FriendAddItemUI : MonoBehaviour
         if (fanAmountText != null)
             fanAmountText.text = $"팬: {CalculateLevel(profileData.fanAmount)}";
 
-        // 🔹 최근 접속 시간 (네가 준 포맷 그대로)
+        // 최근 접속 시간
         if (lastLoginText != null)
-        {
-            if (_profileData != null && _profileData.lastLoginUnixMillis > 0)
-                SetLastLoginTime(_profileData.lastLoginUnixMillis);
-            else
-                lastLoginText.text = "방금 전";
-        }
+            lastLoginText.text = TimeFormatUtil.FormatLastLogin(_profileData?.lastLoginUnixMillis ?? 0);
 
         // 🔹 아이콘 (GetSprite 사용)
         SetProfileIconSafe(_profileData.profileIconKey);
@@ -168,29 +163,12 @@ public class FriendAddItemUI : MonoBehaviour
         };
     }
 
-    // 🔹 네가 요구한 포맷 그대로
     public void SetLastLoginTime(long unixMillis)
     {
         if (lastLoginText == null)
             return;
 
-        var lastLogin = DateTimeOffset.FromUnixTimeMilliseconds(unixMillis).LocalDateTime;
-        var now = DateTime.Now;
-        var diff = now - lastLogin;
-
-        string timeText;
-        if (diff.TotalMinutes < 1)
-            timeText = "방금 전";
-        else if (diff.TotalHours < 1)
-            timeText = $"{(int)diff.TotalMinutes}분 전";
-        else if (diff.TotalDays < 1)
-            timeText = $"{(int)diff.TotalHours}시간 전";
-        else if (diff.TotalDays < 7)
-            timeText = $"{(int)diff.TotalDays}일 전";
-        else
-            timeText = lastLogin.ToString("yyyy-MM-dd");
-
-        lastLoginText.text = $"{timeText}";
+        lastLoginText.text = TimeFormatUtil.FormatLastLogin(unixMillis);
     }
 
     /// <summary>

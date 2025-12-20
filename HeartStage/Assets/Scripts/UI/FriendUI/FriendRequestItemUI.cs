@@ -80,10 +80,10 @@ public class FriendRequestItemUI : MonoBehaviour
 
         // 버튼 텍스트 초기화
         if (acceptButtonText != null)
-            acceptButtonText.text = "수락";
+            acceptButtonText.text = "친구수락";
 
         if (rejectButtonText != null)
-            rejectButtonText.text = "거절";
+            rejectButtonText.text = "친구거절";
 
         // 프로필 정보 로드
         LoadProfileAsync().Forget();
@@ -121,12 +121,7 @@ public class FriendRequestItemUI : MonoBehaviour
 
             // 최근 접속 시간
             if (lastLoginText != null)
-            {
-                if (_profileData.lastLoginUnixMillis > 0)
-                    SetLastLoginTime(_profileData.lastLoginUnixMillis);
-                else
-                    lastLoginText.text = "방금 전";
-            }
+                lastLoginText.text = TimeFormatUtil.FormatLastLogin(_profileData.lastLoginUnixMillis);
 
             // 아이콘
             SetProfileIconSafe(_profileData.profileIconKey);
@@ -258,23 +253,7 @@ public class FriendRequestItemUI : MonoBehaviour
         if (lastLoginText == null)
             return;
 
-        var lastLogin = DateTimeOffset.FromUnixTimeMilliseconds(unixMillis).LocalDateTime;
-        var now = DateTime.Now;
-        var diff = now - lastLogin;
-
-        string timeText;
-        if (diff.TotalMinutes < 1)
-            timeText = "방금 전";
-        else if (diff.TotalHours < 1)
-            timeText = $"{(int)diff.TotalMinutes}분 전";
-        else if (diff.TotalDays < 1)
-            timeText = $"{(int)diff.TotalHours}시간 전";
-        else if (diff.TotalDays < 7)
-            timeText = $"{(int)diff.TotalDays}일 전";
-        else
-            timeText = lastLogin.ToString("yyyy-MM-dd");
-
-        lastLoginText.text = timeText;
+        lastLoginText.text = TimeFormatUtil.FormatLastLogin(unixMillis);
     }
 
     private void SetProfileIconSafe(string profileIconKey)

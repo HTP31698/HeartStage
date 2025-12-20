@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
-using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,11 +25,9 @@ public class FriendWindow : GenericWindow
     [SerializeField] private Button requestTabButton;
     [SerializeField] private Button addTabButton;
 
-    [Header("탭 색상 - 디자인 가이드 기준")]
-    [SerializeField] private Color selectedTabBg = new Color(0.72f, 0.54f, 0.84f, 1f);      // #B889D6 선택탭 (더 진하게)
-    [SerializeField] private Color selectedTabShading = new Color(0.77f, 0.56f, 0.86f, 1f); // #C58EDC
-    [SerializeField] private Color unselectedTabBg = new Color(0.83f, 0.65f, 0.89f, 1f);    // #D4A7E4 비선택탭
-    [SerializeField] private Color unselectedTabShading = new Color(0.77f, 0.56f, 0.86f, 1f); // #C58EDC
+    [Header("탭 색상 - BabyPink Theme")]
+    [SerializeField] private Color selectedTabBg = new Color(0.97f, 0.65f, 0.76f, 1f);   // #F8A5C2 진한 핑크
+    [SerializeField] private Color unselectedTabBg = new Color(0.99f, 0.86f, 0.90f, 1f); // #FDDCE5 연한 핑크
 
     [Header("헤더")]
     [SerializeField] private TMP_Text titleText;
@@ -40,6 +37,10 @@ public class FriendWindow : GenericWindow
     [SerializeField] private GameObject listInfoBar;
     [SerializeField] private Button sendAllButton;
     [SerializeField] private Button claimAllButton;
+
+    [Header("요청 탭 - InfoBar")]
+    [SerializeField] private GameObject requestInfoBar;
+    [SerializeField] private TMP_Text requestInfoText;
 
     [Header("추가 탭 - 검색")]
     [SerializeField] private GameObject searchBar;
@@ -55,9 +56,6 @@ public class FriendWindow : GenericWindow
     [SerializeField] private FriendRequestItemUI requestItemPrefab;
     [SerializeField] private FriendAddItemUI addItemPrefab;
 
-    [Header("로딩")]
-    [SerializeField] private GameObject loadingPanel;
-
     [Header("설정")]
     [SerializeField] private int randomCandidateCount = 20;
 
@@ -66,8 +64,9 @@ public class FriendWindow : GenericWindow
     private bool _isRefreshing = false;
     private bool _isPrewarmed = false;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         Instance = this;
 
         // 탭 버튼
@@ -85,23 +84,22 @@ public class FriendWindow : GenericWindow
         // 검색
         searchButton?.onClick.AddListener(() => OnClickSearchAsync().Forget());
         searchInput?.onSubmit.AddListener(_ => OnClickSearchAsync().Forget());
-
-        // 초기 상태
-        loadingPanel?.SetActive(false);
     }
 
     public override void Open()
     {
         base.Open();
+        NoteLoadingUI.ForceHide(); // 로딩 상태 리셋
         _currentTab = TabType.List;
         UpdateTabVisual();
+        UpdateUIForTab();
         RefreshAsync().Forget();
     }
 
     public override void Close()
     {
         FriendSearchService.StopSync();
-        base.Close();
+        base.Close(); // GenericWindow에서 WindowAnimator 자동 처리
     }
 
     /// <summary>
@@ -148,11 +146,24 @@ public class FriendWindow : GenericWindow
     {
         if (button == null) return;
 
-        // 버튼 메인 이미지 (BG)
-        var image = button.GetComponent<Image>();
-        if (image != null)
+        // 선택된 탭은 비활성화 (다시 클릭 방지)
+        button.interactable = !isSelected;
+
+        // ThemedButton이 있으면 토큰 변경으로 색상 적용
+        var themedButton = button.GetComponent<ThemedButton>();
+        if (themedButton != null)
         {
-            image.color = isSelected ? selectedTabBg : unselectedTabBg;
+            themedButton.NormalToken = isSelected ? ThemeColorToken.TabActiveBg : ThemeColorToken.TabInactiveBg;
+            themedButton.RefreshState();
+        }
+        else
+        {
+            // ThemedButton이 없으면 직접 색상 적용
+            var image = button.GetComponent<Image>();
+            if (image != null)
+            {
+                image.color = isSelected ? selectedTabBg : unselectedTabBg;
+            }
         }
 
         // 선택된 탭은 스케일 살짝 키워서 강조
@@ -163,6 +174,9 @@ public class FriendWindow : GenericWindow
     {
         // InfoBar (친구목록 탭에서만)
         listInfoBar?.SetActive(_currentTab == TabType.List);
+
+        // 요청 InfoBar (요청 탭에서만)
+        requestInfoBar?.SetActive(_currentTab == TabType.Request);
 
         // 검색바 (추가 탭에서만)
         searchBar?.SetActive(_currentTab == TabType.Add);
@@ -177,11 +191,12 @@ public class FriendWindow : GenericWindow
         if (_isRefreshing) return;
         _isRefreshing = true;
 
-        loadingPanel?.SetActive(true);
-
         var contentGO = contentRoot != null ? contentRoot.gameObject : null;
         bool prevActive = contentGO != null && contentGO.activeSelf;
         contentGO?.SetActive(false);
+
+        // 로딩 인디케이터 표시
+        ShowLoading(true);
 
         try
         {
@@ -210,8 +225,10 @@ public class FriendWindow : GenericWindow
         }
         finally
         {
+            // 로딩 인디케이터 숨기기
+            ShowLoading(false);
+
             contentGO?.SetActive(prevActive);
-            loadingPanel?.SetActive(false);
             _isRefreshing = false;
 
             // 스크롤 맨 위로
@@ -250,6 +267,15 @@ public class FriendWindow : GenericWindow
         await FriendService.RefreshAllCacheAsync();
 
         var requests = FriendService.GetCachedReceivedRequests();
+        int requestCount = requests?.Count ?? 0;
+
+        // 요청 InfoBar 텍스트 업데이트
+        if (requestInfoText != null)
+        {
+            requestInfoText.text = requestCount > 0
+                ? $"받은 친구 요청 {requestCount}개"
+                : "받은 친구 요청이 없습니다";
+        }
 
         if (requests == null || requests.Count == 0)
             return;
@@ -361,10 +387,12 @@ public class FriendWindow : GenericWindow
         }
     }
 
+    private bool _isClaimingAll = false;
+
     private async UniTaskVoid OnClickClaimAllAsync()
     {
-        if (claimAllButton != null)
-            claimAllButton.interactable = false;
+        if (_isClaimingAll) return;
+        _isClaimingAll = true;
 
         try
         {
@@ -392,8 +420,7 @@ public class FriendWindow : GenericWindow
         }
         finally
         {
-            if (claimAllButton != null)
-                claimAllButton.interactable = true;
+            _isClaimingAll = false;
         }
     }
 
@@ -466,6 +493,9 @@ public class FriendWindow : GenericWindow
         if (searchButton != null)
             searchButton.interactable = false;
 
+        // 로딩 인디케이터 표시
+        ShowLoading(true);
+
         try
         {
             var results = await FriendSearchService.SearchByNicknameAsync(nickname);
@@ -491,9 +521,20 @@ public class FriendWindow : GenericWindow
         }
         finally
         {
+            // 로딩 인디케이터 숨기기
+            ShowLoading(false);
+
             if (searchButton != null)
                 searchButton.interactable = true;
         }
+    }
+
+    private void ShowLoading(bool show)
+    {
+        if (show)
+            NoteLoadingUI.Show();
+        else
+            NoteLoadingUI.Hide();
     }
 
     /// <summary>

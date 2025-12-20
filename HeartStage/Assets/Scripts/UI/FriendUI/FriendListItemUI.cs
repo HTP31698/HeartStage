@@ -10,6 +10,7 @@ public class FriendListItemUI : MonoBehaviour
     [Header("텍스트")]
     [SerializeField] private TextMeshProUGUI nicknameText;
     [SerializeField] private TextMeshProUGUI fanAmountText;
+    [SerializeField] private TextMeshProUGUI lastLoginText;
 
     [Header("아이콘")]
     [SerializeField] private Image iconImage;
@@ -74,6 +75,9 @@ public class FriendListItemUI : MonoBehaviour
 
         if (fanAmountText != null)
             fanAmountText.text = "로딩 중...";
+
+        if (lastLoginText != null)
+            lastLoginText.text = "";
 
         if (iconImage != null)
         {
@@ -158,6 +162,9 @@ public class FriendListItemUI : MonoBehaviour
 
             if (fanAmountText != null)
                 fanAmountText.text = $"♥ {data.fanAmount:N0}";
+
+            if (lastLoginText != null)
+                lastLoginText.text = TimeFormatUtil.FormatLastLogin(data.lastLoginUnixMillis);
 
             if (iconImage != null)
             {
