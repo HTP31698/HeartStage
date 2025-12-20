@@ -14,6 +14,9 @@ public class WindowManager : MonoBehaviour
     [Header("Reference")]
     public List<WindowPair> windowList;
 
+    [Header("공용 딤 배경")]
+    [SerializeField] private GameObject sharedDimmedBackground;
+
     public static WindowType currentWindow { get; set; }
     private Dictionary<WindowType, GenericWindow> windows;
 
@@ -49,6 +52,12 @@ public class WindowManager : MonoBehaviour
         // 이미 같은 타입의 오버레이가 열려있으면 열지 않음
         if (windows[id].gameObject.activeSelf)
             return;
+
+        // 공용 딤 배경 활성화
+        if (sharedDimmedBackground != null)
+        {
+            sharedDimmedBackground.SetActive(true);
+        }
 
         windows[id].Open();
 
@@ -93,6 +102,12 @@ public class WindowManager : MonoBehaviour
             }
             activeOverlays.RemoveAt(i);
         }
+
+        // 공용 딤 배경 비활성화
+        if (sharedDimmedBackground != null)
+        {
+            sharedDimmedBackground.SetActive(false);
+        }
     }
 
     // 오버레이를 수동으로 닫을 때 사용
@@ -102,6 +117,12 @@ public class WindowManager : MonoBehaviour
 
         windows[id].Close();
         activeOverlays.Remove(id);
+
+        // 활성 오버레이가 없으면 공용 딤 배경 비활성화
+        if (activeOverlays.Count == 0 && sharedDimmedBackground != null)
+        {
+            sharedDimmedBackground.SetActive(false);
+        }
     }
 
     private bool IsValidWindow(WindowType windowType)

@@ -993,7 +993,38 @@ NoteLoadingUI (GameObject) - NoteLoadingUI.cs
 
 ---
 
-## 다음 작업
-1. 도감 페이지 CSS 추가 (`.dungeon-lock-condition` 뒤, 1422번 줄)
-2. 도감 페이지 HTML 추가 (`page-dict` 업데이트)
-3. 도감 관련 JS 함수 추가
+---
+
+## 프로젝트 내 문서 파일들
+
+### UI 관련
+- `Assets/Scripts/UI/OverlayPanel_Structure.md` - OverlayPanel 구조 및 SharedDimmedBackground 사용법
+
+### 테마 시스템
+- `Assets/Scripts/Theme/README.md` - 테마 시스템 개요
+- `Assets/Scripts/Theme/Editor/FriendWindowThemeMapping.md` - FriendWindow 테마 매핑
+
+### 기타
+- `Assets/Editor/TODO.md` - 프로젝트 TODO 목록
+
+---
+
+## OverlayPanel 구조 (2024-12-21)
+
+### 계층 구조
+```
+Canvas
+└── OverlayPanel (Stretch All)
+    ├── SharedDimmedBackground (공용 딤 배경, Left/Right/Top/Bottom: -5)
+    └── 각 오버레이 창들 (FriendWindow, SettingPanel, QuestWindow 등)
+```
+
+### WindowManager 수정 사항
+- `sharedDimmedBackground` 필드 추가
+- `OpenOverlay()`: 딤 배경 활성화
+- `CloseOverlay()`, `CloseAllOverlays()`: 활성 오버레이 없으면 딤 배경 비활성화
+
+### 주의사항
+- 각 오버레이 창 내부의 개별 DimmedBackground는 제거하고 SharedDimmedBackground 사용
+- SharedDimmedBackground에는 SafeAreaFitter 붙이지 않음
+- -5 여유분으로 미세한 틈 방지
