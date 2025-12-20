@@ -145,9 +145,9 @@ public class FriendProfileWindow : GenericWindow
             if (fanText != null)
             {
                 if (data.fanAmount > 0)
-                    fanText.text = $"♥ {data.fanAmount:N0}";
+                    fanText.text = $"Fan: {data.fanAmount:N0}";
                 else
-                    fanText.text = "♥ 0";
+                    fanText.text = "Fan: 0";
             }
 
             // 칭호
@@ -210,7 +210,7 @@ public class FriendProfileWindow : GenericWindow
         if (nicknameText != null) nicknameText.text = "알 수 없는 플레이어";
         if (titleText != null) titleText.text = "칭호 없음";
         if (statusMessageText != null) statusMessageText.text = "";
-        if (fanText != null) fanText.text = "♥ 0";
+        if (fanText != null) fanText.text = "Fan: 0";
         if (mainStageText != null) mainStageText.text = "스테이지: 정보 없음";
         if (achievementText != null) achievementText.text = "업적: 0개";
         if (fanMeetingTimeText != null) fanMeetingTimeText.text = "팬미팅: 기록 없음";

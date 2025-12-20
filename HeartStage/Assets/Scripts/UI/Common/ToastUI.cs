@@ -1,17 +1,14 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
 /// 범용 토스트 알림 시스템
 /// - 자동으로 사라지는 가벼운 알림
-/// - 성공/실패/정보/경고 4가지 타입
-/// - 여러 개 동시 표시 (스택, 최대 3개)
+/// - 다크 그레이 단일 색상
+/// - 동시 표시 1개 (새 메시지 오면 기존건 위로 올라가고 새거 등장)
 ///
 /// 사용법:
-///   ToastUI.Success("저장 완료!");
-///   ToastUI.Error("연결 실패");
-///   ToastUI.Info("새 메시지가 있습니다");
-///   ToastUI.Warning("용량이 부족합니다");
+///   ToastUI.Show("저장 완료!");
+///   ToastUI.Show("재화가 부족합니다", 3f); // 3초 표시
 /// </summary>
 public class ToastUI : MonoBehaviour
 {
@@ -20,46 +17,17 @@ public class ToastUI : MonoBehaviour
     [Header("프리팹")]
     [SerializeField] private GameObject toastItemPrefab;
 
-    [Header("컨테이너")]
-    [SerializeField] private Transform toastContainer;
-
     [Header("설정")]
     [SerializeField] private float defaultDuration = 2.5f;
     [SerializeField] private float animDuration = 0.3f;
-    [SerializeField] private int maxToasts = 3;
 
     [Header("색상")]
-    [SerializeField] private Color successColor = new Color(0.18f, 0.8f, 0.44f, 1f);   // #2ECC71
-    [SerializeField] private Color errorColor = new Color(0.91f, 0.3f, 0.24f, 1f);     // #E74C3C
-    [SerializeField] private Color infoColor = new Color(0.2f, 0.6f, 0.86f, 1f);       // #3498DB
-    [SerializeField] private Color warningColor = new Color(0.95f, 0.77f, 0.06f, 1f);  // #F1C40F
+    [SerializeField] private Color backgroundColor = new Color(0.12f, 0.12f, 0.12f, 0.8f);
 
-    public enum ToastType
-    {
-        Success,
-        Error,
-        Info,
-        Warning
-    }
-
-    private struct ToastData
-    {
-        public string message;
-        public ToastType type;
-        public float duration;
-    }
-
-    private readonly Queue<ToastData> _pendingToasts = new();
-    private readonly List<ToastItemView> _activeToasts = new();
+    private ToastItemView _currentToast;
 
     private void Awake()
     {
-        // TODO: 프리팹 준비되면 활성화
-        // 현재는 비활성화 상태 - Instance null이면 Debug.Log만 출력
-        gameObject.SetActive(false);
-        return;
-
-        /*
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -67,111 +35,63 @@ public class ToastUI : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        */
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     #region Public Static API
 
-    /// <summary>
-    /// 성공 토스트 (초록색, ✓ 아이콘)
-    /// </summary>
-    public static void Success(string message, float duration = 0f)
-    {
-        if (Instance == null)
-        {
-            Debug.Log($"[Toast] ✓ {message}");
-            return;
-        }
-        Instance.ShowInternal(message, ToastType.Success, duration);
-    }
-
-    /// <summary>
-    /// 에러 토스트 (빨간색, ✕ 아이콘)
-    /// </summary>
-    public static void Error(string message, float duration = 0f)
-    {
-        if (Instance == null)
-        {
-            Debug.LogWarning($"[Toast] ✕ {message}");
-            return;
-        }
-        Instance.ShowInternal(message, ToastType.Error, duration);
-    }
-
-    /// <summary>
-    /// 정보 토스트 (파란색, i 아이콘)
-    /// </summary>
-    public static void Info(string message, float duration = 0f)
-    {
-        if (Instance == null)
-        {
-            Debug.Log($"[Toast] i {message}");
-            return;
-        }
-        Instance.ShowInternal(message, ToastType.Info, duration);
-    }
-
-    /// <summary>
-    /// 경고 토스트 (노란색, ! 아이콘)
-    /// </summary>
-    public static void Warning(string message, float duration = 0f)
-    {
-        if (Instance == null)
-        {
-            Debug.LogWarning($"[Toast] ! {message}");
-            return;
-        }
-        Instance.ShowInternal(message, ToastType.Warning, duration);
-    }
-
-    /// <summary>
-    /// 타입 지정 토스트
-    /// </summary>
-    public static void Show(string message, ToastType type = ToastType.Info, float duration = 0f)
+    public static void Show(string message, float duration = 0f)
     {
         if (Instance == null)
         {
             Debug.Log($"[Toast] {message}");
             return;
         }
-        Instance.ShowInternal(message, type, duration);
+        Instance.ShowInternal(message, duration);
     }
+
+    // 기존 API 호환용
+    public static void Success(string message, float duration = 0f) => Show(message, duration);
+    public static void Error(string message, float duration = 0f) => Show(message, duration);
+    public static void Info(string message, float duration = 0f) => Show(message, duration);
+    public static void Warning(string message, float duration = 0f) => Show(message, duration);
 
     #endregion
 
     #region Internal
 
-    private void ShowInternal(string message, ToastType type, float duration)
+    private void ShowInternal(string message, float duration)
     {
         if (string.IsNullOrEmpty(message))
             return;
 
         float actualDuration = duration > 0 ? duration : defaultDuration;
 
-        // 최대 개수 초과 시 대기열에 추가
-        if (_activeToasts.Count >= maxToasts)
+        // 기존 토스트가 있으면 위로 올라가며 퇴장
+        if (_currentToast != null)
         {
-            _pendingToasts.Enqueue(new ToastData
-            {
-                message = message,
-                type = type,
-                duration = actualDuration
-            });
-            return;
+            _currentToast.Exit();
+            _currentToast = null;
         }
 
-        CreateToast(message, type, actualDuration);
+        CreateToast(message, actualDuration);
     }
 
-    private void CreateToast(string message, ToastType type, float duration)
+    private void CreateToast(string message, float duration)
     {
-        if (toastItemPrefab == null || toastContainer == null)
+        if (toastItemPrefab == null)
         {
-            Debug.LogWarning($"[ToastUI] 프리팹 또는 컨테이너가 없습니다. 메시지: {message}");
+            Debug.LogWarning($"[ToastUI] 프리팹이 없습니다. 메시지: {message}");
             return;
         }
 
-        var go = Instantiate(toastItemPrefab, toastContainer);
+        // 자기 자신(Canvas) 아래에 생성
+        var go = Instantiate(toastItemPrefab, transform);
         var toastItem = go.GetComponent<ToastItemView>();
 
         if (toastItem == null)
@@ -181,63 +101,28 @@ public class ToastUI : MonoBehaviour
             return;
         }
 
-        Color bgColor = GetColorByType(type);
-        string icon = GetIconByType(type);
-
-        toastItem.Setup(icon, message, bgColor, duration, animDuration, OnToastComplete);
-        _activeToasts.Add(toastItem);
-    }
-
-    private Color GetColorByType(ToastType type)
-    {
-        return type switch
-        {
-            ToastType.Success => successColor,
-            ToastType.Error => errorColor,
-            ToastType.Warning => warningColor,
-            _ => infoColor
-        };
-    }
-
-    private string GetIconByType(ToastType type)
-    {
-        return type switch
-        {
-            ToastType.Success => "✓",
-            ToastType.Error => "✕",
-            ToastType.Warning => "!",
-            _ => "i"
-        };
+        toastItem.Setup(message, backgroundColor, duration, animDuration, OnToastComplete);
+        _currentToast = toastItem;
     }
 
     private void OnToastComplete(ToastItemView item)
     {
-        _activeToasts.Remove(item);
+        if (_currentToast == item)
+            _currentToast = null;
 
         if (item != null)
             Destroy(item.gameObject);
-
-        // 대기열에 있으면 다음 토스트 표시
-        if (_pendingToasts.Count > 0)
-        {
-            var next = _pendingToasts.Dequeue();
-            CreateToast(next.message, next.type, next.duration);
-        }
     }
 
     #endregion
 
-    /// <summary>
-    /// 모든 토스트 즉시 제거
-    /// </summary>
-    public void ClearAll()
+    public void Clear()
     {
-        foreach (var toast in _activeToasts)
+        if (_currentToast != null)
         {
-            if (toast != null)
-                Destroy(toast.gameObject);
+            _currentToast.StopAnimation();
+            Destroy(_currentToast.gameObject);
+            _currentToast = null;
         }
-        _activeToasts.Clear();
-        _pendingToasts.Clear();
     }
 }

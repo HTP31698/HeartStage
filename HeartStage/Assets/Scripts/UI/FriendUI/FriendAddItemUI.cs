@@ -47,7 +47,7 @@ public class FriendAddItemUI : MonoBehaviour
 
         // 레벨(팬 수 기준)
         if (fanAmountText != null)
-            fanAmountText.text = $"팬: {CalculateLevel(profileData.fanAmount)}";
+            fanAmountText.text = $"Fan: {CalculateLevel(profileData.fanAmount)}";
 
         // 최근 접속 시간
         if (lastLoginText != null)
@@ -72,7 +72,7 @@ public class FriendAddItemUI : MonoBehaviour
         }
 
         if (requestButtonText != null)
-            requestButtonText.text = "친구\n신청";
+            requestButtonText.text = "친구신청";
     }
 
     private void OnClickIcon()
@@ -104,6 +104,10 @@ public class FriendAddItemUI : MonoBehaviour
         requestButton.interactable = false;
         string displayName = GetDisplayNickname(_profileData.nickname, _profileData.uid);
 
+        // 즉시 텍스트 변경 (사용자 반응성 향상)
+        if (requestButtonText != null)
+            requestButtonText.text = "신청중...";
+
         try
         {
             var (success, errorCode) = await FriendService.SendFriendRequestAsync(_profileData.uid)
@@ -112,7 +116,7 @@ public class FriendAddItemUI : MonoBehaviour
             if (success)
             {
                 if (requestButtonText != null)
-                    requestButtonText.text = "신청\n완료";
+                    requestButtonText.text = "신청완료";
 
                 FriendWindow.Instance?.OnFriendRequestSent();
                 ToastUI.Success($"{displayName}님에게 친구 신청을 보냈습니다!");
@@ -125,11 +129,13 @@ public class FriendAddItemUI : MonoBehaviour
                 if (errorCode == "ALREADY_SENT" || errorCode == "ALREADY_FRIEND" || errorCode == "ALREADY_PROCESSING")
                 {
                     if (requestButtonText != null)
-                        requestButtonText.text = "신청\n완료";
+                        requestButtonText.text = "신청완료";
                 }
                 else
                 {
                     requestButton.interactable = true;
+                    if (requestButtonText != null)
+                        requestButtonText.text = "친구신청";
                 }
 
                 ToastUI.Warning(errorMessage);
@@ -138,11 +144,15 @@ public class FriendAddItemUI : MonoBehaviour
         catch (OperationCanceledException)
         {
             requestButton.interactable = true;
+            if (requestButtonText != null)
+                requestButtonText.text = "친구신청";
         }
         catch (Exception e)
         {
             Debug.LogError($"[FriendAddItemUI] OnClickRequestAsync Error: {e}");
             requestButton.interactable = true;
+            if (requestButtonText != null)
+                requestButtonText.text = "친구신청";
             ToastUI.Error("친구 신청 중 오류가 발생했습니다");
         }
     }

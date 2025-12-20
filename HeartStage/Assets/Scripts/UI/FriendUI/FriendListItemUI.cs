@@ -151,7 +151,7 @@ public class FriendListItemUI : MonoBehaviour
                 if (nicknameText != null)
                     nicknameText.text = "하트스테이지팬";
                 if (fanAmountText != null)
-                    fanAmountText.text = "팬: 0";
+                    fanAmountText.text = "Fan: 0";
                 return;
             }
 
@@ -161,7 +161,7 @@ public class FriendListItemUI : MonoBehaviour
                 nicknameText.text = _displayNickname;
 
             if (fanAmountText != null)
-                fanAmountText.text = $"♥ {data.fanAmount:N0}";
+                fanAmountText.text = $"Fan: {data.fanAmount:N0}";
 
             if (lastLoginText != null)
                 lastLoginText.text = TimeFormatUtil.FormatLastLogin(data.lastLoginUnixMillis);

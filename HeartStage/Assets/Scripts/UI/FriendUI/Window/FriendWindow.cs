@@ -32,6 +32,8 @@ public class FriendWindow : GenericWindow
     [Header("헤더")]
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private Button closeButton;
+    [SerializeField] private Button manageButton;      // 톱니바퀴 (관리 모드 진입)
+    [SerializeField] private Button backButton;        // 뒤로가기 (관리 모드 나가기)
 
     [Header("친구목록 탭 - InfoBar")]
     [SerializeField] private GameObject listInfoBar;
@@ -40,7 +42,8 @@ public class FriendWindow : GenericWindow
 
     [Header("요청 탭 - InfoBar")]
     [SerializeField] private GameObject requestInfoBar;
-    [SerializeField] private TMP_Text requestInfoText;
+    [SerializeField] private Button toggleRequestModeButton;   // 받은요청(N) / 보낸요청(N) 토글
+    [SerializeField] private TMP_Text toggleRequestModeButtonText;
 
     [Header("추가 탭 - 검색")]
     [SerializeField] private GameObject searchBar;
@@ -55,6 +58,8 @@ public class FriendWindow : GenericWindow
     [SerializeField] private FriendListItemUI listItemPrefab;
     [SerializeField] private FriendRequestItemUI requestItemPrefab;
     [SerializeField] private FriendAddItemUI addItemPrefab;
+    [SerializeField] private FriendDeleteItemUI deleteItemPrefab;           // 관리 모드용
+    [SerializeField] private FriendSentRequestItemUI sentRequestItemPrefab; // 보낸 요청용
 
     [Header("설정")]
     [SerializeField] private int randomCandidateCount = 20;
@@ -63,6 +68,8 @@ public class FriendWindow : GenericWindow
     private readonly List<MonoBehaviour> _spawnedItems = new();
     private bool _isRefreshing = false;
     private bool _isPrewarmed = false;
+    private bool _isManageMode = false;        // 친구 목록 관리 모드
+    private bool _isSentRequestMode = false;   // 요청 탭: 보낸 요청 모드
 
     protected override void Awake()
     {
@@ -76,6 +83,13 @@ public class FriendWindow : GenericWindow
 
         // 닫기
         closeButton?.onClick.AddListener(() => WindowManager.Instance?.CloseOverlay(WindowType.Friend));
+
+        // 관리 모드 버튼
+        manageButton?.onClick.AddListener(OnClickManageButton);
+        backButton?.onClick.AddListener(OnClickBackButton);
+
+        // 요청 탭 토글 버튼
+        toggleRequestModeButton?.onClick.AddListener(OnClickToggleRequestMode);
 
         // 친구목록 버튼
         sendAllButton?.onClick.AddListener(() => OnClickSendAllAsync().Forget());
@@ -91,15 +105,24 @@ public class FriendWindow : GenericWindow
         base.Open();
         NoteLoadingUI.ForceHide(); // 로딩 상태 리셋
         _currentTab = TabType.List;
+        _isManageMode = false;
+        _isSentRequestMode = false;
         UpdateTabVisual();
         UpdateUIForTab();
+        UpdateHeaderButtons();
         RefreshAsync().Forget();
     }
 
     public override void Close()
     {
         FriendSearchService.StopSync();
-        base.Close(); // GenericWindow에서 WindowAnimator 자동 처리
+
+        // 다음 Open을 위해 상태만 초기화 (UI는 Open에서 UpdateTabVisual로 처리)
+        _currentTab = TabType.List;
+        _isManageMode = false;
+        _isSentRequestMode = false;
+
+        base.Close();
     }
 
     /// <summary>
@@ -125,12 +148,15 @@ public class FriendWindow : GenericWindow
 
     public void SwitchTab(TabType tab)
     {
-        if (_currentTab == tab && !_isRefreshing)
+        if (_currentTab == tab && !_isRefreshing && !_isManageMode && !_isSentRequestMode)
             return;
 
         _currentTab = tab;
+        _isManageMode = false;
+        _isSentRequestMode = false;
         UpdateTabVisual();
         UpdateUIForTab();
+        UpdateHeaderButtons();
         RefreshAsync().Forget();
     }
 
@@ -146,34 +172,19 @@ public class FriendWindow : GenericWindow
     {
         if (button == null) return;
 
-        // 선택된 탭은 비활성화 (다시 클릭 방지)
+        // 선택된 탭은 클릭 불가
         button.interactable = !isSelected;
 
-        // ThemedButton이 있으면 토큰 변경으로 색상 적용
-        var themedButton = button.GetComponent<ThemedButton>();
-        if (themedButton != null)
-        {
-            themedButton.NormalToken = isSelected ? ThemeColorToken.TabActiveBg : ThemeColorToken.TabInactiveBg;
-            themedButton.RefreshState();
-        }
-        else
-        {
-            // ThemedButton이 없으면 직접 색상 적용
-            var image = button.GetComponent<Image>();
-            if (image != null)
-            {
-                image.color = isSelected ? selectedTabBg : unselectedTabBg;
-            }
-        }
-
-        // 선택된 탭은 스케일 살짝 키워서 강조
-        button.transform.localScale = isSelected ? Vector3.one * 1.05f : Vector3.one;
+        // CanvasGroup으로 뿌옇게/선명하게 처리
+        var canvasGroup = button.GetComponent<CanvasGroup>()
+            ?? button.gameObject.AddComponent<CanvasGroup>();
+        canvasGroup.alpha = isSelected ? 0.5f : 1f;
     }
 
     private void UpdateUIForTab()
     {
-        // InfoBar (친구목록 탭에서만)
-        listInfoBar?.SetActive(_currentTab == TabType.List);
+        // InfoBar (친구목록 탭에서만, 관리 모드에서는 숨김)
+        listInfoBar?.SetActive(_currentTab == TabType.List && !_isManageMode);
 
         // 요청 InfoBar (요청 탭에서만)
         requestInfoBar?.SetActive(_currentTab == TabType.Request);
@@ -252,39 +263,89 @@ public class FriendWindow : GenericWindow
         if (friendUids == null || friendUids.Count == 0)
             return;
 
-        foreach (var uid in friendUids)
+        if (_isManageMode)
         {
-            var item = Instantiate(listItemPrefab, contentRoot);
-            item.Setup(uid);
-            _spawnedItems.Add(item);
+            // 관리 모드: 삭제용 아이템
+            if (deleteItemPrefab == null)
+            {
+                Debug.LogError("[FriendWindow] deleteItemPrefab이 할당되지 않았습니다!");
+                _isManageMode = false;
+                UpdateHeaderButtons();
+            }
+            else
+            {
+                foreach (var uid in friendUids)
+                {
+                    var item = Instantiate(deleteItemPrefab, contentRoot);
+                    item.Setup(uid, OnManageItemCompleted);
+                    _spawnedItems.Add(item);
+                }
+                return;
+            }
         }
 
-        SortListByGiftState();
+        {
+            // 일반 모드
+            foreach (var uid in friendUids)
+            {
+                var item = Instantiate(listItemPrefab, contentRoot);
+                item.Setup(uid);
+                _spawnedItems.Add(item);
+            }
+
+            SortListByGiftState();
+        }
     }
 
     private async UniTask RefreshRequestTabAsync()
     {
         await FriendService.RefreshAllCacheAsync();
 
-        var requests = FriendService.GetCachedReceivedRequests();
-        int requestCount = requests?.Count ?? 0;
+        var receivedRequests = FriendService.GetCachedReceivedRequests();
+        var sentRequests = FriendService.GetCachedSentRequests();
 
-        // 요청 InfoBar 텍스트 업데이트
-        if (requestInfoText != null)
+        int receivedCount = receivedRequests?.Count ?? 0;
+        int sentCount = sentRequests?.Count ?? 0;
+
+        // 토글 버튼 텍스트 업데이트
+        UpdateRequestToggleButtonText(receivedCount, sentCount);
+
+        if (_isSentRequestMode)
         {
-            requestInfoText.text = requestCount > 0
-                ? $"받은 친구 요청 {requestCount}개"
-                : "받은 친구 요청이 없습니다";
+            // 보낸 요청 모드
+            if (sentRequestItemPrefab == null)
+            {
+                Debug.LogError("[FriendWindow] sentRequestItemPrefab이 할당되지 않았습니다!");
+                _isSentRequestMode = false;
+                UpdateHeaderButtons();
+            }
+            else if (sentRequests == null || sentRequests.Count == 0)
+            {
+                return;
+            }
+            else
+            {
+                foreach (var toUid in sentRequests)
+                {
+                    var item = Instantiate(sentRequestItemPrefab, contentRoot);
+                    item.Setup(toUid, OnSentRequestItemCompleted);
+                    _spawnedItems.Add(item);
+                }
+                return;
+            }
         }
 
-        if (requests == null || requests.Count == 0)
-            return;
-
-        foreach (var fromUid in requests)
         {
-            var item = Instantiate(requestItemPrefab, contentRoot);
-            item.Setup(fromUid, OnRequestItemCompleted);
-            _spawnedItems.Add(item);
+            // 받은 요청 모드
+            if (receivedRequests == null || receivedRequests.Count == 0)
+                return;
+
+            foreach (var fromUid in receivedRequests)
+            {
+                var item = Instantiate(requestItemPrefab, contentRoot);
+                item.Setup(fromUid, OnRequestItemCompleted);
+                _spawnedItems.Add(item);
+            }
         }
     }
 
@@ -587,6 +648,87 @@ public class FriendWindow : GenericWindow
     {
         FriendService.InvalidateCache();
         UpdateHeader();
+    }
+
+    #endregion
+
+    #region 관리 모드
+
+    private void UpdateHeaderButtons()
+    {
+        bool showManage = _currentTab == TabType.List && !_isManageMode;
+        bool showBack = _isManageMode || _isSentRequestMode;
+
+        manageButton?.gameObject.SetActive(showManage);
+        backButton?.gameObject.SetActive(showBack);
+    }
+
+    private void OnClickManageButton()
+    {
+        if (_currentTab != TabType.List)
+            return;
+
+        _isManageMode = true;
+        UpdateUIForTab();
+        UpdateHeaderButtons();
+        RefreshAsync().Forget();
+    }
+
+    private void OnClickBackButton()
+    {
+        if (_isManageMode)
+        {
+            _isManageMode = false;
+            UpdateUIForTab();
+            UpdateHeaderButtons();
+            RefreshAsync().Forget();
+        }
+        else if (_isSentRequestMode)
+        {
+            _isSentRequestMode = false;
+            UpdateHeaderButtons();
+            RefreshAsync().Forget();
+        }
+    }
+
+    private void OnManageItemCompleted()
+    {
+        FriendService.InvalidateCache();
+        RefreshAsync().Forget();
+    }
+
+    #endregion
+
+    #region 요청 탭 토글
+
+    private void OnClickToggleRequestMode()
+    {
+        _isSentRequestMode = !_isSentRequestMode;
+        UpdateHeaderButtons();
+        RefreshAsync().Forget();
+    }
+
+    private void UpdateRequestToggleButtonText(int receivedCount, int sentCount)
+    {
+        if (toggleRequestModeButtonText == null)
+            return;
+
+        if (_isSentRequestMode)
+        {
+            // 현재 보낸 요청 보는 중 → 받은 요청으로 전환 버튼
+            toggleRequestModeButtonText.text = $"받은요청\n({receivedCount})";
+        }
+        else
+        {
+            // 현재 받은 요청 보는 중 → 보낸 요청으로 전환 버튼
+            toggleRequestModeButtonText.text = $"보낸요청\n({sentCount})";
+        }
+    }
+
+    private void OnSentRequestItemCompleted()
+    {
+        FriendService.InvalidateCache();
+        RefreshAsync().Forget();
     }
 
     #endregion

@@ -117,7 +117,7 @@ public class FriendRequestItemUI : MonoBehaviour
 
             // 레벨(팬 수 기준)
             if (fanAmountText != null)
-                fanAmountText.text = $"팬: {CalculateLevel(_profileData.fanAmount)}";
+                fanAmountText.text = $"Fan: {CalculateLevel(_profileData.fanAmount)}";
 
             // 최근 접속 시간
             if (lastLoginText != null)

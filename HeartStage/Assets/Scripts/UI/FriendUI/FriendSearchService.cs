@@ -241,7 +241,7 @@ public static class FriendSearchService
     /// <summary>
     /// 닉네임 정확 일치 검색
     /// ★ nicknameIndex에서 먼저 검색 후 publicProfiles에서 상세 정보 로드
-    /// ★ 탈퇴 유저는 결과에서 제외
+    /// ★ 탈퇴 유저, 이미 친구, 보낸/받은 요청은 결과에서 제외
     /// </summary>
     public static async UniTask<List<PublicProfileSummary>> SearchByNicknameAsync(string nickname)
     {
@@ -268,12 +268,36 @@ public static class FriendSearchService
 
         if (!snap.Exists) return result;
 
+        // 필터링용 HashSet (이미 친구/요청 중인 유저 제외)
+        HashSet<string> myFriends = new();
+        HashSet<string> sentRequests = new();
+        HashSet<string> receivedRequests = new();
+
+        foreach (var uid in FriendService.GetCachedFriendUids())
+            myFriends.Add(uid);
+        foreach (var uid in FriendService.GetCachedSentRequests())
+            sentRequests.Add(uid);
+        foreach (var uid in FriendService.GetCachedReceivedRequests())
+            receivedRequests.Add(uid);
+
         // 검색된 uid들의 상세 프로필 로드
         var deletedUids = new List<string>();
 
         foreach (var child in snap.Children)
         {
             string uid = child.Key;
+
+            // 나 제외
+            if (uid == MyUid) continue;
+
+            // 이미 친구 제외
+            if (myFriends.Contains(uid)) continue;
+
+            // 이미 보낸 요청 제외
+            if (sentRequests.Contains(uid)) continue;
+
+            // 받은 요청 제외 (요청 탭에서 처리)
+            if (receivedRequests.Contains(uid)) continue;
 
             // 캐시된 탈퇴 유저 제외
             if (PublicProfileService.IsDeletedUserCached(uid))

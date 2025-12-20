@@ -5,17 +5,13 @@ using UnityEngine.UI;
 
 /// <summary>
 /// ToastItem 프리팹용 View 컴포넌트
-/// - 프리팹에 이 컴포넌트를 붙이고 UI 요소 연결
+/// - 슬라이드 다운 + 페이드 애니메이션
+/// - RaycastTarget = false (터치 안 막음)
 /// </summary>
 public class ToastItemView : MonoBehaviour
 {
     [Header("배경")]
     [SerializeField] private Image backgroundImage;
-    [SerializeField] private Image shadowImage;
-
-    [Header("아이콘")]
-    [SerializeField] private Image iconBackground;
-    [SerializeField] private TMP_Text iconText;
 
     [Header("메시지")]
     [SerializeField] private TMP_Text messageText;
@@ -23,8 +19,13 @@ public class ToastItemView : MonoBehaviour
     [Header("CanvasGroup")]
     [SerializeField] private CanvasGroup canvasGroup;
 
+    [Header("애니메이션 설정")]
+    [SerializeField] private float slideDistance = 50f;
+
     private System.Action<ToastItemView> _onComplete;
     private RectTransform _rect;
+    private Sequence _currentSequence;
+    private float _animDuration;
 
     private void Awake()
     {
@@ -32,11 +33,27 @@ public class ToastItemView : MonoBehaviour
 
         if (canvasGroup == null)
             canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+
+        // RaycastTarget 비활성화 (터치 안 막음)
+        if (backgroundImage != null)
+            backgroundImage.raycastTarget = false;
+        if (messageText != null)
+            messageText.raycastTarget = false;
+
+        // 앵커/피벗 강제 설정 (상단 중앙)
+        _rect.anchorMin = new Vector2(0.5f, 1f);
+        _rect.anchorMax = new Vector2(0.5f, 1f);
+        _rect.pivot = new Vector2(0.5f, 1f);
+        _rect.anchoredPosition = new Vector2(0, -350f); // 상단에서 350px 아래
     }
 
-    public void Setup(string icon, string message, Color bgColor, float duration, float animDuration, System.Action<ToastItemView> onComplete)
+    /// <summary>
+    /// 토스트 설정
+    /// </summary>
+    public void Setup(string message, Color bgColor, float duration, float animDuration, System.Action<ToastItemView> onComplete)
     {
         _onComplete = onComplete;
+        _animDuration = animDuration;
 
         // 배경색 설정
         if (backgroundImage != null)
@@ -46,61 +63,72 @@ public class ToastItemView : MonoBehaviour
             backgroundImage.color = adjustedColor;
         }
 
-        // 그림자 (있으면)
-        if (shadowImage != null)
-        {
-            Color shadowColor = Color.black;
-            shadowColor.a = 0.3f;
-            shadowImage.color = shadowColor;
-        }
-
-        // 아이콘 배경 (더 진하게)
-        if (iconBackground != null)
-        {
-            Color iconBgColor = bgColor * 0.7f;
-            iconBgColor.a = 1f;
-            iconBackground.color = iconBgColor;
-        }
-
-        // 아이콘 텍스트
-        if (iconText != null)
-            iconText.text = icon;
-
         // 메시지
         if (messageText != null)
             messageText.text = message;
 
         // 애니메이션
-        PlayAnimation(duration, animDuration);
+        PlayEnterAnimation(duration, animDuration);
     }
 
-    private void PlayAnimation(float duration, float animDuration)
+    private void PlayEnterAnimation(float duration, float animDuration)
     {
-        // 초기 상태
+        _currentSequence?.Kill();
+
+        // 초기 상태: 위에서 시작, 투명
         canvasGroup.alpha = 0f;
-        Vector2 startPos = _rect.anchoredPosition;
-        _rect.anchoredPosition = startPos + new Vector2(0, 60f);
+        _rect.localScale = Vector3.one;
+        Vector2 originalPos = _rect.anchoredPosition;
+        Vector2 startPos = originalPos + new Vector2(0, slideDistance);
+        _rect.anchoredPosition = startPos;
 
-        Sequence seq = DOTween.Sequence();
+        _currentSequence = DOTween.Sequence();
 
-        // 등장: 내려오면서 페이드인 + 바운스
-        seq.Append(_rect.DOAnchorPos(startPos, animDuration).SetEase(Ease.OutBack, 1.2f));
-        seq.Join(canvasGroup.DOFade(1f, animDuration * 0.6f));
+        // 등장: 슬라이드 다운 + 페이드인
+        _currentSequence.Append(_rect.DOAnchorPos(originalPos, animDuration).SetEase(Ease.OutCubic));
+        _currentSequence.Join(canvasGroup.DOFade(1f, animDuration * 0.7f));
 
         // 대기
-        seq.AppendInterval(duration);
+        _currentSequence.AppendInterval(duration);
 
-        // 퇴장: 페이드아웃 + 살짝 축소
-        seq.Append(canvasGroup.DOFade(0f, animDuration * 0.5f));
-        seq.Join(_rect.DOScale(0.9f, animDuration * 0.5f).SetEase(Ease.InQuad));
+        // 퇴장: 슬라이드 업 + 페이드아웃
+        _currentSequence.Append(_rect.DOAnchorPos(startPos, animDuration).SetEase(Ease.InCubic));
+        _currentSequence.Join(canvasGroup.DOFade(0f, animDuration * 0.7f));
 
         // 완료
-        seq.OnComplete(() => _onComplete?.Invoke(this));
+        _currentSequence.OnComplete(() => _onComplete?.Invoke(this));
+    }
+
+    /// <summary>
+    /// 빠르게 위로 올라가며 퇴장 (새 토스트가 올 때)
+    /// </summary>
+    public void Exit(System.Action onExitComplete = null)
+    {
+        _currentSequence?.Kill();
+
+        Vector2 exitPos = _rect.anchoredPosition + new Vector2(0, slideDistance);
+        float exitDuration = _animDuration * 0.5f; // 더 빠르게
+
+        _currentSequence = DOTween.Sequence();
+        _currentSequence.Append(_rect.DOAnchorPos(exitPos, exitDuration).SetEase(Ease.InCubic));
+        _currentSequence.Join(canvasGroup.DOFade(0f, exitDuration));
+        _currentSequence.OnComplete(() =>
+        {
+            onExitComplete?.Invoke();
+            _onComplete?.Invoke(this);
+        });
+    }
+
+    /// <summary>
+    /// 애니메이션 즉시 중지
+    /// </summary>
+    public void StopAnimation()
+    {
+        _currentSequence?.Kill();
     }
 
     private void OnDestroy()
     {
-        DOTween.Kill(_rect);
-        DOTween.Kill(canvasGroup);
+        _currentSequence?.Kill();
     }
 }
