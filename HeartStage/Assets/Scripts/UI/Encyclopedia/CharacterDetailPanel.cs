@@ -14,22 +14,21 @@ public class CharacterDetailPanel : MonoBehaviour
     [Header("캐릭터 속성")]
     [SerializeField] private TextMeshProUGUI typeText;
 
-    [Header("캐릭터 공격력")]
+    [Header("캐릭터 공격력(Vocal)")]
     [SerializeField] private TextMeshProUGUI attackText;
     [Header("캐릭터 공격속도")]
     [SerializeField] private TextMeshProUGUI attackSpeedText;
+        [Header("캐릭터 체력")]
+    [SerializeField] private TextMeshProUGUI healthText;
     [Header("캐릭터 공격범위")]
     [SerializeField] private TextMeshProUGUI attackRangeText;
     [Header("캐릭터 추가공격수")]
     [SerializeField] private TextMeshProUGUI additionalAttackText;
-    [Header("캐릭터 체력")]
-    [SerializeField] private TextMeshProUGUI healthText;
+
     [Header("캐릭터 치명타 확률")]
     [SerializeField] private TextMeshProUGUI critRateText;
     [Header("캐릭터 치명타 데미지")]
     [SerializeField] private TextMeshProUGUI critDmgText;
-    [Header("캐릭터 공격 투사체수")]
-    [SerializeField] private TextMeshProUGUI projectileCountText;
 
     [Header("캐릭터 설명")]
     [SerializeField] private TextMeshProUGUI descriptionText;
@@ -62,6 +61,56 @@ public class CharacterDetailPanel : MonoBehaviour
     [Header("종료 버튼")]
     [SerializeField] Button ExitButton;
 
+    [Header("스탯 모드 전환 버튼")]
+    [SerializeField] private Button statModeToggleButton;
+
+    // 스탯 표시 모드 (false: 아이돌 모드, true: 전투 모드)
+    private bool _isBattleMode = false;
+    private CharacterCSVData _currentCharacterData;
+
+    private void Awake()
+    {
+        if (statModeToggleButton != null)
+        {
+            statModeToggleButton.onClick.RemoveAllListeners();
+            statModeToggleButton.onClick.AddListener(OnStatModeToggle);
+        }
+    }
+
+    private void OnStatModeToggle()
+    {
+        _isBattleMode = !_isBattleMode;
+        UpdateStatTexts();
+    }
+
+    private void UpdateStatTexts()
+    {
+        if (_currentCharacterData == null) return;
+
+        if (_isBattleMode)
+        {
+            // 전투 모드 (실제 스탯)
+            attackText.text = $"정화 강도 {_currentCharacterData.atk_dmg}";
+            attackSpeedText.text = $"정화 속도 {_currentCharacterData.atk_speed}";
+            healthText.text = $"체력 {_currentCharacterData.char_hp}";
+            critRateText.text = $"강력한 정화 확률 {_currentCharacterData.crt_chance}%";
+            critDmgText.text = $"강력한 정화 강도 {_currentCharacterData.crt_dmg}%";
+            additionalAttackText.text = $"추가 정화 확률 {_currentCharacterData.atk_addcount}";
+            attackRangeText.text = $"정화 도달 거리 {_currentCharacterData.atk_range}";
+        }
+        else
+        {
+            // 아이돌 모드 (변환된 스탯)
+            attackText.text = $"보컬 {StatPower.GetVocalPower(_currentCharacterData.atk_dmg)}";
+            attackSpeedText.text = $"랩 {StatPower.GetLabPower(_currentCharacterData.atk_speed)}";
+            healthText.text = $"댄스 {StatPower.GetDancePower(_currentCharacterData.char_hp)}";
+            critRateText.text = $"비주얼 {StatPower.GetVisualPower(_currentCharacterData.crt_chance)}";
+            critDmgText.text = $"섹시 {StatPower.GetSexyPower(_currentCharacterData.crt_dmg)}";
+            additionalAttackText.text = $"큐티 {StatPower.GetCutyPower(_currentCharacterData.atk_addcount)}";
+            attackRangeText.text = $"카리스마 {StatPower.GetCharismaPower(_currentCharacterData.atk_range)}";
+        }
+    }
+
     public void SetCharacter(CharacterCSVData characterData)
     {
         if (characterData == null)
@@ -71,24 +120,23 @@ public class CharacterDetailPanel : MonoBehaviour
             return;
         }
         _currentCharacterId = characterData.char_id;
+        _currentCharacterData = characterData;
+        _isBattleMode = false; // 새 캐릭터 선택 시 아이돌 모드로 리셋
 
         nameText.text = characterData.char_name;
-        rankText.text = $"등급: {characterData.char_rank}";
-        levelText.text = $"레벨: {characterData.char_lv}";
-        typeText.text = $"속성: {(CharacterType)characterData.char_type}";
+        rankText.text = $"등급 {characterData.char_rank}";
+        levelText.text = $"레벨 {characterData.char_lv}";
+        typeText.text = $"속성 {(CharacterType)characterData.char_type}";
 
-        attackText.text = $"보컬: {StatPower.GetVocalPower(characterData.atk_dmg)}";
-        attackSpeedText.text = $"랩: {StatPower.GetLabPower(characterData.atk_speed)}";
-        attackRangeText.text = $"카리스마: {StatPower.GetCharismaPower(characterData.atk_range)}";
-        additionalAttackText.text = $"큐티: {StatPower.GetCutyPower(characterData.atk_addcount)}";
-        healthText.text = $"댄스: {StatPower.GetDancePower(characterData.char_hp)}";
-        critRateText.text = $"비주얼: {StatPower.GetVisualPower(characterData.crt_chance)}";
-        critDmgText.text = $"섹시: {StatPower.GetSexyPower(characterData.crt_dmg)}";
+        UpdateStatTexts();
 
-        projectileCountText.text = $"투사체수: {characterData.bullet_count}";
+
+
+
+
         skillText.text = $"{SkillName(characterData.char_id)}";
 
-        descriptionText.text = $"캐릭터 정보: {characterData.Info}";
+        descriptionText.text = $"캐릭터 정보 {characterData.Info}";
 
         // 여기서 이미지 직접 로드/적용
         ApplyCharacterImage(characterData.card_imageName);
@@ -248,7 +296,7 @@ public class CharacterDetailPanel : MonoBehaviour
         }
 
         int currentPoint = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm);
-        levelUpCostText.text = $"트레이닝 포인트: {currentPoint} / {lvdata.Lvup_ingrd_Itm_count}";
+        levelUpCostText.text = $"트레이닝 포인트 {currentPoint} / {lvdata.Lvup_ingrd_Itm_count}";
 
         levelUpButton.onClick.RemoveAllListeners();
 
@@ -286,7 +334,7 @@ public class CharacterDetailPanel : MonoBehaviour
         }
 
         int currentPoint = ItemInvenHelper.GetAmount(rankdata.Upgrade_ingrd_Itm1);
-        rankUpCostText.text = $"{rankdata.Upgrade_ingrd_Itm1} 조각: {currentPoint} / {rankdata.Ingrd_Itm1_amount}";
+        rankUpCostText.text = $"{rankdata.Upgrade_ingrd_Itm1} 조각 {currentPoint} / {rankdata.Ingrd_Itm1_amount}";
 
         rankUpButton.onClick.RemoveAllListeners();
 
@@ -332,7 +380,7 @@ public class CharacterDetailPanel : MonoBehaviour
 
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Enhance);
 
-        Debug.Log($"레벨업 완료: {startId} -> {finalId}");
+        Debug.Log($"레벨업 완료 {startId} -> {finalId}");
 
         var nextLevelData = DataTableManager.CharacterTable.Get(finalId);
         if (nextLevelData != null)
@@ -359,7 +407,7 @@ public class CharacterDetailPanel : MonoBehaviour
 
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Enhance);
 
-            Debug.Log($"랭크업 완료: {startId} -> {finalId}");
+            Debug.Log($"랭크업 완료 {startId} -> {finalId}");
 
             var nextRankData = DataTableManager.CharacterTable.Get(finalId);
             rankUpButton.onClick.RemoveAllListeners();
@@ -375,19 +423,18 @@ public class CharacterDetailPanel : MonoBehaviour
     public void Clear()
     {
         nameText.text = "";
-        rankText.text = "등급: ";
-        levelText.text = "레벨: ";
-        typeText.text = "속성: ";
-        attackText.text = "공격력: ";
-        attackSpeedText.text = "공격속도: ";
-        attackRangeText.text = "공격범위: ";
-        additionalAttackText.text = "추가공격수: ";
-        projectileCountText.text = "투사체수: ";
-        healthText.text = "체력: ";
-        critRateText.text = "치명타 확률: ";
-        critDmgText.text = "치명타 데미지: ";
-        skillText.text = "보유 스킬: ";
-        descriptionText.text = "캐릭터 정보: ";
+        rankText.text = "등급 ";
+        levelText.text = "레벨 ";
+        typeText.text = "속성 ";
+        attackText.text = "공격력 ";
+        attackSpeedText.text = "공격속도 ";
+        attackRangeText.text = "공격범위 ";
+        additionalAttackText.text = "추가공격수 ";
+        healthText.text = "체력 ";
+        critRateText.text = "치명타 확률 ";
+        critDmgText.text = "치명타 데미지 ";
+        skillText.text = "보유 스킬 ";
+        descriptionText.text = "캐릭터 정보 ";
         characterImage.sprite = null;
 
         if (_runtimeSprite != null)
@@ -404,8 +451,8 @@ public class CharacterDetailPanel : MonoBehaviour
             }
             _runtimeSkillSprites = null;
         }
-        levelUpCostText.text = "트레이닝 포인트: ";
-        rankUpCostText.text = $"Name 조각: ";
+        levelUpCostText.text = "트레이닝 포인트 ";
+        rankUpCostText.text = $"Name 조각 ";
 
         levelUpButton.interactable = false;
         rankUpButton.interactable = false;
@@ -416,11 +463,7 @@ public class CharacterDetailPanel : MonoBehaviour
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
         gameObject.SetActive(false);
     }
-    public void OpenPanel()
-    {
-        transform.SetAsLastSibling(); // 캔버스 최상단으로
-        gameObject.SetActive(true);
-    }
+    public void OpenPanel() => gameObject.SetActive(true);
 
     public string SkillName(int characterid)
     {
@@ -435,7 +478,7 @@ public class CharacterDetailPanel : MonoBehaviour
                 skillnames.Add(skillData.skill_name);
         }
 
-        return $"보유 중인 스킬: { string.Join(", ", skillnames)}";
+        return $"보유 중인 스킬 { string.Join(", ", skillnames)}";
     }
 
     private void OnEnable()
