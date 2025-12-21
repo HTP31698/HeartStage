@@ -98,7 +98,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             startPos = skillController.startPos;
             dir = Vector3.zero;
         }
-        
+
         // 파티클 방향 회전
         var particle = obj.GetComponentInChildren<ParticleSystem>();
         if (dir != Vector3.zero && skillData.active_type != 1) // 부메랑이면 회전 x
@@ -129,6 +129,11 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
         int skillDmg = Mathf.FloorToInt(characterAttack.Data.atk_dmg + baseValue * skillData.damage_ratio);
         // 지속형 스킬 체크(장판형)
         bool isDOT = skillData.skill_duration > 0f;
+        if (isDOT)
+        {
+            int tickCount = Mathf.Max(1, Mathf.FloorToInt(skillData.skill_duration / skillData.tick_interval));
+            skillDmg = Mathf.FloorToInt((float)skillDmg / tickCount);
+        }
         // 부메랑 체크
         float boomerangDist = skillData.active_type == 1 ? skillData.skill_straight_range : 0f;
         // 블랙홀 체크
@@ -140,7 +145,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             startPos,
             dir,
             skillData.skill_speed,
-            skillDmg, 
+            skillDmg,
             penetrationType,
             false,
             debuffList,
@@ -228,7 +233,20 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
 
     protected virtual void SetupParticle(GameObject particle, GameObject clone)
     {
-        particle.transform.localScale *= skillData.skill_range;
+        Vector3 scale = particle.transform.localScale;
+
+        // 절대음감 스킬류, 음파 공격류 x축만 확장
+        if (skillId == 31220 || skillId == 31221 || skillId == 31204 || skillId == 31205)
+        {
+            scale.x *= skillData.skill_range;
+        }
+        else
+        {
+            // 기존 로직 (전체 스케일)
+            scale *= skillData.skill_range;
+        }
+
+        particle.transform.localScale = scale;
     }
 
     protected virtual Vector3 GetDirection()
