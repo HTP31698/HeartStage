@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 using System.Collections.Generic;
 using DG.Tweening;
 
@@ -28,6 +29,12 @@ public class WindowManager : MonoBehaviour
 
     private List<WindowType> activeOverlays = new List<WindowType>(); // 활성화된 오버레이 목록
     private HashSet<WindowType> dimmedOverlays = new HashSet<WindowType>(); // 딤 배경과 함께 열린 오버레이
+
+    /// <summary>
+    /// 딤 클릭으로 모든 오버레이가 닫힐 때 발생하는 이벤트
+    /// 수동으로 딤을 사용하는 팝업들이 구독하여 함께 닫히도록 함
+    /// </summary>
+    public event Action OnDimClicked;
 
     private CanvasGroup _dimCanvasGroup;
     private Image _dimImage;
@@ -128,8 +135,6 @@ public class WindowManager : MonoBehaviour
 
     private void OpenOverlayInternal(WindowType id, bool showDim)
     {
-        Debug.Log($"[WindowManager] OpenOverlayInternal: {id}, showDim={showDim}, isTransitioning={_isTransitioning}");
-
         // 안전한 배열 접근
         if (!IsValidWindow(id))
         {
@@ -142,12 +147,8 @@ public class WindowManager : MonoBehaviour
         {
             // activeOverlays에 있으면 정상적으로 열린 상태 - 무시
             if (activeOverlays.Contains(id))
-            {
-                Debug.Log($"[WindowManager] Window already open: {id}");
                 return;
-            }
             // activeOverlays에 없으면 비정상 상태 - 먼저 끄고 다시 열기
-            Debug.Log($"[WindowManager] Window active but not tracked, resetting: {id}");
             windows[id].gameObject.SetActive(false);
         }
 
@@ -167,8 +168,6 @@ public class WindowManager : MonoBehaviour
         // 오버레이를 맨 앞으로 이동 (다른 창 위에 표시)
         windows[id].transform.SetAsLastSibling();
 
-        Debug.Log($"[WindowManager] Overlay opened: {id}, activeSelf={windows[id].gameObject.activeSelf}");
-
         // 오버레이 목록에 추가 (딤 여부 상관없이 모든 오버레이 추적)
         if (!activeOverlays.Contains(id))
         {
@@ -178,8 +177,6 @@ public class WindowManager : MonoBehaviour
 
     public bool Open(WindowType id)
     {
-        Debug.Log($"[WindowManager] Open: {id}, currentWindow={currentWindow}, isTransitioning={_isTransitioning}");
-
         if (!IsValidWindow(id))
             return false;
 
@@ -243,8 +240,6 @@ public class WindowManager : MonoBehaviour
         int toIndex = _navIndex[id];
         bool slideFromRight = toIndex > fromIndex;
 
-        Debug.Log($"[WindowManager] Slide: {currentWindow}({fromIndex}) → {id}({toIndex}), slideFromRight={slideFromRight}");
-
         var prevWindow = windows[currentWindow];
         var nextWindow = windows[id];
         var nextRect = nextWindow.GetComponent<RectTransform>();
@@ -300,6 +295,10 @@ public class WindowManager : MonoBehaviour
 
     public void CloseAllOverlays()
     {
+        // 수동 딤 사용 팝업들에게 닫히라고 알림
+        OnDimClicked?.Invoke();
+        _manualDimRefCount = 0; // 수동 딤 카운터 리셋
+
         // 리스트 복사 후 순회 (Close()가 NotifyOverlayClosed()를 호출하여 activeOverlays를 수정하기 때문)
         var overlaysToClose = new List<WindowType>(activeOverlays);
         foreach (var overlayType in overlaysToClose)
@@ -368,6 +367,32 @@ public class WindowManager : MonoBehaviour
     }
 
     #region Dim Background
+
+    private int _manualDimRefCount = 0; // 수동 딤 표시 참조 카운터
+
+    /// <summary>
+    /// 외부에서 수동으로 딤 배경 표시 (참조 카운터 방식)
+    /// </summary>
+    public void ShowDimManual()
+    {
+        _manualDimRefCount++;
+        if (_manualDimRefCount == 1)
+        {
+            ShowDimmedBackground();
+        }
+    }
+
+    /// <summary>
+    /// 외부에서 수동으로 딤 배경 숨기기 (참조 카운터 방식)
+    /// </summary>
+    public void HideDimManual()
+    {
+        _manualDimRefCount = Mathf.Max(0, _manualDimRefCount - 1);
+        if (_manualDimRefCount == 0 && dimmedOverlays.Count == 0)
+        {
+            HideDimmedBackground();
+        }
+    }
 
     private void ShowDimmedBackground()
     {
