@@ -11,6 +11,7 @@ public class StoryStageRewardUI : GenericWindow
     [SerializeField] private Button exitButton;
 
     private bool isFromLobby = false; // 로비에서 열린 보상창인지 구분
+    private bool _closedByUser = false; // 사용자가 버튼으로 닫았는지 (딤 클릭과 구분)
 
     protected override void Awake()
     {
@@ -38,6 +39,16 @@ public class StoryStageRewardUI : GenericWindow
     public override void Close()
     {
         base.Close();
+
+        // 사용자가 확인 버튼으로 닫은 경우에만 화면 전환 처리
+        // 딤 배경 클릭(CloseAllOverlays)으로 닫힌 경우는 화면 전환하지 않음
+        if (!_closedByUser)
+        {
+            _closedByUser = false;
+            return;
+        }
+
+        _closedByUser = false; // 플래그 리셋
 
         if (isFromLobby)
         {
@@ -163,10 +174,11 @@ public class StoryStageRewardUI : GenericWindow
     }
 
 
-    /// 화면 클릭 시 호출 
+    /// 화면 클릭 시 호출 (확인 버튼)
     private void OnScreenClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+        _closedByUser = true; // 사용자가 명시적으로 닫음
         Close();
     }
 
@@ -187,14 +199,23 @@ public class StoryStageRewardUI : GenericWindow
     private void GiveStoryReward()
     {
         // SaveLoadManager에서 selectedStageID 가져오기
-        var gameData = SaveLoadManager.Data;
-        int storyStageId = gameData.selectedStageID;
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData == null) return;
+
+        int storyStageId = saveData.selectedStageID;
 
         Debug.Log($"[StoryStageRewardUI] selectedStageID: {storyStageId}");
 
         // 스토리 스테이지가 아니면 처리하지 않음
         if (storyStageId < 66000 || storyStageId >= 67000)
         {
+            return;
+        }
+
+        // 이미 클리어한 스테이지면 보상 지급하지 않음
+        if (saveData.clearedStoryStages.Contains(storyStageId))
+        {
+            Debug.Log($"[StoryStageRewardUI] 이미 클리어한 스테이지: {storyStageId} - 보상 지급 스킵");
             return;
         }
 
@@ -211,24 +232,22 @@ public class StoryStageRewardUI : GenericWindow
         if (IsTitleId(itemId))
         {
             // 칭호는 ownedTitleIds에 저장
-            var saveData = SaveLoadManager.Data as SaveDataV1;
-            if (saveData != null)
+            if (!saveData.ownedTitleIds.Contains(itemId))
             {
-                if (!saveData.ownedTitleIds.Contains(itemId))
-                {
-                    saveData.ownedTitleIds.Add(itemId);
-                    Debug.Log($"[StoryStageRewardUI] 칭호 획득: {itemId}");
-                }
+                saveData.ownedTitleIds.Add(itemId);
+                Debug.Log($"[StoryStageRewardUI] 칭호 획득: {itemId}");
             }
-
-            SaveLoadManager.SaveToServer().Forget();
-            LobbyManager.Instance?.MoneyUISet(); 
         }
         else
         {
             ItemInvenHelper.AddItem(itemId, itemCount);
             Debug.Log($"[StoryStageRewardUI] 아이템 획득: {itemId} x {itemCount}");
         }
+
+        // 클리어 기록 저장
+        saveData.clearedStoryStages.Add(storyStageId);
+        SaveLoadManager.SaveToServer().Forget();
+        LobbyManager.Instance?.MoneyUISet();
 
         // 스테이지 클리어 퀘스트 처리
         if (QuestManager.Instance != null)

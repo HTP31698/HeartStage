@@ -57,6 +57,16 @@ public class WindowAnimator : MonoBehaviour
 
     // 버튼에서 시작할 때 저장되는 위치
     private RectTransform _fromButtonRect;
+    private static RectTransform _pendingFromButton; // 다음 열기 애니메이션에 사용할 버튼
+
+    /// <summary>
+    /// 다음 열기 애니메이션에서 이 버튼 위치에서 시작하도록 설정
+    /// OpenOverlay 호출 전에 사용
+    /// </summary>
+    public static void SetNextFromButton(RectTransform button)
+    {
+        _pendingFromButton = button;
+    }
 
     public RectTransform AnimationTarget
     {
@@ -84,7 +94,16 @@ public class WindowAnimator : MonoBehaviour
     {
         if (_autoPlayOnEnable)
         {
-            PlayOpen();
+            // pending 버튼이 있으면 해당 위치에서 시작
+            if (_pendingFromButton != null)
+            {
+                PlayOpen(_pendingFromButton);
+                _pendingFromButton = null;
+            }
+            else
+            {
+                PlayOpen();
+            }
         }
     }
 
@@ -299,6 +318,13 @@ public class WindowAnimator : MonoBehaviour
     {
         EnsureCanvasGroup();
 
+        // FromButton인 경우 버튼 위치에서 중앙으로 이동하면서 애니메이션
+        if (_origin == AnimationOrigin.FromButton && _fromButtonRect != null)
+        {
+            PlayScaleAndFadeFromButton(onComplete);
+            return;
+        }
+
         // 초기 상태
         _targetRect.localScale = Vector3.one * _openStartScale;
         _canvasGroup.alpha = 0f;
@@ -309,6 +335,43 @@ public class WindowAnimator : MonoBehaviour
         sequence.Join(_canvasGroup.DOFade(1f, _openDuration).SetEase(Ease.OutQuad));
         sequence.OnComplete(() =>
         {
+            RestoreOriginalPivot();
+            onComplete?.Invoke();
+        });
+
+        _currentTween = sequence;
+    }
+
+    // 버튼 방향에서 Scale + Fade (위치 이동 없이 피봇으로 방향감 표현)
+    private void PlayScaleAndFadeFromButton(Action onComplete)
+    {
+        // 버튼 방향으로 피봇 설정 (스케일 애니메이션이 버튼 쪽에서 시작하는 것처럼 보이게)
+        Vector3 buttonWorldPos = _fromButtonRect.position;
+        Vector3 windowWorldPos = _targetRect.position;
+
+        // 버튼과 윈도우 중심의 방향 계산
+        Vector3 direction = (buttonWorldPos - windowWorldPos).normalized;
+
+        // 방향에 따라 피봇 설정 (0~1 범위, 0.5가 중앙)
+        // 버튼이 왼쪽에 있으면 피봇을 왼쪽으로, 오른쪽에 있으면 오른쪽으로
+        float pivotX = 0.5f + direction.x * 0.3f; // 중앙에서 최대 30% 이동
+        float pivotY = 0.5f + direction.y * 0.3f;
+        pivotX = Mathf.Clamp01(pivotX);
+        pivotY = Mathf.Clamp01(pivotY);
+
+        SetPivotWithoutMoving(_targetRect, new Vector2(pivotX, pivotY));
+
+        // 초기 상태
+        _targetRect.localScale = Vector3.one * _openStartScale;
+        _canvasGroup.alpha = 0f;
+
+        // Scale + Fade 동시 실행 (위치 이동 없음)
+        var sequence = DOTween.Sequence();
+        sequence.Join(_targetRect.DOScale(Vector3.one, _openDuration).SetEase(_openEase));
+        sequence.Join(_canvasGroup.DOFade(1f, _openDuration).SetEase(Ease.OutQuad));
+        sequence.OnComplete(() =>
+        {
+            // 피봇 복원
             RestoreOriginalPivot();
             onComplete?.Invoke();
         });

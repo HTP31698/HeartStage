@@ -424,6 +424,9 @@ public class AuthManager : MonoBehaviour
             QuestManager.Instance.ResetForAccountChange();
         }
 
+        // WindowManager static 상태 리셋 (새 계정은 LobbyHome부터 시작)
+        WindowManager.currentWindow = WindowType.LobbyHome;
+
         SceneManager.LoadScene(0);
     }
 

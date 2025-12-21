@@ -23,6 +23,6 @@ public class StoryDungeonUI : GenericWindow
     private void OnStoryButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        WindowManager.Instance.OpenOverlay(WindowType.StoryDungeonInfo);
+        WindowManager.Instance.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
     }
 }

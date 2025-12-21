@@ -192,29 +192,27 @@ public class EncyclopediaWindow : GenericWindow
     // true 먼저 / false 뒤로 + 내부는 드롭다운 정렬
     private void ApplySort(List<CharacterCSVData> list, List<bool> unlockedList, int sortIndex)
     {
-        for (int i = 0; i < list.Count - 1; i++)
+        // 인덱스 배열 생성 및 정렬 (O(n log n))
+        int[] indices = new int[list.Count];
+        for (int i = 0; i < indices.Length; i++) indices[i] = i;
+
+        System.Array.Sort(indices, (a, b) =>
+            CompareWithUnlocked(list[a], unlockedList[a], list[b], unlockedList[b], sortIndex));
+
+        // 정렬된 순서로 새 리스트 생성
+        var sortedData = new List<CharacterCSVData>(list.Count);
+        var sortedUnlocked = new List<bool>(list.Count);
+        for (int i = 0; i < indices.Length; i++)
         {
-            for (int j = i + 1; j < list.Count; j++)
-            {
-                var A = list[i];
-                var B = list[j];
-                bool unlockedA = unlockedList[i];
-                bool unlockedB = unlockedList[j];
-
-                int cmp = CompareWithUnlocked(A, unlockedA, B, unlockedB, sortIndex);
-                if (cmp > 0)
-                {
-                    // data swap
-                    list[i] = B;
-                    list[j] = A;
-
-                    // unlocked swap
-                    bool tmp = unlockedList[i];
-                    unlockedList[i] = unlockedList[j];
-                    unlockedList[j] = tmp;
-                }
-            }
+            sortedData.Add(list[indices[i]]);
+            sortedUnlocked.Add(unlockedList[indices[i]]);
         }
+
+        // 원본 리스트에 복사
+        list.Clear();
+        list.AddRange(sortedData);
+        unlockedList.Clear();
+        unlockedList.AddRange(sortedUnlocked);
     }
 
     private int CompareWithUnlocked(CharacterCSVData A, bool unlockedA,

@@ -275,3 +275,59 @@ Canvas
 | FriendWindow 테마 매핑 | `Assets/Scripts/Theme/Editor/FriendWindowThemeMapping.md` |
 | TODO 목록 | `Assets/Editor/TODO.md` |
 | HTML 프로토타입 로그 | `Tools/HTML_PROTOTYPE_LOG.md` |
+
+---
+
+## WindowManager 오버레이/딤 시스템
+
+### 오버레이 추적 구조
+```csharp
+private List<WindowType> activeOverlays;    // 모든 활성 오버레이
+private HashSet<WindowType> dimmedOverlays; // 딤 배경과 함께 열린 오버레이만
+```
+
+### 오버레이 열기
+- `OpenOverlay(id)` - 딤 배경과 함께 열기 (dimmedOverlays에 추가)
+- `OpenOverlayNoDim(id)` - 딤 배경 없이 열기 (activeOverlays에만 추가)
+- 모든 오버레이는 `isOverlayWindow = true` 설정 (Close 시 정리용)
+
+### 딤 배경 숨기기 조건
+- `dimmedOverlays.Count == 0`일 때만 딤 숨김
+- 딤 없이 열린 오버레이가 남아있어도 딤은 사라짐
+
+### 주의사항
+- `CloseAllOverlays()`: 리스트 복사 후 순회 (Close가 NotifyOverlayClosed 호출하므로)
+- `GenericWindow.Close()` → `NotifyOverlayClosed()` 자동 호출
+
+---
+
+## 스토리 던전 보상 플로우
+
+### 관련 플래그 (SaveDataV1)
+```csharp
+bool showStoryRewardAfterScene;  // 씬 전환 후 보상창 표시
+bool StoryAfterLobby;            // 스토리 던전 UI 복원 필요
+List<int> clearedStoryStages;    // 클리어한 스토리 스테이지 (중복 보상 방지)
+```
+
+### 플로우 (전투 없는 스테이지: 66001, 66004)
+1. **StoryManager.ShowStoryRewardDirectly()**
+   - `showStoryRewardAfterScene = true`
+   - `StoryAfterLobby = true`
+   - `WindowManager.currentWindow = SpecialDungeon`
+   - 로비 씬으로 이동
+
+2. **LobbyUI.CheckReturnToStoryDungeon()**
+   - StoryAfterLobby 플래그 확인
+   - SpecialDungeon → StoryDungeon → StoryDungeonInfo 순차 열기
+   - showStoryRewardAfterScene이면 StoryStageRewardUI 열기
+
+3. **StoryStageRewardUI**
+   - `clearedStoryStages` 체크로 중복 보상 방지
+   - `_closedByUser` 플래그로 딤 클릭과 버튼 클릭 구분
+
+### 로그아웃 시 상태 리셋
+```csharp
+// AuthManager.SignOutAsync()
+WindowManager.currentWindow = WindowType.LobbyHome;
+```

@@ -54,6 +54,6 @@ public class SpecialDungeonUI : GenericWindow
 
         // 특별 스테이지 오버레이가 열려있으면 먼저 닫기
         WindowManager.Instance.CloseOverlay(WindowType.SpecialStage);
-        WindowManager.Instance.OpenOverlay(WindowType.StoryDungeon);
+        WindowManager.Instance.OpenOverlayNoDim(WindowType.StoryDungeon);
     }
 }

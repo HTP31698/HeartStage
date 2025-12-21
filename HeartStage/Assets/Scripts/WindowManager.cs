@@ -27,11 +27,27 @@ public class WindowManager : MonoBehaviour
     private Dictionary<WindowType, GenericWindow> windows;
 
     private List<WindowType> activeOverlays = new List<WindowType>(); // 활성화된 오버레이 목록
+    private HashSet<WindowType> dimmedOverlays = new HashSet<WindowType>(); // 딤 배경과 함께 열린 오버레이
 
     private CanvasGroup _dimCanvasGroup;
     private Image _dimImage;
     private float _dimTargetAlpha;
     private Tween _dimTween;
+
+    // 하단 네비게이션 슬라이드 애니메이션
+    private static readonly Dictionary<WindowType, int> _navIndex = new Dictionary<WindowType, int>
+    {
+        { WindowType.Shopping, 0 },      // 상점
+        { WindowType.Gacha, 1 },         // 뽑기
+        { WindowType.LobbyHome, 2 },     // 숙소
+        { WindowType.CharacterDict, 3 }, // 도감
+        { WindowType.StageSelect, 4 },   // 전투
+        { WindowType.SpecialDungeon, 5 } // 던전
+    };
+    private const float SlideDuration = 0.25f;
+    private bool _isTransitioning = false;
+    private Tween _slideTween;
+    private GenericWindow _slidePrevWindow; // 슬라이드 중 이전 윈도우 추적
 
     private void Awake()
     {
@@ -44,6 +60,12 @@ public class WindowManager : MonoBehaviour
             {
                 windows[pair.windowType] = pair.window;
                 pair.window.Init(this, pair.windowType);
+
+                // 시작 시 currentWindow가 아닌 모든 윈도우 비활성화 (에디터에서 실수로 켜진 경우 대비)
+                if (pair.windowType != currentWindow)
+                {
+                    pair.window.gameObject.SetActive(false);
+                }
             }
         }
 
@@ -55,11 +77,25 @@ public class WindowManager : MonoBehaviour
             {
                 _dimCanvasGroup = sharedDimmedBackground.AddComponent<CanvasGroup>();
             }
+            // 딤 배경이 항상 레이캐스트를 차단하도록 설정
+            _dimCanvasGroup.blocksRaycasts = true;
+            _dimCanvasGroup.interactable = true;
             _dimImage = sharedDimmedBackground.GetComponent<Image>();
             if (_dimImage != null)
             {
                 _dimTargetAlpha = _dimImage.color.a;
             }
+
+            // 딤 배경 클릭 시 모든 오버레이 닫기
+            var dimButton = sharedDimmedBackground.GetComponent<Button>();
+            if (dimButton == null)
+            {
+                dimButton = sharedDimmedBackground.AddComponent<Button>();
+                // 버튼 시각적 효과 제거 (색상 변화 없이 투명하게)
+                dimButton.transition = Selectable.Transition.None;
+            }
+            dimButton.onClick.RemoveAllListeners();
+            dimButton.onClick.AddListener(CloseAllOverlays);
         }
 
         // ConfirmDialog 초기화 (비활성 상태여도 초기화)
@@ -79,64 +115,226 @@ public class WindowManager : MonoBehaviour
 
     public void OpenOverlay(WindowType id)
     {
+        OpenOverlayInternal(id, showDim: true);
+    }
+
+    /// <summary>
+    /// 딤 배경 없이 오버레이 열기 (Middle 영역 윈도우들 간 전환용)
+    /// </summary>
+    public void OpenOverlayNoDim(WindowType id)
+    {
+        OpenOverlayInternal(id, showDim: false);
+    }
+
+    private void OpenOverlayInternal(WindowType id, bool showDim)
+    {
+        Debug.Log($"[WindowManager] OpenOverlayInternal: {id}, showDim={showDim}, isTransitioning={_isTransitioning}");
+
         // 안전한 배열 접근
-        if (!IsValidWindow(id)) return;
+        if (!IsValidWindow(id))
+        {
+            Debug.LogWarning($"[WindowManager] Invalid window: {id}");
+            return;
+        }
 
         // 이미 같은 타입의 오버레이가 열려있으면 열지 않음
         if (windows[id].gameObject.activeSelf)
-            return;
+        {
+            // activeOverlays에 있으면 정상적으로 열린 상태 - 무시
+            if (activeOverlays.Contains(id))
+            {
+                Debug.Log($"[WindowManager] Window already open: {id}");
+                return;
+            }
+            // activeOverlays에 없으면 비정상 상태 - 먼저 끄고 다시 열기
+            Debug.Log($"[WindowManager] Window active but not tracked, resetting: {id}");
+            windows[id].gameObject.SetActive(false);
+        }
 
-        // 오버레이로 표시
+        // 모든 오버레이는 isOverlayWindow = true로 설정 (activeOverlays 정리를 위해)
+        // 딤 표시 여부는 showDim 파라미터로 따로 처리
         windows[id].SetAsOverlay(true);
 
-        // 공용 딤 배경 페이드 인1
-        ShowDimmedBackground();
+        // 공용 딤 배경 페이드 인 (showDim이 true일 때만)
+        if (showDim)
+        {
+            dimmedOverlays.Add(id);
+            ShowDimmedBackground();
+        }
 
         windows[id].Open();
 
-        // 오버레이 목록에 추가
+        // 오버레이를 맨 앞으로 이동 (다른 창 위에 표시)
+        windows[id].transform.SetAsLastSibling();
+
+        Debug.Log($"[WindowManager] Overlay opened: {id}, activeSelf={windows[id].gameObject.activeSelf}");
+
+        // 오버레이 목록에 추가 (딤 여부 상관없이 모든 오버레이 추적)
         if (!activeOverlays.Contains(id))
         {
             activeOverlays.Add(id);
         }
     }
 
-    public void Open(WindowType id)
+    public bool Open(WindowType id)
     {
+        Debug.Log($"[WindowManager] Open: {id}, currentWindow={currentWindow}, isTransitioning={_isTransitioning}");
+
         if (!IsValidWindow(id))
-            return;
+            return false;
 
-        if (id == WindowType.LobbyHome && currentWindow == WindowType.LobbyHome
-            && windows[currentWindow].gameObject.activeSelf)
-            return;
+        // 같은 윈도우를 열려고 하고 이미 활성화되어 있으면 무시
+        if (id == currentWindow && windows[id].gameObject.activeSelf)
+            return false;
 
-        // 모든 활성화된 오버레이 닫기
-        CloseAllOverlays();
+        // 애니메이션 중이면 무시
+        if (_isTransitioning)
+        {
+            Debug.LogWarning($"[WindowManager] Blocked by isTransitioning: {id}");
+            return false;
+        }
 
-        // 현재 윈도우 닫기
+        // 모든 활성화된 오버레이 닫기 (즉시)
+        CloseAllOverlaysImmediate();
+
+        // 같은 윈도우인데 비활성화 상태면 직접 활성화 (씬 전환 후 복귀 시)
+        if (id == currentWindow)
+        {
+            windows[currentWindow].gameObject.SetActive(true);
+            windows[currentWindow].Open();
+            return true;
+        }
+
+        // 네비게이션 버튼인 경우 슬라이드 애니메이션
+        if (_navIndex.ContainsKey(id) && _navIndex.ContainsKey(currentWindow))
+        {
+            OpenWithSlide(id);
+            return true;
+        }
+
+        // 일반 전환 (슬라이드 없음)
         if (IsValidWindow(currentWindow))
-        {            
-            windows[currentWindow].Close();
+        {
+            windows[currentWindow].gameObject.SetActive(false);
         }
 
         currentWindow = id;
         windows[currentWindow].gameObject.SetActive(true);
         windows[currentWindow].Open();
+        return true;
+    }
+
+    private void OpenWithSlide(WindowType id)
+    {
+        // 기존 트윈 강제 종료 및 정리
+        if (_slideTween != null && _slideTween.IsActive())
+        {
+            // 이전 윈도우 정리 (OnComplete가 실행되지 않으므로 여기서 처리)
+            if (_slidePrevWindow != null)
+            {
+                _slidePrevWindow.gameObject.SetActive(false);
+                _slidePrevWindow = null;
+            }
+            _slideTween.Kill(false);
+        }
+        _isTransitioning = true;
+
+        int fromIndex = _navIndex[currentWindow];
+        int toIndex = _navIndex[id];
+        bool slideFromRight = toIndex > fromIndex;
+
+        Debug.Log($"[WindowManager] Slide: {currentWindow}({fromIndex}) → {id}({toIndex}), slideFromRight={slideFromRight}");
+
+        var prevWindow = windows[currentWindow];
+        var nextWindow = windows[id];
+        var nextRect = nextWindow.GetComponent<RectTransform>();
+
+        // 이전 윈도우 추적 (연속 클릭 시 정리용)
+        _slidePrevWindow = prevWindow;
+
+        // Canvas 기준 너비 (부모 RectTransform 사용)
+        float canvasWidth = nextRect.parent != null
+            ? ((RectTransform)nextRect.parent).rect.width
+            : 1920f;
+
+        // 원래 offset 저장 (Stretch 앵커용)
+        Vector2 originalOffsetMin = nextRect.offsetMin;
+        Vector2 originalOffsetMax = nextRect.offsetMax;
+
+        // 시작 위치 설정 (offsetMin/offsetMax를 동시에 이동)
+        float startOffset = slideFromRight ? canvasWidth : -canvasWidth;
+        nextRect.offsetMin = new Vector2(originalOffsetMin.x + startOffset, originalOffsetMin.y);
+        nextRect.offsetMax = new Vector2(originalOffsetMax.x + startOffset, originalOffsetMax.y);
+        nextWindow.gameObject.SetActive(true);
+        nextRect.SetAsLastSibling(); // 새 창을 맨 앞으로 (이전 창 위에 표시)
+        nextWindow.Open(); // Open() 호출해야 초기화됨
+
+        // 슬라이드 애니메이션 (offset을 원래 위치로)
+        _slideTween = DOVirtual.Float(startOffset, 0f, SlideDuration, value =>
+        {
+            nextRect.offsetMin = new Vector2(originalOffsetMin.x + value, originalOffsetMin.y);
+            nextRect.offsetMax = new Vector2(originalOffsetMax.x + value, originalOffsetMax.y);
+        })
+            .SetEase(Ease.OutCubic)
+            .OnComplete(() =>
+            {
+                // 원래 offset으로 확실히 복원
+                nextRect.offsetMin = originalOffsetMin;
+                nextRect.offsetMax = originalOffsetMax;
+                // 이전 창 끄기
+                if (_slidePrevWindow != null)
+                {
+                    _slidePrevWindow.gameObject.SetActive(false);
+                    _slidePrevWindow = null;
+                }
+                _isTransitioning = false;
+            })
+            .OnKill(() =>
+            {
+                _isTransitioning = false;
+                // OnKill에서는 _slidePrevWindow 정리하지 않음 (다음 OpenWithSlide에서 처리)
+            });
+
+        currentWindow = id;
     }
 
     public void CloseAllOverlays()
     {
-        for (int i = activeOverlays.Count - 1; i >= 0; i--)
+        // 리스트 복사 후 순회 (Close()가 NotifyOverlayClosed()를 호출하여 activeOverlays를 수정하기 때문)
+        var overlaysToClose = new List<WindowType>(activeOverlays);
+        foreach (var overlayType in overlaysToClose)
         {
-            WindowType overlayType = activeOverlays[i];
             if (IsValidWindow(overlayType) && windows[overlayType].gameObject.activeSelf)
             {
                 windows[overlayType].Close();
             }
-            activeOverlays.RemoveAt(i);
         }
+        // NotifyOverlayClosed에서 이미 제거되므로 여기서 Clear 불필요하지만 안전하게 정리
+        activeOverlays.Clear();
+        dimmedOverlays.Clear();
 
         // 공용 딤 배경 페이드 아웃 (즉시)
+        HideDimmedBackground(immediate: true);
+    }
+
+    /// <summary>
+    /// 모든 오버레이를 애니메이션 없이 즉시 닫기 (화면 전환 시 사용)
+    /// </summary>
+    private void CloseAllOverlaysImmediate()
+    {
+        for (int i = activeOverlays.Count - 1; i >= 0; i--)
+        {
+            WindowType overlayType = activeOverlays[i];
+            if (IsValidWindow(overlayType))
+            {
+                // 애니메이션 없이 즉시 비활성화
+                windows[overlayType].gameObject.SetActive(false);
+            }
+            activeOverlays.RemoveAt(i);
+        }
+        dimmedOverlays.Clear();
+
+        // 공용 딤 배경도 즉시 숨기기
         HideDimmedBackground(immediate: true);
     }
 
@@ -147,9 +345,10 @@ public class WindowManager : MonoBehaviour
 
         windows[id].Close();
         activeOverlays.Remove(id);
+        dimmedOverlays.Remove(id);
 
-        // 활성 오버레이가 없으면 공용 딤 배경 페이드 아웃
-        if (activeOverlays.Count == 0)
+        // 딤 배경과 함께 열린 오버레이가 없으면 딤 숨기기
+        if (dimmedOverlays.Count == 0)
         {
             HideDimmedBackground();
         }
@@ -159,9 +358,10 @@ public class WindowManager : MonoBehaviour
     public void NotifyOverlayClosed(WindowType id)
     {
         activeOverlays.Remove(id);
+        dimmedOverlays.Remove(id);
 
-        // 활성 오버레이가 없으면 공용 딤 배경 페이드 아웃
-        if (activeOverlays.Count == 0)
+        // 딤 배경과 함께 열린 오버레이가 없으면 딤 숨기기
+        if (dimmedOverlays.Count == 0)
         {
             HideDimmedBackground();
         }

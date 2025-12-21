@@ -20,6 +20,14 @@ public class LobbyUI : MonoBehaviour
     [Header("ImageIcon")]
     [SerializeField] private Image playerProfileIcon;
 
+    [Header("Button Indicators")]
+    [SerializeField] private GameObject stageIndicator;
+    [SerializeField] private GameObject homeIndicator;
+    [SerializeField] private GameObject gachaIndicator;
+    [SerializeField] private GameObject storeIndicator;
+    [SerializeField] private GameObject characterDictIndicator;
+    [SerializeField] private GameObject specialDungeonIndicator;
+
     private void Awake()
     {
         stageUiButton.onClick.RemoveAllListeners();
@@ -54,6 +62,9 @@ public class LobbyUI : MonoBehaviour
 
         // 스토리 던전 패배 후 돌아온 경우 스토리 던전 UI들 자동 오픈
         CheckReturnToStoryDungeon();
+
+        // 초기 버튼 상태 설정
+        UpdateButtonStates(WindowManager.currentWindow);
     }
 
     private void CheckReturnToStageInfo()
@@ -81,12 +92,12 @@ public class LobbyUI : MonoBehaviour
         if (stageInfoWindow != null)
         {
             stageInfoWindow.SetStageData(stageData);
-            windowManager.OpenOverlay(WindowType.StageInfo);
+            windowManager.OpenOverlayNoDim(WindowType.StageInfo);
         }
     }
 
     /// <summary>
-    /// 스토리 던전 패배 후 돌아온 경우 스토리 던전 UI들을 순차적으로 열기
+    /// 스토리 던전에서 돌아온 경우 스토리 던전 UI들을 순차적으로 열기
     /// </summary>
     private void CheckReturnToStoryDungeon()
     {
@@ -96,16 +107,32 @@ public class LobbyUI : MonoBehaviour
 
         // 플래그 초기화
         saveData.StoryAfterLobby = false;
+
+        // 보상창 표시 플래그 확인 (클리어 후인 경우)
+        bool showReward = saveData.showStoryRewardAfterScene;
+        if (showReward)
+        {
+            saveData.showStoryRewardAfterScene = false;
+        }
+
         SaveLoadManager.SaveToServer().Forget(); // 플래그 저장
 
-        // 1) SpecialDungeon 윈도우 열기 (이미 currentWindow로 설정됨)
+        // 1) SpecialDungeon 윈도우 열기
         windowManager.Open(WindowType.SpecialDungeon);
+        UpdateButtonStates(WindowType.SpecialDungeon); // 던전 아이콘 선택 상태로
 
         // 2) StoryDungeon 오버레이 열기
-        windowManager.OpenOverlay(WindowType.StoryDungeon);
+        windowManager.OpenOverlayNoDim(WindowType.StoryDungeon);
 
         // 3) StoryDungeonInfo 오버레이 열기
-        windowManager.OpenOverlay(WindowType.StoryDungeonInfo);
+        windowManager.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
+
+        // 4) 스토리 클리어 후라면 보상창 열기
+        if (showReward)
+        {
+            windowManager.OpenOverlay(WindowType.StoryStageRewardUI);
+            Debug.Log("[LobbyUI] 스토리 보상창 표시");
+        }
 
         Debug.Log("[LobbyUI] 스토리 던전 UI 계층 복원 완료: SpecialDungeon → StoryDungeon → StoryDungeonInfo");
     }
@@ -113,31 +140,36 @@ public class LobbyUI : MonoBehaviour
     private void OnShopUiButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        windowManager.Open(WindowType.Shopping);
+        if (windowManager.Open(WindowType.Shopping))
+            UpdateButtonStates(WindowType.Shopping);
     }
 
     private void OnCharacterDictUiButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        windowManager.Open(WindowType.CharacterDict);
+        if (windowManager.Open(WindowType.CharacterDict))
+            UpdateButtonStates(WindowType.CharacterDict);
     }
 
     private void OnStageUiButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        windowManager.Open(WindowType.StageSelect);
+        if (windowManager.Open(WindowType.StageSelect))
+            UpdateButtonStates(WindowType.StageSelect);
     }
 
     private void OnLobbyHomeUiButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        windowManager.Open(WindowType.LobbyHome);
+        if (windowManager.Open(WindowType.LobbyHome))
+            UpdateButtonStates(WindowType.LobbyHome);
     }
 
     private void OnGachaButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        windowManager.Open(WindowType.Gacha);
+        if (windowManager.Open(WindowType.Gacha))
+            UpdateButtonStates(WindowType.Gacha);
     }
 
     private void OnQuestButtonClicked()
@@ -172,7 +204,41 @@ public class LobbyUI : MonoBehaviour
     private void OnSpecialDungeonButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        windowManager.Open(WindowType.SpecialDungeon);
+        if (windowManager.Open(WindowType.SpecialDungeon))
+            UpdateButtonStates(WindowType.SpecialDungeon);
+    }
+
+    private void UpdateButtonStates(WindowType currentType)
+    {
+        // Stage
+        bool isStage = (currentType == WindowType.StageSelect);
+        stageUiButton.interactable = !isStage;
+        stageIndicator?.SetActive(isStage);
+
+        // Home
+        bool isHome = (currentType == WindowType.LobbyHome);
+        homeUiButton.interactable = !isHome;
+        homeIndicator?.SetActive(isHome);
+
+        // Gacha
+        bool isGacha = (currentType == WindowType.Gacha);
+        gachaButton.interactable = !isGacha;
+        gachaIndicator?.SetActive(isGacha);
+
+        // Store
+        bool isStore = (currentType == WindowType.Shopping);
+        storeButton.interactable = !isStore;
+        storeIndicator?.SetActive(isStore);
+
+        // CharacterDict
+        bool isDict = (currentType == WindowType.CharacterDict);
+        characterDictButton.interactable = !isDict;
+        characterDictIndicator?.SetActive(isDict);
+
+        // SpecialDungeon
+        bool isDungeon = (currentType == WindowType.SpecialDungeon);
+        specialDungeonButton.interactable = !isDungeon;
+        specialDungeonIndicator?.SetActive(isDungeon);
     }
 
     private void OnDisable()

@@ -333,7 +333,11 @@ public class StoryManager : MonoBehaviour
         // 씬 전환 후 보상창 표시를 위한 플래그 설정
         var gameData = SaveLoadManager.Data;
         gameData.showStoryRewardAfterScene = true;
-        Debug.Log($"[StoryManager] showStoryRewardAfterScene 플래그 설정: {gameData.showStoryRewardAfterScene}");
+        gameData.StoryAfterLobby = true; // 스토리 던전 UI 복원용 플래그
+        Debug.Log($"[StoryManager] showStoryRewardAfterScene, StoryAfterLobby 플래그 설정");
+
+        // 던전 윈도우로 돌아가도록 설정
+        WindowManager.currentWindow = WindowType.SpecialDungeon;
 
         SaveLoadManager.SaveToServer().Forget();
         Debug.Log($"[StoryManager] 데이터 저장 완료, 로비로 이동 시작");

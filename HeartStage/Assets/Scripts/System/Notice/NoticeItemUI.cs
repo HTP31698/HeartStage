@@ -19,9 +19,14 @@ public class NoticeItemUI : MonoBehaviour
     [Header("레이아웃 갱신용 (상위 Content 등)")]
     [SerializeField] private RectTransform layoutRoot;     // 비워두면 자기 RectTransform 사용
 
+    [Header("애니메이션 (선택사항)")]
+    [Tooltip("ExpandablePanel 컴포넌트가 있으면 애니메이션 사용")]
+    [SerializeField] private ExpandablePanel expandablePanel;
+
     private NoticeData _data;
     private bool _expanded = false;
     private RectTransform _selfRect;
+    private bool _useExpandablePanel = false;
 
     private void Awake()
     {
@@ -31,6 +36,12 @@ public class NoticeItemUI : MonoBehaviour
         // 인스펙터에서 layoutRoot 안 넣어줬으면 자기 자신으로 사용
         if (layoutRoot == null)
             layoutRoot = _selfRect;
+
+        // ExpandablePanel 자동 검색
+        if (expandablePanel == null)
+            expandablePanel = GetComponent<ExpandablePanel>();
+
+        _useExpandablePanel = expandablePanel != null;
     }
 
     /// <summary>
@@ -78,11 +89,16 @@ public class NoticeItemUI : MonoBehaviour
 
         // 처음에는 접힌 상태
         _expanded = false;
-        if (bodyRoot != null)
+
+        // ExpandablePanel 사용 시 초기화는 ExpandablePanel이 처리
+        if (!_useExpandablePanel && bodyRoot != null)
+        {
             bodyRoot.SetActive(false);
+        }
 
         // 헤더 클릭 → 펼치기/접기 토글
-        if (headerButton != null)
+        // ExpandablePanel이 있으면 자체 버튼 리스너를 사용하므로 여기서는 등록 안함
+        if (!_useExpandablePanel && headerButton != null)
         {
             headerButton.onClick.RemoveAllListeners();
             headerButton.onClick.AddListener(ToggleExpanded);
@@ -107,6 +123,15 @@ public class NoticeItemUI : MonoBehaviour
 
     private void ToggleExpanded()
     {
+        // ExpandablePanel 사용 시 ExpandablePanel.Toggle() 호출
+        if (_useExpandablePanel)
+        {
+            expandablePanel.Toggle();
+            _expanded = expandablePanel.IsExpanded;
+            return;
+        }
+
+        // 기존 로직 (애니메이션 없이 즉시 토글)
         _expanded = !_expanded;
 
         if (bodyRoot != null)
@@ -126,4 +151,9 @@ public class NoticeItemUI : MonoBehaviour
             LayoutRebuilder.ForceRebuildLayoutImmediate(parent);
         }
     }
+
+    /// <summary>
+    /// 현재 펼침 상태 반환
+    /// </summary>
+    public bool IsExpanded => _useExpandablePanel ? expandablePanel.IsExpanded : _expanded;
 }

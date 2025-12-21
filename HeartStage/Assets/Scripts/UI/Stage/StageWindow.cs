@@ -102,7 +102,8 @@ public class StageWindow : GenericWindow
             {
                 // 지역 변수에 복사하여 각각의 값을 캡처
                 var capturedStageData = stageData; // 클로저 문제 해결
-                button.onClick.AddListener(() => OnStageInfoButtonClicked(capturedStageData));
+                var capturedButton = button; // 버튼 참조도 캡처
+                button.onClick.AddListener(() => OnStageInfoButtonClicked(capturedStageData, capturedButton));
             }
 
             // 스테이지 ID → 인덱스 맵핑 저장 (스크롤 위치 계산용)
@@ -118,14 +119,28 @@ public class StageWindow : GenericWindow
         contentParent.sizeDelta = size;
     }
 
-    private void OnStageInfoButtonClicked(StageData stageData)
+    private void OnStageInfoButtonClicked(StageData stageData, Button fromButton)
     {
+        Debug.Log($"[StageWindow] OnStageInfoButtonClicked: {stageData?.stage_ID}, windowManager={windowManager != null}");
+
+        if (windowManager == null)
+        {
+            Debug.LogError("[StageWindow] windowManager is null!");
+            return;
+        }
+
         if (stageInfoUI != null)
         {
             stageInfoUI.SetStageData(stageData);
         }
 
-        windowManager.OpenOverlay(WindowType.StageInfo);
+        // 버튼 위치에서 시작하는 애니메이션 설정
+        if (fromButton != null)
+        {
+            WindowAnimator.SetNextFromButton(fromButton.GetComponent<RectTransform>());
+        }
+
+        windowManager.OpenOverlayNoDim(WindowType.StageInfo);
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
     }
 

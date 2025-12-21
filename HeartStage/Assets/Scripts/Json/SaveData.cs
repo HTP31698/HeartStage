@@ -48,6 +48,8 @@ public class SaveDataV1 : SaveData
     // 스토리 컷씬 후 보상창 표시 플래그
     public bool showStoryRewardAfterScene = false;
     public bool StoryAfterLobby = false;
+    // 클리어한 스토리 스테이지 ID 목록 (보상 중복 지급 방지용)
+    public List<int> clearedStoryStages = new List<int>();
 
     // ================== 5. 퀘스트 진행 상태 ==================
     public DailyQuestState dailyQuest = new DailyQuestState();

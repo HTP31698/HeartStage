@@ -21,13 +21,6 @@ public class CharacterButtonView : MonoBehaviour
 
     private void Start()
     {
-        if (charId != 0)
-            SetButton(charId);
-    }
-
-    private void Update()
-    {
-        // id가 바뀌었을 때만 갱신
         if (charId != 0 && charId != _lastId)
             SetButton(charId);
     }
