@@ -5,8 +5,9 @@ public class LastStageNoticeUI : GenericWindow
 {
     [SerializeField] private Button lobbyButton;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         lobbyButton.onClick.AddListener(OnLobbyButtonClicked);
 
         // Canvas Sorting Order 강제 설정

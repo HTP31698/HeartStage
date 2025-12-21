@@ -21,8 +21,9 @@ public class BossAlertUI : GenericWindow
     private static bool isEnhanceAlert = false;
     private static int pendingEnhanceLevel = 0;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null)
         {

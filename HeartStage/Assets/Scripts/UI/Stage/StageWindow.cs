@@ -29,8 +29,9 @@ public class StageWindow : GenericWindow
     // 스테이지 ID → 인덱스 맵핑 (스크롤 위치 계산용)
     private Dictionary<int, int> _stageIdToIndex = new();
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         isOverlayWindow = true; // 오버레이 창으로 설정
     }
 

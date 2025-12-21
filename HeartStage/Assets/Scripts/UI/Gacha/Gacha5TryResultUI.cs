@@ -14,8 +14,9 @@ public class Gacha5TryResultUI : GenericWindow
 
     private List<GameObject> gachaItemList = new List<GameObject>();
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         closeButton.onClick.AddListener(OnCloseButtonClicked);
         retryButton.onClick.AddListener(OnRetryButtonClicked);
     }

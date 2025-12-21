@@ -34,8 +34,9 @@ public class StageInfoWindow : GenericWindow
 
     public TextMeshProUGUI energyLackText; // 에너지 부족시 텍스트
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         isOverlayWindow = true; // 오버레이 창으로 설정
         closeButton.onClick.AddListener(() => OnCloseButtonClicked());
         stageStartButton.onClick.AddListener(() => OnStageStartButtonClicked());

@@ -3,15 +3,22 @@ using UnityEngine.UI;
 
 public class SettingPanelUI : GenericWindow
 {
+    [Header("볼륨")]
     [SerializeField] private Slider sfxVolumeSlider;
     [SerializeField] private Slider bgmVolumeSlider;
+
+    [Header("프레임")]
     [SerializeField] private Toggle highFrmeToggle;
     [SerializeField] private Toggle lowFrmeToggle;
 
+    [Header("버튼")]
     [SerializeField] private Button closeButton;
+    [SerializeField] private Button copyUidButton;
+    [SerializeField] private Button logoutButton;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         if (sfxVolumeSlider != null)
         {
             sfxVolumeSlider.onValueChanged.AddListener(OnSFXVolumeChanged);
@@ -25,7 +32,14 @@ public class SettingPanelUI : GenericWindow
         highFrmeToggle.onValueChanged.AddListener(OnToggle60Changed);
         lowFrmeToggle.onValueChanged.AddListener(OnToggle30Changed);
 
-        closeButton.onClick.AddListener(onClickCloseButtonClicked);
+        if (closeButton != null)
+            closeButton.onClick.AddListener(OnClickClose);
+
+        if (copyUidButton != null)
+            copyUidButton.onClick.AddListener(OnClickCopyUid);
+
+        if (logoutButton != null)
+            logoutButton.onClick.AddListener(OnClickLogout);
     }
 
     public override void Open()
@@ -75,9 +89,33 @@ public class SettingPanelUI : GenericWindow
         }
     }
 
-    private void onClickCloseButtonClicked()
+    private void OnClickClose()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+        Close();
+    }
+
+    private void OnClickCopyUid()
+    {
+        string uid = AuthManager.Instance?.UserId;
+        if (string.IsNullOrEmpty(uid))
+        {
+            ToastUI.Error("UID를 가져올 수 없습니다");
+            return;
+        }
+
+        GUIUtility.systemCopyBuffer = uid;
+        ToastUI.Success("UID가 복사되었습니다");
+    }
+
+    private void OnClickLogout()
+    {
+        ConfirmDialog.ShowLogout(
+            onConfirm: () =>
+            {
+                AuthManager.Instance?.SignOut();
+            }
+        );
     }
 
     private void OnToggle30Changed(bool isOn)

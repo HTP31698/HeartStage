@@ -13,8 +13,9 @@ public class GachaPercentageUI : GenericWindow
 
     private readonly List<GameObject> spawnedItems = new List<GameObject>();   
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         closeButton.onClick.AddListener(OnCloseButtonClicked);
     }
 

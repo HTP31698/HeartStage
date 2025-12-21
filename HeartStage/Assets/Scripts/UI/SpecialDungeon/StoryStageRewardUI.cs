@@ -12,8 +12,9 @@ public class StoryStageRewardUI : GenericWindow
 
     private bool isFromLobby = false; // 로비에서 열린 보상창인지 구분
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         // 전체 화면 클릭으로 로비 이동
         if (exitButton != null)
         {

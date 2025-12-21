@@ -17,8 +17,9 @@ public class MailUI : GenericWindow
     // UserId 캐싱용 프로퍼티
     private string UserId => AuthManager.Instance?.UserId;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         closeButton.onClick.AddListener(OnExitButtonClicked);
         deleteButton.onClick.AddListener(OnDeleteReadMailsClicked);
         receiveAllButton.onClick.AddListener(() => OnReceiveAllItemsClickedAsync().Forget());

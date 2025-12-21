@@ -110,7 +110,19 @@ public class FriendWindow : GenericWindow
         UpdateTabVisual();
         UpdateUIForTab();
         UpdateHeaderButtons();
-        RefreshAsync().Forget();
+
+        // 열기 애니메이션 후 데이터 로드 (로딩 인디케이터가 창 열린 후에 표시되도록)
+        OpenAndRefreshAsync().Forget();
+    }
+
+    private async UniTaskVoid OpenAndRefreshAsync()
+    {
+        // 열기 애니메이션 대기 (WindowAnimator._openDuration = 0.25s)
+        await UniTask.Delay(System.TimeSpan.FromSeconds(0.25f));
+
+        if (!gameObject.activeInHierarchy) return; // 이미 닫혔으면 중단
+
+        await RefreshAsync();
     }
 
     public override void Close()

@@ -1,5 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.UI;
 using System.Collections.Generic;
+using DG.Tweening;
 
 [System.Serializable]
 public class WindowPair
@@ -16,22 +18,43 @@ public class WindowManager : MonoBehaviour
 
     [Header("공용 딤 배경")]
     [SerializeField] private GameObject sharedDimmedBackground;
+    [SerializeField] private float dimFadeDuration = 0.2f;
 
     public static WindowType currentWindow { get; set; }
     private Dictionary<WindowType, GenericWindow> windows;
 
     private List<WindowType> activeOverlays = new List<WindowType>(); // 활성화된 오버레이 목록
 
+    private CanvasGroup _dimCanvasGroup;
+    private Image _dimImage;
+    private float _dimTargetAlpha;
+    private Tween _dimTween;
+
     private void Awake()
     {
         Instance = this;
-        
+
         windows = new Dictionary<WindowType, GenericWindow>();
         foreach (var pair in windowList)
         {
             if(pair.window != null && !windows.ContainsKey(pair.windowType))
             {
                 windows[pair.windowType] = pair.window;
+            }
+        }
+
+        // 딤 배경 CanvasGroup 초기화
+        if (sharedDimmedBackground != null)
+        {
+            _dimCanvasGroup = sharedDimmedBackground.GetComponent<CanvasGroup>();
+            if (_dimCanvasGroup == null)
+            {
+                _dimCanvasGroup = sharedDimmedBackground.AddComponent<CanvasGroup>();
+            }
+            _dimImage = sharedDimmedBackground.GetComponent<Image>();
+            if (_dimImage != null)
+            {
+                _dimTargetAlpha = _dimImage.color.a;
             }
         }
     }
@@ -53,11 +76,8 @@ public class WindowManager : MonoBehaviour
         if (windows[id].gameObject.activeSelf)
             return;
 
-        // 공용 딤 배경 활성화
-        if (sharedDimmedBackground != null)
-        {
-            sharedDimmedBackground.SetActive(true);
-        }
+        // 공용 딤 배경 페이드 인
+        ShowDimmedBackground();
 
         windows[id].Open();
 
@@ -103,11 +123,8 @@ public class WindowManager : MonoBehaviour
             activeOverlays.RemoveAt(i);
         }
 
-        // 공용 딤 배경 비활성화
-        if (sharedDimmedBackground != null)
-        {
-            sharedDimmedBackground.SetActive(false);
-        }
+        // 공용 딤 배경 페이드 아웃 (즉시)
+        HideDimmedBackground(immediate: true);
     }
 
     // 오버레이를 수동으로 닫을 때 사용
@@ -118,12 +135,47 @@ public class WindowManager : MonoBehaviour
         windows[id].Close();
         activeOverlays.Remove(id);
 
-        // 활성 오버레이가 없으면 공용 딤 배경 비활성화
-        if (activeOverlays.Count == 0 && sharedDimmedBackground != null)
+        // 활성 오버레이가 없으면 공용 딤 배경 페이드 아웃
+        if (activeOverlays.Count == 0)
         {
-            sharedDimmedBackground.SetActive(false);
+            HideDimmedBackground();
         }
     }
+
+    #region Dim Background
+
+    private void ShowDimmedBackground()
+    {
+        if (sharedDimmedBackground == null || _dimCanvasGroup == null) return;
+
+        _dimTween?.Kill();
+        _dimCanvasGroup.alpha = 0f;
+        sharedDimmedBackground.SetActive(true);
+
+        _dimTween = _dimCanvasGroup.DOFade(1f, dimFadeDuration)
+            .SetEase(Ease.OutQuad);
+    }
+
+    private void HideDimmedBackground(bool immediate = false)
+    {
+        if (sharedDimmedBackground == null || _dimCanvasGroup == null) return;
+
+        _dimTween?.Kill();
+
+        if (immediate)
+        {
+            _dimCanvasGroup.alpha = 0f;
+            sharedDimmedBackground.SetActive(false);
+        }
+        else
+        {
+            _dimTween = _dimCanvasGroup.DOFade(0f, dimFadeDuration)
+                .SetEase(Ease.InQuad)
+                .OnComplete(() => sharedDimmedBackground.SetActive(false));
+        }
+    }
+
+    #endregion
 
     private bool IsValidWindow(WindowType windowType)
     {

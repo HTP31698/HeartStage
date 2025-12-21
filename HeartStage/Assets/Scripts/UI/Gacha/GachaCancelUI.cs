@@ -5,8 +5,9 @@ public class GachaCancelUI : GenericWindow
 {
     [SerializeField] private Button exitButton;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         exitButton.onClick.AddListener(OnExitButtonClicked);
     }
     public override void Open()

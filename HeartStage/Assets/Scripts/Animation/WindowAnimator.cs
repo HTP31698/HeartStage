@@ -13,6 +13,7 @@ public class WindowAnimator : MonoBehaviour
         None,
         Scale,
         Fade,
+        ScaleAndFade,  // Scale + Fade 동시
         SlideUp,
         SlideDown,
         SlideLeft,
@@ -123,6 +124,9 @@ public class WindowAnimator : MonoBehaviour
             case AnimationType.Fade:
                 PlayFadeOpen(onComplete);
                 break;
+            case AnimationType.ScaleAndFade:
+                PlayScaleAndFadeOpen(onComplete);
+                break;
             case AnimationType.SlideUp:
                 PlaySlideOpen(Vector2.down, onComplete);
                 break;
@@ -161,6 +165,9 @@ public class WindowAnimator : MonoBehaviour
                 break;
             case AnimationType.Fade:
                 PlayFadeClose(onComplete);
+                break;
+            case AnimationType.ScaleAndFade:
+                PlayScaleAndFadeClose(onComplete);
                 break;
             case AnimationType.SlideUp:
                 PlaySlideClose(Vector2.up, onComplete);
@@ -285,6 +292,47 @@ public class WindowAnimator : MonoBehaviour
                 _canvasGroup.alpha = 1f; // 리셋
                 onComplete?.Invoke();
             });
+    }
+
+    // Scale + Fade 동시 애니메이션
+    private void PlayScaleAndFadeOpen(Action onComplete)
+    {
+        EnsureCanvasGroup();
+
+        // 초기 상태
+        _targetRect.localScale = Vector3.one * _openStartScale;
+        _canvasGroup.alpha = 0f;
+
+        // Scale + Fade 동시 실행
+        var sequence = DOTween.Sequence();
+        sequence.Join(_targetRect.DOScale(Vector3.one, _openDuration).SetEase(_openEase));
+        sequence.Join(_canvasGroup.DOFade(1f, _openDuration).SetEase(Ease.OutQuad));
+        sequence.OnComplete(() =>
+        {
+            RestoreOriginalPivot();
+            onComplete?.Invoke();
+        });
+
+        _currentTween = sequence;
+    }
+
+    private void PlayScaleAndFadeClose(Action onComplete)
+    {
+        EnsureCanvasGroup();
+
+        // Scale + Fade 동시 실행
+        var sequence = DOTween.Sequence();
+        sequence.Join(_targetRect.DOScale(Vector3.one * _closeEndScale, _closeDuration).SetEase(_closeEase));
+        sequence.Join(_canvasGroup.DOFade(0f, _closeDuration).SetEase(Ease.InQuad));
+        sequence.OnComplete(() =>
+        {
+            // 리셋
+            _targetRect.localScale = Vector3.one;
+            _canvasGroup.alpha = 1f;
+            onComplete?.Invoke();
+        });
+
+        _currentTween = sequence;
     }
 
     // Slide 애니메이션

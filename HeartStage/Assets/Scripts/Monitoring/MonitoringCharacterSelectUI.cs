@@ -19,8 +19,9 @@ public class MonitoringCharacterSelectUI : GenericWindow
 
     private int currentDipatchMemberCount = 3;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         closeButton.onClick.AddListener(OnCloseButtonClicked);
         startButton.onClick.AddListener(OnStartButtonClicked);
 

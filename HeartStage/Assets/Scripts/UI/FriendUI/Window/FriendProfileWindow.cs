@@ -25,8 +25,9 @@ public class FriendProfileWindow : GenericWindow
     private string _currentUid;
     private string _currentNickname;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         Instance = this;
 
         if (closeButton != null)
@@ -50,7 +51,7 @@ public class FriendProfileWindow : GenericWindow
         base.Open();
 
         // ScaleIn 애니메이션 적용
-        var rect = AnimationTarget;
+        var rect = GetComponent<RectTransform>();
         if (rect != null)
         {
             rect.DOKill();
@@ -75,7 +76,7 @@ public class FriendProfileWindow : GenericWindow
     public override void Close()
     {
         // ScaleOut 애니메이션 후 닫기
-        var rect = AnimationTarget;
+        var rect = GetComponent<RectTransform>();
         if (rect != null)
         {
             rect.DOKill();
@@ -236,9 +237,9 @@ public class FriendProfileWindow : GenericWindow
         if (string.IsNullOrEmpty(_currentUid))
             return;
 
-        ConfirmDialog.ShowDelete(
-            "친구 삭제",
+        ConfirmDialog.Show(
             $"{_currentNickname}님을\n친구 목록에서 삭제하시겠습니까?",
+            "삭제", "취소",
             onConfirm: () => RemoveFriendAsync().Forget()
         );
     }
