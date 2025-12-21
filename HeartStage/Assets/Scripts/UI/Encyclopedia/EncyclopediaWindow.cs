@@ -14,7 +14,15 @@ public class EncyclopediaWindow : GenericWindow
     [Header("상세 패널(공용 1개)")]
     public CharacterDetailPanel detailPanel;
 
+    [Header("페이지네이션")]
+    public Button leftButton;
+    public Button rightButton;
+    public TextMeshProUGUI pageText;
+
     private bool _initialized;
+    private int _currentPage = 0;
+    private int _totalPages = 1;
+    private int _slotsPerPage;
 
     // 현재 보여줄 후보들/해금여부
     private List<CharacterCSVData> _candidates = new List<CharacterCSVData>();
@@ -22,15 +30,69 @@ public class EncyclopediaWindow : GenericWindow
 
     private void Start()
     {
+        _slotsPerPage = CharacterButtons.Length;
         InitDropdown();
+        InitPagination();
         RebuildAndRender();
         _initialized = true;
+    }
+
+    private void InitPagination()
+    {
+        if (leftButton != null)
+        {
+            leftButton.onClick.RemoveAllListeners();
+            leftButton.onClick.AddListener(OnLeftButtonClick);
+        }
+
+        if (rightButton != null)
+        {
+            rightButton.onClick.RemoveAllListeners();
+            rightButton.onClick.AddListener(OnRightButtonClick);
+        }
+    }
+
+    private void OnLeftButtonClick()
+    {
+        if (_currentPage > 0)
+        {
+            _currentPage--;
+            RenderButtons();
+            UpdatePaginationUI();
+        }
+    }
+
+    private void OnRightButtonClick()
+    {
+        if (_currentPage < _totalPages - 1)
+        {
+            _currentPage++;
+            RenderButtons();
+            UpdatePaginationUI();
+        }
+    }
+
+    private void UpdatePaginationUI()
+    {
+        // 페이지 텍스트 업데이트
+        if (pageText != null)
+            pageText.text = $"{_currentPage + 1} / {_totalPages}";
+
+        // 버튼 활성화/비활성화
+        if (leftButton != null)
+            leftButton.interactable = _currentPage > 0;
+
+        if (rightButton != null)
+            rightButton.interactable = _currentPage < _totalPages - 1;
     }
 
     private void OnEnable()
     {
         if (_initialized)
+        {
+            _currentPage = 0; // 창 열 때마다 첫 페이지로
             RebuildAndRender();
+        }
     }
 
     private void InitDropdown()
@@ -49,6 +111,7 @@ public class EncyclopediaWindow : GenericWindow
         sortDropdown.onValueChanged.RemoveAllListeners();
         sortDropdown.onValueChanged.AddListener(_ =>
         {
+            _currentPage = 0; // 정렬 변경 시 첫 페이지로
             RebuildAndRender();
         });
     }
@@ -57,7 +120,15 @@ public class EncyclopediaWindow : GenericWindow
     {
         BuildCandidates();
         ApplySort(_candidates, _unlockedList, sortDropdown != null ? sortDropdown.value : 0);
+
+        // 총 페이지 수 계산
+        _totalPages = Mathf.Max(1, Mathf.CeilToInt((float)_candidates.Count / _slotsPerPage));
+
+        // 현재 페이지가 범위를 벗어나면 조정
+        _currentPage = Mathf.Clamp(_currentPage, 0, _totalPages - 1);
+
         RenderButtons();
+        UpdatePaginationUI();
     }
 
     // ✅ SaveLoadManager.unlockedByName 키만 후보로
@@ -129,12 +200,16 @@ public class EncyclopediaWindow : GenericWindow
 
     private void RenderButtons()
     {
+        int startIndex = _currentPage * _slotsPerPage;
+
         for (int i = 0; i < CharacterButtons.Length; i++)
         {
-            if (i < _candidates.Count)
+            int dataIndex = startIndex + i;
+
+            if (dataIndex < _candidates.Count)
             {
-                var data = _candidates[i];
-                bool unlocked = _unlockedList[i];
+                var data = _candidates[dataIndex];
+                bool unlocked = _unlockedList[dataIndex];
                 var btnView = CharacterButtons[i];
 
                 btnView.gameObject.SetActive(true);

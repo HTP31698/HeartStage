@@ -416,7 +416,11 @@ public class CharacterDetailPanel : MonoBehaviour
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
         gameObject.SetActive(false);
     }
-    public void OpenPanel() => gameObject.SetActive(true);
+    public void OpenPanel()
+    {
+        transform.SetAsLastSibling(); // 캔버스 최상단으로
+        gameObject.SetActive(true);
+    }
 
     public string SkillName(int characterid)
     {
