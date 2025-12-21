@@ -12,8 +12,9 @@ public class MonitoringRewardUI : GenericWindow
     // 생성된 아이템 프리팹들을 관리하기 위한 리스트
     private List<GameObject> spawnedRewardItems = new List<GameObject>();
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake(); // 부모 클래스의 Awake 호출
         rewardButton.onClick.AddListener(OnRewardButtonClicked);
     }
 

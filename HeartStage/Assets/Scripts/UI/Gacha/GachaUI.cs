@@ -26,8 +26,9 @@ public class GachaUI : GenericWindow
         base.Close();
     }
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake(); // 부모 클래스의 Awake 호출
         percentageInfoButton.onClick.AddListener(OnGachaPercentageInfoButtonClicked);
         gachaButton.onClick.AddListener(OnGachaButtonOnClicked);
         gachaFiveButton.onClick.AddListener(OnGachaFiveButtonClicked);

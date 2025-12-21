@@ -5,8 +5,9 @@ public class StoryDungeonUI : GenericWindow
 {
     [SerializeField] private Button stroyButton;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake(); // 부모 클래스의 Awake 호출
         stroyButton.onClick.RemoveAllListeners();
         stroyButton.onClick.AddListener(OnStoryButtonClicked);
     }

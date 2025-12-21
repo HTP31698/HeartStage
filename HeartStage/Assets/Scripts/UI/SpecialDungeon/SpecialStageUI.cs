@@ -10,9 +10,9 @@ public class SpecialStageUI : GenericWindow
 {
     [SerializeField] private List<DungeonItemUI> dungeonItems;
 
-    private void Awake()
+    protected override void Awake()
     {
-        // 자동 바인딩: Inspector에서 연결 안된 경우 자식에서 DungeonItemUI 컴포넌트 자동 탐색
+        base.Awake(); // 부모 클래스의 Awake 호출
         if (dungeonItems == null || dungeonItems.Count == 0)
         {
             dungeonItems = new List<DungeonItemUI>(GetComponentsInChildren<DungeonItemUI>(true));

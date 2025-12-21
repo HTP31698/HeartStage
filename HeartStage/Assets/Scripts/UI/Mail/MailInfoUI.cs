@@ -21,8 +21,9 @@ public class MailInfoUI : GenericWindow
     // UserId 캐싱
     private string UserId => AuthManager.Instance?.UserId;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake(); // 부모 클래스의 Awake 호출
         closeButton.onClick.AddListener(OnCloseButtonClicked);
         receiveRewardButton.onClick.AddListener(() => OnReceiveRewardClickedAsync().Forget());
 

@@ -25,8 +25,9 @@ public class FriendProfileWindow : GenericWindow
     private string _currentUid;
     private string _currentNickname;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake(); // 부모 클래스의 Awake 호출
         Instance = this;
 
         if (closeButton != null)

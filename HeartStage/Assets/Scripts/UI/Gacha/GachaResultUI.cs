@@ -16,8 +16,9 @@ public class GachaResultUI : GenericWindow
     private GachaResult gachaResult;
     private Sprite currentSprite; // 현재 스프라이트 참조 저장
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake(); // 부모 클래스의 Awake 호출
         closeButton.onClick.AddListener(OnCloseButtonClicked);
         reTryButton.onClick.AddListener(OnRetryButtonClicked);
     }

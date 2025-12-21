@@ -29,8 +29,9 @@ public class CharacterInfoWindow : GenericWindow
     public Color originCellColor;
     public Color skillRangeColor;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake(); // 부모 클래스의 Awake 호출
         Instance = this;
     }
 

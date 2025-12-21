@@ -11,8 +11,9 @@ public class SpecialDungeonUI : GenericWindow
     [SerializeField] private Button specialStageButton;
     [SerializeField] private Button stroyButton; // 기존 프리팹 필드명 유지
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake(); // 부모 클래스의 Awake 호출
         if (specialStageButton != null)
         {
             specialStageButton.onClick.RemoveAllListeners();
