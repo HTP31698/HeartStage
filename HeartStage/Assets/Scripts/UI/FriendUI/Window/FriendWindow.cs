@@ -104,6 +104,7 @@ public class FriendWindow : GenericWindow
     {
         base.Open();
         NoteLoadingUI.ForceHide(); // 로딩 상태 리셋
+        _isRefreshing = false; // 이전 async 작업 무시
         _currentTab = TabType.List;
         _isManageMode = false;
         _isSentRequestMode = false;
@@ -117,12 +118,64 @@ public class FriendWindow : GenericWindow
 
     private async UniTaskVoid OpenAndRefreshAsync()
     {
-        // 열기 애니메이션 대기 (WindowAnimator._openDuration = 0.25s)
+        // 캐시 있으면 즉시 표시 (로딩 없이)
+        if (FriendService.IsCacheLoaded)
+        {
+            await ShowCachedDataAsync();
+            return;
+        }
+
+        // 캐시 없으면 로딩 표시 후 서버 호출
         await UniTask.Delay(System.TimeSpan.FromSeconds(0.25f));
 
-        if (!gameObject.activeInHierarchy) return; // 이미 닫혔으면 중단
+        if (!gameObject.activeInHierarchy) return;
 
         await RefreshAsync();
+    }
+
+    /// <summary>
+    /// 캐시된 데이터로 즉시 표시 (로딩 인디케이터 없이, 친구목록 탭 전용)
+    /// </summary>
+    private async UniTask ShowCachedDataAsync()
+    {
+        if (_isRefreshing) return;
+        _isRefreshing = true;
+
+        try
+        {
+            ClearList();
+
+            // 캐시된 선물 정보도 갱신
+            await DreamEnergyGiftService.RefreshPendingGiftsByFriendAsync();
+
+            UpdateDailyLimitText();
+
+            var friendUids = FriendService.GetCachedFriendUids();
+            if (friendUids != null && friendUids.Count > 0)
+            {
+                foreach (var uid in friendUids)
+                {
+                    var item = Instantiate(listItemPrefab, contentRoot);
+                    item.Setup(uid);
+                    _spawnedItems.Add(item);
+                }
+                SortListByGiftState();
+            }
+
+            UpdateHeader();
+            UpdateRequestBadge();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[FriendWindow] ShowCachedDataAsync Error: {e}");
+        }
+        finally
+        {
+            _isRefreshing = false;
+
+            if (scrollRect != null)
+                scrollRect.verticalNormalizedPosition = 1f;
+        }
     }
 
     public override void Close()

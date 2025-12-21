@@ -113,6 +113,11 @@ public class SettingPanelUI : GenericWindow
         ConfirmDialog.ShowLogout(
             onConfirm: () =>
             {
+                // 다이얼로그 즉시 숨기기 (씬 전환 전에 완전히 사라지도록)
+                if (ConfirmDialog.Instance != null)
+                    ConfirmDialog.Instance.gameObject.SetActive(false);
+
+                Close();
                 AuthManager.Instance?.SignOut();
             }
         );

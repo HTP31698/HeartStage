@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,6 +19,9 @@ public class ConfirmDialog : MonoBehaviour
 {
     public static ConfirmDialog Instance { get; private set; }
 
+    [Header("배경")]
+    [SerializeField] private CanvasGroup dimBackground;
+
     [Header("텍스트")]
     [SerializeField] private TMP_Text messageText;
 
@@ -25,26 +29,36 @@ public class ConfirmDialog : MonoBehaviour
     [SerializeField] private Button confirmButton;
     [SerializeField] private Button cancelButton;
     [SerializeField] private Button closeButton;
-    [SerializeField] private TMP_Text confirmButtonText;
-    [SerializeField] private TMP_Text cancelButtonText;
-
-    [Header("배경")]
-    [SerializeField] private Button dimBackground;
 
     private Action _onConfirm;
     private Action _onCancel;
     private WindowAnimator _windowAnimator;
     private bool _isOpen;
+    private Tween _dimTween;
+    private const float DimDuration = 0.2f;
+
+    private bool _initialized;
 
     private void Awake()
     {
+        Initialize();
+    }
+
+    /// <summary>
+    /// WindowManager에서 호출 (비활성 상태에서도 초기화 가능)
+    /// </summary>
+    public void Initialize()
+    {
+        if (_initialized) return;
+        _initialized = true;
+
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(transform.root.gameObject);
 
         _windowAnimator = GetComponent<WindowAnimator>();
 
@@ -57,12 +71,6 @@ public class ConfirmDialog : MonoBehaviour
 
         if (closeButton != null)
             closeButton.onClick.AddListener(OnClickCancel);
-
-        if (dimBackground != null)
-            dimBackground.onClick.AddListener(OnClickCancel);
-
-        // 초기 상태: 숨김
-        gameObject.SetActive(false);
     }
 
     #region Public Static API
@@ -95,7 +103,7 @@ public class ConfirmDialog : MonoBehaviour
     /// </summary>
     public static void ShowLogout(Action onConfirm, Action onCancel = null)
     {
-        Show("정말 로그아웃 하시겠습니까?", "로그아웃", "취소", onConfirm, onCancel);
+        Show("정말 로그아웃 하시겠습니까?", "네", "아니요", onConfirm, onCancel);
     }
 
     #endregion
@@ -119,6 +127,9 @@ public class ConfirmDialog : MonoBehaviour
 
         UpdateTexts(message, confirmText, cancelText);
 
+        // 딤 페이드 인
+        FadeDim(true);
+
         // 활성화 (WindowAnimator가 OnEnable에서 열기 애니메이션 재생)
         gameObject.SetActive(true);
     }
@@ -127,12 +138,6 @@ public class ConfirmDialog : MonoBehaviour
     {
         if (messageText != null)
             messageText.text = message;
-
-        if (confirmButtonText != null)
-            confirmButtonText.text = confirmText;
-
-        if (cancelButtonText != null)
-            cancelButtonText.text = cancelText;
     }
 
     private void Close()
@@ -142,6 +147,9 @@ public class ConfirmDialog : MonoBehaviour
 
         _isOpen = false;
 
+        // 딤 페이드 아웃
+        FadeDim(false);
+
         // WindowAnimator로 닫기 애니메이션 후 비활성화
         if (_windowAnimator != null)
         {
@@ -150,6 +158,26 @@ public class ConfirmDialog : MonoBehaviour
         else
         {
             gameObject.SetActive(false);
+        }
+    }
+
+    private void FadeDim(bool show)
+    {
+        if (dimBackground == null) return;
+
+        _dimTween?.Kill();
+
+        if (show)
+        {
+            dimBackground.alpha = 0f;
+            dimBackground.gameObject.SetActive(true);
+            _dimTween = dimBackground.DOFade(1f, DimDuration).SetEase(Ease.OutQuad);
+        }
+        else
+        {
+            _dimTween = dimBackground.DOFade(0f, DimDuration)
+                .SetEase(Ease.InQuad)
+                .OnComplete(() => dimBackground.gameObject.SetActive(false));
         }
     }
 

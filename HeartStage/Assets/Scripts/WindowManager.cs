@@ -20,6 +20,9 @@ public class WindowManager : MonoBehaviour
     [SerializeField] private GameObject sharedDimmedBackground;
     [SerializeField] private float dimFadeDuration = 0.2f;
 
+    [Header("다이얼로그")]
+    [SerializeField] private ConfirmDialog confirmDialog;
+
     public static WindowType currentWindow { get; set; }
     private Dictionary<WindowType, GenericWindow> windows;
 
@@ -40,6 +43,7 @@ public class WindowManager : MonoBehaviour
             if(pair.window != null && !windows.ContainsKey(pair.windowType))
             {
                 windows[pair.windowType] = pair.window;
+                pair.window.Init(this, pair.windowType);
             }
         }
 
@@ -56,6 +60,12 @@ public class WindowManager : MonoBehaviour
             {
                 _dimTargetAlpha = _dimImage.color.a;
             }
+        }
+
+        // ConfirmDialog 초기화 (비활성 상태여도 초기화)
+        if (confirmDialog != null)
+        {
+            confirmDialog.Initialize();
         }
     }
 
@@ -76,7 +86,10 @@ public class WindowManager : MonoBehaviour
         if (windows[id].gameObject.activeSelf)
             return;
 
-        // 공용 딤 배경 페이드 인
+        // 오버레이로 표시
+        windows[id].SetAsOverlay(true);
+
+        // 공용 딤 배경 페이드 인1
         ShowDimmedBackground();
 
         windows[id].Open();
@@ -133,6 +146,18 @@ public class WindowManager : MonoBehaviour
         if (!IsValidWindow(id)) return;
 
         windows[id].Close();
+        activeOverlays.Remove(id);
+
+        // 활성 오버레이가 없으면 공용 딤 배경 페이드 아웃
+        if (activeOverlays.Count == 0)
+        {
+            HideDimmedBackground();
+        }
+    }
+
+    // GenericWindow.Close()에서 호출 - 딤 배경만 처리 (Close는 이미 호출됨)
+    public void NotifyOverlayClosed(WindowType id)
+    {
         activeOverlays.Remove(id);
 
         // 활성 오버레이가 없으면 공용 딤 배경 페이드 아웃
