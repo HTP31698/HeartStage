@@ -45,6 +45,8 @@ public class SaveDataV1 : SaveData
     public bool isInfiniteMode = false;      // 무한 모드 진입 플래그
     public int infiniteStageId = 0;          // 무한 스테이지 ID
 
+    public List<int> completedStoryStages = new List<int>();
+
     // 스토리 컷씬 후 보상창 표시 플래그
     public bool showStoryRewardAfterScene = false;
     public bool StoryAfterLobby = false;

@@ -274,13 +274,11 @@ public class StoryManager : MonoBehaviour
         // 전투가 없는 스테이지인지 확인하여 분기 처리
         if (IsNonCombatStoryStage(selectedStageId))
         {
-            Debug.Log($"[StoryManager] 전투 없음 - 바로 보상창 표시");
             // 전투 없이 바로 보상창 표시
             ShowStoryRewardDirectly(selectedStageId);
         }
         else
         {
-            Debug.Log($"[StoryManager] 전투 있음 - 스테이지 씬으로 이동");
             // 전투가 있는 스테이지는 스테이지 씬으로 이동
             GameSceneManager.ChangeScene(SceneType.StageScene);
         }
@@ -321,49 +319,19 @@ public class StoryManager : MonoBehaviour
     {
         // 66001(던전 1)과 66004(던전 4)는 전투가 없음
         bool isNonCombat = storyStageId == 66001 || storyStageId == 66004;
-        Debug.Log($"[StoryManager] IsNonCombatStoryStage({storyStageId}) = {isNonCombat}");
         return isNonCombat;
     }
 
     /// 전투 없이 바로 스토리 보상창 표시
     private void ShowStoryRewardDirectly(int storyStageId)
     {
-        Debug.Log($"[StoryManager] ShowStoryRewardDirectly 호출 - storyStageId: {storyStageId}");
-
         // 씬 전환 후 보상창 표시를 위한 플래그 설정
         var gameData = SaveLoadManager.Data;
         gameData.showStoryRewardAfterScene = true;
-        Debug.Log($"[StoryManager] showStoryRewardAfterScene 플래그 설정: {gameData.showStoryRewardAfterScene}");
 
         SaveLoadManager.SaveToServer().Forget();
-        Debug.Log($"[StoryManager] 데이터 저장 완료, 로비로 이동 시작");
 
         // 로비 씬으로 이동하면서 보상창 표시 예약
         GameSceneManager.ChangeScene(SceneType.LobbyScene);
-    }
-
-    private StageData ConvertStoryStageToStageData(StoryStageCSVData storyStage)
-    {
-        var stageData = ScriptableObject.CreateInstance<StageData>();
-
-        stageData.stage_ID = storyStage.story_stage_id;
-        stageData.stage_name = storyStage.story_stage_name;
-        stageData.stage_step1 = storyStage.story_stage_id % 10;
-        stageData.stage_step2 = 1;
-        stageData.stage_type = storyStage.stage_type;
-        stageData.member_count = storyStage.member_count;
-        stageData.level_max = storyStage.level_max;
-        stageData.Fever_Time_stack = storyStage.Fever_Time_stack;
-        stageData.wave_time = storyStage.wave_time;
-        stageData.wave1_id = storyStage.wave1_id;
-        stageData.wave2_id = storyStage.wave2_id;
-        stageData.wave3_id = storyStage.wave3_id;
-        stageData.wave4_id = 0;
-        stageData.dispatch_reward = 0;
-        stageData.fail_stamina = 0;
-        stageData.prefab = storyStage.prefab;
-        stageData.stage_position = 2;
-
-        return stageData;
     }
 }

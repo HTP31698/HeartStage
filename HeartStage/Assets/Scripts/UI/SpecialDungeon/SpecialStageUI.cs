@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -30,7 +30,6 @@ public class SpecialStageUI : GenericWindow
     {
         base.Close();
     }
-
     private void RegisterItemCallbacks()
     {
         foreach (var item in dungeonItems)
@@ -41,7 +40,6 @@ public class SpecialStageUI : GenericWindow
             }
         }
     }
-
     private void OnItemExpanded(DungeonItemUI expandedItem)
     {
         // 다른 아이템 모두 축소
@@ -53,7 +51,6 @@ public class SpecialStageUI : GenericWindow
             }
         }
     }
-
     private void CollapseAll()
     {
         foreach (var item in dungeonItems)

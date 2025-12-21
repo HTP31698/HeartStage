@@ -1,4 +1,5 @@
 ﻿using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -221,12 +222,28 @@ public class StoryStageRewardUI : GenericWindow
             }
 
             SaveLoadManager.SaveToServer().Forget();
-            LobbyManager.Instance?.MoneyUISet(); 
+            LobbyManager.Instance?.MoneyUISet();
         }
         else
         {
             ItemInvenHelper.AddItem(itemId, itemCount);
             Debug.Log($"[StoryStageRewardUI] 아이템 획득: {itemId} x {itemCount}");
+        }
+
+        // ★ 스토리 스테이지 완료 표시 추가
+        var saveDataV1 = SaveLoadManager.Data as SaveDataV1;
+        if (saveDataV1 != null)
+        {
+            if (saveDataV1.completedStoryStages == null)
+            {
+                saveDataV1.completedStoryStages = new List<int>();
+            }
+
+            if (!saveDataV1.completedStoryStages.Contains(storyStageId))
+            {
+                saveDataV1.completedStoryStages.Add(storyStageId);
+                Debug.Log($"[StoryStageRewardUI] 스토리 스테이지 완료 처리: {storyStageId}");
+            }
         }
 
         // 스테이지 클리어 퀘스트 처리
