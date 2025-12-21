@@ -81,8 +81,26 @@ namespace DTT.AreaOfEffectRegions
 
         public void UpdateProjectors()
         {
-            UpdateBody();
-            UpdateHead();
+            if (_width <= 2f)
+            {
+                if (_bodyProjector != null)
+                    _bodyProjector.gameObject.SetActive(true);
+
+                if (_headProjector != null)
+                    _headProjector.gameObject.SetActive(false);
+
+                UpdateBody();
+            }
+            else
+            {
+                if (_bodyProjector != null)
+                    _bodyProjector.gameObject.SetActive(false);
+
+                if (_headProjector != null)
+                    _headProjector.gameObject.SetActive(true);
+
+                UpdateHead();
+            }
         }
 
         private void UpdateBody()

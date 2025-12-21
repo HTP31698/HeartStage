@@ -67,7 +67,10 @@ public class SkillRangeDisplayer : MonoBehaviour
         var skillDataName = DataTableManager.SkillTable.Get(skillId).skill_name;
         var skillData = ResourceManager.Instance.Get<SkillData>(skillDataName);
         // 2D 방향 벡터
-        Vector2 dir = (touchPos - characterPos).normalized;
+        Vector2 rawDir = touchPos - characterPos;
+        if (rawDir.sqrMagnitude < 0.0001f) 
+            return;
+        Vector2 dir = rawDir.normalized;
         // 직선형
         if (skillData.skill_range_type == 1)
         {
