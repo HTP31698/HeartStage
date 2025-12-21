@@ -54,7 +54,7 @@ public class BossAlertUI : GenericWindow
     {
         base.Open();
 
-        Debug.Log($"[BossAlertUI] Open - isEnhanceAlert: {isEnhanceAlert}, alertText null: {alertText == null}");
+        SoundManager.Instance.PlaySFX(SoundName.SFX_Boss_Appear);
 
         // 강화 알림 모드일 때 텍스트 설정
         if (isEnhanceAlert && alertText != null)

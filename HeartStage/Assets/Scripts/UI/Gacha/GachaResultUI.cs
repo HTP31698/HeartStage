@@ -27,6 +27,8 @@ public class GachaResultUI : GenericWindow
     {
         base.Open();
 
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Gacha_Result);
+
         if (GachaUI.gachaResultReciever.HasValue)
         {
             SetGachaResult(GachaUI.gachaResultReciever.Value);

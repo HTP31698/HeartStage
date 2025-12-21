@@ -24,6 +24,9 @@ public class Gacha5TryResultUI : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Gacha_Result);
+
         if (GachaUI.gachaFiveResultReceiver != null && GachaUI.gachaFiveResultReceiver.Count > 0)
         {
             DisplayResults(GachaUI.gachaFiveResultReceiver);
