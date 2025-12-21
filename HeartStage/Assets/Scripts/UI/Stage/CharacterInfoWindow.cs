@@ -63,8 +63,7 @@ public class CharacterInfoWindow : GenericWindow
             var skillData = DataTableManager.SkillTable.Get(passiveSkills[0]);
             passiveDescText.text = skillData.GetFormattedInfo();
             // 2. 실제 스킬 범위 색칠
-            var usedSlots = new HashSet<int> { 1, 2, 3, 6, 7, 8, 11, 12, 13 };
-            var skillRangeIndexes = PassivePatternUtil.GetPatternTiles(7, skillData.passive_type, 15).Where(idx => usedSlots.Contains(idx));
+            var skillRangeIndexes = PassivePatternUtil.GetPatternTiles(7, skillData.passive_type, 15);
             foreach (var index in skillRangeIndexes)
             {
                 cells[index].color = skillRangeColor;
