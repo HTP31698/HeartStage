@@ -4,13 +4,29 @@ using UnityEngine.Rendering;
 
 public class LobbyHomeInitializer : MonoBehaviour
 {
+    public static LobbyHomeInitializer Instance;
+
+    public WindowManager windowManager;
+    public CanvasGroup lobbyUiCanvasGroup;
+    public GameObject returnButton;
+    public List<GameObject> hideObjects;
+
     public GameObject characterBase; // 캐릭터 이미지 프리팹의 부모가 될 베이스 프리팹
 
     // 캐릭터 sorting order 조절
     private readonly List<SortingGroup> sortingGroups = new();
     private const int BaseOrder = 201;
 
+    private void Awake()
+    {
+        Instance = this;
+    }
     public void Init()
+    {
+        Init(SaveLoadManager.Data);
+    }
+
+    public void Init(SaveDataV1 data)
     {
         sortingGroups.Clear();
 
@@ -22,7 +38,7 @@ public class LobbyHomeInitializer : MonoBehaviour
 
         Bounds bounds = DragZoomPanManager.Instance.InnerBounds;
 
-        foreach (var characterId in SaveLoadManager.Data.ownedIds)
+        foreach (var characterId in data.ownedIds)
         {
             var characterData = DataTableManager.CharacterTable.Get(characterId);
             var imagePrefab = ResourceManager.Instance.Get<GameObject>(characterData.image_PrefabName);
@@ -53,5 +69,37 @@ public class LobbyHomeInitializer : MonoBehaviour
             float y = sg.transform.position.y;
             sg.sortingOrder = BaseOrder + Mathf.RoundToInt(-y);
         }
+    }
+
+    // 친구 숙소 방문
+    public void OpenLobbyHomeWindow(SaveDataV1 friendData)
+    {
+        if (friendData == null)
+        {
+            Debug.LogWarning("[LobbyHome] friendData is null");
+            return;
+        }
+
+        lobbyUiCanvasGroup.interactable = false;
+        returnButton.SetActive(true);
+        foreach(var hide in hideObjects)
+        {
+            hide.SetActive(false);
+        }
+
+        windowManager.OpenOverlayNoDim(WindowType.LobbyHome);
+        Init(friendData);
+    }
+
+    // 내 숙소로 돌아가기
+    public void ReturnMyLobbyHome()
+    {
+        lobbyUiCanvasGroup.interactable = true;
+        returnButton.SetActive(false);
+        foreach (var hide in hideObjects)
+        {
+            hide.SetActive(true);
+        }
+        Init();
     }
 }

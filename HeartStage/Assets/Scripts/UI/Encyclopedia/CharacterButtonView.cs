@@ -11,7 +11,6 @@ public class CharacterButtonView : MonoBehaviour
 
     [SerializeField] private Button button;
 
-    private Sprite _runtimeSprite;
     private int _lastId = -1;
 
     private void Awake()
@@ -43,22 +42,7 @@ public class CharacterButtonView : MonoBehaviour
             return;
         }
 
-        var texture = ResourceManager.Instance.Get<Texture2D>(data.card_imageName);
-        if (texture == null)
-        {
-            Debug.LogWarning($"[CharacterButtonView] Texture 로드 실패: {data.card_imageName}");
-            return;
-        }
-
-        if (_runtimeSprite != null) Destroy(_runtimeSprite);
-
-        _runtimeSprite = Sprite.Create(
-            texture,
-            new Rect(0, 0, texture.width, texture.height),
-            new Vector2(0.5f, 0.5f)
-        );
-
-        iconImage.sprite = _runtimeSprite;
+        iconImage.sprite = ResourceManager.Instance.GetSprite(data.card_imageName);
     }
 
     // ⭐ 잠김(회색) / 해금(정상)
@@ -73,11 +57,6 @@ public class CharacterButtonView : MonoBehaviour
 
         //if (button != null)
         //    button.interactable = !locked; // 잠긴애 클릭 막기
-    }
-
-    private void OnDestroy()
-    {
-        if (_runtimeSprite != null) Destroy(_runtimeSprite);
     }
 }
 

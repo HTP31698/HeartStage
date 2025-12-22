@@ -312,5 +312,6 @@ public class FriendListItemUI : MonoBehaviour
     private void OnClickVisitHouse()
     {
         FriendService.VisitFriendHouseAsync(_friendUid).Forget();
+        WindowManager.Instance?.CloseOverlay(WindowType.Friend);
     }
 }
