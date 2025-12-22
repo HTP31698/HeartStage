@@ -46,7 +46,6 @@ public class StoryDungeonInfoUI : GenericWindow
             return;
         }
 
-        // StoryInfoPrefab 인스턴스 생성
         GameObject stageObject = Instantiate(storyInfoPrefab, content);
         StoryInfoPrefab storyInfo = stageObject.GetComponent<StoryInfoPrefab>();
 
@@ -64,9 +63,8 @@ public class StoryDungeonInfoUI : GenericWindow
             {
                 rectTransform.anchoredPosition3D = Vector3.zero;
             }
-
-            Debug.Log($"스토리 스테이지 프리팹 생성: {stageData.story_stage_id} - {stageData.story_stage_name}");
         }
+
         else
         {
             Destroy(stageObject);
@@ -80,9 +78,6 @@ public class StoryDungeonInfoUI : GenericWindow
         if (stageData != null)
         {
             Debug.Log($"스토리 스테이지 선택됨: {stageData.story_stage_name} (ID: {storyStageId})");
-
-            // 스토리 던전 정보 UI 닫기 (선택적)
-            // Close();
         }
     }
 
