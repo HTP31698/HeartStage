@@ -395,29 +395,54 @@ public class StageManager : MonoBehaviour
         {
             QuestManager.Instance.OnStageClear(currentStageData.stage_ID);
 
-            // ★ 스테이지 최초 클리어 업적 체크 (튜토리얼 등)
+            // 스테이지 최초 클리어 업적 체크 (튜토리얼 등)
             QuestManager.Instance.OnStageFirstClear(currentStageData.stage_ID);
+        }
+
+        // 스토리 스테이지 완료 처리 추가
+        if (currentStageData != null)
+        {
+            int stageId = currentStageData.stage_ID;
+
+            // 스토리 스테이지인지 확인
+            if (stageId >= 66000 && stageId < 67000)
+            {
+                var saveData = SaveLoadManager.Data as SaveDataV1;
+                if (saveData != null)
+                {
+                    // 완료 목록에 추가 (UI 표시용)
+                    if (!saveData.completedStoryStages.Contains(stageId))
+                    {
+                        saveData.completedStoryStages.Add(stageId);
+                    }
+
+                    // 클리어 목록에도 추가 (보상 중복 방지용)
+                    if (!saveData.clearedStoryStages.Contains(stageId))
+                    {
+                        saveData.clearedStoryStages.Add(stageId);
+                    }
+                }
+            }
         }
 
         if (windowManager != null)
         {
-            // 전투가 없는 스토리 스테이지인지 확인 (66001, 66004만)
+            // 전투가 없는 스토리 스테이지인지 확인 
             bool isNonCombatStoryStage = currentStageData != null &&
                                        (currentStageData.stage_ID == 66001 || currentStageData.stage_ID == 66004);
 
-            // 전투가 있는 스토리 스테이지인지 확인 (66002, 66003)
+            // 전투가 있는 스토리 스테이지인지 확인 
             bool isCombatStoryStage = currentStageData != null &&
                                     (currentStageData.stage_ID == 66002 || currentStageData.stage_ID == 66003);
 
             if (isNonCombatStoryStage)
             {
-                // 전투 없는 스토리 스테이지 - 스테이지에서 StoryStageReward 사용
-                // (이 케이스는 실제로는 발생하지 않아야 함 - 컷씬에서 바로 로비로 가므로)
+                // 전투 없는 스토리 스테이지 
                 windowManager.OpenOverlay(WindowType.StoryStageRewardUI);
             }
             else if (isCombatStoryStage)
             {
-                // 전투 있는 스토리 스테이지 클리어 시 - StoryStageReward 사용
+                // 전투 있는 스토리 스테이지 클리어 시 
                 windowManager.OpenOverlay(WindowType.StoryStageReward);
             }
             else

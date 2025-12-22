@@ -75,7 +75,15 @@ public class StageWindow : GenericWindow
             var stageData = allStages[i];
             var sb = new StringBuilder();
             sb.Clear();
-            sb.Append($"{stageData.stage_step1} - {stageData.stage_step2}");
+
+            if (stageData.stage_step1 == 0 && stageData.stage_step2 == 1)
+            {
+                sb.Append("튜토리얼");
+            }
+            else
+            {
+                sb.Append($"{stageData.stage_step1} - {stageData.stage_step2}");
+            }
 
             GameObject stageObj = Instantiate(stagePrefab, contentParent);
 
