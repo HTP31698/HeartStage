@@ -413,7 +413,7 @@ public class StageManager : MonoBehaviour
             {
                 // 전투 없는 스토리 스테이지 - 스테이지에서 StoryStageReward 사용
                 // (이 케이스는 실제로는 발생하지 않아야 함 - 컷씬에서 바로 로비로 가므로)
-                windowManager.OpenOverlay(WindowType.StoryStageReward);
+                windowManager.OpenOverlay(WindowType.StoryStageRewardUI);
             }
             else if (isCombatStoryStage)
             {
