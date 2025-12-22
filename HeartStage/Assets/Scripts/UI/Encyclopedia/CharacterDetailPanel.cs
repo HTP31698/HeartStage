@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -50,6 +51,16 @@ public class CharacterDetailPanel : MonoBehaviour
     [Header("랭크업 버튼")]
     [SerializeField] private Button rankUpButton;
 
+    [Header("의상 슬롯")]
+    [SerializeField] private Button topCostumeSlot;      // 상의 슬롯 버튼
+    [SerializeField] private Button pantsCostumeSlot;    // 하의 슬롯 버튼
+    [SerializeField] private Button shoesCostumeSlot;    // 신발 슬롯 버튼
+    [SerializeField] private Image topCostumeImage;      // 상의 썸네일
+    [SerializeField] private Image pantsCostumeImage;    // 하의 썸네일
+    [SerializeField] private Image shoesCostumeImage;    // 신발 썸네일
+
+    [Header("의상 선택 팝업")]
+    [SerializeField] private CostumeSelectPopup costumeSelectPopup;
 
     // 런타임에 만든 스프라이트 누수 방지용
     private Sprite _runtimeSprite;
@@ -75,6 +86,18 @@ public class CharacterDetailPanel : MonoBehaviour
             statModeToggleButton.onClick.RemoveAllListeners();
             statModeToggleButton.onClick.AddListener(OnStatModeToggle);
         }
+
+        // 의상 슬롯 버튼 리스너
+        if (topCostumeSlot != null)
+            topCostumeSlot.onClick.AddListener(() => OpenCostumePopup(CostumeType.Top));
+        if (pantsCostumeSlot != null)
+            pantsCostumeSlot.onClick.AddListener(() => OpenCostumePopup(CostumeType.Pants));
+        if (shoesCostumeSlot != null)
+            shoesCostumeSlot.onClick.AddListener(() => OpenCostumePopup(CostumeType.Shoes));
+
+        // 팝업 콜백 등록
+        if (costumeSelectPopup != null)
+            costumeSelectPopup.OnCostumeChanged += RefreshCostumeSlots;
     }
 
     private void OnStatModeToggle()
@@ -93,9 +116,11 @@ public class CharacterDetailPanel : MonoBehaviour
             attackText.text = $"정화 강도 {_currentCharacterData.atk_dmg}";
             attackSpeedText.text = $"정화 속도 {_currentCharacterData.atk_speed}";
             healthText.text = $"체력 {_currentCharacterData.char_hp}";
-            critRateText.text = $"강력한 정화 확률 {_currentCharacterData.crt_chance}%";
-            critDmgText.text = $"강력한 정화 강도 {_currentCharacterData.crt_dmg}%";
-            additionalAttackText.text = $"추가 정화 확률 {_currentCharacterData.atk_addcount}";
+            critRateText.text = $"강한정화 확률 {_currentCharacterData.crt_chance}%";
+            // crt_dmg는 1.47 같은 배수로 저장됨 → 100 곱해서 147%로 표시
+            int critDmgPercent = Mathf.RoundToInt(_currentCharacterData.crt_dmg * 100f);
+            critDmgText.text = $"강한정화 강도 {critDmgPercent}%";
+            additionalAttackText.text = $"추가 정화 확률 {_currentCharacterData.atk_addcount}%";
             attackRangeText.text = $"정화 도달 거리 {_currentCharacterData.atk_range}";
         }
         else
@@ -104,9 +129,9 @@ public class CharacterDetailPanel : MonoBehaviour
             attackText.text = $"보컬 {StatPower.GetVocalPower(_currentCharacterData.atk_dmg)}";
             attackSpeedText.text = $"랩 {StatPower.GetLabPower(_currentCharacterData.atk_speed)}";
             healthText.text = $"댄스 {StatPower.GetDancePower(_currentCharacterData.char_hp)}";
-            critRateText.text = $"비주얼 {StatPower.GetVisualPower(_currentCharacterData.crt_chance)}";
-            critDmgText.text = $"섹시 {StatPower.GetSexyPower(_currentCharacterData.crt_dmg)}";
-            additionalAttackText.text = $"큐티 {StatPower.GetCutyPower(_currentCharacterData.atk_addcount)}";
+            critRateText.text = $"비주얼 {StatPower.GetVisualPower(_currentCharacterData.crt_chance)}%";
+            critDmgText.text = $"섹시 {StatPower.GetSexyPower(_currentCharacterData.crt_dmg)}%";
+            additionalAttackText.text = $"큐티 {StatPower.GetCutyPower(_currentCharacterData.atk_addcount)}%";
             attackRangeText.text = $"카리스마 {StatPower.GetCharismaPower(_currentCharacterData.atk_range)}";
         }
     }
@@ -123,10 +148,10 @@ public class CharacterDetailPanel : MonoBehaviour
         _currentCharacterData = characterData;
         _isBattleMode = false; // 새 캐릭터 선택 시 아이돌 모드로 리셋
 
-        nameText.text = characterData.char_name;
+        // 통합 텍스트: "하나 Lv.10 보컬"
+        string typeName = GetAttributeName(characterData.char_type);
+        nameText.text = $"{characterData.char_name} Lv.{characterData.char_lv} {typeName}";
         rankText.text = $"등급 {characterData.char_rank}";
-        levelText.text = $"레벨 {characterData.char_lv}";
-        typeText.text = $"속성 {(CharacterType)characterData.char_type}";
 
         UpdateStatTexts();
 
@@ -150,8 +175,8 @@ public class CharacterDetailPanel : MonoBehaviour
         // 랭크업 구현 Onclick 리스너 등은 여기서 추가 가능
         ApplyRankUpText(characterData.char_id);
 
-        // 필요 재화 정보도 여기서 설정 가능
-
+        // 의상 슬롯 새로고침
+        RefreshCostumeSlots();
     }
 
     private void ApplyCharacterImage(string imageKey)
@@ -424,8 +449,9 @@ public class CharacterDetailPanel : MonoBehaviour
     {
         nameText.text = "";
         rankText.text = "등급 ";
-        levelText.text = "레벨 ";
-        typeText.text = "속성 ";
+        // levelText, typeText는 nameText에 통합됨 (필드 유지만)
+        if (levelText != null) levelText.text = "";
+        if (typeText != null) typeText.text = "";
         attackText.text = "공격력 ";
         attackSpeedText.text = "공격속도 ";
         attackRangeText.text = "공격범위 ";
@@ -497,5 +523,142 @@ public class CharacterDetailPanel : MonoBehaviour
             Destroy(_runtimeSprite);
             _runtimeSprite = null;
         }
+
+        // 팝업 콜백 해제
+        if (costumeSelectPopup != null)
+            costumeSelectPopup.OnCostumeChanged -= RefreshCostumeSlots;
     }
+
+    #region 유틸리티
+
+    /// <summary>
+    /// CharacterAttribute를 한글 이름으로 변환
+    /// </summary>
+    private string GetAttributeName(int charType)
+    {
+        return charType switch
+        {
+            1 => "보컬",
+            2 => "랩",
+            3 => "카리스마",
+            4 => "큐티",
+            5 => "댄스",
+            6 => "비주얼",
+            7 => "섹시",
+            _ => ""
+        };
+    }
+
+    #endregion
+
+    #region 의상 시스템
+
+    /// <summary>
+    /// 의상 선택 팝업 열기
+    /// </summary>
+    private void OpenCostumePopup(CostumeType type)
+    {
+        if (_currentCharacterData == null)
+            return;
+
+        // 미보유 캐릭터는 의상 변경 불가
+        if (!CharacterHelper.HasCharacter(_currentCharacterId))
+        {
+            ToastUI.Show("보유한 캐릭터만 의상을 변경할 수 있습니다.");
+            return;
+        }
+
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+        if (costumeSelectPopup != null)
+        {
+            costumeSelectPopup.Open(_currentCharacterData.char_name, type);
+        }
+    }
+
+    /// <summary>
+    /// 의상 슬롯 썸네일 새로고침
+    /// </summary>
+    private void RefreshCostumeSlots()
+    {
+        if (_currentCharacterData == null)
+            return;
+
+        RefreshCostumeSlotsAsync().Forget();
+    }
+
+    private async UniTaskVoid RefreshCostumeSlotsAsync()
+    {
+        var saveData = SaveLoadManager.Data;
+        if (saveData == null || _currentCharacterData == null)
+            return;
+
+        string charName = _currentCharacterData.char_name;
+        if (!saveData.equippedCostumeByChar.TryGetValue(charName, out var costume))
+        {
+            // 장착 의상 없음 - 슬롯 비우기
+            ClearCostumeSlot(topCostumeImage);
+            ClearCostumeSlot(pantsCostumeImage);
+            ClearCostumeSlot(shoesCostumeImage);
+            return;
+        }
+
+        // 각 슬롯 업데이트
+        await UpdateCostumeSlot(topCostumeImage, CostumeType.Top, costume.topItemId);
+        await UpdateCostumeSlot(pantsCostumeImage, CostumeType.Pants, costume.pantsItemId);
+        await UpdateCostumeSlot(shoesCostumeImage, CostumeType.Shoes, costume.shoesItemId);
+    }
+
+    private async UniTask UpdateCostumeSlot(Image slotImage, CostumeType type, int itemId)
+    {
+        if (slotImage == null)
+            return;
+
+        if (itemId <= 0)
+        {
+            ClearCostumeSlot(slotImage);
+            return;
+        }
+
+        // ItemTable에서 아이콘 가져오기 시도
+        var itemData = DataTableManager.ItemTable?.Get(itemId);
+        if (itemData != null && !string.IsNullOrEmpty(itemData.prefab))
+        {
+            var sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
+            if (sprite != null)
+            {
+                slotImage.sprite = sprite;
+                slotImage.color = Color.white;
+                return;
+            }
+        }
+
+        // 없으면 첫 번째 의상 스프라이트 사용
+        int spriteId = CostumeItemID.GetSpriteId(itemId);
+        if (spriteId > 0)
+        {
+            string address = CostumeHelper.GetSpriteAddress(type, spriteId, 0);
+            var sprite = await CostumeHelper.LoadSprite(address);
+            if (sprite != null)
+            {
+                slotImage.sprite = sprite;
+                slotImage.color = Color.white;
+                return;
+            }
+        }
+
+        ClearCostumeSlot(slotImage);
+    }
+
+    private void ClearCostumeSlot(Image slotImage)
+    {
+        if (slotImage == null)
+            return;
+
+        slotImage.sprite = null;
+        slotImage.color = new Color(1f, 1f, 1f, 0.3f); // 빈 슬롯 표시
+    }
+
+    #endregion
 }
