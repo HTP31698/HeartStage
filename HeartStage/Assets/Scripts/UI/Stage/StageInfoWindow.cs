@@ -105,6 +105,12 @@ public class StageInfoWindow : GenericWindow
             case 2:
                 imageName = "stage2infoimage";
                 break;
+            case 3:
+                imageName = "stage3infoimage";
+                break;
+            case 4:
+                imageName = "stage4infoimage";
+                break;
             default:
                 break;
         }
