@@ -273,6 +273,9 @@ NoteLoadingUI.Hide();    // 로딩 숨기기 (카운터 -1)
 NoteLoadingUI.ForceHide(); // 강제 숨기기 (카운터 리셋)
 ```
 
+### 사용 위치
+- `StageSetupWindow.StartButtonClick()` - 스테이지 시작 버튼 클릭 시 잠깐 멈추는 동안 표시
+
 ### Unity 설정
 ```
 NoteLoadingUI (GameObject) - NoteLoadingUI.cs
@@ -290,6 +293,96 @@ NoteLoadingUI (GameObject) - NoteLoadingUI.cs
 - bounceHeight: 15
 - bounceDuration: 0.15
 - delayBetweenNotes: 0.08
+
+---
+
+## SceneLoader 로딩 시스템 (2024-12-22)
+
+### 개요
+씬 전환 시 로딩 UI와 진행률 바를 관리하는 시스템. 가짜 진행률(Fake Progress)로 부드러운 사용자 경험 제공.
+
+### 파일 위치
+- `Assets/Scripts/SceneLoader.cs` - 로딩 UI 및 진행률 관리
+
+### 가짜 진행률 시스템
+```
+ShowLoading() 호출 시:
+├── 0% 시작
+├── 0~6초: Ease-in 커브 (t²) → 0%~95%
+├── 6초 이후: 1%/초 → 최대 99%
+└── SetProgressExternal(1.0f) 호출 시 → 100% 스냅
+```
+
+**Ease-in 커브 진행 예시:**
+| 시간 | 진행률 |
+|------|--------|
+| 1초 | ~2.6% |
+| 2초 | ~10.6% |
+| 3초 | ~23.8% |
+| 4초 | ~42.2% |
+| 5초 | ~66% |
+| 6초 | 95% |
+
+### 사용법
+```csharp
+// 1. 로딩 시작 (GameSceneManager.ChangeScene에서 자동 호출)
+SceneLoader.ShowLoading();
+
+// 2. 씬 컨트롤러에서 준비 완료 시
+SceneLoader.SetProgressExternal(1.0f);
+
+// 3. 로딩 UI 숨기기
+await SceneLoader.HideLoadingWithDelay(0);
+```
+
+### 씬 컨트롤러 구현 패턴
+```csharp
+// StageSceneController, InfinityStageSceneController 등
+private async void Awake()
+{
+    // 컴포넌트 준비 대기 (가짜 진행은 SceneLoader.Update()에서 자동 처리)
+    while (!(component1.IsReady && component2.IsReady))
+        await UniTask.Yield();
+
+    // 완료 시 100%로 스냅
+    SceneLoader.SetProgressExternal(1.0f);
+
+    await UniTask.Delay(300, DelayType.UnscaledDeltaTime);
+    GameSceneManager.NotifySceneReady(SceneType.StageScene, 100);
+    await SceneLoader.HideLoadingWithDelay(0);
+}
+```
+
+### 특징
+- **Lerp 스무딩**: `_displayProgress`가 `_targetProgress`를 부드럽게 따라감 (smoothSpeed = 12)
+- **뒤로 안 감**: `Mathf.Max` 처리로 진행률이 절대 감소하지 않음
+- **Ease-in 커브**: 초반 느리게 시작 → 점점 빨라짐 (씬 로딩 중 멈춤 현상 자연스럽게 처리)
+
+---
+
+## 오브젝트 풀 최적화 (2024-12-22)
+
+### 풀 프리로드량 감소
+스테이지 로딩 속도 개선을 위해 초기 프리로드량 감소 (maxSize는 유지):
+
+| 풀 ID | 이전 preload | 변경 후 | maxSize |
+|-------|-------------|---------|---------|
+| monsterHitEffectPool | 50 | 25 | 100 |
+| MonsterProjectile | 100 | 40 | 200 |
+| NocturnProjectile | 20 | 15 | 100 |
+| DropItem | 60 | 30 | 120 |
+
+### 보스 스킬 소환 몬스터 프리로드
+`MonsterSpawner.PreloadBossSkillSummons()` 메서드 추가:
+- 보스 몬스터의 skill_id1~3 확인
+- SkillTable에서 summon_type 조회
+- 소환 몬스터 데이터 및 풀 미리 생성
+- 보스 소환 시 지연 방지
+
+```csharp
+// MonsterSpawner.cs - LoadStageDataAndInitializePool() 내부
+await PreloadBossSkillSummons();
+```
 
 ---
 
