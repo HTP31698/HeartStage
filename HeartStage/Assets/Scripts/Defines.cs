@@ -263,13 +263,7 @@ public class CharacterAttributeIcon
         CharacterAttribute attr = (CharacterAttribute)char_type;
 
         string assetName = iconNames[attr];
-
-        var texture = ResourceManager.Instance.Get<Texture2D>(assetName);
-        image.sprite = Sprite.Create(
-            texture,
-            new Rect(0, 0, texture.width, texture.height),
-            new Vector2(0.5f, 0.5f)
-        );
+        image.sprite = ResourceManager.Instance.GetSprite(assetName);
     }
 }
 

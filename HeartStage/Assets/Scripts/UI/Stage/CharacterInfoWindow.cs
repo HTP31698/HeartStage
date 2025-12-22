@@ -37,8 +37,7 @@ public class CharacterInfoWindow : GenericWindow
 
     public void Init(CharacterData data)
     {
-        var texture = ResourceManager.Instance.Get<Texture2D>(data.card_imageName);
-        characterImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        characterImage.sprite = ResourceManager.Instance.GetSprite(data.card_imageName);
         characterName.text = data.char_name;
         // 캐릭터 속성 아이콘 변경
         CharacterAttributeIcon.ChangeIcon(attributeIcon, data.char_type);
@@ -64,8 +63,7 @@ public class CharacterInfoWindow : GenericWindow
             var skillData = DataTableManager.SkillTable.Get(passiveSkills[0]);
             passiveDescText.text = skillData.GetFormattedInfo();
             // 2. 실제 스킬 범위 색칠
-            var usedSlots = new HashSet<int> { 1, 2, 3, 6, 7, 8, 11, 12, 13 };
-            var skillRangeIndexes = PassivePatternUtil.GetPatternTiles(7, skillData.passive_type, 15).Where(idx => usedSlots.Contains(idx));
+            var skillRangeIndexes = PassivePatternUtil.GetPatternTiles(7, skillData.passive_type, 15);
             foreach (var index in skillRangeIndexes)
             {
                 cells[index].color = skillRangeColor;
