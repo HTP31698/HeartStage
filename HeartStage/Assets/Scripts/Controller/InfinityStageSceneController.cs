@@ -14,24 +14,20 @@ public class InfinityStageSceneController : MonoBehaviour
         while (stageSetup == null || ownedSetup == null || monsterSpawner == null)
             await UniTask.Yield();
 
-        // 2) UI 세팅 + 몬스터/보스 풀 & 스킬 프리웜까지 전부 끝날 때까지 대기
-        while (!(stageSetup.IsReady
-                 && ownedSetup.IsReady
-                 && monsterSpawner.isInitialized))
-        {
+        // 2) 🔹 컴포넌트 준비 대기 (가짜 진행은 SceneLoader.Update()에서 자동 처리)
+        while (!(ownedSetup.IsReady && stageSetup.IsReady && monsterSpawner.isInitialized))
             await UniTask.Yield();
-        }
 
-        // 3) 진짜로 다 준비된 시점에서만 100% 찍기
+        // 🔹 완료 시 100%로 스냅
         SceneLoader.SetProgressExternal(1.0f);
 
-        // 4) 100% 상태 잠깐 보여주고
+        // 3) 100% 상태 잠깐 보여주기
         await UniTask.Delay(300, DelayType.UnscaledDeltaTime);
 
-        // 5) 무한 스테이지 씬 준비 완료 알림
+        // 4) 무한 스테이지 씬 준비 완료 알림
         GameSceneManager.NotifySceneReady(SceneType.InfinityStage, 100);
 
-        // 6) 로딩 UI 닫기
+        // 5) 로딩 UI 닫기
         await SceneLoader.HideLoadingWithDelay(0);
     }
 }

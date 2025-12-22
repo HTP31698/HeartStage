@@ -12,23 +12,9 @@ public class OwnedCharacterSetup : MonoBehaviour
 
     public bool IsReady { get; private set; }
 
-    // 🔹 이 컴포넌트가 담당할 전역 프로그레스 구간 (60% ~ 85%)
-    private const float GlobalStart = 0.6f;
-    private const float GlobalEnd = 0.85f;
-
-    private void ReportOwnedProgress(float local01)
-    {
-        float clamped = Mathf.Clamp01(local01);
-        float global = Mathf.Lerp(GlobalStart, GlobalEnd, clamped);
-        SceneLoader.SetProgressExternal(global);
-    }
-
     private async void Start()
     {
         IsReady = false;
-
-        // 0단계: 시작
-        ReportOwnedProgress(0.0f);
 
         // 1) 세이브 데이터 / 캐릭터 테이블 준비까지 기다리기
         await UniTask.WaitUntil(() =>
@@ -36,22 +22,17 @@ public class OwnedCharacterSetup : MonoBehaviour
             DataTableManager.CharacterTable != null &&
             DataTableManager.StoryTable != null
         );
-        ReportOwnedProgress(0.2f);
 
         // 2) 리스트 + 프리팹 생성
         BuildOwnedCharacterList();
-        ReportOwnedProgress(0.5f);
-
         InstantiateCharacters();
-        ReportOwnedProgress(0.8f);
 
         // 3) 레이아웃 강제 재계산
-        await UniTask.Yield(); // 한 프레임 넘기고
+        await UniTask.Yield();
         UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(content);
         Canvas.ForceUpdateCanvases();
 
         // 4) 완료
-        ReportOwnedProgress(1.0f);
         IsReady = true;
     }
 

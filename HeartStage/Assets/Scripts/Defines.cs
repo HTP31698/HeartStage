@@ -131,6 +131,56 @@ public class ItemID
     public static readonly int TrainingPoint = 7105;
 }
 
+/// <summary>
+/// 의상 타입 (ItemTable의 item_type과 동일)
+/// </summary>
+public enum CostumeType
+{
+    Top = 7,
+    Pants = 8,
+    Shoes = 9
+}
+
+/// <summary>
+/// 의상 아이템 ID 베이스 및 유틸리티
+/// </summary>
+public static class CostumeItemID
+{
+    public static readonly int TopBase = 7401;
+    public static readonly int PantsBase = 7501;
+    public static readonly int ShoesBase = 7601;
+
+    /// <summary>
+    /// 아이템 ID로부터 스프라이트 폴더 번호 계산
+    /// 예: 7401 → 1, 7402 → 2, 7405 → 5
+    /// </summary>
+    public static int GetSpriteId(int itemId)
+    {
+        if (itemId >= ShoesBase) return itemId - ShoesBase + 1;
+        if (itemId >= PantsBase) return itemId - PantsBase + 1;
+        if (itemId >= TopBase) return itemId - TopBase + 1;
+        return 0;
+    }
+
+    /// <summary>
+    /// 아이템 ID로부터 의상 타입 반환
+    /// </summary>
+    public static CostumeType GetCostumeType(int itemId)
+    {
+        if (itemId >= ShoesBase) return CostumeType.Shoes;
+        if (itemId >= PantsBase) return CostumeType.Pants;
+        return CostumeType.Top;
+    }
+
+    /// <summary>
+    /// 의상 아이템인지 확인
+    /// </summary>
+    public static bool IsCostumeItem(int itemId)
+    {
+        return itemId >= TopBase && itemId < 7700;
+    }
+}
+
 public class CurrencyIcon
 {
     public static readonly string lightStickIcon = "Star-Stick-Yellow-128";

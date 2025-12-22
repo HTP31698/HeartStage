@@ -20,11 +20,12 @@ public class SceneLoader : MonoBehaviour
     // 🔹 실제로 로딩바에 그리는 값 (이게 서서히 _targetProgress를 따라감)
     private float _displayProgress = 0f;
 
-    // 🔹 0~60% 구간에서 쓸 속도
-    [SerializeField] private float fastSpeedTo60 = 3.0f;
+    // 🔹 프로그레스바 스무스 보간 속도 (높을수록 빠름)
+    [SerializeField] private float smoothSpeed = 12.0f;
 
-    // 🔹 60% 이후에서 쓸 속도
-    [SerializeField] private float slowSpeedAfter60 = 1.0f;
+    // 🔹 가짜 진행 상태
+    private bool _isFakeProgressRunning = false;
+    private float _fakeProgressElapsed = 0f;
 
     private void Awake()
     {
@@ -49,19 +50,44 @@ public class SceneLoader : MonoBehaviour
         if (_loadingUI == null)
             return;
 
+        // 🔹 가짜 진행 업데이트 (100% 도달 전까지 계속)
+        if (_isFakeProgressRunning && _targetProgress < 1f)
+        {
+            _fakeProgressElapsed += Time.unscaledDeltaTime;
+
+            const float fastPhaseEnd = 6f;
+            const float fastMax = 0.95f;
+            const float slowSpeed = 0.01f;
+            const float absoluteMax = 0.99f;
+
+            float fakeValue;
+            if (_fakeProgressElapsed < fastPhaseEnd)
+            {
+                // 🔹 Ease-in 커브: t² (처음엔 느리게, 점점 빨라짐)
+                float t = _fakeProgressElapsed / fastPhaseEnd; // 0~1 정규화
+                fakeValue = t * t * fastMax; // 제곱 커브
+            }
+            else
+            {
+                fakeValue = Mathf.Min(fastMax + (_fakeProgressElapsed - fastPhaseEnd) * slowSpeed, absoluteMax);
+            }
+
+            // 가짜 진행 값을 목표로 설정 (Max 처리로 뒤로 안 감)
+            _targetProgress = Mathf.Max(_targetProgress, fakeValue);
+        }
+
         if (_displayProgress < _targetProgress)
         {
-            // 🔹 현재 표시값이 60% 이전이면 빠르게,
-            //    60% 이후면 느리게
-            float speed = (_displayProgress < 0.6f)
-                ? fastSpeedTo60
-                : slowSpeedAfter60;
-
-            _displayProgress = Mathf.MoveTowards(
+            // 🔹 Lerp 기반 감쇠로 부드러운 보간
+            _displayProgress = Mathf.Lerp(
                 _displayProgress,
                 _targetProgress,
-                speed * Time.unscaledDeltaTime
+                smoothSpeed * Time.unscaledDeltaTime
             );
+
+            // 목표에 거의 도달하면 스냅
+            if (_targetProgress - _displayProgress < 0.001f)
+                _displayProgress = _targetProgress;
 
             _loadingUI.SetProgress(_displayProgress);
         }
@@ -84,41 +110,37 @@ public class SceneLoader : MonoBehaviour
 
     private async UniTask InternalLoadScene(string address, LoadSceneMode mode)
     {
-        if (_loadingUI != null)
-            _loadingUI.Show();
+        // 🔹 가짜 진행은 Update()에서 처리 (ShowLoading에서 시작됨)
 
-        // 시작할 때 0으로 초기화
-        _targetProgress = 0f;
-        _displayProgress = 0f;
-        SetProgressInternal(0f);
-
-        // 🔹 씬 로딩은 전체의 0% ~ 60%만 사용
-        const float sceneLoadStart = 0f;
-        const float sceneLoadEnd = 0.6f;
-
+        // 씬 로딩 수행
         var handle = Addressables.LoadSceneAsync(address, mode, activateOnLoad: false);
 
         while (!handle.IsDone)
-        {
-            float p = handle.PercentComplete; // 0 ~ 1
-            float mapped = Mathf.Lerp(sceneLoadStart, sceneLoadEnd, p);
-            SetProgressInternal(mapped);
             await UniTask.Yield();
-        }
 
         var sceneInstance = handle.Result;
         var activateOp = sceneInstance.ActivateAsync();
 
-        // 🔹 활성화 단계는 60%까지 채웠다고 가정하고 유지
         while (!activateOp.isDone)
-        {
-            SetProgressInternal(sceneLoadEnd);
             await UniTask.Yield();
-        }
 
-        // 나머지 60% ~ 100%는 각 씬 내부 컨트롤러
-        // (OwnedCharacterSetup / StageSetupWindow / StageSceneController)에서
-        // SceneLoader.SetProgressExternal()로 채운다.
+        // 🔹 씬 로드 완료 후 각 Controller가 준비 완료 시 100% 설정
+    }
+
+    /// <summary>
+    /// 로딩 UI 즉시 표시 (버튼 클릭 시 바로 호출)
+    /// </summary>
+    public static void ShowLoading()
+    {
+        if (Instance == null || Instance._loadingUI == null)
+            return;
+
+        Instance._targetProgress = 0f;
+        Instance._displayProgress = 0f;
+        Instance._fakeProgressElapsed = 0f;
+        Instance._isFakeProgressRunning = true;
+        Instance._loadingUI.SetProgress(0f);
+        Instance._loadingUI.Show();
     }
 
     public static void HideLoading()
@@ -126,6 +148,7 @@ public class SceneLoader : MonoBehaviour
         if (Instance == null || Instance._loadingUI == null)
             return;
 
+        Instance._isFakeProgressRunning = false; // 🔹 가짜 진행 중지
         Instance._loadingUI.Hide();
     }
 
@@ -147,6 +170,10 @@ public class SceneLoader : MonoBehaviour
         // 0~1 클램프 + "지금까지 목표 값보다 작아지지 않도록" 보장
         float clamped = Mathf.Clamp01(value01);
         _targetProgress = Mathf.Max(_targetProgress, clamped);
+
+        // 🔹 100%에 도달하면 가짜 진행 중지
+        if (clamped >= 1f)
+            _isFakeProgressRunning = false;
     }
 
     // 🔹 외부(다른 스크립트)에서 불러쓰는 함수

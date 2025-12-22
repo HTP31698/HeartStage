@@ -54,9 +54,13 @@ public class GameSceneManager : MonoBehaviour
             return UniTask.CompletedTask;
         }
 
+        // 🔹 로딩 UI 즉시 표시 (버튼 클릭 즉시 반응)
+        SceneLoader.ShowLoading();
+
         if (!Instance._sceneMap.TryGetValue(sceneType, out var address))
         {
             Debug.LogError($"[GameSceneManager] {sceneType} 에 해당하는 씬 주소가 설정되지 않음.");
+            SceneLoader.HideLoading();
             return UniTask.CompletedTask;
         }
 

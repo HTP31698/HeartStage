@@ -25,29 +25,41 @@ public class LobbySceneController : MonoBehaviour
     {
         Time.timeScale = 1f;
 
-        // 0. 탈퇴 유저 캐시 초기화 (이전 세션에서 잘못 캐시된 유저 제거)
+        // 🔹 병렬 처리용 진행도 카운터
+        int[] completedCount = { 0 };  // 클로저 안전을 위해 배열 사용
+        const int totalTasks = 8;
+
+        void OnTaskComplete()
+        {
+            completedCount[0]++;
+            SceneLoader.SetProgressExternal((float)completedCount[0] / totalTasks);
+        }
+
+        // 0. 탈퇴 유저 캐시 초기화 (동기)
         PublicProfileService.ClearDeletedUserCache();
 
-        // 1. 퀘스트/기본 로직
+        // 1. 퀘스트 매니저 초기화 (동기)
         InitializeQuestManager();
+        OnTaskComplete();
 
-        // 2.  Daily/Weekly/업적 카드 실제 생성 (최초 1회만)
-        await InitializeQuestsIfNeeded();
+        // 🔹 Phase 1: 독립적인 작업들 병렬 실행 (5개)
+        await UniTask.WhenAll(
+            InitializeQuestsIfNeeded().ContinueWith(() => OnTaskComplete()),
+            SyncPublicProfileIfPossible().ContinueWith(() => OnTaskComplete()),
+            SyncDreamEnergyCounterAsync().ContinueWith(() => OnTaskComplete()),
+            FriendService.RefreshAllCacheAsync().ContinueWith(() => OnTaskComplete()),
+            CostumeHelper.PreloadAllEquippedCostumes().ContinueWith(() => OnTaskComplete())
+        );
 
-        // 3. PublicProfile & DreamEnergy 카운터 동기화 (서버 → 로컬)
-        await SyncPublicProfileIfPossible();
-        await SyncDreamEnergyCounterAsync();
-
-        // 4. 서버에서 친구 목록 동기화 (탈퇴 유저 필터링 + 고아 데이터 정리)
-        await FriendService.RefreshAllCacheAsync();
-
-        // 5. 친구 프로필 프리로드 (서버 동기화된 최신 목록 기반)
+        // 🔹 Phase 2: FriendService 캐시에 의존하는 작업
         await PreloadFriendProfilesAsync();
+        OnTaskComplete();
 
-        // 6. UI 프리워밍 (실제 창들은 안 보이게)
+        // 🔹 Phase 3: UI 프리워밍
         await PrewarmWindowsAsync();
+        OnTaskComplete();
 
-        // 7. 로딩바 마무리 & 로비 준비 알림
+        // 로딩바 마무리 & 로비 준비 알림
         await FinishLoadingSequenceAsync();
     }
 
@@ -255,25 +267,13 @@ public class LobbySceneController : MonoBehaviour
 
     private async UniTask FinishLoadingSequenceAsync()
     {
-        const float start = 0.6f;
-        const float end = 1.0f;
-        const float duration = 0.7f;
-
-        float t = 0f;
-        while (t < duration)
-        {
-            t += Time.unscaledDeltaTime;
-            float lerp01 = Mathf.Clamp01(t / duration);
-            float progress = Mathf.Lerp(start, end, lerp01);
-
-            SceneLoader.SetProgressExternal(progress);
-            await UniTask.Yield();
-        }
-
-        SceneLoader.SetProgressExternal(1.0f);
+        // 🔹 100% 상태 잠깐 보여주기
         await UniTask.Delay(300, DelayType.UnscaledDeltaTime);
 
+        // 🔹 로비 씬 준비 완료 알림
         GameSceneManager.NotifySceneReady(SceneType.LobbyScene, 100);
+
+        // 🔹 로딩 UI 닫기
         await SceneLoader.HideLoadingWithDelay(0);
     }
 
