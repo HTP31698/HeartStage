@@ -36,8 +36,7 @@ public class CharacterInfoWindow : GenericWindow
 
     public void Init(CharacterData data)
     {
-        var texture = ResourceManager.Instance.Get<Texture2D>(data.card_imageName);
-        characterImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        characterImage.sprite = ResourceManager.Instance.GetSprite(data.card_imageName);
         characterName.text = data.char_name;
         // 캐릭터 속성 아이콘 변경
         CharacterAttributeIcon.ChangeIcon(attributeIcon, data.char_type);
