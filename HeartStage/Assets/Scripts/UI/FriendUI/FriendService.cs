@@ -1,6 +1,7 @@
 ﻿using Cysharp.Threading.Tasks;
 using Firebase.Auth;
 using Firebase.Database;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -640,7 +641,7 @@ public static class FriendService
             return;
         }
 
-        var friendData = JsonUtility.FromJson<SaveDataV1>(json);
+        var friendData = JsonConvert.DeserializeObject<SaveDataV1>(json);
         LobbyHomeInitializer.Instance?.OpenLobbyHomeWindow(friendData);
     }
 }
