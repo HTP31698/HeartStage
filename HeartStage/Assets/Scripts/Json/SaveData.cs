@@ -67,6 +67,7 @@ public class SaveDataV1 : SaveData
     public List<int> ownedTitleIds = new();         // 획득 칭호
     public int fanAmount = 0;                       // 팬 수
 
+
     public int mainStageStep1 = 0;                  // 3-2
     public int mainStageStep2 = 0;
 
@@ -92,7 +93,9 @@ public class SaveDataV1 : SaveData
     public int lastSeenNoticeId = 0;
     // 셋업 윈도우에서 돌아가기 버튼으로 로비에 왔는지 여부
     public bool returnToStageInfo = false;
-    
+
+    public bool isTutorialCompleted = false; // 튜토리얼 완료 여부
+
     // ================== 8. 볼륨  ==================
     public float bgmVolume = 1f; // BGM 볼륨 (0~1)
     public float sfxVolume = 1f; // SFX 볼륨 (0~1)

@@ -49,6 +49,8 @@ public class LobbySceneController : MonoBehaviour
 
         // 7. 로딩바 마무리 & 로비 준비 알림
         await FinishLoadingSequenceAsync();
+
+        CheckAndStartTutorial();
     }
 
     #region 1) 퀘스트 매니저
@@ -278,4 +280,14 @@ public class LobbySceneController : MonoBehaviour
     }
 
     #endregion
+
+    private void CheckAndStartTutorial()
+    {
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null && !saveData.isTutorialCompleted)
+        {
+            // 튜토리얼 미완료시 
+            WindowManager.Instance.OpenOverlay(WindowType.TutorialPanel);
+        }
+    }
 }

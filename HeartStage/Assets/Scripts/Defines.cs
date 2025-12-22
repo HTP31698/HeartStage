@@ -35,6 +35,8 @@ public static class DataTableIds
     public static string Story => "StoryStageTable";
     public static string StoryScript => "StoryScriptTable";
     public static string Likeability => "LikeabilityTable";
+
+    public static string TutorialScript => "TutorialCutSceneScript";
 }
 
 public class Tag
@@ -82,7 +84,8 @@ public enum WindowType
     StoryDungeonInfo = 18,
     SpecialStage = 19,
     StoryStageRewardUI = 20,
-    
+    TutorialPanel = 21,
+
     // 친구 관련 오버레이
     Friend = 30,            // 통합 친구 창 (목록/요청/추가 탭)
     FriendProfile = 33,     // 친구 프로필 팝업
@@ -107,6 +110,7 @@ public enum SceneType
     TestStageWaveScene = 4,
     InfinityStage = 5,
     StoryScene = 6,
+    TutorialCutScene = 7,
 }
 
 public class SoundName

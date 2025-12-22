@@ -504,6 +504,13 @@ public class TitleSceneController : MonoBehaviour
             int achievementCount = AchievementUtil.GetCompletedAchievementCount(data);
             await PublicProfileService.UpdateMyPublicProfileAsync(data, achievementCount);
         }
+
+
+        // 신규 유저 튜토리얼 미완료 상태로 설정
+        SaveLoadManager.Data.isTutorialCompleted = false;
+        await SaveLoadManager.SaveToServer();
+
+        GameSceneManager.ChangeScene(SceneType.TutorialCutScene).Forget();
     }
 
     /// <summary>
@@ -573,6 +580,13 @@ public class TitleSceneController : MonoBehaviour
 
     private async UniTaskVoid GoToLobby()
     {
+        if (SaveLoadManager.Data != null && !SaveLoadManager.Data.isTutorialCompleted)
+        {
+            // 튜토리얼 미완료 유저는 튜토리얼 씬으로 이동
+            await GameSceneManager.ChangeScene(SceneType.TutorialCutScene);
+            return;
+        }
+
         await GameSceneManager.ChangeScene(lobbySceneType);
     }
 
