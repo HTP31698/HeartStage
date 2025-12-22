@@ -147,8 +147,6 @@ public class StoryInfoPrefab : MonoBehaviour
 
         // 모든 스토리 스테이지는 컷씬부터 시작
         GameSceneManager.ChangeScene(SceneType.StoryScene);
-
-        Debug.Log($"Story Stage {storyStageId} started: {stageData.story_stage_name}");
     }
 
 

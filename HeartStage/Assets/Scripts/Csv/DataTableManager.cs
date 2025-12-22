@@ -42,6 +42,7 @@ public static class DataTableManager
         var storyTable = new StoryTable();
         var storyScriptTable = new StoryScriptTable();
         var likeabilityTable = new LikeabilityTable();
+        var tutorialScriptTable = new TutorialScriptTable();
 
         // 모든 테이블 병렬 로드
         await UniTask.WhenAll(
@@ -69,7 +70,8 @@ public static class DataTableManager
             infiniteStageTable.LoadAsync(DataTableIds.InfiniteStage),
             storyTable.LoadAsync(DataTableIds.Story),
             storyScriptTable.LoadAsync(DataTableIds.StoryScript),
-            likeabilityTable.LoadAsync(DataTableIds.Likeability)
+            likeabilityTable.LoadAsync(DataTableIds.Likeability),
+            tutorialScriptTable.LoadAsync(DataTableIds.TutorialScript)
         );
 
         // Dictionary에 등록
@@ -98,6 +100,7 @@ public static class DataTableManager
         tables.Add(DataTableIds.Story, storyTable);
         tables.Add(DataTableIds.StoryScript, storyScriptTable);
         tables.Add(DataTableIds.Likeability, likeabilityTable);
+        tables.Add(DataTableIds.TutorialScript, tutorialScriptTable);
     }
 
     public static ItemTable ItemTable
@@ -291,6 +294,14 @@ public static class DataTableManager
         get
         {
             return Get<LikeabilityTable>(DataTableIds.Likeability);
+        }
+    }
+
+    public static TutorialScriptTable TutorialScriptTable
+    {
+        get
+        {
+            return Get<TutorialScriptTable>(DataTableIds.TutorialScript);
         }
     }
 

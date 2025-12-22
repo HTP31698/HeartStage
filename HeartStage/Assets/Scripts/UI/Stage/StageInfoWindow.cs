@@ -105,6 +105,12 @@ public class StageInfoWindow : GenericWindow
             case 2:
                 imageName = "stage2infoimage";
                 break;
+            case 3:
+                imageName = "stage3infoimage";
+                break;
+            case 4:
+                imageName = "stage4infoimage";
+                break;
             default:
                 break;
         }
@@ -190,19 +196,6 @@ public class StageInfoWindow : GenericWindow
 
         int clearedCount = 0;
         var clearWaveList = SaveLoadManager.Data.clearWaveList;
-
-        //foreach (var waveId in waveIds)
-        //{
-        //    var waveData = DataTableManager.StageWaveTable?.Get(waveId);
-        //    if (waveData != null)
-        //    {
-        //        var rewardData = DataTableManager.RewardTable?.Get(waveData.wave_reward);
-        //        if (rewardData != null && clearWaveList.Contains(rewardData.reward_id))
-        //        {
-        //            clearedCount++;
-        //        }
-        //    }
-        //}
 
         foreach (var waveId in waveIds)
         {

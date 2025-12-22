@@ -29,10 +29,6 @@ public class StageChoosePrefab : MonoBehaviour
             {
                 stageImage.sprite = sprite;
             }
-            else
-            {
-                Debug.LogWarning($"Sprite not found: {imageName}");
-            }
         }
     }
 
@@ -43,8 +39,8 @@ public class StageChoosePrefab : MonoBehaviour
             0 => "tutorialstage",
             1 => "1stage",
             2 => "2stage",
-            3 => "1stage",
-            4 => "2stage",
+            3 => "3stage",
+            4 => "4stage",
             _ => string.Empty
         };
     }
