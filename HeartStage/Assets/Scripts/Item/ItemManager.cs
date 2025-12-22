@@ -30,7 +30,7 @@ public class ItemManager : MonoBehaviour
     {
         inventoryItemTarget = GetUIToWorldPosition(itemBagTr);
         expItemTarget = GetUIToWorldPosition(ExpTargetTr);
-        PoolManager.Instance.CreatePool(ItemPoolId, DropItem, 60);
+        PoolManager.Instance.CreatePool(ItemPoolId, DropItem, 30, 120);
         SetItemCountUI();
     }
 

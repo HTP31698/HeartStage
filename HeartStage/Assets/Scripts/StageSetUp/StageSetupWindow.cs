@@ -81,21 +81,9 @@ public class StageSetupWindow : MonoBehaviour
     // 준비 완료 플래그
     public bool IsReady { get; private set; }
 
-    // 🔹 이 컴포넌트가 담당할 전역 프로그레스 구간 (85% ~ 99%)
-    private const float GlobalStart = 0.85f;
-    private const float GlobalEnd = 0.99f;
-
-    private void ReportStageProgress(float local01)
-    {
-        float clamped = Mathf.Clamp01(local01);
-        float global = Mathf.Lerp(GlobalStart, GlobalEnd, clamped);
-        SceneLoader.SetProgressExternal(global);
-    }
-
     private async void Start()
     {
         IsReady = false;
-        ReportStageProgress(0.0f);
 
         StageIndexs = new Dictionary<int, int>();
         PassiveIndexs = new Dictionary<int, List<PassiveEffectData>>();
@@ -111,9 +99,6 @@ public class StageSetupWindow : MonoBehaviour
                     DraggableSlots[i].slotIndex = i;
         }
 
-        ReportStageProgress(0.1f);
-
-        //Time.timeScale = 0f;
         StartButton.onClick.AddListener(StartButtonClick);
         if (BackButton != null)
             BackButton.onClick.AddListener(BackButtonClick);
@@ -123,12 +108,8 @@ public class StageSetupWindow : MonoBehaviour
         // 데이터 준비 + 스테이지 적용
         await WaitAndApplyStage();
 
-        ReportStageProgress(0.6f);
-
         if (synergyPanel != null)
             synergyPanel.BuildAllButtons();
-
-        ReportStageProgress(0.8f);
 
         DraggableSlot.OnAnySlotChanged += HandleSlotChanged;
 
@@ -136,21 +117,16 @@ public class StageSetupWindow : MonoBehaviour
         UpdateSynergyUI();
         UpdateDeployCountUI();
 
-        ReportStageProgress(0.9f);
         IsReady = true;
     }
 
     private async UniTask WaitAndApplyStage()
     {
-        ReportStageProgress(0.2f);
-
         // StageManager & currentStageData 준비될 때까지
         while (StageManager.Instance == null || StageManager.Instance.GetCurrentStageData() == null)
         {
             await UniTask.Delay(10, DelayType.UnscaledDeltaTime);
         }
-
-        ReportStageProgress(0.4f);
 
         var stageData = StageManager.Instance.GetCurrentStageData();
         ApplyStage(stageData);
@@ -273,7 +249,7 @@ public class StageSetupWindow : MonoBehaviour
         return StageIndexs;
     }
 
-    private void StartButtonClick()
+    private async void StartButtonClick()
     {
         if (_maxDeployUnits > 0 && GetCurrentDeployCount() > _maxDeployUnits)
         {
@@ -285,6 +261,10 @@ public class StageSetupWindow : MonoBehaviour
             Debug.LogWarning("[StageSetupWindow] No units deployed!");
             return;
         }
+
+        // 음표 로딩 표시
+        NoteLoadingUI.Show();
+        await UniTask.Yield(); // UI 렌더링 시간 확보
 
         RebuildPassiveTiles();
 
@@ -299,6 +279,9 @@ public class StageSetupWindow : MonoBehaviour
         StageManager.Instance.SetTimeScale(1f);
 
         OnStageStarted?.Invoke(); // 이벤트 발생
+
+        // 음표 로딩 숨기기
+        NoteLoadingUI.Hide();
 
         gameObject.SetActive(false);
     }

@@ -101,6 +101,11 @@ public class SaveDataV1 : SaveData
     public Dictionary<string, int> likeabilityDict = new Dictionary<string, int>(); // 캐릭터 이름, 호감도 수치
     public Dictionary<string, LikeabilityRewardState> likeabilityRewardStates = new Dictionary<string, LikeabilityRewardState>(); // 캐릭터 이름, 보상 받았는지 상태 여부
 
+    // ================== 10. 의상 시스템 ==================
+    // 캐릭터별 장착 의상 (캐릭터 이름 → 장착 의상 정보)
+    // 의상 보유 여부는 기존 itemList에서 확인 (itemList[costumeId] > 0)
+    public Dictionary<string, EquippedCostume> equippedCostumeByChar = new Dictionary<string, EquippedCostume>();
+
     // ================== 생성자 / 버전업 ==================
     public SaveDataV1()
     {
@@ -111,5 +116,30 @@ public class SaveDataV1 : SaveData
     {
         // 나중에 V2로 넘어갈 때 마이그레이션
         throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// 캐릭터별 장착 의상 정보
+/// </summary>
+[Serializable]
+public class EquippedCostume
+{
+    public int topItemId;      // 상의 아이템 ID (0이면 기본)
+    public int pantsItemId;    // 하의 아이템 ID (0이면 기본)
+    public int shoesItemId;    // 신발 아이템 ID (0이면 기본)
+
+    public EquippedCostume()
+    {
+        topItemId = 0;
+        pantsItemId = 0;
+        shoesItemId = 0;
+    }
+
+    public EquippedCostume(int top, int pants, int shoes)
+    {
+        topItemId = top;
+        pantsItemId = pants;
+        shoesItemId = shoes;
     }
 }

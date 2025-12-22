@@ -78,9 +78,6 @@ public class MonsterSpawner : MonoBehaviour
     private const string MonsterProjectilePoolId = "MonsterProjectile";
     public static string GetMonsterProjectilePoolId() => MonsterProjectilePoolId;
 
-    // 전역 프로그레스 구간 (95% ~ 99%)
-    private const float GlobalStart = 0.95f;
-    private const float GlobalEnd = 0.99f;
 
     // 보스 ID별 전용 프리팹 가져오는 메서드
     private AssetReference GetBossPrefab(int bossId)
@@ -151,17 +148,13 @@ public class MonsterSpawner : MonoBehaviour
     //로딩 및 초기화
     private async UniTask LoadStageDataAndInitializePool()
     {
-        // 0) 시작
-        ReportMonsterProgress(0.0f);
-
-        // 1) 테이블 로딩 대기 (0.0 ~ 0.1)
+        // 1) 테이블 로딩 대기
         while (DataTableManager.StageTable == null || DataTableManager.StageWaveTable == null)
         {
             await UniTask.Delay(100);
         }
-        ReportMonsterProgress(0.1f);
 
-        // 2) 웨이브/몬스터 ID 수집 (0.1 ~ 0.2)
+        // 2) 웨이브/몬스터 ID 수집
         stageWaveIds = DataTableManager.StageTable.GetWaveIds(currentStageId);
         currentWaveIndex = 0;
 
@@ -202,11 +195,8 @@ public class MonsterSpawner : MonoBehaviour
         if (monsterIds.Count == 0)
         {
             Debug.LogWarning("[MonsterSpawner] 로드할 몬스터가 없습니다!");
-            ReportMonsterProgress(1.0f);
             return;
         }
-
-        ReportMonsterProgress(0.2f);
 
         // 2.5) 무한 모드 비주얼 프리팹 프리로드
         if (StageManager.Instance != null && StageManager.Instance.isInfiniteMode)
@@ -214,10 +204,7 @@ public class MonsterSpawner : MonoBehaviour
             await PreloadInfiniteVisualPrefabs();
         }
 
-        // 3) MonsterData SO 로딩 (0.2 ~ 0.5)
-        int totalMonsters = monsterIds.Count;
-        int loadedCount = 0;
-
+        // 3) MonsterData SO 로딩
         Debug.Log($"[MonsterSpawner] 스테이지 {currentStageId}의 웨이브 IDs: [{string.Join(", ", stageWaveIds)}]");
         Debug.Log($"[MonsterSpawner] 수집된 몬스터 IDs: [{string.Join(", ", monsterIds)}]");
 
@@ -241,13 +228,12 @@ public class MonsterSpawner : MonoBehaviour
             {
                 Debug.LogError($"[MonsterSpawner] MonsterData_{monsterId} 로드 오류: {ex.Message}");
             }
-
-            loadedCount++;
-            float t = 0.2f + 0.3f * (float)loadedCount / Mathf.Max(1, totalMonsters);
-            ReportMonsterProgress(t);
         }
 
-        // 4) 풀 설정 미리 계산 및 실제 생성 (0.5 ~ 1.0) - 수정됨
+        // 3.5) 보스 스킬에서 소환하는 몬스터 데이터 프리로드
+        await PreloadBossSkillSummons();
+
+        // 4) 풀 설정 미리 계산 및 실제 생성
         var poolSettings = new Dictionary<int, (bool isBoss, int poolCount, AssetReference prefab)>();
         int totalToInstantiate = 0;
 
@@ -273,9 +259,7 @@ public class MonsterSpawner : MonoBehaviour
             totalToInstantiate += poolCount;
         }
 
-        int createdCount = 0;
-
-        // 실제 인스턴스 생성 - 수정됨
+        // 실제 인스턴스 생성
         foreach (var kvp in monsterDataCache)
         {
             int monsterId = kvp.Key;
@@ -322,25 +306,11 @@ public class MonsterSpawner : MonoBehaviour
                 catch
                 {
                 }
-
-                createdCount++;
-                float t = 0.5f + 0.5f * (float)createdCount / Mathf.Max(1, totalToInstantiate);
-                ReportMonsterProgress(t);
             }
         }
 
         // 5) 추가 풀 생성 (투사체 등)
         CreateAllPools();
-
-        // 6) 몬스터 스포너 구간 끝
-        ReportMonsterProgress(1.0f);
-    }
-
-    private void ReportMonsterProgress(float local01)
-    {
-        float clamped = Mathf.Clamp01(local01);
-        float global = Mathf.Lerp(GlobalStart, GlobalEnd, clamped);
-        SceneLoader.SetProgressExternal(global);
     }
 
     // 스테이지 내 모든 웨이브 진행 관리
@@ -903,21 +873,100 @@ public class MonsterSpawner : MonoBehaviour
         monsterPools.Clear();
     }
 
+    // 보스 스킬에서 소환하는 몬스터 데이터 프리로드
+    private async UniTask PreloadBossSkillSummons()
+    {
+        var summonMonsterIds = new HashSet<int>();
+
+        // 1) 캐시된 보스 몬스터들의 스킬 확인
+        foreach (var kvp in monsterDataCache)
+        {
+            var monsterData = kvp.Value;
+            if (!MonsterBehavior.IsBossMonster(kvp.Key))
+                continue;
+
+            // 보스의 스킬 ID들 확인
+            int[] skillIds = { monsterData.skillId1, monsterData.skillId2, monsterData.skillId3 };
+
+            foreach (int skillId in skillIds)
+            {
+                if (skillId <= 0) continue;
+
+                var skillData = DataTableManager.SkillTable?.Get(skillId);
+                if (skillData == null) continue;
+
+                // 스킬의 summon_type 확인 (소환 몬스터 ID)
+                int summonType = skillData.summon_type;
+                if (summonType > 0 && !monsterDataCache.ContainsKey(summonType))
+                {
+                    summonMonsterIds.Add(summonType);
+                }
+            }
+        }
+
+        if (summonMonsterIds.Count == 0)
+            return;
+
+        Debug.Log($"[MonsterSpawner] 보스 스킬 소환 몬스터 프리로드: [{string.Join(", ", summonMonsterIds)}]");
+
+        // 2) 소환 몬스터 데이터 로드
+        foreach (int monsterId in summonMonsterIds)
+        {
+            try
+            {
+                var handle = Addressables.LoadAssetAsync<MonsterData>($"MonsterData_{monsterId}");
+                var monsterDataSO = await handle.Task;
+                if (monsterDataSO != null)
+                {
+                    monsterDataSO.InitFromCSV(monsterId);
+                    monsterDataCache[monsterId] = monsterDataSO;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[MonsterSpawner] 소환 몬스터 프리로드 실패 {monsterId}: {ex.Message}");
+            }
+        }
+
+        // 3) 소환 몬스터용 풀 생성 (MonsterPrefab 사용)
+        if (PoolManager.Instance != null && summonMonsterIds.Count > 0)
+        {
+            try
+            {
+                var prefabHandle = Addressables.LoadAssetAsync<GameObject>("MonsterPrefab");
+                var monsterPrefabGO = await prefabHandle.Task;
+
+                if (monsterPrefabGO != null)
+                {
+                    foreach (int monsterId in summonMonsterIds)
+                    {
+                        string poolId = monsterId.ToString();
+                        PoolManager.Instance.CreatePool(poolId, monsterPrefabGO, 10, 30);
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[MonsterSpawner] 소환 몬스터 풀 생성 실패: {ex.Message}");
+            }
+        }
+    }
+
     // 추가 오브젝트 풀 생성
     private void CreateAllPools()
     {
         GameObject monsterHitEffectPrefab = ResourceManager.Instance.Get<GameObject>("monsterHitEffect");
         if (monsterHitEffectPrefab != null)
         {
-            PoolManager.Instance.CreatePool("monsterHitEffectPool", monsterHitEffectPrefab, 50, 100);
+            PoolManager.Instance.CreatePool("monsterHitEffectPool", monsterHitEffectPrefab, 25, 100);
         }
 
-        PoolManager.Instance.CreatePool(MonsterProjectilePoolId, monsterProjectilePrefab, 100);
+        PoolManager.Instance.CreatePool(MonsterProjectilePoolId, monsterProjectilePrefab, 40, 200);
 
         GameObject nocturnProjectilePrefab = ResourceManager.Instance.Get<GameObject>("NocturnProjectile");
         if (nocturnProjectilePrefab != null)
         {
-            PoolManager.Instance.CreatePool("NocturnProjectile", nocturnProjectilePrefab, 20);
+            PoolManager.Instance.CreatePool("NocturnProjectile", nocturnProjectilePrefab, 15, 100);
         }
     }
 
