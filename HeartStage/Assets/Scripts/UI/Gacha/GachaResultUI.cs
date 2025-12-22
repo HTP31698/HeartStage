@@ -96,18 +96,8 @@ public class GachaResultUI : GenericWindow
         // 기존 스프라이트 정리
         ClearCurrentSprite();
 
-        var texture = ResourceManager.Instance.Get<Texture2D>(imageName);
-        if (texture != null)
-        {
-            currentSprite = Sprite.Create(texture,
-                new Rect(0, 0, texture.width, texture.height),
-                new Vector2(0.5f, 0.5f));
-            characterImage.sprite = currentSprite;
-        }
-        else
-        {
-            Debug.LogWarning($"이미지 로드 실패: {imageName}");
-        }
+        currentSprite = ResourceManager.Instance.GetSprite(imageName);
+        characterImage.sprite = currentSprite;
     }
 
     private void ClearCurrentSprite()

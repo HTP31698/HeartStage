@@ -46,8 +46,7 @@ public class LevelUpSelectSlot : MonoBehaviour
     {
         selectData = data;
         selectName.text = data.select_name;
-        var texture = ResourceManager.Instance.Get<Texture2D>(data.prefab);
-        selectImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        selectImage.sprite = ResourceManager.Instance.GetSprite(data.prefab);
         selectDesc.text = data.info;
     }
 }

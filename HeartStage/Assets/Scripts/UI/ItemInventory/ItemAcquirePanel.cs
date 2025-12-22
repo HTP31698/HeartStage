@@ -1,4 +1,5 @@
-﻿using TMPro;
+﻿using NUnit.Framework.Interfaces;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -31,8 +32,7 @@ public class ItemAcquirePanel : MonoBehaviour
         var itemData = DataTableManager.ItemTable.Get(itemID);
         itemName.text = itemData.item_name;
         itemCount.text = $"X{amount}";
-        var texture = ResourceManager.Instance.Get<Texture2D>(itemData.prefab);
-        itemImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        itemImage.sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
     }
 
     public void AcquireCharacter(int characterID)
@@ -41,9 +41,7 @@ public class ItemAcquirePanel : MonoBehaviour
         var characterData = DataTableManager.CharacterTable.Get(characterID);
         itemName.text = characterData.char_name;
         itemCount.text = "X1";
-        var texture = ResourceManager.Instance.Get<Texture2D>(characterData.card_imageName);
-        itemImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-
+        itemImage.sprite = ResourceManager.Instance.GetSprite(characterData.card_imageName);
         // 캐릭터 얻기
         CharacterHelper.AcquireCharacter(characterID, DataTableManager.CharacterTable);
         //

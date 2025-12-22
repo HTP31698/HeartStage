@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using TMPro;
+using UnityEditor.U2D.Animation;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -52,15 +53,7 @@ public class GachaPercentageItemPrefab : MonoBehaviour
             return;
         }
 
-        var texture = ResourceManager.Instance.Get<Texture2D>(characterData.card_imageName);
-        if (texture != null)
-        {
-            characterImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-        }
-        else
-        {
-            Debug.LogWarning($"캐릭터 이미지를 로드할 수 없습니다: {characterData.card_imageName}");
-        }
+        characterImage.sprite = ResourceManager.Instance.GetSprite(characterData.card_imageName);
     }
 
     // 아이템 이미지 설정 메서드 추가
@@ -71,15 +64,7 @@ public class GachaPercentageItemPrefab : MonoBehaviour
             return;
         }
 
-        var texture = ResourceManager.Instance.Get<Texture2D>(imageName);
-        if (texture != null)
-        {
-            characterImage.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-        }
-        else
-        {
-            Debug.LogWarning($"아이템 이미지를 로드할 수 없습니다: {imageName}");
-        }
+        characterImage.sprite = ResourceManager.Instance.GetSprite(imageName);
     }
 
     // 텍스트 설정 메서드들 분리

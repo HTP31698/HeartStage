@@ -73,8 +73,7 @@ public class ItemConsumePanel : MonoBehaviour
         gameObject.SetActive(true);
         this.itemId = itemId;
         itemData = DataTableManager.ItemTable.Get(itemId);
-        var texture = ResourceManager.Instance.Get<Texture2D>(itemData.prefab);
-        itemIcon.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        itemIcon.sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
 
         if (itemData.item_type == ItemTypeID.Piece)
         {

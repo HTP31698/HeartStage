@@ -87,8 +87,7 @@ public class CharacterInfoWindow : GenericWindow
         {
             var skillData = DataTableManager.SkillTable.Get(activeSkills[0]);
             activeDescText.text = skillData.GetFormattedInfo();
-            var texture2d = ResourceManager.Instance.Get<Texture2D>(skillData.icon_prefab);
-            activeSkillIcon.sprite = Sprite.Create(texture2d, new Rect(0, 0, texture2d.width, texture2d.height), new Vector2(0.5f, 0.5f));
+            activeSkillIcon.sprite = ResourceManager.Instance.GetSprite(skillData.icon_prefab);
             activeSkillIcon.enabled = true;
         }
         else
