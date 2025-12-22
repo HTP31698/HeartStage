@@ -90,7 +90,7 @@ public class CharacterSkillController : MonoBehaviour
         isTouchingThisCharacter = false;
         isRangeShown = false;
 
-        SkillRangeDisplayer.Instance.HideRange();
+        SkillRangeDisplayerWithSprite.Instance.HideRange();
 
         if (current == this)
             current = null;
@@ -140,7 +140,7 @@ public class CharacterSkillController : MonoBehaviour
                 isDescShown = true;
 
                 isRangeShown = false;
-                SkillRangeDisplayer.Instance.HideRange();
+                SkillRangeDisplayerWithSprite.Instance.HideRange();
 
                 ActiveSkillManager.Instance.ShowDesc(skillId);
             }
@@ -165,17 +165,17 @@ public class CharacterSkillController : MonoBehaviour
             if (!isRangeShown)
             {
                 isRangeShown = true;
-                SkillRangeDisplayer.Instance.ShowRange(transform.position, skillId);
+                SkillRangeDisplayerWithSprite.Instance.ShowRange(transform.position, skillId);
             }
 
-            SkillRangeDisplayer.Instance.MoveRangeTo(transform.position, pos, skillId);
+            SkillRangeDisplayerWithSprite.Instance.MoveRangeTo(transform.position, pos, skillId);
         }
         else
         {
             if (isRangeShown)
             {
                 isRangeShown = false;
-                SkillRangeDisplayer.Instance.HideRange();
+                SkillRangeDisplayerWithSprite.Instance.HideRange();
             }
         }
     }
@@ -219,7 +219,7 @@ public class CharacterSkillController : MonoBehaviour
         isTouchingThisCharacter = true;
         isDragging = true;
         isRangeShown = false;
-        SkillRangeDisplayer.Instance.HideRange();
+        SkillRangeDisplayerWithSprite.Instance.HideRange();
         longPressTimer = 0f;
     }
 
@@ -242,13 +242,13 @@ public class CharacterSkillController : MonoBehaviour
         if (endInside)
         {
             isRangeShown = false;
-            SkillRangeDisplayer.Instance.HideRange();
+            SkillRangeDisplayerWithSprite.Instance.HideRange();
             return;
         }
 
         // skill use
         isReady = false;
-        SkillRangeDisplayer.Instance.HideRange();
+        SkillRangeDisplayerWithSprite.Instance.HideRange();
 
         startPos = lastTouchPos;
         dir = (lastTouchPos - transform.position).normalized;
@@ -308,7 +308,7 @@ public class CharacterSkillController : MonoBehaviour
         skillReadyEffect.SetActive(false);
 
         characterAttack.animator.SetTrigger(CharacterAttack.HashIdle);
-        SkillRangeDisplayer.Instance.HideRange();
+        SkillRangeDisplayerWithSprite.Instance.HideRange();
     }
 
     private bool IsPointerOverUI()
