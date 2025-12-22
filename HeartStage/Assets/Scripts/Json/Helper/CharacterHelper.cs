@@ -145,6 +145,15 @@ public static class CharacterHelper
 
         return dict[characterName];
     }
+    // 친구꺼 캐릭터 호감도 수치 가져올때
+    public static int GetLikeability(string characterName, SaveDataV1 saveData)
+    {
+        var dict = saveData.likeabilityDict;
+        if (!dict.ContainsKey(characterName))
+            return 0;
+
+        return dict[characterName];
+    }
     // 해당 캐릭터 호감도 수치 세팅(이름 기준)
     public static void SetLikeability(string characterName, int amount)
     {

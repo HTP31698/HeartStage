@@ -111,17 +111,19 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     // 현재 호감도 UI 반영
     private void RefreshLikeabilityUI()
     {
-        likeabilityGuage.value = CharacterHelper.GetLikeability(characterData.char_name);
-        guageAmountText.text = $"♥ {likeabilityGuage.value}";
-        UpdateDialogue();
+        var data = GetTargetSaveData();
+
+        int currentLike = CharacterHelper.GetLikeability(characterData.char_name, data);
+        likeabilityGuage.value = currentLike;
+        guageAmountText.text = $"♥ {currentLike}";
+
+        UpdateDialogue(currentLike);
         UpdateCheerUpButtonInteractable();
         UpdateRewardBubble();
     }
     // 호감도 대사 업데이트
-    private void UpdateDialogue()
+    private void UpdateDialogue(int currentLike)
     {
-        int currentLike = CharacterHelper.GetLikeability(characterData.char_name);
-
         if (currentLike < likeabilityData.like_amount1)
         {
             characterDialogue.text = likeabilityData.line1;
@@ -172,6 +174,10 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     // 받을 수 있는 호감도 보상 개수 리턴
     private int GetAvailableRewardCount()
     {
+        // 친구 숙소에서는 보상 표시 안 함
+        if (LobbyHomeInitializer.Instance.isFriendHome)
+            return 0;
+
         int currentLike = CharacterHelper.GetLikeability(characterData.char_name);
         var state = CharacterHelper.GetLikeabilityRewardState(characterData.char_name);
 
@@ -228,6 +234,11 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         {
             rewardPopup.Open(this, likeabilityData.like_amount3, likeabilityData.like_reward_item3, likeabilityData.reward_amount3);
         }
+    }
+    // 어떤 SaveData로 할지
+    private SaveDataV1 GetTargetSaveData()
+    {
+        return LobbyHomeInitializer.Instance.isFriendHome ? LobbyHomeInitializer.Instance.friendSaveData : SaveLoadManager.Data;
     }
     // 테스트 코드
     // 선택된 캐릭터 호감도 10씩 증가

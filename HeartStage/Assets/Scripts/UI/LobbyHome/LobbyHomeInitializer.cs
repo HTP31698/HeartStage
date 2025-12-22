@@ -17,6 +17,11 @@ public class LobbyHomeInitializer : MonoBehaviour
     private readonly List<SortingGroup> sortingGroups = new();
     private const int BaseOrder = 201;
 
+    [HideInInspector]
+    public bool isFriendHome = false;
+    [HideInInspector]
+    public SaveDataV1 friendSaveData;
+
     private void Awake()
     {
         Instance = this;
@@ -24,6 +29,8 @@ public class LobbyHomeInitializer : MonoBehaviour
     public void Init()
     {
         Init(SaveLoadManager.Data);
+        isFriendHome = false;
+        friendSaveData = null;
     }
 
     public void Init(SaveDataV1 data)
@@ -88,6 +95,8 @@ public class LobbyHomeInitializer : MonoBehaviour
         }
 
         windowManager.OpenOverlayNoDim(WindowType.LobbyHome);
+        isFriendHome = true;
+        friendSaveData = friendData;
         Init(friendData);
     }
 
