@@ -26,12 +26,10 @@ public class StoryDungeonUI : GenericWindow
 
         if (IsStoryDungeonInfoActive())
         {
-            // 활성화되어 있으면 닫기
             WindowManager.Instance.CloseOverlay(WindowType.StoryDungeonInfo);
         }
         else
         {
-            // 비활성화되어 있으면 열기
             WindowManager.Instance.OpenOverlay(WindowType.StoryDungeonInfo);
         }
     }
