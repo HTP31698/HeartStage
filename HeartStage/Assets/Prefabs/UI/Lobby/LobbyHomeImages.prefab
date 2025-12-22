@@ -46,6 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba9f96a98505a454f95f42d37703abef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lobbyUI: {fileID: 0}
   windowManager: {fileID: 0}
   lobbyUiCanvasGroup: {fileID: 0}
   returnButton: {fileID: 0}
@@ -58,11 +59,65 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
   characterBase: {fileID: 3233632479401485729, guid: 69dc5d255eab2e94085a6f592d6c8c8c, type: 3}
+  isFriendHome: 0
+  friendSaveData:
+    lastLoginBinary: 0
+    clearWaveList: 
+    ownedIds: 
+    dailyShopSlotList: []
+    lastDispatchResetDate: 
+    selectedStageID: -1
+    selectedStageStep1: -1
+    selectedStageStep2: -1
+    startingWave: 1
+    isInfiniteMode: 0
+    infiniteStageId: 0
+    completedStoryStages: 
+    showStoryRewardAfterScene: 0
+    StoryAfterLobby: 0
+    clearedStoryStages: 
+    weeklyQuest:
+      weekKey: 
+      progress: 0
+      claimed: 0000000000
+      clearedQuestIds: 
+      completedQuestIds: 
+      loginCount: 0
+      monsterKillCount: 0
+      shopPurchaseCount: 0
+      bossKillCount: 0
+      gachaDrawCount: 0
+      lastLoginDate: 
+    achievementQuest:
+      clearedQuestIds: 
+      completedQuestIds: 
+    nickname: 
+    statusMessage: 
+    profileIconKey: 
+    ownedProfileIconKeys: []
+    equippedTitleId: 0
+    ownedTitleIds: 
+    fanAmount: 0
+    mainStageStep1: 0
+    mainStageStep2: 0
+    bestFanMeetingSeconds: 0
+    specialStageBestSeconds: 0
+    infiniteStageBestSeconds: 0
+    infiniteStagePlayCountToday: 0
+    infiniteStageLastPlayDate: 0
+    dreamEnergy: 0
+    dreamSendDailyLimit: 20
+    dreamSendTodayCount: 0
+    dreamLastSendDate: 0
+    dreamReceiveDailyLimit: 20
+    dreamReceiveTodayCount: 0
+    dreamLastReceiveDate: 0
+    friendUidList: []
+    lastSeenNoticeId: 0
+    returnToStageInfo: 0
+    bgmVolume: 1
+    sfxVolume: 1
 --- !u!1 &8518252317065780944
 GameObject:
   m_ObjectHideFlags: 0

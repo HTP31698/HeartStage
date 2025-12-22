@@ -208,7 +208,7 @@ public class LobbyUI : MonoBehaviour
             UpdateButtonStates(WindowType.SpecialDungeon);
     }
 
-    private void UpdateButtonStates(WindowType currentType)
+    public void UpdateButtonStates(WindowType currentType)
     {
         // Stage
         bool isStage = (currentType == WindowType.StageSelect);

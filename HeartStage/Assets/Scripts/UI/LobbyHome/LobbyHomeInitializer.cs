@@ -94,7 +94,7 @@ public class LobbyHomeInitializer : MonoBehaviour
             hide.SetActive(false);
         }
 
-        windowManager.OpenOverlayNoDim(WindowType.LobbyHome);
+        windowManager.Open(WindowType.LobbyHome);
         isFriendHome = true;
         friendSaveData = friendData;
         Init(friendData);
