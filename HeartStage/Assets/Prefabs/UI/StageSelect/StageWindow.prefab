@@ -92,7 +92,7 @@ MonoBehaviour:
   m_Content: {fileID: 8369228182853256810}
   m_Horizontal: 0
   m_Vertical: 1
-  m_MovementType: 1
+  m_MovementType: 2
   m_Elasticity: 0.1
   m_Inertia: 1
   m_DecelerationRate: 0.135
@@ -162,7 +162,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &8551293341862485858
 RectTransform:
   m_ObjectHideFlags: 0
@@ -233,6 +233,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f74d48daaa57174bb6b08c8bef4fec3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  contentPanel: {fileID: 0}
   contentParent: {fileID: 8369228182853256810}
   stagePrefab: {fileID: 4468947325668399505, guid: 7fb6f37d6a209ca4097935da8cc7b0a2, type: 3}
   windowManager: {fileID: 0}
@@ -416,6 +417,10 @@ PrefabInstance:
     - target: {fileID: 480952770563482567, guid: 7fb6f37d6a209ca4097935da8cc7b0a2, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4437026883371070216, guid: 7fb6f37d6a209ca4097935da8cc7b0a2, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0.000030517578
       objectReference: {fileID: 0}
     - target: {fileID: 4468947325668399505, guid: 7fb6f37d6a209ca4097935da8cc7b0a2, type: 3}
       propertyPath: m_Name

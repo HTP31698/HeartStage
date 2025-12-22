@@ -23,7 +23,7 @@ public class MailInfoUI : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출
         closeButton.onClick.AddListener(OnCloseButtonClicked);
         receiveRewardButton.onClick.AddListener(() => OnReceiveRewardClickedAsync().Forget());
 

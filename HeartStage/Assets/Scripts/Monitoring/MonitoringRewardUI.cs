@@ -14,7 +14,7 @@ public class MonitoringRewardUI : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출
         rewardButton.onClick.AddListener(OnRewardButtonClicked);
     }
 

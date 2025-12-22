@@ -7,7 +7,7 @@ public class StoryDungeonUI : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출
         stroyButton.onClick.RemoveAllListeners();
         stroyButton.onClick.AddListener(OnStoryButtonClicked);
     }
@@ -23,6 +23,29 @@ public class StoryDungeonUI : GenericWindow
     private void OnStoryButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        WindowManager.Instance.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
+
+        if (IsStoryDungeonInfoActive())
+        {
+            WindowManager.Instance.CloseOverlay(WindowType.StoryDungeonInfo);
+        }
+        else
+        {
+            WindowManager.Instance.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
+        }
+    }
+
+    private bool IsStoryDungeonInfoActive()
+    {
+        var windows = WindowManager.Instance.windowList;
+
+        foreach (var windowPair in windows)
+        {
+            if (windowPair.windowType == WindowType.StoryDungeonInfo)
+            {
+                return windowPair.window != null && windowPair.window.gameObject.activeSelf;
+            }
+        }
+
+        return false;
     }
 }

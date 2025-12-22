@@ -20,6 +20,9 @@ public class VictoryPanel : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_StageClear);
+
         if (powerInfoWindow != null)
         {
             powerInfoWindow.SetActive(false);

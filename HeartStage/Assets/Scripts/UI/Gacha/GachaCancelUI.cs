@@ -7,7 +7,7 @@ public class GachaCancelUI : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출
         exitButton.onClick.AddListener(OnExitButtonClicked);
     }
     public override void Open()

@@ -7,7 +7,7 @@ public class LastStageNoticeUI : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출
         lobbyButton.onClick.AddListener(OnLobbyButtonClicked);
 
         // Canvas Sorting Order 강제 설정

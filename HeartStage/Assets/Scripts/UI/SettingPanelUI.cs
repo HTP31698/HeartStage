@@ -18,7 +18,7 @@ public class SettingPanelUI : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출
         if (sfxVolumeSlider != null)
         {
             sfxVolumeSlider.onValueChanged.AddListener(OnSFXVolumeChanged);

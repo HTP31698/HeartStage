@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
@@ -12,8 +12,7 @@ public class SpecialStageUI : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
-        // 자동 바인딩: Inspector에서 연결 안된 경우 자식에서 DungeonItemUI 컴포넌트 자동 탐색
+        base.Awake(); // 부모 클래스의 Awake 호출
         if (dungeonItems == null || dungeonItems.Count == 0)
         {
             dungeonItems = new List<DungeonItemUI>(GetComponentsInChildren<DungeonItemUI>(true));
@@ -31,7 +30,6 @@ public class SpecialStageUI : GenericWindow
     {
         base.Close();
     }
-
     private void RegisterItemCallbacks()
     {
         foreach (var item in dungeonItems)
@@ -42,7 +40,6 @@ public class SpecialStageUI : GenericWindow
             }
         }
     }
-
     private void OnItemExpanded(DungeonItemUI expandedItem)
     {
         // 다른 아이템 모두 축소
@@ -54,7 +51,6 @@ public class SpecialStageUI : GenericWindow
             }
         }
     }
-
     private void CollapseAll()
     {
         foreach (var item in dungeonItems)

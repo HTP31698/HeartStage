@@ -162,32 +162,56 @@ public class StoryInfoPrefab : MonoBehaviour
         stampImage.gameObject.SetActive(isCompleted);
     }
 
-    /// 스테이지 완료 상태 확인 (구현 필요)
+    /// 스테이지 완료 상태 확인
     private bool CheckStageCompleted()
     {
         if (stageData == null)
             return false;
 
         var saveData = SaveLoadManager.Data as SaveDataV1;
-        if (saveData == null || saveData.clearWaveList == null)
+        if (saveData == null)
             return false;
 
-        // 스토리 스테이지의 웨이브들이 모두 클리어되었는지 확인
-        int[] waveIds = {
-        stageData.wave1_id,
-        stageData.wave2_id,
-        stageData.wave3_id
-    };
-
-        foreach (int waveId in waveIds)
+        // 스토리 스테이지 완료 목록에서 확인
+        if (saveData.completedStoryStages != null &&
+            saveData.completedStoryStages.Contains(stageData.story_stage_id))
         {
-            if (waveId > 0 && !saveData.clearWaveList.Contains(waveId))
+            return true;
+        }
+
+        // 웨이브가 있는 스토리 스테이지의 경우 웨이브 클리어 상태도 확인
+        if (saveData.clearWaveList != null)
+        {
+            int[] waveIds = {
+            stageData.wave1_id,
+            stageData.wave2_id,
+            stageData.wave3_id
+        };
+
+            bool hasWaves = false;
+            bool allWavesCleared = true;
+
+            foreach (int waveId in waveIds)
             {
-                return false; // 하나라도 클리어되지 않았으면 false
+                if (waveId > 0)
+                {
+                    hasWaves = true;
+                    if (!saveData.clearWaveList.Contains(waveId))
+                    {
+                        allWavesCleared = false;
+                        break;
+                    }
+                }
+            }
+
+            // 웨이브가 있고 모든 웨이브가 클리어되었다면 완료로 처리
+            if (hasWaves && allWavesCleared)
+            {
+                return true;
             }
         }
 
-        return true; // 모든 웨이브가 클리어되었으면 true
+        return false;
     }
 
     private bool IsTitleId(int itemId)

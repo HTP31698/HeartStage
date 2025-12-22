@@ -31,7 +31,7 @@ public class StageWindow : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출 (WindowAnimator 초기화)
         isOverlayWindow = true; // 오버레이 창으로 설정
     }
 

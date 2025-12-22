@@ -18,7 +18,7 @@ public class GachaResultUI : GenericWindow
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출
         closeButton.onClick.AddListener(OnCloseButtonClicked);
         reTryButton.onClick.AddListener(OnRetryButtonClicked);
     }
@@ -26,6 +26,8 @@ public class GachaResultUI : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Gacha_Result);
 
         if (GachaUI.gachaResultReciever.HasValue)
         {

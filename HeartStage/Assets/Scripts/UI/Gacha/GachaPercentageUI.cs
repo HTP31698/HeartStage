@@ -11,11 +11,11 @@ public class GachaPercentageUI : GenericWindow
 
     [SerializeField] private Button closeButton;
 
-    private readonly List<GameObject> spawnedItems = new List<GameObject>();   
+    private readonly List<GameObject> spawnedItems = new List<GameObject>();
 
     protected override void Awake()
     {
-        base.Awake();
+        base.Awake(); // 부모 클래스의 Awake 호출
         closeButton.onClick.AddListener(OnCloseButtonClicked);
     }
 

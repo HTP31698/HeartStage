@@ -117,6 +117,9 @@ public class SoundName
     public static readonly string SFX_UI_Reward_Monitoring = "ui_reward_monitoring_01";
     public static readonly string SFX_UI_Enhance = "ui_enhance_01";
     public static readonly string SFX_UI_LevelUp = "ui_levelup_01";
+    public static readonly string SFX_UI_Gacha_Result = "ui_gacha_result";
+    public static readonly string SFX_UI_StageClear = "stage_clear_01";
+    public static readonly string SFX_Boss_Appear = "boss_alert";
 }
 
 public class ItemID
