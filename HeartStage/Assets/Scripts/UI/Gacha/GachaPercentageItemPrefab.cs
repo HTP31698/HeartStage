@@ -1,6 +1,4 @@
-﻿using System.Text;
-using TMPro;
-using UnityEditor.U2D.Animation;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
