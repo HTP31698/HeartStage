@@ -12,8 +12,9 @@ public class TutorialPanel : GenericWindow
     [Header("Reference")]
     [SerializeField] private TutorialNickNameScript nicknameWindow;
 
-    [Header("Battle Button Reference")]
+    [Header("Reference")]
     [SerializeField] private Button battleButton;
+    [SerializeField] private Button tutorialStageButton;
 
     [Header("Tutorial UI Control")]
     [SerializeField] private GameObject backgroundPanel; // BackGroundPanel GameObject
@@ -24,6 +25,15 @@ public class TutorialPanel : GenericWindow
     private bool isPlaying = false;
     private bool isTyping = false;
     private bool isWaitingForBattleButton = false; // 배틀 버튼 대기 상태
+
+    protected override void Awake()
+    {
+        base.Awake();
+
+        // TutorialPanel은 WindowManager의 관리에서 제외
+        windowType = WindowType.None;
+        isOverlayWindow = true;
+    }
 
     public override void Open()
     {
@@ -272,10 +282,22 @@ public class TutorialPanel : GenericWindow
         // 배틀 버튼 대기 상태로 설정
         isWaitingForBattleButton = true;
 
-        // **백그라운드 패널 완전히 비활성화 (버튼 클릭 가능하게)**
         if (backgroundPanel != null)
         {
             backgroundPanel.SetActive(false);
+        }
+
+        // TutorialPanel의 레이캐스트 차단 해제
+        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup != null)
+        {
+            canvasGroup.blocksRaycasts = false;
+        }
+        else
+        {
+            // CanvasGroup이 없다면 추가
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            canvasGroup.blocksRaycasts = false;
         }
 
         // 화살표 활성화
@@ -302,12 +324,22 @@ public class TutorialPanel : GenericWindow
 
     private void OnBattleButtonClicked()
     {
-        Debug.Log("[TutorialPanel] 배틀 버튼 클릭됨 - 다음 튜토리얼로 진행");
+        Debug.Log("[TutorialPanel] 배틀 버튼 클릭됨 - 튜토리얼만 계속 진행");
 
         // 배틀 버튼 이벤트 해제
         if (battleButton != null)
         {
             battleButton.onClick.RemoveListener(OnBattleButtonClicked);
+        }
+
+        // 화살표 숨기기
+        HideBattleArrow();
+
+        // TutorialPanel의 레이캐스트 차단 복원
+        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup != null)
+        {
+            canvasGroup.blocksRaycasts = true;
         }
 
         // 백그라운드 패널 복원
@@ -319,10 +351,7 @@ public class TutorialPanel : GenericWindow
         // 대기 상태 해제
         isWaitingForBattleButton = false;
 
-        // 화살표 숨기기
-        HideBattleArrow();
-
-        // 다음 스크립트로 진행
+        // StageWindow는 이미 열려있으므로 바로 다음 스크립트로 진행
         NextScript();
     }
 
@@ -361,9 +390,26 @@ public class TutorialPanel : GenericWindow
         }
     }
 
-    /// Inspector에서 BattleButton을 설정하는 메소드 (선택사항)
-    public void SetBattleButton(Button button)
+    private void OnDisable()
     {
-        battleButton = button;
+        // 튜토리얼이 진행 중이면 무조건 막기
+        if (isPlaying)
+        {
+            // 다음 프레임에 강제로 다시 켜기 (WindowManager가 꺼버리는 것을 방지)
+            ForceReactivate().Forget();
+        }
+    }
+
+    // 재활성화
+    private async UniTaskVoid ForceReactivate()
+    {
+        // 한 프레임 기다림
+        await UniTask.Yield();
+
+        if (!gameObject.activeSelf && isPlaying)
+        {
+            gameObject.SetActive(true);
+            transform.SetAsLastSibling();
+        }
     }
 }
