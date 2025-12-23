@@ -21,16 +21,28 @@ public class LobbyHomeInitializer : MonoBehaviour
     public bool isFriendHome = false;
     [HideInInspector]
     public SaveDataV1 friendSaveData;
+    [HideInInspector]
+    public string friendUID;
 
     private void Awake()
     {
         Instance = this;
     }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
     public void Init()
     {
         Init(SaveLoadManager.Data);
         isFriendHome = false;
         friendSaveData = null;
+        friendUID = string.Empty;
     }
 
     public void Init(SaveDataV1 data)

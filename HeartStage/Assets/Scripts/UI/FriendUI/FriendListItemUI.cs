@@ -313,5 +313,6 @@ public class FriendListItemUI : MonoBehaviour
     {
         FriendService.VisitFriendHouseAsync(_friendUid).Forget();
         WindowManager.Instance?.CloseOverlay(WindowType.Friend);
+        LobbyHomeInitializer.Instance.friendUID = _friendUid;
     }
 }
