@@ -99,6 +99,7 @@ public enum WindowType
     VictoryPanelUI,
     BossAlert,
     StoryStageReward,
+    TutorialStage,
 }
 
 public enum SceneType

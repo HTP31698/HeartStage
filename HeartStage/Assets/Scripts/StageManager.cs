@@ -182,6 +182,25 @@ public class StageManager : MonoBehaviour
                 // 현재 웨이브 설정
                 int startingWave = gameData.startingWave;
                 SetWaveInfo(stageData.stage_step1, startingWave);
+
+                // 튜토리얼 스테이지 체크 (601번 스테이지)
+                CheckAndOpenTutorialStage(stageID);
+            }
+        }
+    }
+
+    // 튜토리얼 스테이지 
+    private void CheckAndOpenTutorialStage(int stageID)
+    {
+        // 601번 스테이지이고, 스테이지 튜토리얼을 아직 완료하지 않은 경우
+        if (stageID == 601)
+        {
+            var saveData = SaveLoadManager.Data as SaveDataV1;
+            bool isStageTutorialCompleted = saveData?.isStageTutorialCompleted ?? false;
+
+            if (!isStageTutorialCompleted && windowManager != null)
+            {
+                windowManager.OpenOverlay(WindowType.TutorialStage);
             }
         }
     }

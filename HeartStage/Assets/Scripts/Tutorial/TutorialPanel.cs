@@ -296,7 +296,6 @@ public class TutorialPanel : GenericWindow
         }
         else
         {
-            // CanvasGroup이 없다면 추가
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
             canvasGroup.blocksRaycasts = false;
         }
@@ -313,14 +312,14 @@ public class TutorialPanel : GenericWindow
     // 튜토리얼 스테이지 화살표 표시 
     private void ShowTutorialStageArrow()
     {
-        if (currentScriptUI != null)
-        {
-            currentScriptUI.gameObject.SetActive(false);
-        }
-
         if (backgroundPanel != null)
         {
             backgroundPanel.SetActive(false);
+        }
+
+        if (tutorialSelectWindowPanel != null)
+        {
+            tutorialSelectWindowPanel.SetActive(false);
         }
 
         // WindowManager에서 StageWindow 찾기
@@ -467,7 +466,6 @@ public class TutorialPanel : GenericWindow
         // 대기 상태 해제
         isWaitingForBattleButton = false;
 
-
         // 다음 스크립트로 넘어가지 말고 바로 StageStartArrow 실행
         ShowStageStartArrow();
     }
@@ -569,7 +567,6 @@ public class TutorialPanel : GenericWindow
 
     private void ShowStageStartArrow()
     {
-        currentScriptUI.gameObject.SetActive(false);
         ShowArrowOnButton(stageStartButton, OnStageStartButtonClicked);
     }
 
