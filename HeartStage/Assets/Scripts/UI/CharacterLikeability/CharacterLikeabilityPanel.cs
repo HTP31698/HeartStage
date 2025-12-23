@@ -37,6 +37,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     public GameObject friendCheerBubble;
     public TextMeshProUGUI rewardCountText;
     public LikeabilityRewardPopup rewardPopup;
+    public ReceivedCheerChest receivedCheerChest;
     public FriendCheerRewardUI friendCheerRewardUI;
     public TextMeshProUGUI friendCheerCountText;
     public ParticleImage cheerEffect;
@@ -117,14 +118,19 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         //  친구 SaveData에 기록
         var friendData = LobbyHomeInitializer.Instance.friendSaveData;
         var dict = friendData.characterCheeredFriends;
-        if (!dict.TryGetValue(characterData.char_name, out var list))
+        if (!dict.TryGetValue(characterData.char_name, out var cheerDict))
         {
-            list = new List<string>();
-            dict.Add(characterData.char_name, list);
+            cheerDict = new Dictionary<string, string>();
+            dict.Add(characterData.char_name, cheerDict);
         }
+        string myUid = AuthManager.Instance.UserId;
         string myNickname = SaveLoadManager.Data.nickname;
-        list.Add(myNickname);
-        SaveLoadManager.SaveToServer(LobbyHomeInitializer.Instance.friendUID,friendData).Forget();
+        // 중복 응원 방지
+        if (!cheerDict.ContainsKey(myUid))
+        {
+            cheerDict.Add(myUid, myNickname);
+        }
+        SaveLoadManager.SaveToServer(LobbyHomeInitializer.Instance.friendUID, friendData).Forget();
     }
     // 호감도 보상 UI 세팅
     private void SetRewardUI()
@@ -239,13 +245,14 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             return;
         }
         var dict = SaveLoadManager.Data.characterCheeredFriends;
-        if (!dict.TryGetValue(characterData.char_name, out var list))
+        if (!dict.TryGetValue(characterData.char_name, out var cheerDict))
         {
             friendCheerBubble.SetActive(false);
             return;
         }
-        friendCheerBubble.SetActive(list != null && list.Count > 0);
-        friendCheerCountText.text = list.Count.ToString();
+        int count = cheerDict.Count;
+        friendCheerBubble.SetActive(count > 0);
+        friendCheerCountText.text = count.ToString();
     }
 
     // 받을 수 있는 호감도 보상 개수 리턴
@@ -315,7 +322,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     // 친구 응원창 열기
     public void OpenFriendCheerPopup()
     {
-
+        receivedCheerChest.Init(characterData.char_name);
     }
     // 어떤 SaveData로 할지
     private SaveDataV1 GetTargetSaveData()

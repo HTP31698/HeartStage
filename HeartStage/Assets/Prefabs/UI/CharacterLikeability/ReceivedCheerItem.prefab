@@ -369,7 +369,7 @@ GameObject:
   - component: {fileID: 2427381594189119657}
   - component: {fileID: 2172353637051947833}
   m_Layer: 5
-  m_Name: Image
+  m_Name: PlayerIcon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -701,8 +701,9 @@ GameObject:
   - component: {fileID: 4362127988060959266}
   - component: {fileID: 4332096644802569929}
   - component: {fileID: 7454003636193168226}
+  - component: {fileID: 3217320526750485668}
   m_Layer: 5
-  m_Name: CheerFriendList
+  m_Name: ReceivedCheerItem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -812,6 +813,22 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &3217320526750485668
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9162120110148693938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ef524ede33ce8142bec1a32ceaf6762, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerIcon: {fileID: 2172353637051947833}
+  receiveText: {fileID: 2138306734219139921}
+  receiveButton: {fileID: 2896687579345348732}
+  receiveEffect: {fileID: 8069376664084296719}
 --- !u!1 &9189550931946288695
 GameObject:
   m_ObjectHideFlags: 0
@@ -1106,7 +1123,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1762166370401093302, guid: 310a588657bc243c3a42a924c988ddd1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1762166370401093302, guid: 310a588657bc243c3a42a924c988ddd1, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
@@ -1134,7 +1151,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2297600602409225634, guid: 310a588657bc243c3a42a924c988ddd1, type: 3}
       propertyPath: m_Name
-      value: RequestButton
+      value: ReceiveButton
       objectReference: {fileID: 0}
     - target: {fileID: 2297600602409225634, guid: 310a588657bc243c3a42a924c988ddd1, type: 3}
       propertyPath: m_IsActive
@@ -1253,6 +1270,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3657399317105343783, guid: 310a588657bc243c3a42a924c988ddd1, type: 3}
   m_PrefabInstance: {fileID: 3478858070276173514}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2896687579345348732 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1762166370401093302, guid: 310a588657bc243c3a42a924c988ddd1, type: 3}
+  m_PrefabInstance: {fileID: 3478858070276173514}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &8250790218653280161 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4812046753582238059, guid: 310a588657bc243c3a42a924c988ddd1, type: 3}
@@ -1384,3 +1412,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7463235951472363136, guid: 8dfb3c0cac2eb224f876a051d73259c6, type: 3}
   m_PrefabInstance: {fileID: 7993992778328013362}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2138306734219139921 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8312682524588532067, guid: 8dfb3c0cac2eb224f876a051d73259c6, type: 3}
+  m_PrefabInstance: {fileID: 7993992778328013362}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

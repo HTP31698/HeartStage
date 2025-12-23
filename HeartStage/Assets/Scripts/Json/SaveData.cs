@@ -103,7 +103,7 @@ public class SaveDataV1 : SaveData
     // ================== 9. 캐릭터 호감도 관련  ==================
     public Dictionary<string, int> likeabilityDict = new Dictionary<string, int>(); // 캐릭터 이름, 호감도 수치
     public Dictionary<string, LikeabilityRewardState> likeabilityRewardStates = new Dictionary<string, LikeabilityRewardState>(); // 캐릭터 이름, 보상 받았는지 상태 여부
-    public Dictionary<string, List<string>> characterCheeredFriends = new Dictionary<string, List<string>>(); // 캐릭터 이름, 응원한 친구 닉네임 리스트
+    public Dictionary<string, Dictionary<string, string>> characterCheeredFriends = new Dictionary<string, Dictionary<string, string>>(); // 캐릭터 이름, (UID, NickName)
 
     // ================== 10. 의상 시스템 ==================
     // 캐릭터별 장착 의상 (캐릭터 이름 → 장착 의상 정보)
