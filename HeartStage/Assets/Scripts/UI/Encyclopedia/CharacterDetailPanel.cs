@@ -1,6 +1,5 @@
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,18 +30,10 @@ public class CharacterDetailPanel : MonoBehaviour
     [Header("캐릭터 치명타 데미지")]
     [SerializeField] private TextMeshProUGUI critDmgText;
 
-    [Header("캐릭터 설명")]
-    [SerializeField] private TextMeshProUGUI descriptionText;
-    [Header("캐릭터 보유 스킬")]
-    [SerializeField] private TextMeshProUGUI skillText;
-
     [Header("캐릭터 이미지")]
     [SerializeField] private Image characterImage;         // 기존 정적 이미지 (fallback용)
     [SerializeField] private Transform characterPrefabParent;  // 캐릭터 프리팹이 생성될 부모
     private GameObject _currentCharacterPrefab;            // 현재 생성된 캐릭터 프리팹
-
-    [Header("스킬 이미지")]
-    [SerializeField] private Image[] skillImages;
 
     [Header("레벨업 필요 재화")]
     [SerializeField] private TextMeshProUGUI levelUpCostText;
@@ -78,6 +69,9 @@ public class CharacterDetailPanel : MonoBehaviour
     [SerializeField] private GameObject performanceContent; // 퍼포먼스 컨텐츠
     [SerializeField] private GameObject positionContent;    // 포지션 컨텐츠
 
+    [Header("캐릭터 정보 탭 (캐릭터 설명)")]
+    [SerializeField] private TextMeshProUGUI charInfoDescText;    // 캐릭터 설명 (키, 나이, 성격, 스토리)
+
     [Header("퍼포먼스 탭 (액티브 스킬)")]
     [SerializeField] private Image performanceSkillIcon;        // 액티브 스킬 아이콘
     [SerializeField] private TextMeshProUGUI performanceSkillNameText;  // 스킬 이름
@@ -94,8 +88,6 @@ public class CharacterDetailPanel : MonoBehaviour
 
     // 런타임에 만든 스프라이트 누수 방지용
     private Sprite _runtimeSprite;
-    // 런타임에 만든 스킬 스프라이트 누수 방지용
-    private Sprite[] _runtimeSkillSprites;
     // 현재 표시 중인 캐릭터 ID
     private int _currentCharacterId;
     // 랭크업 아이콘 애니메이션
@@ -199,15 +191,12 @@ public class CharacterDetailPanel : MonoBehaviour
 
         UpdateStatTexts();
 
-        skillText.text = $"{SkillName(characterData.char_id)}";
-
-        descriptionText.text = $"캐릭터 정보 {characterData.Info}";
+        // 캐릭터 정보 탭 설명 업데이트
+        if (charInfoDescText != null)
+            charInfoDescText.text = characterData.Info;
 
         // 캐릭터 프리팹 생성 (Animator 포함된 UI 프리팹)
         SpawnCharacterPrefab(characterData.image_PrefabName);
-
-        // 스킬 이미지가 필요하면 여기서 ApplySkillImages(characterData.char_id); 같은 식으로 확장
-        ApplySkillImages(characterData.char_id);
 
         // 레벨업 구현 Onclick 리스너 등은 여기서 추가 가능
         ApplyLevelUpText(characterData.char_id);
@@ -259,90 +248,6 @@ public class CharacterDetailPanel : MonoBehaviour
         characterImage.sprite = _runtimeSprite;
     }
 
-    private void ApplySkillImages(int charId)
-    {
-        // 슬롯이 없으면 그냥 종료
-        if (skillImages == null || skillImages.Length == 0)
-            return;
-
-        // 1) 이전에 만든 스킬 스프라이트 정리
-        if (_runtimeSkillSprites != null)
-        {
-            for (int i = 0; i < _runtimeSkillSprites.Length; i++)
-            {
-                if (_runtimeSkillSprites[i] != null)
-                    Destroy(_runtimeSkillSprites[i]);
-            }
-        }
-        _runtimeSkillSprites = new Sprite[skillImages.Length];
-
-        // 2) 캐릭터 → 스킬 ID 리스트 얻기
-        var skillIds = DataTableManager.CharacterTable.GetSkillIds(charId);
-        if (skillIds == null || skillIds.Count == 0)
-        {
-            // 스킬이 없으면 모든 슬롯 비우고 끄기
-            for (int i = 0; i < skillImages.Length; i++)
-            {
-                skillImages[i].sprite = null;
-                skillImages[i].gameObject.SetActive(false);
-            }
-            return;
-        }
-
-        // 3) 스킬 슬롯 채우기
-        int count = Mathf.Min(skillImages.Length, skillIds.Count);
-
-        for (int i = 0; i < count; i++)
-        {
-            int skillId = skillIds[i];
-            var skillData = DataTableManager.SkillTable.Get(skillId);
-            if (skillData == null)
-            {
-                skillImages[i].sprite = null;
-                skillImages[i].gameObject.SetActive(false);
-                continue;
-            }
-
-            // 🔹 네 스킬 아이콘 키 필드명
-            string iconKey = skillData.icon_prefab; // 여기 필드명 맞게 유지
-
-            if (string.IsNullOrEmpty(iconKey))
-            {
-                skillImages[i].sprite = null;
-                skillImages[i].gameObject.SetActive(false);
-                continue;
-            }
-
-            var tex = ResourceManager.Instance.Get<Texture2D>(iconKey);
-            if (tex == null)
-            {
-                Debug.LogWarning($"[CharacterDetailPanel] Skill Texture 로드 실패: {iconKey}");
-                skillImages[i].sprite = null;
-                skillImages[i].gameObject.SetActive(false);
-                continue;
-            }
-
-            var sprite = Sprite.Create(
-                tex,
-                new Rect(0, 0, tex.width, tex.height),
-                new Vector2(0.5f, 0.5f)
-            );
-
-            _runtimeSkillSprites[i] = sprite;
-            skillImages[i].sprite = sprite;
-
-            // ✅ 랭크업으로 새 스킬 생길 때 다시 켜주기
-            skillImages[i].gameObject.SetActive(true);
-        }
-
-        // 4) 남는 슬롯은 비우고 끄기
-        for (int i = count; i < skillImages.Length; i++)
-        {
-            skillImages[i].sprite = null;
-            skillImages[i].gameObject.SetActive(false);
-        }
-    }
-
     public void ApplyLevelUpText(int charId)
     {
         if (levelUpButton == null || levelUpCostText == null)
@@ -365,12 +270,12 @@ public class CharacterDetailPanel : MonoBehaviour
             return;
         }
 
-        int currentPoint = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm);
-        levelUpCostText.text = $"트레이닝 포인트 {currentPoint} / {lvdata.Lvup_ingrd_Itm_count}";
+        int currentPoint = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm1);
+        levelUpCostText.text = $"트레이닝 포인트 {currentPoint} / {lvdata.Lvup_ingrd_Itm1_count}";
 
         levelUpButton.onClick.RemoveAllListeners();
 
-        if (currentPoint >= lvdata.Lvup_ingrd_Itm_count)
+        if (currentPoint >= lvdata.Lvup_ingrd_Itm1_count)
         {
             levelUpButton.interactable = true;
             levelUpButton.onClick.AddListener(() => OnLevelUpButtonClick(charId));
@@ -471,7 +376,7 @@ public class CharacterDetailPanel : MonoBehaviour
             return;
         }
 
-        if (!ItemInvenHelper.TryConsumeItem(lvdata.Lvup_ingrd_Itm, lvdata.Lvup_ingrd_Itm_count))
+        if (!ItemInvenHelper.TryConsumeItem(lvdata.Lvup_ingrd_Itm1, lvdata.Lvup_ingrd_Itm1_count))
         {
             ApplyLevelUpText(charId);
             return;
@@ -542,23 +447,14 @@ public class CharacterDetailPanel : MonoBehaviour
         healthText.text = "체력 ";
         critRateText.text = "치명타 확률 ";
         critDmgText.text = "치명타 데미지 ";
-        skillText.text = "보유 스킬 ";
-        descriptionText.text = "캐릭터 정보 ";
+        if (charInfoDescText != null)
+            charInfoDescText.text = "";
         characterImage.sprite = null;
 
         if (_runtimeSprite != null)
         {
             Destroy(_runtimeSprite);
             _runtimeSprite = null;
-        }
-        if( _runtimeSkillSprites != null)
-        {
-            for (int i = 0; i < _runtimeSkillSprites.Length; i++)
-            {
-                if (_runtimeSkillSprites[i] != null)
-                    Destroy(_runtimeSkillSprites[i]);
-            }
-            _runtimeSkillSprites = null;
         }
         levelUpCostText.text = "트레이닝 포인트 ";
         rankUpCostText.text = $"Name 조각 ";
@@ -576,22 +472,6 @@ public class CharacterDetailPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
     public void OpenPanel() => gameObject.SetActive(true);
-
-    public string SkillName(int characterid)
-    {
-        var skillids = DataTableManager.CharacterTable.GetSkillIds(characterid);
-        if (skillids == null) return "";
-
-        var skillnames = new List<string>();
-        foreach (var skillid in skillids)
-        {
-            var skillData = DataTableManager.SkillTable.Get(skillid);
-            if (skillData != null)
-                skillnames.Add(skillData.skill_name);
-        }
-
-        return $"보유 중인 스킬 { string.Join(", ", skillnames)}";
-    }
 
     private void OnEnable()
     {

@@ -50,6 +50,6 @@ public class LevelUpTable : DataTable
         var data = Get(levelUpId);
         if (data == null)
             return 0;
-        return data.Lvup_ingrd_Itm_count;
+        return data.Lvup_ingrd_Itm1_count;
     }
 }
