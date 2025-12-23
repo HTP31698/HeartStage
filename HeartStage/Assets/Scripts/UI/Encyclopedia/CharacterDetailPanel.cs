@@ -1,25 +1,24 @@
 using Cysharp.Threading.Tasks;
-using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class CharacterDetailPanel : MonoBehaviour
 {
-    [Header("캐릭터 이름")]
+    [Header("캐릭터 이름 (이름 + 레벨 + 속성 통합)")]
     [SerializeField] private TextMeshProUGUI nameText;
-    [Header("캐릭터 등급")]
-    [SerializeField] private TextMeshProUGUI rankText;
-    [Header("캐릭터 레벨")]
-    [SerializeField] private TextMeshProUGUI levelText;
-    [Header("캐릭터 속성")]
-    [SerializeField] private TextMeshProUGUI typeText;
+
+    [Header("캐릭터 등급 (마이크 4개)")]
+    [SerializeField] private Image[] rankMicImages;  // 4개의 마이크 이미지
+    [SerializeField] private Sprite rankMicOnSprite;   // 불 들어온 마이크 스프라이트
+    [SerializeField] private Sprite rankMicOffSprite;  // 꺼진 마이크 스프라이트
 
     [Header("캐릭터 공격력(Vocal)")]
     [SerializeField] private TextMeshProUGUI attackText;
     [Header("캐릭터 공격속도")]
     [SerializeField] private TextMeshProUGUI attackSpeedText;
-        [Header("캐릭터 체력")]
+    [Header("캐릭터 체력")]
     [SerializeField] private TextMeshProUGUI healthText;
     [Header("캐릭터 공격범위")]
     [SerializeField] private TextMeshProUGUI attackRangeText;
@@ -31,15 +30,10 @@ public class CharacterDetailPanel : MonoBehaviour
     [Header("캐릭터 치명타 데미지")]
     [SerializeField] private TextMeshProUGUI critDmgText;
 
-    [Header("캐릭터 설명")]
-    [SerializeField] private TextMeshProUGUI descriptionText;
-    [Header("캐릭터 보유 스킬")]
-    [SerializeField] private TextMeshProUGUI skillText;
-
     [Header("캐릭터 이미지")]
-    [SerializeField] private Image characterImage;
-    [Header("스킬 이미지")]
-    [SerializeField] private Image[] skillImages;
+    [SerializeField] private Image characterImage;         // 기존 정적 이미지 (fallback용)
+    [SerializeField] private Transform characterPrefabParent;  // 캐릭터 프리팹이 생성될 부모
+    private GameObject _currentCharacterPrefab;            // 현재 생성된 캐릭터 프리팹
 
     [Header("레벨업 필요 재화")]
     [SerializeField] private TextMeshProUGUI levelUpCostText;
@@ -50,6 +44,8 @@ public class CharacterDetailPanel : MonoBehaviour
     [SerializeField] private Button levelUpButton;
     [Header("랭크업 버튼")]
     [SerializeField] private Button rankUpButton;
+    [SerializeField] private GameObject rankUpUpIcon;  // 강화 가능 시 표시되는 아이콘
+    [SerializeField] private TextMeshProUGUI rankUpButtonText;  // 버튼에 등급 이름 표시
 
     [Header("의상 슬롯")]
     [SerializeField] private Button topCostumeSlot;      // 상의 슬롯 버튼
@@ -62,12 +58,40 @@ public class CharacterDetailPanel : MonoBehaviour
     [Header("의상 선택 팝업")]
     [SerializeField] private CostumeSelectPopup costumeSelectPopup;
 
+    [Header("등급 강화 확인 팝업")]
+    [SerializeField] private RankUpConfirmPopup rankUpConfirmPopup;
+
+    [Header("하단 탭 시스템")]
+    [SerializeField] private Button charInfoTabButton;      // 캐릭터 정보 탭 버튼
+    [SerializeField] private Button performanceTabButton;   // 퍼포먼스 탭 버튼
+    [SerializeField] private Button positionTabButton;      // 포지션 탭 버튼
+    [SerializeField] private GameObject charInfoContent;    // 캐릭터 정보 컨텐츠
+    [SerializeField] private GameObject performanceContent; // 퍼포먼스 컨텐츠
+    [SerializeField] private GameObject positionContent;    // 포지션 컨텐츠
+
+    [Header("캐릭터 정보 탭 (캐릭터 설명)")]
+    [SerializeField] private TextMeshProUGUI charInfoDescText;    // 캐릭터 설명 (키, 나이, 성격, 스토리)
+
+    [Header("퍼포먼스 탭 (액티브 스킬)")]
+    [SerializeField] private Image performanceSkillIcon;        // 액티브 스킬 아이콘
+    [SerializeField] private TextMeshProUGUI performanceSkillNameText;  // 스킬 이름
+    [SerializeField] private TextMeshProUGUI performanceCooldownText;   // 대기시간: n초
+    [SerializeField] private TextMeshProUGUI performanceDescText;       // 스킬 설명
+
+    [Header("포지션 탭 (패시브 스킬)")]
+    [SerializeField] private PassiveTileDisplay positionTileDisplay;    // 패시브 범위 이미지
+    [SerializeField] private TextMeshProUGUI positionDescText;          // 패시브 스킬 설명
+
+    // 탭 상태
+    private enum TabType { CharInfo, Performance, Position }
+    private TabType _currentTab = TabType.CharInfo;
+
     // 런타임에 만든 스프라이트 누수 방지용
     private Sprite _runtimeSprite;
-    // 런타임에 만든 스킬 스프라이트 누수 방지용
-    private Sprite[] _runtimeSkillSprites;
     // 현재 표시 중인 캐릭터 ID
     private int _currentCharacterId;
+    // 랭크업 아이콘 애니메이션
+    private Tweener _rankUpIconTween;
 
     [Header("종료 버튼")]
     [SerializeField] Button ExitButton;
@@ -98,6 +122,18 @@ public class CharacterDetailPanel : MonoBehaviour
         // 팝업 콜백 등록
         if (costumeSelectPopup != null)
             costumeSelectPopup.OnCostumeChanged += RefreshCostumeSlots;
+
+        // 등급 강화 팝업 콜백 등록
+        if (rankUpConfirmPopup != null)
+            rankUpConfirmPopup.OnRankUpCompleted += OnRankUpCompleted;
+
+        // 탭 버튼 리스너
+        if (charInfoTabButton != null)
+            charInfoTabButton.onClick.AddListener(() => SwitchTab(TabType.CharInfo));
+        if (performanceTabButton != null)
+            performanceTabButton.onClick.AddListener(() => SwitchTab(TabType.Performance));
+        if (positionTabButton != null)
+            positionTabButton.onClick.AddListener(() => SwitchTab(TabType.Position));
     }
 
     private void OnStatModeToggle()
@@ -151,23 +187,16 @@ public class CharacterDetailPanel : MonoBehaviour
         // 통합 텍스트: "하나 Lv.10 보컬"
         string typeName = GetAttributeName(characterData.char_type);
         nameText.text = $"{characterData.char_name} Lv.{characterData.char_lv} {typeName}";
-        rankText.text = $"등급 {characterData.char_rank}";
+        UpdateRankMics(characterData.char_rank);
 
         UpdateStatTexts();
 
+        // 캐릭터 정보 탭 설명 업데이트
+        if (charInfoDescText != null)
+            charInfoDescText.text = characterData.Info;
 
-
-
-
-        skillText.text = $"{SkillName(characterData.char_id)}";
-
-        descriptionText.text = $"캐릭터 정보 {characterData.Info}";
-
-        // 여기서 이미지 직접 로드/적용
-        ApplyCharacterImage(characterData.card_imageName);
-
-        // 스킬 이미지가 필요하면 여기서 ApplySkillImages(characterData.char_id); 같은 식으로 확장
-        ApplySkillImages(characterData.char_id);
+        // 캐릭터 프리팹 생성 (Animator 포함된 UI 프리팹)
+        SpawnCharacterPrefab(characterData.image_PrefabName);
 
         // 레벨업 구현 Onclick 리스너 등은 여기서 추가 가능
         ApplyLevelUpText(characterData.char_id);
@@ -177,6 +206,11 @@ public class CharacterDetailPanel : MonoBehaviour
 
         // 의상 슬롯 새로고침
         RefreshCostumeSlots();
+
+        // 탭 초기화 및 데이터 업데이트
+        ResetTabToDefault();
+        UpdatePerformanceTab();
+        UpdatePositionTab();
     }
 
     private void ApplyCharacterImage(string imageKey)
@@ -214,90 +248,6 @@ public class CharacterDetailPanel : MonoBehaviour
         characterImage.sprite = _runtimeSprite;
     }
 
-    private void ApplySkillImages(int charId)
-    {
-        // 슬롯이 없으면 그냥 종료
-        if (skillImages == null || skillImages.Length == 0)
-            return;
-
-        // 1) 이전에 만든 스킬 스프라이트 정리
-        if (_runtimeSkillSprites != null)
-        {
-            for (int i = 0; i < _runtimeSkillSprites.Length; i++)
-            {
-                if (_runtimeSkillSprites[i] != null)
-                    Destroy(_runtimeSkillSprites[i]);
-            }
-        }
-        _runtimeSkillSprites = new Sprite[skillImages.Length];
-
-        // 2) 캐릭터 → 스킬 ID 리스트 얻기
-        var skillIds = DataTableManager.CharacterTable.GetSkillIds(charId);
-        if (skillIds == null || skillIds.Count == 0)
-        {
-            // 스킬이 없으면 모든 슬롯 비우고 끄기
-            for (int i = 0; i < skillImages.Length; i++)
-            {
-                skillImages[i].sprite = null;
-                skillImages[i].gameObject.SetActive(false);
-            }
-            return;
-        }
-
-        // 3) 스킬 슬롯 채우기
-        int count = Mathf.Min(skillImages.Length, skillIds.Count);
-
-        for (int i = 0; i < count; i++)
-        {
-            int skillId = skillIds[i];
-            var skillData = DataTableManager.SkillTable.Get(skillId);
-            if (skillData == null)
-            {
-                skillImages[i].sprite = null;
-                skillImages[i].gameObject.SetActive(false);
-                continue;
-            }
-
-            // 🔹 네 스킬 아이콘 키 필드명
-            string iconKey = skillData.icon_prefab; // 여기 필드명 맞게 유지
-
-            if (string.IsNullOrEmpty(iconKey))
-            {
-                skillImages[i].sprite = null;
-                skillImages[i].gameObject.SetActive(false);
-                continue;
-            }
-
-            var tex = ResourceManager.Instance.Get<Texture2D>(iconKey);
-            if (tex == null)
-            {
-                Debug.LogWarning($"[CharacterDetailPanel] Skill Texture 로드 실패: {iconKey}");
-                skillImages[i].sprite = null;
-                skillImages[i].gameObject.SetActive(false);
-                continue;
-            }
-
-            var sprite = Sprite.Create(
-                tex,
-                new Rect(0, 0, tex.width, tex.height),
-                new Vector2(0.5f, 0.5f)
-            );
-
-            _runtimeSkillSprites[i] = sprite;
-            skillImages[i].sprite = sprite;
-
-            // ✅ 랭크업으로 새 스킬 생길 때 다시 켜주기
-            skillImages[i].gameObject.SetActive(true);
-        }
-
-        // 4) 남는 슬롯은 비우고 끄기
-        for (int i = count; i < skillImages.Length; i++)
-        {
-            skillImages[i].sprite = null;
-            skillImages[i].gameObject.SetActive(false);
-        }
-    }
-
     public void ApplyLevelUpText(int charId)
     {
         if (levelUpButton == null || levelUpCostText == null)
@@ -320,12 +270,12 @@ public class CharacterDetailPanel : MonoBehaviour
             return;
         }
 
-        int currentPoint = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm);
-        levelUpCostText.text = $"트레이닝 포인트 {currentPoint} / {lvdata.Lvup_ingrd_Itm_count}";
+        int currentPoint = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm1);
+        levelUpCostText.text = $"트레이닝 포인트 {currentPoint} / {lvdata.Lvup_ingrd_Itm1_count}";
 
         levelUpButton.onClick.RemoveAllListeners();
 
-        if (currentPoint >= lvdata.Lvup_ingrd_Itm_count)
+        if (currentPoint >= lvdata.Lvup_ingrd_Itm1_count)
         {
             levelUpButton.interactable = true;
             levelUpButton.onClick.AddListener(() => OnLevelUpButtonClick(charId));
@@ -341,11 +291,20 @@ public class CharacterDetailPanel : MonoBehaviour
         if (rankUpButton == null || rankUpCostText == null)
             return;
 
+        // 현재 캐릭터 랭크 가져오기
+        var charData = DataTableManager.CharacterTable.Get(charId);
+        int currentRank = charData?.char_rank ?? 1;
+
+        // 버튼에 등급 이름 표시
+        if (rankUpButtonText != null)
+            rankUpButtonText.text = GetRankName(currentRank);
+
         if (!CharacterHelper.HasCharacter(charId))
         {
             rankUpCostText.text = "-미보유 캐릭터-";
             rankUpButton.interactable = false;
             rankUpButton.onClick.RemoveAllListeners();
+            SetRankUpIconActive(false);
             return;
         }
 
@@ -355,6 +314,7 @@ public class CharacterDetailPanel : MonoBehaviour
             rankUpCostText.text = "-최대 랭크-";
             rankUpButton.interactable = false;
             rankUpButton.onClick.RemoveAllListeners();
+            SetRankUpIconActive(false);
             return;
         }
 
@@ -363,14 +323,38 @@ public class CharacterDetailPanel : MonoBehaviour
 
         rankUpButton.onClick.RemoveAllListeners();
 
-        if (currentPoint >= rankdata.Ingrd_Itm1_amount)
+        bool canRankUp = currentPoint >= rankdata.Ingrd_Itm1_amount;
+        rankUpButton.interactable = canRankUp;
+        SetRankUpIconActive(canRankUp);
+
+        if (canRankUp)
         {
-            rankUpButton.interactable = true;
             rankUpButton.onClick.AddListener(() => OnRankUpButtonClick(charId));
+        }
+    }
+
+    /// <summary>
+    /// 랭크업 아이콘 활성화/비활성화 + 위아래 흔들림 애니메이션
+    /// </summary>
+    private void SetRankUpIconActive(bool active)
+    {
+        if (rankUpUpIcon == null) return;
+
+        // 기존 애니메이션 정지
+        _rankUpIconTween?.Kill();
+
+        if (active)
+        {
+            rankUpUpIcon.SetActive(true);
+            // 위아래로 살짝 흔들리는 애니메이션 (5px, 0.5초 주기, 무한 반복)
+            _rankUpIconTween = rankUpUpIcon.transform
+                .DOLocalMoveY(rankUpUpIcon.transform.localPosition.y + 5f, 0.5f)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo);
         }
         else
         {
-            rankUpButton.interactable = false;
+            rankUpUpIcon.SetActive(false);
         }
     }
 
@@ -392,7 +376,7 @@ public class CharacterDetailPanel : MonoBehaviour
             return;
         }
 
-        if (!ItemInvenHelper.TryConsumeItem(lvdata.Lvup_ingrd_Itm, lvdata.Lvup_ingrd_Itm_count))
+        if (!ItemInvenHelper.TryConsumeItem(lvdata.Lvup_ingrd_Itm1, lvdata.Lvup_ingrd_Itm1_count))
         {
             ApplyLevelUpText(charId);
             return;
@@ -420,27 +404,34 @@ public class CharacterDetailPanel : MonoBehaviour
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
-        var rankdata = DataTableManager.RankUpTable.Get(charId);
-        if (rankdata == null) return;
-
-        if (ItemInvenHelper.TryConsumeItem(rankdata.Upgrade_ingrd_Itm1, rankdata.Ingrd_Itm1_amount))
+        // 등급 강화 확인 팝업 열기
+        if (rankUpConfirmPopup != null)
         {
-            int startId = _currentCharacterId;
+            rankUpConfirmPopup.Open(charId);
+        }
+    }
+
+    /// <summary>
+    /// 등급 강화 완료 시 호출되는 콜백
+    /// </summary>
+    private void OnRankUpCompleted()
+    {
+        // 업그레이드된 캐릭터 정보 다시 로드
+        var rankdata = DataTableManager.RankUpTable.Get(_currentCharacterId);
+        if (rankdata != null)
+        {
             int finalId = rankdata.Upgrade_char;
-
-            CharacterHelper.CommitUpgradeResult(startId, finalId);
-
-            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Enhance);
-
-            Debug.Log($"랭크업 완료 {startId} -> {finalId}");
-
             var nextRankData = DataTableManager.CharacterTable.Get(finalId);
-            rankUpButton.onClick.RemoveAllListeners();
-            SetCharacter(nextRankData);
 
-            // 새 랭크 기준으로 텍스트/버튼 다시 계산
-            ApplyRankUpText(nextRankData.char_id);
-            ApplyLevelUpText(nextRankData.char_id); // 레벨업도 같이 갱신해두면 편함
+            if (nextRankData != null)
+            {
+                rankUpButton.onClick.RemoveAllListeners();
+                SetCharacter(nextRankData);
+
+                // 새 랭크 기준으로 텍스트/버튼 다시 계산
+                ApplyRankUpText(nextRankData.char_id);
+                ApplyLevelUpText(nextRankData.char_id);
+            }
         }
     }
 
@@ -448,10 +439,7 @@ public class CharacterDetailPanel : MonoBehaviour
     public void Clear()
     {
         nameText.text = "";
-        rankText.text = "등급 ";
-        // levelText, typeText는 nameText에 통합됨 (필드 유지만)
-        if (levelText != null) levelText.text = "";
-        if (typeText != null) typeText.text = "";
+        UpdateRankMics(0);  // 마이크 모두 끄기
         attackText.text = "공격력 ";
         attackSpeedText.text = "공격속도 ";
         attackRangeText.text = "공격범위 ";
@@ -459,8 +447,8 @@ public class CharacterDetailPanel : MonoBehaviour
         healthText.text = "체력 ";
         critRateText.text = "치명타 확률 ";
         critDmgText.text = "치명타 데미지 ";
-        skillText.text = "보유 스킬 ";
-        descriptionText.text = "캐릭터 정보 ";
+        if (charInfoDescText != null)
+            charInfoDescText.text = "";
         characterImage.sprite = null;
 
         if (_runtimeSprite != null)
@@ -468,20 +456,14 @@ public class CharacterDetailPanel : MonoBehaviour
             Destroy(_runtimeSprite);
             _runtimeSprite = null;
         }
-        if( _runtimeSkillSprites != null)
-        {
-            for (int i = 0; i < _runtimeSkillSprites.Length; i++)
-            {
-                if (_runtimeSkillSprites[i] != null)
-                    Destroy(_runtimeSkillSprites[i]);
-            }
-            _runtimeSkillSprites = null;
-        }
         levelUpCostText.text = "트레이닝 포인트 ";
         rankUpCostText.text = $"Name 조각 ";
 
         levelUpButton.interactable = false;
         rankUpButton.interactable = false;
+
+        // 캐릭터 프리팹 정리
+        ClearCharacterPrefab();
     }
 
     public void ClosePanel()
@@ -490,22 +472,6 @@ public class CharacterDetailPanel : MonoBehaviour
         gameObject.SetActive(false);
     }
     public void OpenPanel() => gameObject.SetActive(true);
-
-    public string SkillName(int characterid)
-    {
-        var skillids = DataTableManager.CharacterTable.GetSkillIds(characterid);
-        if (skillids == null) return "";
-
-        var skillnames = new List<string>();
-        foreach (var skillid in skillids)
-        {
-            var skillData = DataTableManager.SkillTable.Get(skillid);
-            if (skillData != null)
-                skillnames.Add(skillData.skill_name);
-        }
-
-        return $"보유 중인 스킬 { string.Join(", ", skillnames)}";
-    }
 
     private void OnEnable()
     {
@@ -524,12 +490,194 @@ public class CharacterDetailPanel : MonoBehaviour
             _runtimeSprite = null;
         }
 
+        // 캐릭터 프리팹 정리
+        ClearCharacterPrefab();
+
+        // 랭크업 아이콘 애니메이션 정리
+        _rankUpIconTween?.Kill();
+
         // 팝업 콜백 해제
         if (costumeSelectPopup != null)
             costumeSelectPopup.OnCostumeChanged -= RefreshCostumeSlots;
+
+        if (rankUpConfirmPopup != null)
+            rankUpConfirmPopup.OnRankUpCompleted -= OnRankUpCompleted;
     }
 
+    #region 탭 시스템
+
+    /// <summary>
+    /// 탭 전환
+    /// </summary>
+    private void SwitchTab(TabType tab)
+    {
+        if (_currentTab == tab)
+            return;
+
+        _currentTab = tab;
+
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+        // 컨텐츠 활성화/비활성화
+        if (charInfoContent != null)
+            charInfoContent.SetActive(tab == TabType.CharInfo);
+        if (performanceContent != null)
+            performanceContent.SetActive(tab == TabType.Performance);
+        if (positionContent != null)
+            positionContent.SetActive(tab == TabType.Position);
+
+        // 버튼 상태 업데이트 (선택된 탭은 비활성화)
+        if (charInfoTabButton != null)
+            charInfoTabButton.interactable = tab != TabType.CharInfo;
+        if (performanceTabButton != null)
+            performanceTabButton.interactable = tab != TabType.Performance;
+        if (positionTabButton != null)
+            positionTabButton.interactable = tab != TabType.Position;
+    }
+
+    /// <summary>
+    /// 탭 초기화 (캐릭터 정보 탭으로 리셋)
+    /// </summary>
+    private void ResetTabToDefault()
+    {
+        _currentTab = TabType.CharInfo;
+
+        if (charInfoContent != null)
+            charInfoContent.SetActive(true);
+        if (performanceContent != null)
+            performanceContent.SetActive(false);
+        if (positionContent != null)
+            positionContent.SetActive(false);
+
+        if (charInfoTabButton != null)
+            charInfoTabButton.interactable = false;
+        if (performanceTabButton != null)
+            performanceTabButton.interactable = true;
+        if (positionTabButton != null)
+            positionTabButton.interactable = true;
+    }
+
+    /// <summary>
+    /// 퍼포먼스 탭 데이터 설정 (액티브 스킬)
+    /// </summary>
+    private void UpdatePerformanceTab()
+    {
+        if (_currentCharacterData == null)
+            return;
+
+        // 액티브 스킬 찾기 (skill_id2가 액티브 스킬)
+        var skillIds = DataTableManager.CharacterTable.GetSkillIds(_currentCharacterData.char_id);
+        if (skillIds == null || skillIds.Count < 2)
+        {
+            ClearPerformanceTab();
+            return;
+        }
+
+        int activeSkillId = skillIds[1];  // 두 번째 스킬이 액티브
+        var skillData = DataTableManager.SkillTable.Get(activeSkillId);
+        if (skillData == null)
+        {
+            ClearPerformanceTab();
+            return;
+        }
+
+        // 스킬 이름
+        if (performanceSkillNameText != null)
+            performanceSkillNameText.text = skillData.skill_name;
+
+        // 대기시간
+        if (performanceCooldownText != null)
+            performanceCooldownText.text = $"대기시간: {skillData.skill_cool}초";
+
+        // 스킬 설명
+        if (performanceDescText != null)
+            performanceDescText.text = skillData.GetFormattedInfo();
+
+        // 스킬 아이콘
+        if (performanceSkillIcon != null && !string.IsNullOrEmpty(skillData.icon_prefab))
+        {
+            var sprite = ResourceManager.Instance.GetSprite(skillData.icon_prefab);
+            if (sprite != null)
+                performanceSkillIcon.sprite = sprite;
+        }
+    }
+
+    private void ClearPerformanceTab()
+    {
+        if (performanceSkillNameText != null)
+            performanceSkillNameText.text = "";
+        if (performanceCooldownText != null)
+            performanceCooldownText.text = "";
+        if (performanceDescText != null)
+            performanceDescText.text = "";
+        if (performanceSkillIcon != null)
+            performanceSkillIcon.sprite = null;
+    }
+
+    /// <summary>
+    /// 포지션 탭 데이터 설정 (패시브 스킬)
+    /// </summary>
+    private void UpdatePositionTab()
+    {
+        if (_currentCharacterData == null)
+            return;
+
+        // 패시브 스킬 찾기 (skill_id1이 패시브 스킬)
+        var skillIds = DataTableManager.CharacterTable.GetSkillIds(_currentCharacterData.char_id);
+        if (skillIds == null || skillIds.Count < 1)
+        {
+            ClearPositionTab();
+            return;
+        }
+
+        int passiveSkillId = skillIds[0];  // 첫 번째 스킬이 패시브
+        var skillData = DataTableManager.SkillTable.Get(passiveSkillId);
+        if (skillData == null)
+        {
+            ClearPositionTab();
+            return;
+        }
+
+        // 패시브 타일 표시
+        if (positionTileDisplay != null)
+            positionTileDisplay.SetPattern(skillData.passive_type);
+
+        // 패시브 스킬 설명
+        if (positionDescText != null)
+            positionDescText.text = skillData.GetFormattedInfo();
+    }
+
+    private void ClearPositionTab()
+    {
+        if (positionTileDisplay != null)
+            positionTileDisplay.Clear();
+        if (positionDescText != null)
+            positionDescText.text = "";
+    }
+
+    #endregion
+
     #region 유틸리티
+
+    /// <summary>
+    /// 랭크에 따라 마이크 이미지 스프라이트 업데이트 (1~4 랭크)
+    /// 1=병아리연습생, 2=에이스연습생, 3=신인아이돌, 4=인기아이돌
+    /// </summary>
+    private void UpdateRankMics(int rank)
+    {
+        if (rankMicImages == null || rankMicImages.Length == 0)
+            return;
+
+        for (int i = 0; i < rankMicImages.Length; i++)
+        {
+            if (rankMicImages[i] == null) continue;
+
+            // rank가 i+1 이상이면 불 켜짐 (rank 1 = 마이크 1개, rank 4 = 마이크 4개)
+            bool isOn = i < rank;
+            rankMicImages[i].sprite = isOn ? rankMicOnSprite : rankMicOffSprite;
+        }
+    }
 
     /// <summary>
     /// CharacterAttribute를 한글 이름으로 변환
@@ -547,6 +695,90 @@ public class CharacterDetailPanel : MonoBehaviour
             7 => "섹시",
             _ => ""
         };
+    }
+
+    /// <summary>
+    /// 랭크를 등급 이름으로 변환
+    /// </summary>
+    private string GetRankName(int rank)
+    {
+        return rank switch
+        {
+            1 => "병아리 연습생",
+            2 => "에이스 연습생",
+            3 => "신인 아이돌",
+            4 => "인기 아이돌",
+            _ => ""
+        };
+    }
+
+    /// <summary>
+    /// 캐릭터 UI 프리팹 생성 (Image + Animator 포함)
+    /// </summary>
+    private void SpawnCharacterPrefab(string prefabKey)
+    {
+        // 이전 프리팹 제거
+        if (_currentCharacterPrefab != null)
+        {
+            Destroy(_currentCharacterPrefab);
+            _currentCharacterPrefab = null;
+        }
+
+        // characterPrefabParent가 없으면 기존 이미지 방식 사용
+        if (characterPrefabParent == null || string.IsNullOrEmpty(prefabKey))
+        {
+            // fallback: 기존 정적 이미지
+            if (_currentCharacterData != null)
+                ApplyCharacterImage(_currentCharacterData.card_imageName);
+            return;
+        }
+
+        // 프리팹 로드
+        var prefab = ResourceManager.Instance.Get<GameObject>(prefabKey);
+        if (prefab == null)
+        {
+            Debug.LogWarning($"[CharacterDetailPanel] 캐릭터 프리팹 로드 실패: {prefabKey}");
+            // fallback
+            if (_currentCharacterData != null)
+                ApplyCharacterImage(_currentCharacterData.card_imageName);
+            return;
+        }
+
+        // 기존 정적 이미지 숨기기
+        if (characterImage != null)
+            characterImage.gameObject.SetActive(false);
+
+        // 프리팹 생성
+        _currentCharacterPrefab = Instantiate(prefab, characterPrefabParent);
+        _currentCharacterPrefab.transform.localPosition = Vector3.zero;
+        _currentCharacterPrefab.transform.localRotation = Quaternion.identity;
+        _currentCharacterPrefab.transform.localScale = Vector3.one;
+
+        // UI에서 다른 요소보다 앞에 그려지도록 sibling index를 마지막으로 설정
+        _currentCharacterPrefab.transform.SetAsLastSibling();
+
+        // RectTransform 설정 (UI용)
+        var rectTransform = _currentCharacterPrefab.GetComponent<RectTransform>();
+        if (rectTransform != null)
+        {
+            rectTransform.anchoredPosition = Vector2.zero;
+        }
+    }
+
+    /// <summary>
+    /// 캐릭터 프리팹 제거
+    /// </summary>
+    private void ClearCharacterPrefab()
+    {
+        if (_currentCharacterPrefab != null)
+        {
+            Destroy(_currentCharacterPrefab);
+            _currentCharacterPrefab = null;
+        }
+
+        // 정적 이미지 다시 표시
+        if (characterImage != null)
+            characterImage.gameObject.SetActive(true);
     }
 
     #endregion

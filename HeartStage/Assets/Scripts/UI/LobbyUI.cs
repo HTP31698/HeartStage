@@ -214,31 +214,50 @@ public class LobbyUI : MonoBehaviour
         bool isStage = (currentType == WindowType.StageSelect);
         stageUiButton.interactable = !isStage;
         stageIndicator?.SetActive(isStage);
+        SetButtonScale(stageUiButton, isStage);
 
         // Home
         bool isHome = (currentType == WindowType.LobbyHome);
         homeUiButton.interactable = !isHome;
         homeIndicator?.SetActive(isHome);
+        SetButtonScale(homeUiButton, isHome);
 
         // Gacha
         bool isGacha = (currentType == WindowType.Gacha);
         gachaButton.interactable = !isGacha;
         gachaIndicator?.SetActive(isGacha);
+        SetButtonScale(gachaButton, isGacha);
 
         // Store
         bool isStore = (currentType == WindowType.Shopping);
         storeButton.interactable = !isStore;
         storeIndicator?.SetActive(isStore);
+        SetButtonScale(storeButton, isStore);
 
         // CharacterDict
         bool isDict = (currentType == WindowType.CharacterDict);
         characterDictButton.interactable = !isDict;
         characterDictIndicator?.SetActive(isDict);
+        SetButtonScale(characterDictButton, isDict);
 
         // SpecialDungeon
         bool isDungeon = (currentType == WindowType.SpecialDungeon);
         specialDungeonButton.interactable = !isDungeon;
         specialDungeonIndicator?.SetActive(isDungeon);
+        SetButtonScale(specialDungeonButton, isDungeon);
+    }
+
+    /// <summary>
+    /// 활성화된 버튼은 Y 스케일 1.1, 비활성화는 1.0
+    /// </summary>
+    private void SetButtonScale(Button button, bool isActive)
+    {
+        if (button == null) return;
+
+        var t = button.transform;
+        var scale = t.localScale;
+        scale.y = isActive ? 1.1f : 1f;
+        t.localScale = scale;
     }
 
     private void OnDisable()
