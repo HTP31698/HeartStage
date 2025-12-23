@@ -16,6 +16,8 @@ public class LikeabilityRewardState
 
 public class CharacterLikeabilityPanel : MonoBehaviour
 {
+    public static CharacterLikeabilityPanel Instance;
+
     public Image attributeIcon;
     public TextMeshProUGUI characterName;
     public TextMeshProUGUI characterLvRank;
@@ -42,8 +44,10 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     public TextMeshProUGUI friendCheerCountText;
     public ParticleImage cheerEffect;
 
-    private LikeabilityData likeabilityData;
-    private CharacterCSVData characterData;
+    [HideInInspector]
+    public LikeabilityData likeabilityData;
+    [HideInInspector]
+    public CharacterCSVData characterData;
 
     private LikeabilityRewardBubble rewardBubble;
     private FriendCheerBubble friendBubble;
@@ -52,6 +56,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     {
         rewardBubble = rewardSpeechBubble.GetComponent<LikeabilityRewardBubble>();
         friendBubble = friendCheerBubble.GetComponent<FriendCheerBubble>();
+        Instance = this;
     }
 
     private void Start()
@@ -161,7 +166,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         reward.anchoredPosition = pos;
     }
     // 현재 호감도 UI 반영
-    private void RefreshLikeabilityUI()
+    public void RefreshLikeabilityUI()
     {
         var data = GetTargetSaveData();
 

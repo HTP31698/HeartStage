@@ -7,6 +7,7 @@ public class ReceivedCheerChest : MonoBehaviour
 
     public void Init(string characterName)
     {
+        gameObject.SetActive(true);
         // 기존 아이템 제거
         for (int i = itemParent.transform.childCount - 1; i >= 0; i--)
         {
