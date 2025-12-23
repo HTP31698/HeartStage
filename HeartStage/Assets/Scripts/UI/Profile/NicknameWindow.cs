@@ -14,6 +14,9 @@ public class NicknameWindow : MonoBehaviour
 
     public bool IsOpen => gameObject.activeSelf;
 
+    private System.Action onClosed; // 튜토리얼 닫힐 때 호출할 콜백
+
+
     private void Awake()
     {
         // 처음엔 창 꺼둔 상태에서 시작
@@ -44,7 +47,13 @@ public class NicknameWindow : MonoBehaviour
     {
         gameObject.SetActive(false);
         // "팝업 하나 닫혔음"을 ProfileWindow에 알려서 모달Panel 제어
-        ProfileWindow.Instance?.OnPopupClosed();
+        if (ProfileWindow.Instance != null && ProfileWindow.Instance.gameObject.activeSelf)
+        {
+            ProfileWindow.Instance.OnPopupClosed();
+        }
+
+        onClosed?.Invoke();
+        onClosed = null; // 한 번만 실행
     }
 
     // 로딩에서 예열용
@@ -78,5 +87,10 @@ public class NicknameWindow : MonoBehaviour
         LobbyManager.Instance?.MoneyUISet();
 
         Close();
+    }
+
+    public void SetOnClosedCallback(System.Action callback)
+    {
+        onClosed = callback;
     }
 }

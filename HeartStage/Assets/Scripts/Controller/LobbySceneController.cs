@@ -286,8 +286,22 @@ public class LobbySceneController : MonoBehaviour
         var saveData = SaveLoadManager.Data as SaveDataV1;
         if (saveData != null && !saveData.isTutorialCompleted)
         {
-            // 튜토리얼 미완료시 
-            WindowManager.Instance.OpenOverlay(WindowType.TutorialPanel);
+            // 컷씬을 완료했거나 컷씬이 필요 없는 경우에만 로비 튜토리얼 시작
+            if (saveData.isTutorialCutsceneCompleted || ShouldSkipCutscene())
+            {
+                WindowManager.Instance.OpenOverlay(WindowType.TutorialPanel);
+            }
+            else
+            {
+                // 컷씬부터 시작해야 하는 경우 컷씬으로 이동
+                GameSceneManager.ChangeScene(SceneType.TutorialCutScene);
+            }
         }
+    }
+
+    private bool ShouldSkipCutscene()
+    {
+        // 컷씬을 건너뛰어야 하는 조건들
+        return false;
     }
 }

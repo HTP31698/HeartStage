@@ -9,6 +9,10 @@ public class TutorialPanel : GenericWindow
 {
     [SerializeField] private GameObject tutorialScriptPrefab;
     [SerializeField] private Transform contentParent; // TutorialScriptPrefab 생성할 부모
+    [SerializeField] private Image arrow;
+
+    [Header("Reference")]
+    [SerializeField] private NicknameWindow nicknameWindow;
 
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
@@ -122,11 +126,16 @@ public class TutorialPanel : GenericWindow
         }
 
         isTyping = false;
+
+        ExecuteScriptAction(currentScripts[currentScriptIndex]);
     }
 
     private void OnScreenClicked()
     {
-        // TutorialManager의 IsClickOnButton() 로직은 제외 (오버레이 UI이므로)
+        if (nicknameWindow != null && nicknameWindow.IsOpen)
+        {
+            return;
+        }
 
         if (isTyping)
         {
@@ -195,4 +204,26 @@ public class TutorialPanel : GenericWindow
         // 패널 닫기
         Close();
     }
+
+    private void ExecuteScriptAction(TutorialScriptCSVData script)
+    {
+        if (string.IsNullOrEmpty(script.Action)) return;
+
+        switch (script.Action)
+        {
+            case "NickName":
+                OpenNicknameWindow();
+                break;
+        }
+    }
+
+    private void OpenNicknameWindow()
+    {
+        if (nicknameWindow != null)
+        {
+            nicknameWindow.Open();
+            nicknameWindow.transform.SetAsLastSibling(); // 맨 앞으로
+        }
+    }
+
 }
