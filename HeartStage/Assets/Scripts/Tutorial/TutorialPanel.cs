@@ -1,9 +1,7 @@
 ﻿using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.EventSystems;
 
 public class TutorialPanel : GenericWindow
 {
@@ -13,6 +11,9 @@ public class TutorialPanel : GenericWindow
 
     [Header("Reference")]
     [SerializeField] private NicknameWindow nicknameWindow;
+
+    [Header("Battle Button Reference")]
+    [SerializeField] private Button battleButton; // 전투 시작 버튼 참조 추가
 
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
@@ -35,6 +36,12 @@ public class TutorialPanel : GenericWindow
         // 정리
         isPlaying = false;
         isTyping = false;
+
+        // 화살표 숨기기
+        if (arrow != null)
+        {
+            arrow.gameObject.SetActive(false);
+        }
 
         if (currentScriptUI != null)
         {
@@ -109,9 +116,9 @@ public class TutorialPanel : GenericWindow
         if (currentScriptUI == null) return;
 
         isTyping = true;
-        currentScriptUI.SetTutorialText(""); 
+        currentScriptUI.SetTutorialText("");
 
-        float textSpeed = 0.1f; 
+        float textSpeed = 0.1f;
 
         for (int i = 0; i <= text.Length; i++)
         {
@@ -194,6 +201,9 @@ public class TutorialPanel : GenericWindow
     {
         Debug.Log("[TutorialPanel] 전체 튜토리얼 완료");
 
+        // 화살표 숨기기
+        HideBattleArrow();
+
         // 튜토리얼 완료 플래그 설정
         if (SaveLoadManager.Data != null)
         {
@@ -214,6 +224,9 @@ public class TutorialPanel : GenericWindow
             case "NickName":
                 OpenNicknameWindow();
                 break;
+            case "BattleArrow":
+                ShowBattleArrow();
+                break;
         }
     }
 
@@ -226,4 +239,68 @@ public class TutorialPanel : GenericWindow
         }
     }
 
+    private void ShowBattleArrow()
+    {
+        if (arrow == null || battleButton == null)
+        {
+            return;
+        }
+
+        // 화살표 활성화
+        arrow.gameObject.SetActive(true);
+
+        // battleButton의 위치 가져오기
+        RectTransform buttonRect = battleButton.GetComponent<RectTransform>();
+        RectTransform arrowRect = arrow.GetComponent<RectTransform>();
+
+        if (buttonRect != null && arrowRect != null)
+        {
+            // 버튼의 중심점을 월드 좌표로 변환
+            Vector3 buttonWorldPos = buttonRect.TransformPoint(buttonRect.rect.center);
+            Vector3 arrowLocalPos = arrowRect.parent.InverseTransformPoint(buttonWorldPos);
+
+            // 화살표를 버튼 위쪽으로 더 높게 오프셋 적용
+            arrowLocalPos.y += buttonRect.rect.height * 0.5f + 80f; 
+
+            arrowRect.localPosition = arrowLocalPos;
+        }
+
+        StartArrowAnimation().Forget();
+    }
+
+    private void HideBattleArrow()
+    {
+        if (arrow != null)
+        {
+            arrow.gameObject.SetActive(false);
+        }
+    }
+
+    private async UniTaskVoid StartArrowAnimation()
+    {
+        if (arrow == null) return;
+
+        RectTransform arrowRect = arrow.GetComponent<RectTransform>();
+        if (arrowRect == null) return;
+
+        Vector3 originalPos = arrowRect.localPosition;
+        float animationTime = 0f;
+
+        while (arrow.gameObject.activeSelf)
+        {
+            animationTime += Time.unscaledDeltaTime;
+
+            // 위아래로 부드럽게 움직이는 애니메이션
+            float yOffset = Mathf.Sin(animationTime * 2f) * 10f;
+            arrowRect.localPosition = originalPos + new Vector3(0, yOffset, 0);
+
+            await UniTask.Yield();
+        }
+    }
+
+    /// Inspector에서 BattleButton을 설정하는 메소드 (선택사항)
+    public void SetBattleButton(Button button)
+    {
+        battleButton = button;
+    }
 }
