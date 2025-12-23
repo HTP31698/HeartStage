@@ -33,6 +33,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     public GameObject rewardSpeechBubble;
     public TextMeshProUGUI rewardCountText;
     public LikeabilityRewardPopup rewardPopup;
+    public FriendCheerRewardUI friendCheerRewardUI;
 
     private LikeabilityData likeabilityData;
     private CharacterCSVData characterData;
@@ -46,7 +47,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
 
     private void Start()
     {
-        cheerUpButton.onClick.AddListener(CheerUp);
+        cheerUpButton.onClick.AddListener(OnClickCheerUp);
     }
 
     public void Init(int characterId)
@@ -62,7 +63,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         likeabilityGuage.maxValue = likeabilityData.max_like_point;
         // 재화 UI 세팅
         CurrencyIcon.CurrencyIconChange(cheerCurrencyIcon, likeabilityData.User_need_Item);
-        cheerPriceText.text = $"{likeabilityData.User_need_amount}";
+        cheerPriceText.text = GetCheerNeedAmount().ToString();
         // 호감도 보상 UI 세팅
         SetRewardUI();
         // 현재 호감도 UI 반영
@@ -71,7 +72,19 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         rewardBubble.Init(this);
     }
     // 응원하기
-    public void CheerUp()
+    private void OnClickCheerUp()
+    {
+        if (LobbyHomeInitializer.Instance.isFriendHome)
+        {
+            CheerUpFriend();
+        }
+        else
+        {
+            CheerUpMyHome();
+        }
+    }
+    // 응원하기 내 숙소일때
+    private void CheerUpMyHome()
     {
         if (!ItemInvenHelper.TryConsumeItem(likeabilityData.User_need_Item, likeabilityData.User_need_amount))
             return;
@@ -79,6 +92,16 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         int newLike = Mathf.Min((int)likeabilityGuage.value + likeabilityData.like_point, (int)likeabilityGuage.maxValue);
         CharacterHelper.SetLikeability(characterData.char_name, newLike);
         RefreshLikeabilityUI();
+    }
+    // 응원하기 친구 숙소일때
+    private void CheerUpFriend()
+    {
+        if (!ItemInvenHelper.TryConsumeItem(likeabilityData.User_need_Item, likeabilityData.Friend_need_amount))
+            return;
+
+        int rewardAmount = UnityEngine.Random.Range(likeabilityData.random_item_min, likeabilityData.random_item_max + 1);
+        ItemInvenHelper.AddItem(likeabilityData.random_item, rewardAmount);
+        friendCheerRewardUI.Init(likeabilityData.like_reward_item1, rewardAmount);
     }
     // 호감도 보상 UI 세팅
     private void SetRewardUI()
@@ -144,6 +167,8 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     // 응원 버튼 Interactable 세팅
     private void UpdateCheerUpButtonInteractable()
     {
+        int needAmount = GetCheerNeedAmount();
+
         bool interactable = true;
 
         if (likeabilityGuage.value == likeabilityGuage.maxValue)
@@ -153,7 +178,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         else if (SaveLoadManager.Data.itemList.ContainsKey(likeabilityData.User_need_Item))
         {
             var myItemCount = SaveLoadManager.Data.itemList[likeabilityData.User_need_Item];
-            interactable = myItemCount >= likeabilityData.User_need_amount;
+            interactable = myItemCount >= needAmount;
         }
         else
         {
@@ -239,6 +264,11 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     private SaveDataV1 GetTargetSaveData()
     {
         return LobbyHomeInitializer.Instance.isFriendHome ? LobbyHomeInitializer.Instance.friendSaveData : SaveLoadManager.Data;
+    }
+    // 응원 필요 재화량
+    private int GetCheerNeedAmount()
+    {
+        return LobbyHomeInitializer.Instance.isFriendHome ? likeabilityData.Friend_need_amount : likeabilityData.User_need_amount;
     }
     // 테스트 코드
     // 선택된 캐릭터 호감도 10씩 증가
