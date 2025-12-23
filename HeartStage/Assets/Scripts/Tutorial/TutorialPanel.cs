@@ -6,20 +6,24 @@ using UnityEngine.UI;
 public class TutorialPanel : GenericWindow
 {
     [SerializeField] private GameObject tutorialScriptPrefab;
-    [SerializeField] private Transform contentParent; 
+    [SerializeField] private Transform contentParent;
     [SerializeField] private Image arrow;
 
     [Header("Reference")]
     [SerializeField] private TutorialNickNameScript nicknameWindow;
 
     [Header("Battle Button Reference")]
-    [SerializeField] private Button battleButton; 
+    [SerializeField] private Button battleButton;
+
+    [Header("Tutorial UI Control")]
+    [SerializeField] private GameObject backgroundPanel; // BackGroundPanel GameObject
 
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
     private int currentScriptIndex = 0;
     private bool isPlaying = false;
     private bool isTyping = false;
+    private bool isWaitingForBattleButton = false; // 배틀 버튼 대기 상태
 
     public override void Open()
     {
@@ -36,6 +40,13 @@ public class TutorialPanel : GenericWindow
         // 정리
         isPlaying = false;
         isTyping = false;
+        isWaitingForBattleButton = false;
+
+        // 백그라운드 패널 복원
+        if (backgroundPanel != null)
+        {
+            backgroundPanel.SetActive(true);
+        }
 
         // 화살표 숨기기
         if (arrow != null)
@@ -48,11 +59,20 @@ public class TutorialPanel : GenericWindow
             Destroy(currentScriptUI.gameObject);
             currentScriptUI = null;
         }
+
+        // 배틀 버튼 이벤트 해제
+        if (battleButton != null)
+        {
+            battleButton.onClick.RemoveListener(OnBattleButtonClicked);
+        }
     }
 
     private void Update()
     {
         if (!isPlaying) return;
+
+        // 배틀 버튼 대기 중이면 화면 클릭 무시
+        if (isWaitingForBattleButton) return;
 
         // 마우스 클릭 또는 터치 감지 (TutorialManager와 동일)
         if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
@@ -246,6 +266,18 @@ public class TutorialPanel : GenericWindow
 
         battleButton.gameObject.SetActive(true);
 
+        // 배틀 버튼 클릭 이벤트 등록
+        battleButton.onClick.AddListener(OnBattleButtonClicked);
+
+        // 배틀 버튼 대기 상태로 설정
+        isWaitingForBattleButton = true;
+
+        // **백그라운드 패널 완전히 비활성화 (버튼 클릭 가능하게)**
+        if (backgroundPanel != null)
+        {
+            backgroundPanel.SetActive(false);
+        }
+
         // 화살표 활성화
         arrow.gameObject.SetActive(true);
 
@@ -266,6 +298,32 @@ public class TutorialPanel : GenericWindow
         }
 
         StartArrowAnimation().Forget();
+    }
+
+    private void OnBattleButtonClicked()
+    {
+        Debug.Log("[TutorialPanel] 배틀 버튼 클릭됨 - 다음 튜토리얼로 진행");
+
+        // 배틀 버튼 이벤트 해제
+        if (battleButton != null)
+        {
+            battleButton.onClick.RemoveListener(OnBattleButtonClicked);
+        }
+
+        // 백그라운드 패널 복원
+        if (backgroundPanel != null)
+        {
+            backgroundPanel.SetActive(true);
+        }
+
+        // 대기 상태 해제
+        isWaitingForBattleButton = false;
+
+        // 화살표 숨기기
+        HideBattleArrow();
+
+        // 다음 스크립트로 진행
+        NextScript();
     }
 
     private void HideBattleArrow()
