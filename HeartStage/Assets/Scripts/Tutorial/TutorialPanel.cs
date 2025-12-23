@@ -6,14 +6,14 @@ using UnityEngine.UI;
 public class TutorialPanel : GenericWindow
 {
     [SerializeField] private GameObject tutorialScriptPrefab;
-    [SerializeField] private Transform contentParent; // TutorialScriptPrefab 생성할 부모
+    [SerializeField] private Transform contentParent; 
     [SerializeField] private Image arrow;
 
     [Header("Reference")]
-    [SerializeField] private NicknameWindow nicknameWindow;
+    [SerializeField] private TutorialNickNameScript nicknameWindow;
 
     [Header("Battle Button Reference")]
-    [SerializeField] private Button battleButton; // 전투 시작 버튼 참조 추가
+    [SerializeField] private Button battleButton; 
 
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
@@ -164,7 +164,7 @@ public class TutorialPanel : GenericWindow
 
     private void CheckNextLocation()
     {
-        // Location 1 → 2 → 3 ... 순서대로 진행
+        // Location 1 → 2 → 3
         int nextLocationId = GetNextLocationId();
 
         if (nextLocationId > 0)
@@ -199,8 +199,6 @@ public class TutorialPanel : GenericWindow
 
     private void CompleteTutorial()
     {
-        Debug.Log("[TutorialPanel] 전체 튜토리얼 완료");
-
         // 화살표 숨기기
         HideBattleArrow();
 
@@ -246,6 +244,8 @@ public class TutorialPanel : GenericWindow
             return;
         }
 
+        battleButton.gameObject.SetActive(true);
+
         // 화살표 활성화
         arrow.gameObject.SetActive(true);
 
@@ -260,7 +260,7 @@ public class TutorialPanel : GenericWindow
             Vector3 arrowLocalPos = arrowRect.parent.InverseTransformPoint(buttonWorldPos);
 
             // 화살표를 버튼 위쪽으로 더 높게 오프셋 적용
-            arrowLocalPos.y += buttonRect.rect.height * 0.5f + 80f; 
+            arrowLocalPos.y += buttonRect.rect.height * 0.5f + 80f;
 
             arrowRect.localPosition = arrowLocalPos;
         }
@@ -273,6 +273,11 @@ public class TutorialPanel : GenericWindow
         if (arrow != null)
         {
             arrow.gameObject.SetActive(false);
+        }
+
+        if (battleButton != null)
+        {
+            battleButton.gameObject.SetActive(false);
         }
     }
 
