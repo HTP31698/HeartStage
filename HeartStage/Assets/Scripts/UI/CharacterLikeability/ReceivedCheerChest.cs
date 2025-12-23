@@ -1,9 +1,16 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 public class ReceivedCheerChest : MonoBehaviour
 {
     public GameObject receivedCheerItemPrefab;
     public Transform itemParent;
+    public Button getAllButton;
+
+    private void Awake()
+    {
+        getAllButton.onClick.AddListener(AllGet);
+    }
 
     public void Init(string characterName)
     {
@@ -24,7 +31,18 @@ public class ReceivedCheerChest : MonoBehaviour
             string nickname = pair.Value;
 
             var go = Instantiate(receivedCheerItemPrefab, itemParent.transform);
-            go.GetComponent<ReceivedCheerItem>().Init(nickname);
+            go.GetComponent<ReceivedCheerItem>().Init(characterName, uid);
+        }
+    }
+
+    private void AllGet()
+    {
+        var items = itemParent.GetComponentsInChildren<ReceivedCheerItem>();
+
+        foreach (var item in items)
+        {
+            if (item.receiveButton.interactable)
+                item.Receive();
         }
     }
 }

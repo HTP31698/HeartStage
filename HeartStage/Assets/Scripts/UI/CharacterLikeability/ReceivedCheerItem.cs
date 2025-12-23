@@ -12,31 +12,44 @@ public class ReceivedCheerItem : MonoBehaviour
     public Button receiveButton;
     public ParticleImage receiveEffect;
 
+    private string characterName;
+    private string uid;
+
     private void Start()
     {
         receiveButton.onClick.AddListener(Receive);
     }
 
-    public void Init(string nickName)
+    public void Init(string characterName, string uid)
     {
-        receiveText.text = $"{nickName} 님이 응원하셨습니다.";
+        this.characterName = characterName;
+        this.uid = uid;
+        // 프로필 정보 세팅
+        var profile = LobbySceneController.GetCachedFriendProfile(uid);
+        playerIcon.sprite = ResourceManager.Instance.GetSprite(profile.profileIconKey);
+        receiveText.text = $"{profile.nickname} 님이 응원하셨습니다.";
     }
 
-    private void Receive()
+    public void Receive()
     {
-        var characterData = CharacterLikeabilityPanel.Instance.characterData;    
-        string characterName = characterData.char_name;
-
         receiveButton.interactable = false;
         receiveEffect.Play();
-
-        // 여기서 현재 캐릭터 기준으로 호감도 지급
+        // 여기서 현재 캐릭터 기준으로 호감도 지급        
         int current = CharacterHelper.GetLikeability(characterName);
-        int add = 10; 
+        int add = CharacterLikeabilityPanel.Instance.likeabilityData.like_point;
         CharacterHelper.SetLikeability(characterName, current + add);
+        // 세이브 데이터 갱신
+        var data = SaveLoadManager.Data.characterCheeredFriends;
+        if (data.TryGetValue(characterName, out var cheerDict))
+        {
+            cheerDict.Remove(uid);
 
-        CharacterLikeabilityPanel.Instance.RefreshLikeabilityUI(); // UI 반영
-        // 만드는 중~~~~~~~~~~~~~~
+            if (cheerDict.Count == 0)
+                data.Remove(characterName);
+        }
+        SaveLoadManager.SaveToServer().Forget();
+        // 호감도 UI 갱신
+        CharacterLikeabilityPanel.Instance.RefreshLikeabilityUI();
         DestroyAfterEffect().Forget();
     }
 
