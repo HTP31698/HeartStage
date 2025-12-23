@@ -4,9 +4,11 @@ public class CharacterSpeechBubbleFollower : MonoBehaviour
 {
     [SerializeField] private RectTransform friendCheerUp;
     [SerializeField] private RectTransform rewardSpeechBubble;
+    [SerializeField] private RectTransform cheerEffect;
 
-    [SerializeField] private Vector3 leftOffset = new(-0.6f, 1.2f, 0f);
-    [SerializeField] private Vector3 rightOffset = new(0.6f, 1.2f, 0f);
+    [SerializeField] private Vector3 topOffset = new(0f, 1.6f, 0f);
+    [SerializeField] private Vector3 leftOffset = new(-1f, 1.6f, 0f);
+    [SerializeField] private Vector3 rightOffset = new(1f, 1.6f, 0f);
 
     public Camera lobbyHomeCamera;
     private Transform target;
@@ -24,6 +26,7 @@ public class CharacterSpeechBubbleFollower : MonoBehaviour
 
         UpdateBubble(friendCheerUp, leftOffset);
         UpdateBubble(rewardSpeechBubble, rightOffset);
+        UpdateBubble(cheerEffect, topOffset);
     }
 
     private void UpdateBubble(RectTransform bubble, Vector3 worldOffset)

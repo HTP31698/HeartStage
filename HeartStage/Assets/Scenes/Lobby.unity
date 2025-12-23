@@ -7298,6 +7298,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56b92ae0f4a27f8439116804ae93d0da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!224 &1457345114 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 377830725812747301, guid: c301fbcb4e5624e4095364953583a481, type: 3}
+  m_PrefabInstance: {fileID: 3472812754105063927}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1457475619
 GameObject:
   m_ObjectHideFlags: 0
@@ -13263,17 +13268,9 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
       objectReference: {fileID: 132322632}
-    - target: {fileID: 2483466042362895167, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: m_fontSize
-      value: 37.75
-      objectReference: {fileID: 0}
     - target: {fileID: 2817584643434238111, guid: c301fbcb4e5624e4095364953583a481, type: 3}
       propertyPath: m_Name
       value: LobbyHomeWindow
-      objectReference: {fileID: 0}
-    - target: {fileID: 2817584643434238111, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2824836989538595770, guid: c301fbcb4e5624e4095364953583a481, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -13359,47 +13356,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4100346995665259748, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -3.0007324
-      objectReference: {fileID: 0}
-    - target: {fileID: 4975097120175685972, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -4.4312744
-      objectReference: {fileID: 0}
-    - target: {fileID: 6104115109792647587, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: m_fontSize
-      value: 33.45
-      objectReference: {fileID: 0}
     - target: {fileID: 6671538044808690080, guid: c301fbcb4e5624e4095364953583a481, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1051528035}
-    - target: {fileID: 6985384402234378728, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6989100983826893202, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: m_fontSize
-      value: 35.2
-      objectReference: {fileID: 0}
     - target: {fileID: 7449224146479197081, guid: c301fbcb4e5624e4095364953583a481, type: 3}
       propertyPath: initializer
       value: 
       objectReference: {fileID: 8776628619659946529}
-    - target: {fileID: 7449224146479197081, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: useResponsiveSize
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8310800429945595015, guid: c301fbcb4e5624e4095364953583a481, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -1.1688232
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c301fbcb4e5624e4095364953583a481, type: 3}
+--- !u!114 &3472812754105063928 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 377830725812747300, guid: c301fbcb4e5624e4095364953583a481, type: 3}
+  m_PrefabInstance: {fileID: 3472812754105063927}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0ce80c06832d4a49a2a30ece9fb2df6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &3472812754105063933 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8709736576853395999, guid: c301fbcb4e5624e4095364953583a481, type: 3}
@@ -14802,6 +14782,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 2095255705}
     m_Modifications:
     - target: {fileID: 1070221513913180675, guid: 4b480f7725e29484798b5df53b1cb852, type: 3}
+      propertyPath: cheerEffect
+      value: 
+      objectReference: {fileID: 3472812754105063928}
+    - target: {fileID: 1070221513913180675, guid: 4b480f7725e29484798b5df53b1cb852, type: 3}
       propertyPath: rewardPopup
       value: 
       objectReference: {fileID: 716046965}
@@ -14893,6 +14877,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5234342998145944199, guid: 4b480f7725e29484798b5df53b1cb852, type: 3}
+      propertyPath: cheerEffect
+      value: 
+      objectReference: {fileID: 1457345114}
     - target: {fileID: 5234342998145944199, guid: 4b480f7725e29484798b5df53b1cb852, type: 3}
       propertyPath: friendCheerUp
       value: 

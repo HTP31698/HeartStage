@@ -27,7 +27,7 @@ public class FriendCheerRewardUI : MonoBehaviour
 
     public void Init(int rewardItemId, int amount)
     {
-        rewardItemImage.sprite =            ResourceManager.Instance.GetSprite(                DataTableManager.ItemTable.Get(rewardItemId).prefab);
+        rewardItemImage.sprite = ResourceManager.Instance.GetSprite(DataTableManager.ItemTable.Get(rewardItemId).prefab);
         amountText.text = $"x{amount} Get";
         Play();
     }

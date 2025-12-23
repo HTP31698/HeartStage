@@ -698,7 +698,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &4961039785928320607
 RectTransform:
   m_ObjectHideFlags: 0
@@ -752,7 +752,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2749979772122536354}
   m_Enabled: 1
-  m_Alpha: 1
+  m_Alpha: 0
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
@@ -1798,6 +1798,7 @@ MonoBehaviour:
   rewardCountText: {fileID: 0}
   rewardPopup: {fileID: 0}
   friendCheerRewardUI: {fileID: 8419382343878104057}
+  cheerEffect: {fileID: 0}
 --- !u!114 &5234342998145944199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1812,6 +1813,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   friendCheerUp: {fileID: 0}
   rewardSpeechBubble: {fileID: 0}
+  cheerEffect: {fileID: 0}
+  topOffset: {x: 0, y: 1.6, z: 0}
   leftOffset: {x: -1, y: 1.6, z: 0}
   rightOffset: {x: 1, y: 1.6, z: 0}
   lobbyHomeCamera: {fileID: 0}
@@ -3396,7 +3399,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6068138834294868931, guid: e097fd0ef4b0fcf4e9b43184b7d17153, type: 3}
       propertyPath: m_Transition
-      value: 1
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6068138834294868931, guid: e097fd0ef4b0fcf4e9b43184b7d17153, type: 3}
       propertyPath: m_TargetGraphic
@@ -3522,6 +3525,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6025978443706974423, guid: e097fd0ef4b0fcf4e9b43184b7d17153, type: 3}
       insertIndex: 2
       addedObject: {fileID: 3339950019993557866}
+    - targetCorrespondingSourceObject: {fileID: 6025978443706974423, guid: e097fd0ef4b0fcf4e9b43184b7d17153, type: 3}
+      insertIndex: 4
+      addedObject: {fileID: 1860345486091242545}
     - targetCorrespondingSourceObject: {fileID: 1584366301914442145, guid: e097fd0ef4b0fcf4e9b43184b7d17153, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7871234159057949120}
@@ -3660,6 +3666,28 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!95 &1860345486091242545
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7844205857535155075}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 5c6df47f83454d54a91a0dfe3398407a, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &8112706724824494686 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5758620776545462538, guid: e097fd0ef4b0fcf4e9b43184b7d17153, type: 3}

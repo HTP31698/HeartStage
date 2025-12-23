@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AssetKits.ParticleImage;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,6 +35,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     public TextMeshProUGUI rewardCountText;
     public LikeabilityRewardPopup rewardPopup;
     public FriendCheerRewardUI friendCheerRewardUI;
+    public ParticleImage cheerEffect;
 
     private LikeabilityData likeabilityData;
     private CharacterCSVData characterData;
@@ -89,6 +91,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         if (!ItemInvenHelper.TryConsumeItem(likeabilityData.User_need_Item, likeabilityData.User_need_amount))
             return;
 
+        cheerEffect.Play();
         int newLike = Mathf.Min((int)likeabilityGuage.value + likeabilityData.like_point, (int)likeabilityGuage.maxValue);
         CharacterHelper.SetLikeability(characterData.char_name, newLike);
         RefreshLikeabilityUI();
@@ -99,9 +102,11 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         if (!ItemInvenHelper.TryConsumeItem(likeabilityData.User_need_Item, likeabilityData.Friend_need_amount))
             return;
 
+        cheerEffect.Play();
         int rewardAmount = UnityEngine.Random.Range(likeabilityData.random_item_min, likeabilityData.random_item_max + 1);
         ItemInvenHelper.AddItem(likeabilityData.random_item, rewardAmount);
         friendCheerRewardUI.Init(likeabilityData.like_reward_item1, rewardAmount);
+        UpdateCheerUpButtonInteractable();
     }
     // 호감도 보상 UI 세팅
     private void SetRewardUI()
@@ -168,25 +173,34 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     private void UpdateCheerUpButtonInteractable()
     {
         int needAmount = GetCheerNeedAmount();
+        bool interactable;
 
-        bool interactable = true;
-
-        if (likeabilityGuage.value == likeabilityGuage.maxValue)
+        if (LobbyHomeInitializer.Instance.isFriendHome)
         {
-            interactable = false;
-        }
-        else if (SaveLoadManager.Data.itemList.ContainsKey(likeabilityData.User_need_Item))
-        {
-            var myItemCount = SaveLoadManager.Data.itemList[likeabilityData.User_need_Item];
-            interactable = myItemCount >= needAmount;
+            // 친구 숙소: 재화만 기준
+            interactable = SaveLoadManager.Data.itemList.TryGetValue(likeabilityData.User_need_Item, out int count) && count >= needAmount;
         }
         else
         {
-            interactable = false;
+            // 내 숙소: 호감도 max면 비활성
+            if (likeabilityGuage.value >= likeabilityGuage.maxValue)
+            {
+                interactable = false;
+            }
+            else if (SaveLoadManager.Data.itemList.TryGetValue(likeabilityData.User_need_Item, out int count))
+            {
+                interactable = count >= needAmount;
+            }
+            else
+            {
+                interactable = false;
+            }
         }
 
-        cheerUpButton.interactable = interactable;
+        var animator = cheerUpButton.GetComponent<Animator>();
+        animator.enabled = interactable;
         var canvasGroup = cheerUpButton.GetComponent<CanvasGroup>();
+        canvasGroup.blocksRaycasts = interactable;
         canvasGroup.alpha = interactable ? 1f : 0.5f;
     }
     // 보상 말풍선 업데이트
