@@ -38,6 +38,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
     public TextMeshProUGUI rewardCountText;
     public LikeabilityRewardPopup rewardPopup;
     public FriendCheerRewardUI friendCheerRewardUI;
+    public TextMeshProUGUI friendCheerCountText;
     public ParticleImage cheerEffect;
 
     private LikeabilityData likeabilityData;
@@ -244,6 +245,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             return;
         }
         friendCheerBubble.SetActive(list != null && list.Count > 0);
+        friendCheerCountText.text = list.Count.ToString();
     }
 
     // 받을 수 있는 호감도 보상 개수 리턴
