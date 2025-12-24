@@ -159,9 +159,10 @@ public class TutorialPanel : GenericWindow
 
         for (int i = 0; i <= text.Length; i++)
         {
-            if (!isTyping || !isPlaying)
+            if (!isTyping || !isPlaying || currentScriptUI == null)
             {
-                currentScriptUI.SetTutorialText(text);
+                if (currentScriptUI != null)
+                    currentScriptUI.SetTutorialText(text);
                 break;
             }
 
@@ -170,6 +171,9 @@ public class TutorialPanel : GenericWindow
         }
 
         isTyping = false;
+
+        if (currentScriptUI == null || currentScripts == null || currentScriptIndex >= currentScripts.Count)
+            return;
 
         ExecuteScriptAction(currentScripts[currentScriptIndex]);
     }
