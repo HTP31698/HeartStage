@@ -14,6 +14,7 @@ public class TutorialScriptCSVData
     public string Text { get; set; }
     public string CutImage { get; set; }
     public string Voice { get; set; }
+    public string Action { get; set; }
 }
 
 public class TutorialScriptTable : DataTable

@@ -1,10 +1,9 @@
 ﻿using Cysharp.Threading.Tasks;
-using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class NicknameWindow : MonoBehaviour
+public class TutorialNickNameScript : GenericWindow
 {
     [Header("UI")]
     [SerializeField] private TMP_InputField inputField;
@@ -17,20 +16,32 @@ public class NicknameWindow : MonoBehaviour
     private System.Action onClosed; // 튜토리얼 닫힐 때 호출할 콜백
 
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         // 처음엔 창 꺼둔 상태에서 시작
         gameObject.SetActive(false);
 
         if (okButton != null)
+        {
             okButton.onClick.AddListener(() => OnClickOk().Forget());
+
+            // okButton 텍스트를 "확인"으로 설정
+            var buttonText = okButton.GetComponentInChildren<TMP_Text>();
+            if (buttonText != null)
+            {
+                buttonText.text = "확인";
+            }
+        }
 
         if (cancelButton != null)
             cancelButton.onClick.AddListener(Close);
     }
 
-    public void Open()
+    public override void Open()
     {
+        base.Open();
+
         if (SaveLoadManager.Data is SaveDataV1 data && inputField != null)
         {
             inputField.text = data.nickname;
@@ -43,8 +54,10 @@ public class NicknameWindow : MonoBehaviour
         inputField?.ActivateInputField();
     }
 
-    public void Close()
+    public override void Close()
     {
+        base.Close();
+
         gameObject.SetActive(false);
         // "팝업 하나 닫혔음"을 ProfileWindow에 알려서 모달Panel 제어
         if (ProfileWindow.Instance != null && ProfileWindow.Instance.gameObject.activeSelf)
@@ -72,19 +85,32 @@ public class NicknameWindow : MonoBehaviour
         string raw = inputField.text;
         messageText.text = "확인 중입니다...";
 
-        var (ok, error) = await NicknameService.TryChangeNicknameAsync(raw);
-
-        if (!ok)
+        // 튜토리얼용: 재화 소모 없이 직접 닉네임 변경
+        if (!NicknameValidator.ValidateNickname(raw, out string error))
         {
             messageText.text = error;
             return;
         }
 
-        messageText.text = "닉네임이 변경되었습니다.";
+        if (SaveLoadManager.Data is SaveDataV1 data)
+        {
+            string trimmed = raw.Trim();
+            data.nickname = trimmed;
 
-        // 프로필 UI / 로비 재화 UI 갱신
-        ProfileWindow.Instance?.RefreshAll();
-        LobbyManager.Instance?.MoneyUISet();
+            // 서버 저장
+            await SaveLoadManager.SaveToServer();
+
+            // UI 갱신
+            ProfileWindow.Instance?.RefreshAll();
+            LobbyManager.Instance?.MoneyUISet();
+
+            messageText.text = "닉네임이 변경되었습니다.";
+        }
+        else
+        {
+            messageText.text = "세이브 데이터를 찾을 수 없습니다.";
+            return;
+        }
 
         Close();
     }

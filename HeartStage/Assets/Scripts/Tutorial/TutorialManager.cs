@@ -252,7 +252,7 @@ public class TutorialManager : MonoBehaviour
 
         if (SaveLoadManager.Data != null)
         {
-            SaveLoadManager.Data.isTutorialCompleted = true;
+            SaveLoadManager.Data.isTutorialCutsceneCompleted = true;
             SaveLoadManager.SaveToServer().Forget();
         }
 

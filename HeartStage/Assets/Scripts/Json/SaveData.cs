@@ -95,6 +95,8 @@ public class SaveDataV1 : SaveData
     public bool returnToStageInfo = false;
 
     public bool isTutorialCompleted = false; // 튜토리얼 완료 여부
+    public bool isTutorialCutsceneCompleted = false; // 튜토리얼 컷씬 완료 여부
+    public bool isStageTutorialCompleted = false; // 스테이지 튜토리얼 완료 여부
 
     // ================== 8. 볼륨  ==================
     public float bgmVolume = 1f; // BGM 볼륨 (0~1)

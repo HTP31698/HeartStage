@@ -283,11 +283,44 @@ public class LobbySceneController : MonoBehaviour
 
     private void CheckAndStartTutorial()
     {
+        if (SaveLoadManager.Data == null) return;
+
         var saveData = SaveLoadManager.Data as SaveDataV1;
-        if (saveData != null && !saveData.isTutorialCompleted)
+        if (saveData == null) return;
+
+        Debug.Log($"[LobbySceneController] 튜토리얼 상태 체크: 컷씬={saveData.isTutorialCutsceneCompleted}, 로비={saveData.isTutorialCompleted}, 스테이지={saveData.isStageTutorialCompleted}");
+
+        // 먼저 모든 튜토리얼이 완료된 경우 체크
+        if (saveData.isTutorialCompleted &&
+            saveData.isTutorialCutsceneCompleted &&
+            saveData.isStageTutorialCompleted)
         {
-            // 튜토리얼 미완료시 
-            WindowManager.Instance.OpenOverlay(WindowType.TutorialPanel);
+            Debug.Log("[LobbySceneController] 모든 튜토리얼 완료됨. 튜토리얼을 실행하지 않습니다.");
+            return;
         }
+
+        // 1. 컷씬 튜토리얼이 미완료면 컷씬 시작
+        if (!saveData.isTutorialCutsceneCompleted && !ShouldSkipCutscene())
+        {
+            Debug.Log("[LobbySceneController] 컷씬 튜토리얼 시작");
+            GameSceneManager.ChangeScene(SceneType.TutorialCutScene);
+            return;
+        }
+
+        // 2. 컷씬 완료 + 로비 튜토리얼 미완료인 경우에만 로비 튜토리얼 시작
+        if (saveData.isTutorialCutsceneCompleted && !saveData.isTutorialCompleted)
+        {
+            Debug.Log("[LobbySceneController] 로비 튜토리얼 시작");
+            WindowManager.Instance.OpenOverlay(WindowType.TutorialPanel);
+            return;
+        }
+
+        Debug.Log("[LobbySceneController] 실행할 튜토리얼 없음");
+    }
+
+    private bool ShouldSkipCutscene()
+    {
+        // 컷씬을 건너뛰어야 하는 조건들
+        return false;
     }
 }

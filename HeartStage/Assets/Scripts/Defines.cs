@@ -85,6 +85,7 @@ public enum WindowType
     SpecialStage = 19,
     StoryStageRewardUI = 20,
     TutorialPanel = 21,
+    TutorialNickNameWindow = 22,
 
     // 친구 관련 오버레이
     Friend = 30,            // 통합 친구 창 (목록/요청/추가 탭)
@@ -98,6 +99,7 @@ public enum WindowType
     VictoryPanelUI,
     BossAlert,
     StoryStageReward,
+    TutorialStage,
 }
 
 public enum SceneType
