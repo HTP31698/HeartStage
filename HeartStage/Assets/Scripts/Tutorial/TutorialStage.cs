@@ -310,99 +310,76 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionDragArrowAsync()
     {
-        Debug.Log("[TutorialStage] ActionDragArrowAsync 시작");
-
         // OwnedCharacterSetup이 준비될 때까지 대기
         if (ownedCharacterSetup != null)
         {
-            Debug.Log($"[TutorialStage] OwnedCharacterSetup 대기 - IsReady: {ownedCharacterSetup.IsReady}");
             await UniTask.WaitUntil(() => ownedCharacterSetup.IsReady);
-            Debug.Log("[TutorialStage] OwnedCharacterSetup 준비 완료");
         }
 
         // 첫 번째 캐릭터 슬롯 찾기
         Transform firstCharacterSlot = FindFirstCharacterSlot();
-        Debug.Log($"[TutorialStage] 찾은 캐릭터 슬롯: {firstCharacterSlot?.name ?? "null"}");
 
         if (firstCharacterSlot != null)
         {
             // 패널을 투명하게 설정
             SetPanelTransparent();
-            Debug.Log("[TutorialStage] 패널 투명화 완료");
 
             // 화살표를 대상 위에 표시하고 드래그 애니메이션 시작
-            Debug.Log("[TutorialStage] ShowDragArrowOnTarget 호출 시작");
             ShowDragArrowOnTarget(firstCharacterSlot);
-            Debug.Log("[TutorialStage] ShowDragArrowOnTarget 호출 완료");
-        }
-        else
-        {
-            Debug.LogError("[TutorialStage] 캐릭터 슬롯을 찾을 수 없습니다!");
         }
     }
 
     private void ShowDragArrowOnTarget(Transform target)
     {
-        Debug.Log($"[TutorialStage] ShowDragArrowOnTarget - target: {target?.name}, arrow: {arrow?.name}");
-
         if (arrow == null)
         {
-            Debug.LogError("[TutorialStage] ★★★ arrow가 null입니다! Inspector에서 할당 확인 필요! ★★★");
             return;
         }
 
         if (target == null)
         {
-            Debug.LogError("[TutorialStage] ★★★ target이 null입니다! ★★★");
             return;
         }
 
-        Debug.Log($"[TutorialStage] 화살표 활성화 전 상태: {arrow.gameObject.activeSelf}");
         arrow.gameObject.SetActive(true);
-        Debug.Log($"[TutorialStage] 화살표 활성화 후 상태: {arrow.gameObject.activeSelf}");
 
         // 화살표를 최상위로 이동
         arrow.transform.SetAsLastSibling();
-        Debug.Log($"[TutorialStage] 화살표 최상위 이동 완료");
 
         PositionArrowOverTarget(target);
-        Debug.Log($"[TutorialStage] 화살표 위치 설정 완료");
 
         StartDragArrowAnimation().Forget();
-        Debug.Log($"[TutorialStage] 드래그 애니메이션 시작");
     }
 
     private async UniTaskVoid StartDragArrowAnimation()
     {
         if (arrow == null) return;
-
         RectTransform arrowRect = arrow.GetComponent<RectTransform>();
         if (arrowRect == null) return;
 
         Vector3 originalPos = arrowRect.localPosition;
-        float animationTime = 0f;
 
-        // 드래그 방향 설정 (위 대각선 방향)
-        Vector3 dragDirection = new Vector3(1f, 1f, 0f).normalized; // 우상단 방향
-        float dragDistance = 50f; // 드래그 거리
-        float dragSpeed = 2f; // 드래그 속도
+        Vector3 targetPos = originalPos + new Vector3(180f, 150f, 0f); 
+
+        float animationTime = 0f;
+        float duration = 1f; // 속도도 조절 가능 (작을수록 빠름)
 
         while (arrow.gameObject.activeSelf && isPlaying)
         {
-            animationTime += Time.unscaledDeltaTime * dragSpeed;
+            animationTime += Time.unscaledDeltaTime;
 
-            // 드래그 방향으로 부드럽게 움직이는 애니메이션
-            // 사인파를 이용해서 위 대각선 방향으로 반복 움직임
-            float dragOffset = Mathf.Sin(animationTime) * dragDistance;
+            // 진행률
+            float t = (animationTime % duration) / duration;
 
-            // 기본 위아래 움직임도 추가 (더 역동적으로)
-            float yBounce = Mathf.Sin(animationTime * 1.5f) * 8f;
+            // 일직선 이동
+            Vector3 currentPos = Vector3.Lerp(originalPos, targetPos, t);
+            arrowRect.localPosition = currentPos;
 
-            // 최종 위치 계산
-            Vector3 dragMovement = dragDirection * dragOffset;
-            Vector3 finalPosition = originalPos + dragMovement + new Vector3(0, yBounce, 0);
-
-            arrowRect.localPosition = finalPosition;
+            // 목적지에 도달하면 다시 시작점으로 리셋
+            if (t >= 1f)
+            {
+                animationTime = 0f;
+            }
 
             await UniTask.Yield();
         }
