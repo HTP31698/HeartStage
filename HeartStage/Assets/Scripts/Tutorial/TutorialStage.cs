@@ -285,24 +285,6 @@ public class TutorialStage : MonoBehaviour
         }
     }
 
-    private void OnCharacterSlotClicked(Transform clickedSlot)
-    {
-        if (!isWaitingForCharacterClick || waitingCharacterSlot != clickedSlot)
-            return;
-
-        // 대사창을 최상위로
-        if (currentScriptUI != null)
-        {
-            currentScriptUI.transform.SetAsLastSibling();
-        }
-
-        isWaitingForCharacterClick = false;
-        waitingCharacterSlot = null;
-        HideAllArrows();
-        //RestorePanel();
-        NextScript();
-    }
-
     private void ActionDragArrow()
     {
         ActionDragArrowAsync().Forget();
@@ -323,6 +305,8 @@ public class TutorialStage : MonoBehaviour
         {
             // 패널을 투명하게 설정
             SetPanelTransparent();
+
+            isWaitingForCharacterDrag = true;
 
             // 화살표를 대상 위에 표시하고 드래그 애니메이션 시작
             ShowDragArrowOnTarget(firstCharacterSlot);
@@ -385,17 +369,16 @@ public class TutorialStage : MonoBehaviour
         }
     }
 
-    // 캐릭터 배치 이벤트 핸들러
+    // 캐릭터 배치 이벤트 핸들러 배치 하면 튜토리얼 계속 진행
     private void OnCharacterPlaced()
     {
         // 드래그 대기 중이 아니면 무시
         if (!isWaitingForCharacterDrag)
             return;
 
-        Debug.Log("[TutorialStage] 캐릭터가 스테이지에 배치되었습니다! 튜토리얼 계속 진행");
-
-        // 대기 상태 해제
         isWaitingForCharacterDrag = false;
+        isWaitingForCharacterClick = false; 
+        waitingCharacterSlot = null;
 
         // 화살표 숨기기 및 패널 복원
         HideAllArrows();
