@@ -28,6 +28,10 @@ public class ResourceManager : MonoBehaviour
     // 해당 Addressable Label이 할당된 에셋들을 모두 로드, bootStrap에서 호출
     public async UniTask PreloadLabelAsync(string label)
     {
+        // 의존성 다운로드 (PAD 대응)
+        var downloadHandle = Addressables.DownloadDependenciesAsync(label);
+        await downloadHandle.Task;
+
         var handle = Addressables.LoadAssetsAsync<Object>(label, asset =>
         {
             if (!_assetCache.ContainsKey(asset.name))
