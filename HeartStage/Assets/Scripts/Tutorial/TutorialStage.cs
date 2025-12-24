@@ -25,6 +25,8 @@ public class TutorialStage : MonoBehaviour
     private Transform waitingCharacterSlot; // 대기 중인 캐릭터 슬롯
 
     private bool isWaitingForCharacterDrag = false; // 캐릭터 드래그 대기 상태
+    private int characterPlaceCount = 0; // 배치된 캐릭터 수 추적
+    private int requiredCharacterCount = 3; // 필요한 캐릭터 수
 
     [SerializeField] private GameObject characterStage; // 캐릭터가 배치되는 스테이지
 
@@ -48,6 +50,7 @@ public class TutorialStage : MonoBehaviour
         isWaitingForCharacterClick = false;
         isWaitingForCharacterDrag = false;
         waitingCharacterSlot = null;
+        characterPlaceCount = 0; // 초기화
 
         HideAllArrows();
         RestorePanel();
@@ -104,6 +107,7 @@ public class TutorialStage : MonoBehaviour
         }
 
         currentScriptIndex = 0;
+        characterPlaceCount = 0; // 새 로케이션 시작시 초기화
         CreateScriptUI();
         isPlaying = true;
         ShowCurrentScript();
@@ -268,6 +272,24 @@ public class TutorialStage : MonoBehaviour
         return null;
     }
 
+    private Transform FindNextAvailableCharacterSlot()
+    {
+        if (ownedCharacterSetup?.content == null) return null;
+
+        for (int i = 0; i < ownedCharacterSetup.content.childCount; i++)
+        {
+            Transform slot = ownedCharacterSetup.content.GetChild(i);
+            DragMe dragMe = slot.GetComponent<DragMe>();
+
+            // 잠겨있지 않은(배치되지 않은) 캐릭터 슬롯 찾기
+            if (dragMe != null && !dragMe.IsLocked)
+            {
+                return slot;
+            }
+        }
+        return null;
+    }
+
     private void SetPanelTransparent()
     {
         if (panelBackgroundImage != null)
@@ -314,10 +336,10 @@ public class TutorialStage : MonoBehaviour
             await UniTask.WaitUntil(() => ownedCharacterSetup.IsReady);
         }
 
-        // 첫 번째 캐릭터 슬롯 찾기
-        Transform firstCharacterSlot = FindFirstCharacterSlot();
+        // 다음 사용 가능한 캐릭터 슬롯 찾기 (배치 횟수에 따라)
+        Transform nextCharacterSlot = FindNextAvailableCharacterSlot();
 
-        if (firstCharacterSlot != null)
+        if (nextCharacterSlot != null)
         {
             // 패널을 투명하게 설정
             SetPanelTransparent();
@@ -325,7 +347,16 @@ public class TutorialStage : MonoBehaviour
             isWaitingForCharacterDrag = true;
 
             // 화살표를 대상 위에 표시하고 드래그 애니메이션 시작
-            ShowDragArrowOnTarget(firstCharacterSlot);
+            ShowDragArrowOnTarget(nextCharacterSlot);
+
+            // 현재 몇 번째 캐릭터 배치 중인지 로그 출력
+            Debug.Log($"[TutorialStage] {characterPlaceCount + 1}번째 캐릭터 배치 안내 중...");
+        }
+        else
+        {
+            Debug.LogWarning("[TutorialStage] 사용 가능한 캐릭터 슬롯을 찾을 수 없습니다.");
+            // 다음 스크립트로 진행
+            NextScript();
         }
     }
 
@@ -359,7 +390,7 @@ public class TutorialStage : MonoBehaviour
 
         Vector3 originalPos = arrowRect.localPosition;
 
-        Vector3 targetPos = originalPos + new Vector3(150f, 150f, 0f);
+        Vector3 targetPos = originalPos + new Vector3(0f, 150f, 0f);
 
         float animationTime = 0f;
         float duration = 1f; // 속도도 조절 가능 (작을수록 빠름)
@@ -385,23 +416,53 @@ public class TutorialStage : MonoBehaviour
         }
     }
 
-    // 캐릭터 배치 이벤트 핸들러 배치 하면 튜토리얼 계속 진행
+    // 캐릭터 배치 이벤트 핸들러 - 3캐릭터 순차 배치 처리
     private void OnCharacterPlaced()
     {
         // 드래그 대기 중이 아니면 무시
         if (!isWaitingForCharacterDrag)
             return;
 
-        isWaitingForCharacterDrag = false;
-        isWaitingForCharacterClick = false;
-        waitingCharacterSlot = null;
+        // 배치 횟수 증가
+        characterPlaceCount++;
+
+        Debug.Log($"[TutorialStage] {characterPlaceCount}번째 캐릭터 배치 완료!");
 
         // 화살표 숨기기 및 패널 복원
         HideAllArrows();
         RestorePanel();
 
-        // 다음 스크립트로 진행
-        NextScript();
+        // 드래그 대기 상태 해제
+        isWaitingForCharacterDrag = false;
+        isWaitingForCharacterClick = false;
+        waitingCharacterSlot = null;
+
+        // 아직 배치해야 할 캐릭터가 남아있는지 확인
+        if (characterPlaceCount < requiredCharacterCount)
+        {
+            // 다음 캐릭터 배치를 위해 현재 스크립트 다시 실행
+            Debug.Log($"[TutorialStage] {requiredCharacterCount - characterPlaceCount}명 더 배치 필요");
+
+            // 잠시 대기 후 다시 드래그 안내 시작
+            DelayedDragArrowAsync().Forget();
+        }
+        else
+        {
+            // 모든 캐릭터 배치 완료, 다음 스크립트로 진행
+            Debug.Log($"[TutorialStage] 모든 캐릭터({requiredCharacterCount}명) 배치 완료!");
+            NextScript();
+        }
+    }
+
+    private async UniTaskVoid DelayedDragArrowAsync()
+    {
+        // 0.5초 대기 후 다시 드래그 안내
+        await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
+
+        if (isPlaying)
+        {
+            ActionDragArrowAsync().Forget();
+        }
     }
 
     private void ActionBuffStageLine()
