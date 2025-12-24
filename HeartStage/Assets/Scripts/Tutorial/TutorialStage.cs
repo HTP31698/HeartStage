@@ -29,6 +29,7 @@ public class TutorialStage : MonoBehaviour
     private int requiredCharacterCount = 3; // 필요한 캐릭터 수
 
     [SerializeField] private GameObject characterStage; // 캐릭터가 배치되는 스테이지
+    [SerializeField] private Button infoButton; 
 
     private void Awake()
     {
@@ -40,6 +41,18 @@ public class TutorialStage : MonoBehaviour
 
     private void OnEnable()
     {
+        // 스테이지 튜토리얼이 이미 완료되었는지 확인
+        if (SaveLoadManager.Data != null)
+        {
+            var saveData = SaveLoadManager.Data as SaveDataV1;
+            if (saveData != null && saveData.isStageTutorialCompleted)
+            {
+                Debug.Log("[TutorialStage] 스테이지 튜토리얼이 이미 완료되었습니다.");
+                this.gameObject.SetActive(false);
+                return;
+            }
+        }
+
         StartLocationScript(3);
     }
 
@@ -226,6 +239,9 @@ public class TutorialStage : MonoBehaviour
             case "BuffStageLine":
                 ActionBuffStageLine();
                 break;
+            case "InfoArrow":
+                ActionInfoArrow();
+                break;
         }
     }
 
@@ -348,15 +364,6 @@ public class TutorialStage : MonoBehaviour
 
             // 화살표를 대상 위에 표시하고 드래그 애니메이션 시작
             ShowDragArrowOnTarget(nextCharacterSlot);
-
-            // 현재 몇 번째 캐릭터 배치 중인지 로그 출력
-            Debug.Log($"[TutorialStage] {characterPlaceCount + 1}번째 캐릭터 배치 안내 중...");
-        }
-        else
-        {
-            Debug.LogWarning("[TutorialStage] 사용 가능한 캐릭터 슬롯을 찾을 수 없습니다.");
-            // 다음 스크립트로 진행
-            NextScript();
         }
     }
 
@@ -615,7 +622,14 @@ public class TutorialStage : MonoBehaviour
         if (stageBorderParent != null)
         {
             stageBorderParent.SetActive(false);
-            Debug.Log("[TutorialStage] stageBorderImage UI 테두리 숨김");
+        }
+    }
+
+    private void ActionInfoArrow()
+    {
+        if (infoButton != null)
+        {
+            ShowArrowOnTarget(infoButton.transform);
         }
     }
 

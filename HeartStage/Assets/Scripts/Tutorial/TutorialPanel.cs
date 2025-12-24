@@ -39,6 +39,17 @@ public class TutorialPanel : GenericWindow
 
     public override void Open()
     {
+        if (SaveLoadManager.Data != null)
+        {
+            var saveData = SaveLoadManager.Data as SaveDataV1;
+            if (saveData != null && saveData.isTutorialCompleted)
+            {
+                Debug.Log("[TutorialPanel] 로비 튜토리얼이 이미 완료되었습니다.");
+                Close();
+                return;
+            }
+        }
+
         base.Open();
 
         // Location 1부터 시작
@@ -573,7 +584,6 @@ public class TutorialPanel : GenericWindow
     private void OnStageStartButtonClicked()
     {
         OnButtonClickedCommon(stageStartButton);
+        CompleteTutorial();
     }
-
-
 }
