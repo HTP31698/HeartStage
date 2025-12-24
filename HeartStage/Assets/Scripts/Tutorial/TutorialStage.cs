@@ -359,7 +359,7 @@ public class TutorialStage : MonoBehaviour
 
         Vector3 originalPos = arrowRect.localPosition;
 
-        Vector3 targetPos = originalPos + new Vector3(180f, 150f, 0f); 
+        Vector3 targetPos = originalPos + new Vector3(150f, 150f, 0f); 
 
         float animationTime = 0f;
         float duration = 1f; // 속도도 조절 가능 (작을수록 빠름)
