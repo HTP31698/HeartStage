@@ -15,6 +15,8 @@ public class StageManager : MonoBehaviour
     [SerializeField] private GameObject characterFence; // 옮길 펜스
     [SerializeField] private GameObject characterFence2; // 두번째 펜스
 
+    [SerializeField] private TutorialStage tutorialStage;
+
     [Header("StagePosition")]
     private Vector3 stageUpPosition = new Vector3(0f, 6f, 0f);
     private Vector3 stageMidPosition = new Vector3(0f, 0f, 0f);
@@ -192,16 +194,33 @@ public class StageManager : MonoBehaviour
     // 튜토리얼 스테이지 
     private void CheckAndOpenTutorialStage(int stageID)
     {
+        Debug.Log($"[StageManager] CheckAndOpenTutorialStage 호출 - stageID: {stageID}");
+
         // 601번 스테이지이고, 스테이지 튜토리얼을 아직 완료하지 않은 경우
         if (stageID == 601)
         {
+            Debug.Log($"[StageManager] 601번 스테이지 확인됨");
+
             var saveData = SaveLoadManager.Data as SaveDataV1;
             bool isStageTutorialCompleted = saveData?.isStageTutorialCompleted ?? false;
 
-            if (!isStageTutorialCompleted && windowManager != null)
+            Debug.Log($"[StageManager] SaveData 체크 - saveData: {saveData != null}, isStageTutorialCompleted: {isStageTutorialCompleted}");
+            Debug.Log($"[StageManager] tutorialStage: {tutorialStage != null}");
+
+            if (!isStageTutorialCompleted && tutorialStage != null)
             {
-                windowManager.OpenOverlay(WindowType.TutorialStage);
+                Debug.Log($"[StageManager] TutorialStage 활성화 시도");
+                tutorialStage.gameObject.SetActive(true);
+                Debug.Log($"[StageManager] TutorialStage 활성화 완료 - isActive: {tutorialStage.gameObject.activeSelf}");
             }
+            else
+            {
+                Debug.Log($"[StageManager] TutorialStage 활성화 조건 불충족 - completed: {isStageTutorialCompleted}, tutorialStage exists: {tutorialStage != null}");
+            }
+        }
+        else
+        {
+            Debug.Log($"[StageManager] 601번 스테이지가 아님 - stageID: {stageID}");
         }
     }
 

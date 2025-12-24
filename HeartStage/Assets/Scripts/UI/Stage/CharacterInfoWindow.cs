@@ -96,4 +96,43 @@ public class CharacterInfoWindow : GenericWindow
             activeSkillIcon.enabled = false;
         }
     }
+
+    public void OpenForTutorial(CharacterData data)
+    {
+        Init(data);
+
+        gameObject.SetActive(true);
+        transform.SetAsLastSibling();
+
+        // 튜토리얼 모드에서는 WindowManager와의 연동을 비활성화
+        var tempWindowType = windowType;
+        var tempIsOverlay = isOverlayWindow;
+
+        // 임시로 오버레이가 아닌 것으로 설정 (Close시 WindowManager 알림 방지)
+        windowType = WindowType.None;
+        isOverlayWindow = false;
+
+        // 딤 배경 수동 표시
+        if (WindowManager.Instance != null)
+        {
+            WindowManager.Instance.ShowDimManual();
+        }
+
+        Open();
+
+        // 원래 설정 복원
+        windowType = tempWindowType;
+        isOverlayWindow = tempIsOverlay;
+    }
+
+    public void CloseForTutorial()
+    {
+        gameObject.SetActive(false);
+
+        // 딤 배경 해제
+        if (WindowManager.Instance != null)
+        {
+            WindowManager.Instance.HideDimManual();
+        }
+    }
 }

@@ -1,40 +1,39 @@
 ﻿using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class TutorialStage : GenericWindow
+public class TutorialStage : MonoBehaviour
 {
     [SerializeField] private GameObject tutorialScriptPrefab;
     [SerializeField] private Transform contentParent;
+    [SerializeField] private Image arrow;
+    [SerializeField] private OwnedCharacterSetup ownedCharacterSetup;
+    [SerializeField] private Image panelBackgroundImage; // 패널 
 
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
     private int currentScriptIndex = 0;
     private bool isPlaying = false;
     private bool isTyping = false;
+    private bool isWaitingForCharacterClick = false; // 캐릭터 클릭 대기 상태
+    private Transform waitingCharacterSlot; // 대기 중인 캐릭터 슬롯
 
-    protected override void Awake()
+    private void OnEnable()
     {
-        base.Awake();
-        windowType = WindowType.TutorialStage;
-        isOverlayWindow = true;
-    }
-
-    public override void Open()
-    {
-        base.Open();
-
-        // Location 3부터 시작 (스테이지 씬 전용)
         StartLocationScript(3);
     }
 
-    public override void Close()
+    public void Close()
     {
-        base.Close();
-
-        // 정리
         isPlaying = false;
         isTyping = false;
+        isWaitingForCharacterClick = false;
+        waitingCharacterSlot = null;
+
+        HideAllArrows();
+        RestorePanel();
 
         if (currentScriptUI != null)
         {
@@ -46,32 +45,38 @@ public class TutorialStage : GenericWindow
     private void Update()
     {
         if (!isPlaying) return;
+        if (isWaitingForCharacterClick) return;
 
-        // 마우스 클릭 또는 터치 감지
         if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
             OnScreenClicked();
         }
     }
 
+    private void OnScreenClicked()
+    {
+        if (isTyping)
+        {
+            isTyping = false;
+        }
+        else
+        {
+            NextScript();
+        }
+    }
+
     public void StartLocationScript(int locationId)
     {
-        // 스크립트 로드
         currentScripts = DataTableManager.TutorialScriptTable.GetLocationScripts(locationId);
 
         if (currentScripts == null || currentScripts.Count == 0)
         {
-            Debug.LogWarning($"[TutorialStage] Location {locationId} 스크립트가 없음");
             CompleteTutorial();
             return;
         }
 
         currentScriptIndex = 0;
-
-        // TutorialScriptPrefab 생성
         CreateScriptUI();
-
-        // 진행 시작
         isPlaying = true;
         ShowCurrentScript();
     }
@@ -89,16 +94,11 @@ public class TutorialStage : GenericWindow
     {
         if (currentScriptIndex >= currentScripts.Count)
         {
-            // 현재 Location 완료 - 다음 Location 확인
             CheckNextLocation();
             return;
         }
 
         var script = currentScripts[currentScriptIndex];
-
-        Debug.Log($"[TutorialStage] 선배 천사 대사 {currentScriptIndex}: {script.Name} - {script.Text.Substring(0, Mathf.Min(20, script.Text.Length))}...");
-
-        // 타이핑 효과로 텍스트 표시
         StartTypingEffect(script.Text).Forget();
     }
 
@@ -109,8 +109,6 @@ public class TutorialStage : GenericWindow
         isTyping = true;
         currentScriptUI.SetTutorialText("");
 
-        float textSpeed = 0.05f;
-
         for (int i = 0; i <= text.Length; i++)
         {
             if (!isTyping || !isPlaying)
@@ -120,24 +118,11 @@ public class TutorialStage : GenericWindow
             }
 
             currentScriptUI.SetTutorialText(text.Substring(0, i));
-            await UniTask.Delay((int)(textSpeed * 1000), DelayType.UnscaledDeltaTime);
+            await UniTask.Delay(50, DelayType.UnscaledDeltaTime);
         }
 
         isTyping = false;
-    }
-
-    private void OnScreenClicked()
-    {
-        if (isTyping)
-        {
-            // 타이핑 중이면 즉시 완료
-            isTyping = false;
-        }
-        else
-        {
-            // 타이핑이 끝났으면 다음 대사로
-            NextScript();
-        }
+        ExecuteScriptAction(currentScripts[currentScriptIndex]);
     }
 
     private void NextScript()
@@ -148,17 +133,14 @@ public class TutorialStage : GenericWindow
 
     private void CheckNextLocation()
     {
-        // Location 3 → 4 → 5... (필요에 따라 확장)
         int nextLocationId = GetNextLocationId();
 
         if (nextLocationId > 0)
         {
-            Debug.Log($"[TutorialStage] 다음 Location {nextLocationId}로 이동");
             StartLocationScript(nextLocationId);
         }
         else
         {
-            Debug.Log("[TutorialStage] 스테이지 튜토리얼 완료");
             CompleteTutorial();
         }
     }
@@ -170,19 +152,19 @@ public class TutorialStage : GenericWindow
             int currentLocationId = currentScripts[0].location;
             int nextLocationId = currentLocationId + 1;
 
-            // 다음 location에 스크립트가 있는지 확인
             if (DataTableManager.TutorialScriptTable.HasScripts(nextLocationId))
             {
                 return nextLocationId;
             }
         }
-
-        return -1; // 더 이상 없음
+        return -1;
     }
 
     private void CompleteTutorial()
     {
-        // 스테이지 튜토리얼 완료 플래그 설정
+        HideAllArrows();
+        RestorePanel();
+
         if (SaveLoadManager.Data != null)
         {
             var saveData = SaveLoadManager.Data as SaveDataV1;
@@ -193,25 +175,178 @@ public class TutorialStage : GenericWindow
             }
         }
 
-        // 패널 닫기
         Close();
+    }
+
+    private void ExecuteScriptAction(TutorialScriptCSVData script)
+    {
+        if (string.IsNullOrEmpty(script.Action)) return;
+
+        switch (script.Action)
+        {
+            case "IdolArrow":
+                ActionIdolArrow();
+                break;
+        }
+    }
+
+    private void ActionIdolArrow()
+    {
+        ActionIdolArrowAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionIdolArrowAsync()
+    {
+        // OwnedCharacterSetup이 준비될 때까지 대기
+        if (ownedCharacterSetup != null)
+        {
+            await UniTask.WaitUntil(() => ownedCharacterSetup.IsReady);
+        }
+
+        // 첫 번째 캐릭터 슬롯 찾기
+        Transform firstCharacterSlot = FindFirstCharacterSlot();
+
+        if (firstCharacterSlot != null)
+        {
+            // 패널을 투명하게 설정
+            SetPanelTransparent();
+
+            // 캐릭터 클릭 대기 상태로 설정
+            isWaitingForCharacterClick = true;
+            waitingCharacterSlot = firstCharacterSlot;
+
+            // 화살표를 대상 위에 표시
+            ShowArrowOnTarget(firstCharacterSlot);
+
+            NextScript();
+        }
+    }
+
+    private Transform FindFirstCharacterSlot()
+    {
+        if (ownedCharacterSetup?.content != null && ownedCharacterSetup.content.childCount > 0)
+        {
+            Transform firstSlot = ownedCharacterSetup.content.GetChild(0);
+            if (firstSlot.GetComponent<DragMe>() != null)
+            {
+                return firstSlot;
+            }
+        }
+        return null;
+    }
+
+    private void SetPanelTransparent()
+    {
+        if (panelBackgroundImage != null)
+        {
+            Color bgColor = panelBackgroundImage.color;
+            bgColor.a = 0f;
+            panelBackgroundImage.color = bgColor;
+        }
+
+        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup == null)
+        {
+            canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+        canvasGroup.blocksRaycasts = false;
+    }
+
+    private void RestorePanel()
+    {
+        if (panelBackgroundImage != null)
+        {
+            Color bgColor = panelBackgroundImage.color;
+            bgColor.a = 0.5f;
+            panelBackgroundImage.color = bgColor;
+        }
+
+        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
+        if (canvasGroup != null)
+        {
+            canvasGroup.blocksRaycasts = true;
+        }
+    }
+
+    private void OnCharacterSlotClicked(Transform clickedSlot)
+    {
+        if (!isWaitingForCharacterClick || waitingCharacterSlot != clickedSlot)
+            return;
+
+        // 대사창을 최상위로
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.transform.SetAsLastSibling();
+        }
+
+        isWaitingForCharacterClick = false;
+        waitingCharacterSlot = null;
+        HideAllArrows();
+        RestorePanel();
+        NextScript();
+    }
+
+    private void ShowArrowOnTarget(Transform target)
+    {
+        if (arrow == null || target == null) return;
+
+        arrow.gameObject.SetActive(true);
+        PositionArrowOverTarget(target);
+        StartArrowAnimation().Forget();
+    }
+
+    private void PositionArrowOverTarget(Transform target)
+    {
+        RectTransform targetRect = target.GetComponent<RectTransform>();
+        RectTransform arrowRect = arrow.GetComponent<RectTransform>();
+
+        if (targetRect != null && arrowRect != null)
+        {
+            Vector3 targetWorldPos = targetRect.TransformPoint(targetRect.rect.center);
+            Vector3 arrowLocalPos = arrowRect.parent.InverseTransformPoint(targetWorldPos);
+            arrowLocalPos.y += targetRect.rect.height * 0.5f + 70f;
+            arrowRect.localPosition = arrowLocalPos;
+        }
+    }
+
+    private async UniTaskVoid StartArrowAnimation()
+    {
+        if (arrow == null) return;
+
+        RectTransform arrowRect = arrow.GetComponent<RectTransform>();
+        if (arrowRect == null) return;
+
+        Vector3 originalPos = arrowRect.localPosition;
+        float animationTime = 0f;
+
+        while (arrow.gameObject.activeSelf && isPlaying)
+        {
+            animationTime += Time.unscaledDeltaTime;
+            float yOffset = Mathf.Sin(animationTime * 2f) * 10f;
+            arrowRect.localPosition = originalPos + new Vector3(0, yOffset, 0);
+            await UniTask.Yield();
+        }
+    }
+
+    private void HideAllArrows()
+    {
+        if (arrow != null)
+        {
+            arrow.gameObject.SetActive(false);
+        }
     }
 
     private void OnDisable()
     {
-        // 튜토리얼이 진행 중이면 무조건 막기
         if (isPlaying)
         {
-            // 다음 프레임에 강제로 다시 켜기
             ForceReactivate().Forget();
         }
     }
 
-    // 재활성화
     private async UniTaskVoid ForceReactivate()
     {
         await UniTask.Yield();
-
         if (!gameObject.activeSelf && isPlaying)
         {
             gameObject.SetActive(true);
