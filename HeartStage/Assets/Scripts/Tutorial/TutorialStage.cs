@@ -13,6 +13,9 @@ public class TutorialStage : MonoBehaviour
 
     [SerializeField] private Button characterInfoCloseButton;
 
+    private GameObject stageBorderParent;
+    [SerializeField] private Image stageBorderImage;
+
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
     private int currentScriptIndex = 0;
@@ -22,6 +25,8 @@ public class TutorialStage : MonoBehaviour
     private Transform waitingCharacterSlot; // 대기 중인 캐릭터 슬롯
 
     private bool isWaitingForCharacterDrag = false; // 캐릭터 드래그 대기 상태
+
+    [SerializeField] private GameObject characterStage; // 캐릭터가 배치되는 스테이지
 
     private void Awake()
     {
@@ -41,7 +46,7 @@ public class TutorialStage : MonoBehaviour
         isPlaying = false;
         isTyping = false;
         isWaitingForCharacterClick = false;
-        isWaitingForCharacterDrag = false; 
+        isWaitingForCharacterDrag = false;
         waitingCharacterSlot = null;
 
         HideAllArrows();
@@ -51,6 +56,13 @@ public class TutorialStage : MonoBehaviour
         {
             Destroy(currentScriptUI.gameObject);
             currentScriptUI = null;
+        }
+
+        // UI 테두리 정리
+        if (stageBorderParent != null)
+        {
+            Destroy(stageBorderParent);
+            stageBorderParent = null;
         }
 
         this.gameObject.SetActive(false);
@@ -180,6 +192,7 @@ public class TutorialStage : MonoBehaviour
     {
         HideAllArrows();
         RestorePanel();
+        HideStageAreaBorder();
 
         if (SaveLoadManager.Data != null)
         {
@@ -205,6 +218,9 @@ public class TutorialStage : MonoBehaviour
                 break;
             case "DragArrow":
                 ActionDragArrow();
+                break;
+            case "BuffStageLine":
+                ActionBuffStageLine();
                 break;
         }
     }
@@ -343,7 +359,7 @@ public class TutorialStage : MonoBehaviour
 
         Vector3 originalPos = arrowRect.localPosition;
 
-        Vector3 targetPos = originalPos + new Vector3(150f, 150f, 0f); 
+        Vector3 targetPos = originalPos + new Vector3(150f, 150f, 0f);
 
         float animationTime = 0f;
         float duration = 1f; // 속도도 조절 가능 (작을수록 빠름)
@@ -377,7 +393,7 @@ public class TutorialStage : MonoBehaviour
             return;
 
         isWaitingForCharacterDrag = false;
-        isWaitingForCharacterClick = false; 
+        isWaitingForCharacterClick = false;
         waitingCharacterSlot = null;
 
         // 화살표 숨기기 및 패널 복원
@@ -386,6 +402,160 @@ public class TutorialStage : MonoBehaviour
 
         // 다음 스크립트로 진행
         NextScript();
+    }
+
+    private void ActionBuffStageLine()
+    {
+        ActionBuffStageLineAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionBuffStageLineAsync()
+    {
+        // stageBorderImage 영역 UI 테두리 표시
+        await ShowStageBorderImageBorder();
+    }
+
+    private async UniTask ShowStageBorderImageBorder()
+    {
+        if (stageBorderImage == null)
+        {
+            Debug.LogWarning("[TutorialStage] stageBorderImage가 설정되지 않았습니다.");
+            return;
+        }
+
+        // UI 테두리 생성
+        await DrawStageBorderImageBorder();
+    }
+
+    private async UniTask DrawStageBorderImageBorder()
+    {
+        RectTransform stageRect = stageBorderImage.GetComponent<RectTransform>();
+        if (stageRect == null)
+        {
+            Debug.LogWarning("[TutorialStage] stageBorderImage에 RectTransform이 없습니다.");
+            return;
+        }
+
+        // 기존 테두리 정리
+        if (stageBorderParent != null)
+        {
+            Destroy(stageBorderParent);
+            stageBorderParent = null;
+        }
+
+        // UI 테두리 오브젝트 생성
+        await CreateUIBorderEffect(stageRect);
+
+        Debug.Log("[TutorialStage] stageBorderImage UI 테두리 표시 완료");
+    }
+
+    private async UniTask CreateUIBorderEffect(RectTransform targetRect)
+    {
+        // 테두리 효과를 위한 부모 오브젝트 생성
+        GameObject borderParent = new GameObject("StageBorderEffect");
+
+        // stageBorderImage와 같은 부모에 배치하여 정확한 위치 매칭
+        borderParent.transform.SetParent(targetRect.parent, false);
+
+        RectTransform borderParentRect = borderParent.AddComponent<RectTransform>();
+
+        // stageBorderImage와 동일한 앵커, 위치, 크기로 설정
+        borderParentRect.anchorMin = targetRect.anchorMin;
+        borderParentRect.anchorMax = targetRect.anchorMax;
+        borderParentRect.anchoredPosition = targetRect.anchoredPosition;
+        borderParentRect.sizeDelta = targetRect.sizeDelta;
+
+        // stageBorderImage의 실제 크기 가져오기
+        float width = targetRect.rect.width;
+        float height = targetRect.rect.height;
+
+        // 사각형의 4개 모서리 점 (로컬 좌표, 중앙 기준)
+        Vector2 bottomLeft = new Vector2(-width * 0.5f, -height * 0.5f);
+        Vector2 topLeft = new Vector2(-width * 0.5f, height * 0.5f);
+        Vector2 topRight = new Vector2(width * 0.5f, height * 0.5f);
+        Vector2 bottomRight = new Vector2(width * 0.5f, -height * 0.5f);
+
+        // 4개의 테두리 라인 생성 (두껍게)
+        CreateBorderLine(borderParent, topLeft, topRight, "TopBorder");         // 상단
+        CreateBorderLine(borderParent, bottomLeft, topLeft, "LeftBorder");     // 좌측
+        CreateBorderLine(borderParent, topRight, bottomRight, "RightBorder");   // 우측
+        CreateBorderLine(borderParent, bottomLeft, bottomRight, "BottomBorder"); // 하단
+
+        // stageBorderImage보다 위에 표시되도록 설정
+        borderParent.transform.SetSiblingIndex(targetRect.GetSiblingIndex() + 1);
+
+        // 애니메이션 시작
+        StartUIBorderAnimation(borderParent).Forget();
+
+        // 참조 저장 (정리를 위해)
+        stageBorderParent = borderParent;
+
+        await UniTask.CompletedTask;
+    }
+
+    private void CreateBorderLine(GameObject parent, Vector2 start, Vector2 end, string name)
+    {
+        GameObject lineObj = new GameObject(name);
+        lineObj.transform.SetParent(parent.transform, false);
+
+        RectTransform lineRect = lineObj.AddComponent<RectTransform>();
+        Image lineImage = lineObj.AddComponent<Image>();
+
+        // 라인 색상 설정 (밝은 노란색, 불투명)
+        lineImage.color = Color.yellow;
+        lineImage.raycastTarget = false; // 클릭 이벤트 차단 방지
+
+        // 라인 위치와 크기 계산
+        Vector2 direction = end - start;
+        float length = direction.magnitude;
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+        // 라인 설정 (중앙 기준점 사용, 두껍게)
+        lineRect.anchorMin = new Vector2(0.5f, 0.5f);
+        lineRect.anchorMax = new Vector2(0.5f, 0.5f);
+        lineRect.sizeDelta = new Vector2(length, 12f); // 12픽셀 두께로 두껍게
+        lineRect.anchoredPosition = (start + end) * 0.5f;
+        lineRect.rotation = Quaternion.Euler(0, 0, angle);
+    }
+
+    private async UniTaskVoid StartUIBorderAnimation(GameObject borderParent)
+    {
+        if (borderParent == null) return;
+
+        Image[] borderImages = borderParent.GetComponentsInChildren<Image>();
+        Color originalColor = Color.yellow;
+        float animationTime = 0f;
+
+        while (borderParent != null && borderParent.activeSelf && isPlaying)
+        {
+            animationTime += Time.unscaledDeltaTime * 2f; // 애니메이션 속도
+
+            // 깜빡이는 효과 (부드러운 페이드)
+            float alpha = (Mathf.Sin(animationTime) + 1f) * 0.5f;
+            alpha = Mathf.Lerp(0.6f, 1f, alpha); // 60%~100% 투명도로 더 선명하게
+
+            Color newColor = originalColor;
+            newColor.a = alpha;
+
+            foreach (var borderImage in borderImages)
+            {
+                if (borderImage != null)
+                {
+                    borderImage.color = newColor;
+                }
+            }
+
+            await UniTask.Yield();
+        }
+    }
+
+    private void HideStageAreaBorder()
+    {
+        if (stageBorderParent != null)
+        {
+            stageBorderParent.SetActive(false);
+            Debug.Log("[TutorialStage] stageBorderImage UI 테두리 숨김");
+        }
     }
 
     private void ShowArrowOnTarget(Transform target)
@@ -428,7 +598,7 @@ public class TutorialStage : MonoBehaviour
             arrowRect.localPosition = originalPos + new Vector3(0, yOffset, 0);
             await UniTask.Yield();
         }
-    }   
+    }
 
     private void HideAllArrows()
     {
@@ -436,6 +606,8 @@ public class TutorialStage : MonoBehaviour
         {
             arrow.gameObject.SetActive(false);
         }
+
+        HideStageAreaBorder();
     }
 
     private void OnDisable()
@@ -462,5 +634,5 @@ public class TutorialStage : MonoBehaviour
     {
         NextScript();
         HideAllArrows();
-    }   
+    }
 }

@@ -1642,6 +1642,14 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5194807188011803970, guid: 8f58d0c9d5f5d654082161406e78ad06, type: 3}
+      propertyPath: characterStage
+      value: 
+      objectReference: {fileID: 1047045383}
+    - target: {fileID: 5194807188011803970, guid: 8f58d0c9d5f5d654082161406e78ad06, type: 3}
+      propertyPath: stageBorderImage
+      value: 
+      objectReference: {fileID: 1047045385}
+    - target: {fileID: 5194807188011803970, guid: 8f58d0c9d5f5d654082161406e78ad06, type: 3}
       propertyPath: ownedCharacterSetup
       value: 
       objectReference: {fileID: 8702799472717631138}
@@ -3366,6 +3374,22 @@ Material:
     - _FillColor: {r: 0.65104955, g: 1, b: 0.4481132, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
+--- !u!1 &1047045383 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9088822331476882268, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
+  m_PrefabInstance: {fileID: 8702799472717631137}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1047045385 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5292446678866539229, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
+  m_PrefabInstance: {fileID: 8702799472717631137}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1047045383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1116650250
 GameObject:
   m_ObjectHideFlags: 0
@@ -10753,7 +10777,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 805425678950857380, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.00008181948
+      value: -0.000004155981
       objectReference: {fileID: 0}
     - target: {fileID: 808235204874162976, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
       propertyPath: m_AnchorMax.y
