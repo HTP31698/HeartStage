@@ -1,4 +1,6 @@
-﻿using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks;
+using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,16 +22,23 @@ public class LobbyUI : MonoBehaviour
     [Header("ImageIcon")]
     [SerializeField] private Image playerProfileIcon;
 
-    [Header("Button Indicators")]
-    [SerializeField] private GameObject stageIndicator;
-    [SerializeField] private GameObject homeIndicator;
-    [SerializeField] private GameObject gachaIndicator;
-    [SerializeField] private GameObject storeIndicator;
-    [SerializeField] private GameObject characterDictIndicator;
-    [SerializeField] private GameObject specialDungeonIndicator;
+    [Header("Button Text Labels")]
+    [SerializeField] private TMP_Text stageText;
+    [SerializeField] private TMP_Text homeText;
+    [SerializeField] private TMP_Text gachaText;
+    [SerializeField] private TMP_Text storeText;
+    [SerializeField] private TMP_Text characterDictText;
+    [SerializeField] private TMP_Text specialDungeonText;
+
+    [Header("Animation Settings")]
+    [SerializeField] private float buttonActiveScaleY = 1.1f;
+    [SerializeField] private float animDuration = 0.15f;
 
     private void Awake()
     {
+        // 텍스트 초기 상태 (투명)
+        InitializeTexts();
+
         stageUiButton.onClick.RemoveAllListeners();
         stageUiButton.onClick.AddListener(OnStageUiButtonClicked);
 
@@ -52,19 +61,30 @@ public class LobbyUI : MonoBehaviour
         specialDungeonButton.onClick.AddListener(OnSpecialDungeonButtonClicked);
     }
 
+    private void InitializeTexts()
+    {
+        SetTextAlpha(stageText, 0f);
+        SetTextAlpha(homeText, 0f);
+        SetTextAlpha(gachaText, 0f);
+        SetTextAlpha(storeText, 0f);
+        SetTextAlpha(characterDictText, 0f);
+        SetTextAlpha(specialDungeonText, 0f);
+    }
+
+    private void SetTextAlpha(TMP_Text text, float alpha)
+    {
+        if (text == null) return;
+        var color = text.color;
+        color.a = alpha;
+        text.color = color;
+    }
+
     private void Start()
     {
-        // 로비 처음 들어왔을 때 현재 프로필 아이콘으로 세팅
         RefreshProfileIcon();
-
-        // 셋업 윈도우에서 돌아온 경우 StageInfoWindow 자동 오픈
         CheckReturnToStageInfo();
-
-        // 스토리 던전 패배 후 돌아온 경우 스토리 던전 UI들 자동 오픈
         CheckReturnToStoryDungeon();
-
-        // 초기 버튼 상태 설정
-        UpdateButtonStates(WindowManager.currentWindow);
+        UpdateButtonStates(WindowManager.currentWindow, immediate: true);
     }
 
     private void CheckReturnToStageInfo()
@@ -73,10 +93,8 @@ public class LobbyUI : MonoBehaviour
         if (saveData == null || !saveData.returnToStageInfo)
             return;
 
-        // 플래그 초기화
         saveData.returnToStageInfo = false;
 
-        // 저장된 스테이지 ID로 StageInfoWindow 열기
         int stageId = saveData.selectedStageID;
         if (stageId <= 0)
             return;
@@ -85,10 +103,8 @@ public class LobbyUI : MonoBehaviour
         if (stageData == null)
             return;
 
-        // 1) StageSelect 윈도우 먼저 열기
         windowManager.Open(WindowType.StageSelect);
 
-        // 2) StageInfoWindow에 데이터 설정하고 오버레이로 열기
         if (stageInfoWindow != null)
         {
             stageInfoWindow.SetStageData(stageData);
@@ -96,45 +112,35 @@ public class LobbyUI : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 스토리 던전에서 돌아온 경우 스토리 던전 UI들을 순차적으로 열기
-    /// </summary>
     private void CheckReturnToStoryDungeon()
     {
         var saveData = SaveLoadManager.Data;
         if (saveData == null || !saveData.StoryAfterLobby)
             return;
 
-        // 플래그 초기화
         saveData.StoryAfterLobby = false;
 
-        // 보상창 표시 플래그 확인 (클리어 후인 경우)
         bool showReward = saveData.showStoryRewardAfterScene;
         if (showReward)
         {
             saveData.showStoryRewardAfterScene = false;
         }
 
-        SaveLoadManager.SaveToServer().Forget(); // 플래그 저장
+        SaveLoadManager.SaveToServer().Forget();
 
-        // 1) SpecialDungeon 윈도우 열기
         windowManager.Open(WindowType.SpecialDungeon);
-        UpdateButtonStates(WindowType.SpecialDungeon); // 던전 아이콘 선택 상태로
+        UpdateButtonStates(WindowType.SpecialDungeon);
 
-        // 2) StoryDungeon 오버레이 열기
         windowManager.OpenOverlayNoDim(WindowType.StoryDungeon);
-
-        // 3) StoryDungeonInfo 오버레이 열기
         windowManager.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
 
-        // 4) 스토리 클리어 후라면 보상창 열기
         if (showReward)
         {
             windowManager.OpenOverlay(WindowType.StoryStageRewardUI);
             Debug.Log("[LobbyUI] 스토리 보상창 표시");
         }
 
-        Debug.Log("[LobbyUI] 스토리 던전 UI 계층 복원 완료: SpecialDungeon → StoryDungeon → StoryDungeonInfo");
+        Debug.Log("[LobbyUI] 스토리 던전 UI 계층 복원 완료");
     }
 
     private void OnShopUiButtonClicked()
@@ -178,7 +184,6 @@ public class LobbyUI : MonoBehaviour
         windowManager.OpenOverlay(WindowType.Quest);
     }
 
-    /// SaveData의 profileIconKey 기준으로 로비 프로필 아이콘 갱신
     public void RefreshProfileIcon()
     {
         if (playerProfileIcon == null)
@@ -189,8 +194,6 @@ public class LobbyUI : MonoBehaviour
             return;
 
         string key = data.profileIconKey;
-
-        // 혹시 비어있으면 기본 아이콘 하나 지정 (기존에 쓰던 키로 맞춰줘)
         if (string.IsNullOrEmpty(key))
             key = "hanaicon";
 
@@ -208,56 +211,68 @@ public class LobbyUI : MonoBehaviour
             UpdateButtonStates(WindowType.SpecialDungeon);
     }
 
-    public void UpdateButtonStates(WindowType currentType)
+    public void UpdateButtonStates(WindowType currentType, bool immediate = false)
     {
         // Stage
         bool isStage = (currentType == WindowType.StageSelect);
         stageUiButton.interactable = !isStage;
-        stageIndicator?.SetActive(isStage);
-        SetButtonScale(stageUiButton, isStage);
+        AnimateButton(stageUiButton, stageText, isStage, immediate);
 
         // Home
         bool isHome = (currentType == WindowType.LobbyHome);
         homeUiButton.interactable = !isHome;
-        homeIndicator?.SetActive(isHome);
-        SetButtonScale(homeUiButton, isHome);
+        AnimateButton(homeUiButton, homeText, isHome, immediate);
 
         // Gacha
         bool isGacha = (currentType == WindowType.Gacha);
         gachaButton.interactable = !isGacha;
-        gachaIndicator?.SetActive(isGacha);
-        SetButtonScale(gachaButton, isGacha);
+        AnimateButton(gachaButton, gachaText, isGacha, immediate);
 
         // Store
         bool isStore = (currentType == WindowType.Shopping);
         storeButton.interactable = !isStore;
-        storeIndicator?.SetActive(isStore);
-        SetButtonScale(storeButton, isStore);
+        AnimateButton(storeButton, storeText, isStore, immediate);
 
         // CharacterDict
         bool isDict = (currentType == WindowType.CharacterDict);
         characterDictButton.interactable = !isDict;
-        characterDictIndicator?.SetActive(isDict);
-        SetButtonScale(characterDictButton, isDict);
+        AnimateButton(characterDictButton, characterDictText, isDict, immediate);
 
         // SpecialDungeon
         bool isDungeon = (currentType == WindowType.SpecialDungeon);
         specialDungeonButton.interactable = !isDungeon;
-        specialDungeonIndicator?.SetActive(isDungeon);
-        SetButtonScale(specialDungeonButton, isDungeon);
+        AnimateButton(specialDungeonButton, specialDungeonText, isDungeon, immediate);
     }
 
     /// <summary>
-    /// 활성화된 버튼은 Y 스케일 1.1, 비활성화는 1.0
+    /// 버튼 Scale Y + 텍스트 페이드 애니메이션
     /// </summary>
-    private void SetButtonScale(Button button, bool isActive)
+    private void AnimateButton(Button button, TMP_Text text, bool isActive, bool immediate)
     {
         if (button == null) return;
 
         var t = button.transform;
-        var scale = t.localScale;
-        scale.y = isActive ? 1.1f : 1f;
-        t.localScale = scale;
+        float targetScaleY = isActive ? buttonActiveScaleY : 1f;
+        float targetAlpha = isActive ? 1f : 0f;
+
+        if (immediate)
+        {
+            // 즉시 적용
+            var scale = t.localScale;
+            scale.y = targetScaleY;
+            t.localScale = scale;
+            SetTextAlpha(text, targetAlpha);
+        }
+        else
+        {
+            // DOTween 애니메이션
+            t.DOScaleY(targetScaleY, animDuration).SetEase(Ease.OutBack);
+
+            if (text != null)
+            {
+                text.DOFade(targetAlpha, animDuration).SetEase(Ease.OutCubic);
+            }
+        }
     }
 
     private void OnDisable()

@@ -35,13 +35,21 @@ public class CharacterDetailPanel : MonoBehaviour
     [SerializeField] private Transform characterPrefabParent;  // 캐릭터 프리팹이 생성될 부모
     private GameObject _currentCharacterPrefab;            // 현재 생성된 캐릭터 프리팹
 
-    [Header("레벨업 필요 재화")]
-    [SerializeField] private TextMeshProUGUI levelUpCostText;
-    [Header("랭크업 필요 재화")]
-    [SerializeField] private TextMeshProUGUI rankUpCostText;
+    [Header("트레이닝 포인트 (슬라이더 영역)")]
+    [SerializeField] private Slider trainingPointSlider;             // 트레이닝 포인트 게이지
+    [SerializeField] private TextMeshProUGUI trainingPointText;      // 55/960
 
-    [Header("레벨업 버튼")]
+    [Header("레벨업 버튼 (라이트스틱)")]
     [SerializeField] private Button levelUpButton;
+    [SerializeField] private TextMeshProUGUI lightStickActiveCostText;   // Active 상태 필요 라이트스틱 수량
+    [SerializeField] private TextMeshProUGUI lightStickFalseCostText;    // False 상태 필요 라이트스틱 수량
+    [SerializeField] private GameObject lightStickActiveBackground;  // 활성 상태 배경
+    [SerializeField] private GameObject lightStickFalseBackground;   // 비활성 상태 배경
+    [SerializeField] private GameObject lightStickActiveContent;     // 활성 상태 컨텐츠
+    [SerializeField] private GameObject lightStickFalseContent;      // 비활성 상태 컨텐츠
+    [SerializeField] private GameObject lightStickFalseIcon;         // False 컨텐츠 내 아이콘 (최대레벨 시 숨김)
+    [SerializeField] private GameObject lightStickFalseCostObject;   // False 컨텐츠 내 텍스트 오브젝트 (최대레벨 시 숨김)
+
     [Header("랭크업 버튼")]
     [SerializeField] private Button rankUpButton;
     [SerializeField] private GameObject rankUpUpIcon;  // 강화 가능 시 표시되는 아이콘
@@ -250,45 +258,110 @@ public class CharacterDetailPanel : MonoBehaviour
 
     public void ApplyLevelUpText(int charId)
     {
-        if (levelUpButton == null || levelUpCostText == null)
+        if (levelUpButton == null)
             return;
 
         if (!CharacterHelper.HasCharacter(charId))
         {
-            levelUpCostText.text = "-미보유 캐릭터-";
+            if (trainingPointText != null) trainingPointText.text = "-";
+            SetLightStickCostText("-");
+            SetTrainingPointSlider(0, 1);
             levelUpButton.interactable = false;
             levelUpButton.onClick.RemoveAllListeners();
+            SetLightStickButtonVisual(false);
             return;
         }
 
         var lvdata = DataTableManager.LevelUpTable.Get(charId);
         if (lvdata == null)
         {
-            levelUpCostText.text = "-최대 레벨-";
+            // 최대 레벨
+            if (trainingPointText != null) trainingPointText.text = "최대 레벨";
+            SetLightStickCostText("-");
+            SetTrainingPointSlider(1, 1);  // 게이지 꽉 참
             levelUpButton.interactable = false;
             levelUpButton.onClick.RemoveAllListeners();
+            SetLightStickButtonVisual(false, isMaxLevel: true);
             return;
         }
 
+        // 트레이닝 포인트 (Itm1) - 슬라이더 + 텍스트
         int currentPoint = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm1);
-        levelUpCostText.text = $"트레이닝 포인트 {currentPoint} / {lvdata.Lvup_ingrd_Itm1_count}";
+        int requiredPoint = lvdata.Lvup_ingrd_Itm1_count;
+        if (trainingPointText != null)
+            trainingPointText.text = $"{currentPoint}/{requiredPoint}";
+        SetTrainingPointSlider(currentPoint, requiredPoint);
+
+        // 라이트스틱 (Itm2) - 버튼 안에 필요 수량 표시
+        int currentLightStick = ItemInvenHelper.GetAmount(lvdata.Lvup_ingrd_Itm2);
+        int requiredLightStick = lvdata.Lvup_ingrd_Itm2_count;
+        SetLightStickCostText($"{requiredLightStick}");
 
         levelUpButton.onClick.RemoveAllListeners();
 
-        if (currentPoint >= lvdata.Lvup_ingrd_Itm1_count)
+        // 둘 다 충족해야 레벨업 가능
+        bool hasEnoughPoint = currentPoint >= requiredPoint;
+        bool hasEnoughLightStick = currentLightStick >= requiredLightStick;
+        bool canLevelUp = hasEnoughPoint && hasEnoughLightStick;
+
+        levelUpButton.interactable = canLevelUp;
+        SetLightStickButtonVisual(canLevelUp);
+
+        if (canLevelUp)
         {
-            levelUpButton.interactable = true;
             levelUpButton.onClick.AddListener(() => OnLevelUpButtonClick(charId));
         }
-        else
-        {
-            levelUpButton.interactable = false;
-        }
+    }
+
+    /// <summary>
+    /// 라이트스틱 버튼 비주얼 상태 전환 (Active/False 배경 및 컨텐츠)
+    /// </summary>
+    /// <param name="canLevelUp">레벨업 가능 여부</param>
+    /// <param name="isMaxLevel">최대 레벨 여부 (FalseContent 내 아이콘/텍스트 숨김)</param>
+    private void SetLightStickButtonVisual(bool canLevelUp, bool isMaxLevel = false)
+    {
+        if (lightStickActiveBackground != null)
+            lightStickActiveBackground.SetActive(canLevelUp);
+        if (lightStickFalseBackground != null)
+            lightStickFalseBackground.SetActive(!canLevelUp);
+        if (lightStickActiveContent != null)
+            lightStickActiveContent.SetActive(canLevelUp);
+        if (lightStickFalseContent != null)
+            lightStickFalseContent.SetActive(!canLevelUp);
+
+        // 최대 레벨일 때 FalseContent 내 아이콘/텍스트 숨김
+        if (lightStickFalseIcon != null)
+            lightStickFalseIcon.SetActive(!isMaxLevel);
+        if (lightStickFalseCostObject != null)
+            lightStickFalseCostObject.SetActive(!isMaxLevel);
+    }
+
+    /// <summary>
+    /// 라이트스틱 필요 수량 텍스트 설정 (Active/False 둘 다)
+    /// </summary>
+    private void SetLightStickCostText(string text)
+    {
+        if (lightStickActiveCostText != null)
+            lightStickActiveCostText.text = text;
+        if (lightStickFalseCostText != null)
+            lightStickFalseCostText.text = text;
+    }
+
+    /// <summary>
+    /// 트레이닝 포인트 슬라이더 값 설정
+    /// </summary>
+    private void SetTrainingPointSlider(int current, int required)
+    {
+        if (trainingPointSlider == null)
+            return;
+
+        trainingPointSlider.maxValue = required;
+        trainingPointSlider.value = Mathf.Min(current, required);
     }
 
     public void ApplyRankUpText(int charId)
     {
-        if (rankUpButton == null || rankUpCostText == null)
+        if (rankUpButton == null)
             return;
 
         // 현재 캐릭터 랭크 가져오기
@@ -301,7 +374,6 @@ public class CharacterDetailPanel : MonoBehaviour
 
         if (!CharacterHelper.HasCharacter(charId))
         {
-            rankUpCostText.text = "-미보유 캐릭터-";
             rankUpButton.interactable = false;
             rankUpButton.onClick.RemoveAllListeners();
             SetRankUpIconActive(false);
@@ -311,7 +383,7 @@ public class CharacterDetailPanel : MonoBehaviour
         var rankdata = DataTableManager.RankUpTable.Get(charId);
         if (rankdata == null)
         {
-            rankUpCostText.text = "-최대 랭크-";
+            // 최대 랭크 - 버튼 비활성화
             rankUpButton.interactable = false;
             rankUpButton.onClick.RemoveAllListeners();
             SetRankUpIconActive(false);
@@ -319,18 +391,13 @@ public class CharacterDetailPanel : MonoBehaviour
         }
 
         int currentPoint = ItemInvenHelper.GetAmount(rankdata.Upgrade_ingrd_Itm1);
-        rankUpCostText.text = $"{rankdata.Upgrade_ingrd_Itm1} 조각 {currentPoint} / {rankdata.Ingrd_Itm1_amount}";
+        bool canRankUp = currentPoint >= rankdata.Ingrd_Itm1_amount;
 
         rankUpButton.onClick.RemoveAllListeners();
-
-        bool canRankUp = currentPoint >= rankdata.Ingrd_Itm1_amount;
-        rankUpButton.interactable = canRankUp;
+        rankUpButton.interactable = true;  // 팝업에서 재료 확인하므로 버튼은 항상 활성화
         SetRankUpIconActive(canRankUp);
 
-        if (canRankUp)
-        {
-            rankUpButton.onClick.AddListener(() => OnRankUpButtonClick(charId));
-        }
+        rankUpButton.onClick.AddListener(() => OnRankUpButtonClick(charId));
     }
 
     /// <summary>
@@ -365,18 +432,28 @@ public class CharacterDetailPanel : MonoBehaviour
         var lvdata = DataTableManager.LevelUpTable.Get(charId);
         if (lvdata == null)
         {
-            if (levelUpCostText != null)
-                levelUpCostText.text = "-최대 레벨-";
+            if (trainingPointText != null)
+                trainingPointText.text = "최대 레벨";
 
             if (levelUpButton != null)
             {
                 levelUpButton.interactable = false;
                 levelUpButton.onClick.RemoveAllListeners();
             }
+            SetLightStickButtonVisual(false);
             return;
         }
 
+        // 트레이닝 포인트 소모
         if (!ItemInvenHelper.TryConsumeItem(lvdata.Lvup_ingrd_Itm1, lvdata.Lvup_ingrd_Itm1_count))
+        {
+            ApplyLevelUpText(charId);
+            return;
+        }
+
+        // 라이트스틱 소모
+        if (lvdata.Lvup_ingrd_Itm2_count > 0 &&
+            !ItemInvenHelper.TryConsumeItem(lvdata.Lvup_ingrd_Itm2, lvdata.Lvup_ingrd_Itm2_count))
         {
             ApplyLevelUpText(charId);
             return;
@@ -456,11 +533,13 @@ public class CharacterDetailPanel : MonoBehaviour
             Destroy(_runtimeSprite);
             _runtimeSprite = null;
         }
-        levelUpCostText.text = "트레이닝 포인트 ";
-        rankUpCostText.text = $"Name 조각 ";
+        if (trainingPointText != null) trainingPointText.text = "";
+        SetLightStickCostText("");
+        SetTrainingPointSlider(0, 1);
 
         levelUpButton.interactable = false;
         rankUpButton.interactable = false;
+        SetLightStickButtonVisual(false);
 
         // 캐릭터 프리팹 정리
         ClearCharacterPrefab();
@@ -639,9 +718,9 @@ public class CharacterDetailPanel : MonoBehaviour
             return;
         }
 
-        // 패시브 타일 표시
+        // 패시브 타일 표시 (캐릭터 타입에 따른 색상 적용)
         if (positionTileDisplay != null)
-            positionTileDisplay.SetPattern(skillData.passive_type);
+            positionTileDisplay.SetPattern(skillData.passive_type, _currentCharacterData.char_type);
 
         // 패시브 스킬 설명
         if (positionDescText != null)
