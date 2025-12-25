@@ -1282,7 +1282,7 @@ public class TutorialStage : MonoBehaviour
             CreateScriptUI();
         }
 
-        // VictoryPanel보다 높은 Sort Order 설정 (일반적으로 VictoryPanel은 100~200 정도)
+        // VictoryPanel보다 높은 Sort Order 설정
         tutorialCanvas.sortingOrder = 1000;
 
         // 튜토리얼 다시 시작
