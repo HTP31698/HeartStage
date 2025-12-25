@@ -86,6 +86,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         rewardBubble.Init(this);
         friendBubble.Init(this);
     }
+
     // 응원하기
     private void OnClickCheerUp()
     {
@@ -98,6 +99,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             CheerUpMyHome();
         }
     }
+
     // 응원하기 내 숙소일때
     private void CheerUpMyHome()
     {
@@ -109,34 +111,27 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         CharacterHelper.SetLikeability(characterData.char_name, newLike);
         RefreshLikeabilityUI();
     }
+
     // 응원하기 친구 숙소일때
-    private void CheerUpFriend()
+    private async void CheerUpFriend()
     {
         if (!ItemInvenHelper.TryConsumeItem(likeabilityData.User_need_Item, likeabilityData.Friend_need_amount))
+            return;
+
+        bool success = await FriendCheerService.CheerAsync(LobbyHomeInitializer.Instance.friendUID, characterData.char_name, AuthManager.Instance.UserId);
+
+        if (!success)
             return;
 
         cheerEffect.Play();
         int rewardAmount = UnityEngine.Random.Range(likeabilityData.random_item_min, likeabilityData.random_item_max + 1);
         ItemInvenHelper.AddItem(likeabilityData.random_item, rewardAmount);
         friendCheerRewardUI.Init(likeabilityData.like_reward_item1, rewardAmount);
+
         UpdateCheerUpButtonInteractable();
-        //  친구 SaveData에 기록
-        var friendData = LobbyHomeInitializer.Instance.friendSaveData;
-        var dict = friendData.characterCheeredFriends;
-        if (!dict.TryGetValue(characterData.char_name, out var cheerDict))
-        {
-            cheerDict = new Dictionary<string, string>();
-            dict.Add(characterData.char_name, cheerDict);
-        }
-        string myUid = AuthManager.Instance.UserId;
-        string myNickname = SaveLoadManager.Data.nickname;
-        // 중복 응원 방지
-        if (!cheerDict.ContainsKey(myUid))
-        {
-            cheerDict.Add(myUid, myNickname);
-        }
-        SaveLoadManager.SaveFriendDataToServer(LobbyHomeInitializer.Instance.friendUID, friendData).Forget();
+        await UpdateFriendCheerBubbleFromServer();
     }
+
     // 호감도 보상 UI 세팅
     private void SetRewardUI()
     {
@@ -156,6 +151,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         rewardImage3.sprite = ResourceManager.Instance.GetSprite(rewardItemData3.prefab);
     }
 
+    // 호감도 보상 UI 위치 세팅
     private void SetRewardPositionByPercent(RectTransform reward, float percent)
     {
         RectTransform sliderRect = likeabilityGuage.GetComponent<RectTransform>();
@@ -165,6 +161,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         pos.x = x;
         reward.anchoredPosition = pos;
     }
+
     // 현재 호감도 UI 반영
     public void RefreshLikeabilityUI()
     {
@@ -177,8 +174,9 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         UpdateDialogue(currentLike);
         UpdateCheerUpButtonInteractable();
         UpdateRewardBubble();
-        UpdateFriendCheerBubble();
+        UpdateFriendCheerBubbleFromServer().Forget();
     }
+
     // 호감도 대사 업데이트
     private void UpdateDialogue(int currentLike)
     {
@@ -199,6 +197,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             characterDialogue.text = likeabilityData.line4;
         }
     }
+
     // 응원 버튼 Interactable 세팅
     private void UpdateCheerUpButtonInteractable()
     {
@@ -233,6 +232,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         canvasGroup.blocksRaycasts = interactable;
         canvasGroup.alpha = interactable ? 1f : 0.5f;
     }
+
     // 보상 말풍선 업데이트
     public void UpdateRewardBubble()
     {
@@ -240,22 +240,18 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         rewardSpeechBubble.gameObject.SetActive(count > 0);
         rewardCountText.text = count.ToString(); // TMP
     }
+
     // 응원한 친구 말풍선 업데이트
-    private void UpdateFriendCheerBubble()
+    private async UniTask UpdateFriendCheerBubbleFromServer()
     {
-        // 친구 숙소에서는 표시 안 함
         if (LobbyHomeInitializer.Instance.isFriendHome)
         {
             friendCheerBubble.SetActive(false);
             return;
         }
-        var dict = SaveLoadManager.Data.characterCheeredFriends;
-        if (!dict.TryGetValue(characterData.char_name, out var cheerDict))
-        {
-            friendCheerBubble.SetActive(false);
-            return;
-        }
-        int count = cheerDict.Count;
+
+        int count = await FriendCheerService.GetTotalCheerCountAsync(AuthManager.Instance.UserId, characterData.char_name);
+
         friendCheerBubble.SetActive(count > 0);
         friendCheerCountText.text = count.ToString();
     }
@@ -279,6 +275,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             count++;
         return count;
     }
+
     // 호감도 보상 받기
     public void ReceiveNextLikeabilityReward()
     {
@@ -305,6 +302,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         }
         RefreshLikeabilityUI();
     }
+
     // 보상 획득창 열기
     public void OpenRewardPopup()
     {
@@ -324,21 +322,25 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             rewardPopup.Open(this, likeabilityData.like_amount3, likeabilityData.like_reward_item3, likeabilityData.reward_amount3);
         }
     }
+
     // 친구 응원창 열기
     public void OpenFriendCheerPopup()
     {
         receivedCheerChest.Init(characterData.char_name);
     }
+
     // 어떤 SaveData로 할지
     private SaveDataV1 GetTargetSaveData()
     {
         return LobbyHomeInitializer.Instance.isFriendHome ? LobbyHomeInitializer.Instance.friendSaveData : SaveLoadManager.Data;
     }
+
     // 응원 필요 재화량
     private int GetCheerNeedAmount()
     {
         return LobbyHomeInitializer.Instance.isFriendHome ? likeabilityData.Friend_need_amount : likeabilityData.User_need_amount;
     }
+
     // 테스트 코드
     // 선택된 캐릭터 호감도 10씩 증가
     public void GetLikeAbility()

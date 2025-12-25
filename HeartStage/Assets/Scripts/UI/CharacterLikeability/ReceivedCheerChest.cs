@@ -1,11 +1,15 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
+using System.Collections.Generic;
 
 public class ReceivedCheerChest : MonoBehaviour
 {
     public GameObject receivedCheerItemPrefab;
     public Transform itemParent;
     public Button getAllButton;
+
+    private string characterName;
 
     private void Awake()
     {
@@ -14,35 +18,43 @@ public class ReceivedCheerChest : MonoBehaviour
 
     public void Init(string characterName)
     {
+        this.characterName = characterName;
         gameObject.SetActive(true);
-        // 기존 아이템 제거
-        for (int i = itemParent.transform.childCount - 1; i >= 0; i--)
-        {
-            Destroy(itemParent.transform.GetChild(i).gameObject);
-        }
 
-        var dict = SaveLoadManager.Data.characterCheeredFriends;
-        if (!dict.TryGetValue(characterName, out var cheerDict))
-            return;
+        for (int i = itemParent.childCount - 1; i >= 0; i--)
+            Destroy(itemParent.GetChild(i).gameObject);
+
+        LoadFromServer().Forget();
+    }
+
+    // 응원 리스트 서버에서 가져오기
+    private async UniTask LoadFromServer()
+    {
+        string targetUid = AuthManager.Instance.UserId;
+
+        Dictionary<string, int> cheerDict = await FriendCheerService.GetCheerListAsync(targetUid, characterName);
 
         foreach (var pair in cheerDict)
         {
-            string uid = pair.Key;
-            string nickname = pair.Value;
+            string fromUid = pair.Key;
+            int count = pair.Value;
 
-            var go = Instantiate(receivedCheerItemPrefab, itemParent.transform);
-            go.GetComponent<ReceivedCheerItem>().Init(characterName, uid);
+            for (int i = 0; i < count; i++)
+            {
+                var go = Instantiate(receivedCheerItemPrefab, itemParent);
+                go.GetComponent<ReceivedCheerItem>().Init(characterName, fromUid);
+            }
         }
     }
 
-    private void AllGet()
+    private async void AllGet()
     {
         var items = itemParent.GetComponentsInChildren<ReceivedCheerItem>();
 
         foreach (var item in items)
         {
             if (item.receiveButton.interactable)
-                item.Receive();
+                await item.ReceiveAsync();
         }
     }
 }
