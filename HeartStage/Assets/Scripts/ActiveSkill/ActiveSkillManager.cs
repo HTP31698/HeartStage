@@ -126,6 +126,34 @@ public class ActiveSkillManager : MonoBehaviour
     {
         activeSkillDesc.gameObject.SetActive(false);
     }
+
+    // 특정 캐릭터의 스킬이 준비되었는지 확인
+    public bool IsSkillReady(GameObject caster, int skillId)
+    {
+        var timer = activeTimers.Find(t => t.Caster == caster && t.SkillData.skill_id == skillId);
+        return timer?.IsReady ?? false;
+    }
+
+    // 스킬이 준비된 모든 캐릭터 목록 반환
+    public List<GameObject> GetAllReadySkillCasters()
+    {
+        var readyCasters = new List<GameObject>();
+        foreach (var timer in activeTimers)
+        {
+            if (timer.IsReady)
+            {
+                readyCasters.Add(timer.Caster);
+            }
+        }
+        return readyCasters;
+    }
+
+    // 특정 캐릭터가 등록한 스킬 ID 반환
+    public int GetCharacterSkillId(GameObject caster)
+    {
+        var timer = activeTimers.Find(t => t.Caster == caster);
+        return timer?.SkillData.skill_id ?? -1;
+    }
 }
 
 // 타이머 클래스
