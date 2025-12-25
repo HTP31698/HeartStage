@@ -17,6 +17,7 @@ public class TutorialStage : MonoBehaviour
     [SerializeField] private GameObject fence;
     [SerializeField] private StageManager stageManager;
     [SerializeField] private BossAlertUI bossAlertUI;
+    [SerializeField] private Button feverButton;
 
     private GameObject stageBorderParent;
     [SerializeField] private Image stageBorderImage;
@@ -29,7 +30,7 @@ public class TutorialStage : MonoBehaviour
     private bool isWaitingForCharacterClick = false; // 캐릭터 클릭 대기 상태
     private bool isWaitingForStartButton = false; // 스타트 버튼 대기 상태 추가
     private bool isAutoProgression = false; // 자동 진행 모드 상태
-    private float autoProgressionInterval = 1.2f; // 자동 진행 간격
+    private float autoProgressionInterval = 1.1f; // 자동 진행 간격
     private float autoProgressionTimer = 0f; // 자동 진행 타이머
 
     private Transform waitingCharacterSlot; // 대기 중인 캐릭터 슬롯
@@ -298,6 +299,15 @@ public class TutorialStage : MonoBehaviour
                 break;
             case "BossAlert":
                 ActionBossAlert();
+                break;
+            case "FeverArrow":
+                ActionFeverArrow();
+                break;
+            case "BossFight":
+                ActionBossFight();
+                break;
+            case "StageClear":
+                ActionStageClear();
                 break;
         }
     }
@@ -948,30 +958,22 @@ public class TutorialStage : MonoBehaviour
             if (currentScripts[i].Action == "BossAlert")
             {
                 currentScriptIndex = i;
-                Debug.Log($"[TutorialStage] BossAlert 스크립트 찾음! 인덱스: {i}");
                 return;
             }
         }
-
-        Debug.LogWarning("[TutorialStage] BossAlert 스크립트를 찾을 수 없습니다!");
     }
     private void ActionBossAlert()
     {
-        // BossAlert 윈도우가 열릴 때까지 대기하는 방식으로 구현
         ActionBossAlertAsync().Forget();
     }
 
     private async UniTaskVoid ActionBossAlertAsync()
     {
-        Debug.Log("[TutorialStage] BossAlert 대기 시작...");
-
         // BossAlert UI가 활성화될 때까지 대기
         await UniTask.WaitUntil(() =>
         {
             return bossAlertUI != null && bossAlertUI.gameObject.activeInHierarchy;
         });
-
-        Debug.Log("[TutorialStage] BossAlert 활성화 확인!");
 
         // BossAlert UI가 닫힐 때까지 대기
         await UniTask.WaitUntil(() =>
@@ -979,36 +981,22 @@ public class TutorialStage : MonoBehaviour
             return bossAlertUI == null || !bossAlertUI.gameObject.activeInHierarchy;
         });
 
-        Debug.Log("[TutorialStage] BossAlert 닫힘 확인! 튜토리얼 재개 시작");
-
         // 튜토리얼 스크립트 UI 다시 활성화
         if (currentScriptUI != null)
         {
             currentScriptUI.gameObject.SetActive(true);
-            Debug.Log("[TutorialStage] 튜토리얼 UI 다시 활성화");
-        }
-        else
-        {
-            Debug.LogWarning("[TutorialStage] currentScriptUI가 null입니다!");
         }
 
         // 현재 스크립트 정보 확인
         if (currentScripts != null && currentScriptIndex < currentScripts.Count)
         {
             var script = currentScripts[currentScriptIndex];
-            Debug.Log($"[TutorialStage] 현재 스크립트: {script.Text}");
-            Debug.Log($"[TutorialStage] 스크립트 액션: {script.Action}");
-        }
-        else
-        {
-            Debug.LogWarning($"[TutorialStage] 스크립트 없음 - Index: {currentScriptIndex}, Count: {(currentScripts?.Count ?? 0)}");
         }
 
         // 튜토리얼 다시 시작
         isPlaying = true;
         isAutoProgression = true;
 
-        Debug.Log("[TutorialStage] 다음 스크립트 진행...");
         NextScript();
     }
 
@@ -1189,29 +1177,6 @@ public class TutorialStage : MonoBehaviour
         }
     }
 
-    // 캐릭터 클릭 이벤트 핸들러 (DragMe에서 호출될 수 있도록 public으로 설정)
-    public void OnCharacterClicked(Transform clickedCharacter)
-    {
-        // 캐릭터 클릭 대기 중이고, 올바른 캐릭터를 클릭한 경우에만 처리
-        if (isWaitingForCharacterClick && clickedCharacter == waitingCharacterSlot)
-        {
-            // 화살표 숨기기 및 패널 복원
-            HideAllArrows();
-            RestorePanel();
-
-            // 모든 버튼과 캐릭터 상호작용 다시 활성화
-            EnableOtherButtons();
-            EnableCharacterInteraction();
-
-            // 캐릭터 클릭 대기 상태 해제
-            isWaitingForCharacterClick = false;
-            waitingCharacterSlot = null;
-
-            // 다음 스크립트로 진행
-            NextScript();
-        }
-    }
-
     private void OnCharacterInfoCloseButtonClicked()
     {
         // 캐릭터 클릭 대기 중인 경우 상태 복원
@@ -1232,5 +1197,98 @@ public class TutorialStage : MonoBehaviour
 
         NextScript();
         HideAllArrows();
+    }
+
+    private void ActionFeverArrow()
+    {
+        HideAllArrows();
+        if (feverButton != null)
+        {
+            ShowArrowOnTarget(feverButton.transform);
+        }
+    }
+
+    private void ActionBossFight()
+    {
+        HideAllArrows();
+
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(false);
+        }
+
+        isAutoProgression = false;
+        isPlaying = false;
+
+        Debug.Log("[TutorialStage] 보스 전투 시작. 스테이지 클리어 대기 모드");
+
+        // StageClear 스크립트 찾아서 인덱스 설정
+        FindAndSetStageClearScriptIndex();
+
+        // 바로 StageClear 대기 시작
+        ActionStageClearAsync().Forget();
+    }
+
+    // StageClear 액션이 있는 스크립트 찾기
+    private void FindAndSetStageClearScriptIndex()
+    {
+        if (currentScripts == null) return;
+
+        for (int i = 0; i < currentScripts.Count; i++)
+        {
+            if (currentScripts[i].Action == "StageClear")
+            {
+                currentScriptIndex = i;
+                Debug.Log($"[TutorialStage] StageClear 스크립트 찾음! 인덱스: {i}");
+                return;
+            }
+        }
+
+        Debug.LogWarning("[TutorialStage] StageClear 스크립트를 찾을 수 없습니다!");
+    }
+
+    private void ActionStageClear()
+    {
+        // 스테이지 클리어 대기하는 방식으로 구현
+        ActionStageClearAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionStageClearAsync()
+    {
+        // VictoryPanel이 활성화될 때까지 대기 (스테이지 클리어 시 나타남)
+        await UniTask.WaitUntil(() =>
+        {
+            return stageManager != null &&
+                   stageManager.VictoryPanel != null &&
+                   stageManager.VictoryPanel.gameObject.activeInHierarchy;
+        });
+
+        this.transform.SetAsLastSibling();
+
+        Canvas tutorialCanvas = this.GetComponent<Canvas>();
+        if (tutorialCanvas == null)
+        {
+            tutorialCanvas = this.gameObject.AddComponent<Canvas>();
+            tutorialCanvas.overrideSorting = true;
+        }
+
+        // 튜토리얼 스크립트 UI 다시 활성화
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(true);
+        }
+        else
+        {
+            CreateScriptUI();
+        }
+
+        // VictoryPanel보다 높은 Sort Order 설정 (일반적으로 VictoryPanel은 100~200 정도)
+        tutorialCanvas.sortingOrder = 1000;
+
+        // 튜토리얼 다시 시작
+        isPlaying = true;
+        isAutoProgression = true;
+
+        NextScript();
     }
 }
