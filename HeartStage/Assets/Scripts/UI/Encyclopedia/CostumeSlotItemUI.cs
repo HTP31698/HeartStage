@@ -10,9 +10,9 @@ public class CostumeSlotItemUI : MonoBehaviour
     [Header("UI")]
     [SerializeField] private Image costumeImage;      // 의상 썸네일 이미지
     [SerializeField] private TMP_Text nameText;       // 의상 이름
-    [SerializeField] private Image selectionFrame;    // 선택 테두리
     [SerializeField] private Button button;           // 클릭 버튼
     [SerializeField] private GameObject equippedMark; // 장착 중 표시
+    [SerializeField] private GameObject selectedMark; // 선택 중 표시 (아이콘)
 
     private CostumeSelectPopup _owner;
     public int ItemId { get; private set; }
@@ -50,13 +50,22 @@ public class CostumeSlotItemUI : MonoBehaviour
 
     public void SetSelected(bool selected)
     {
-        if (selectionFrame != null)
-            selectionFrame.gameObject.SetActive(selected);
+        if (selectedMark != null)
+            selectedMark.SetActive(selected);
     }
 
     public void SetEquipped(bool equipped)
     {
         if (equippedMark != null)
             equippedMark.SetActive(equipped);
+    }
+
+    /// <summary>
+    /// 스프라이트 설정 (비동기 로드 후 호출용)
+    /// </summary>
+    public void SetSprite(Sprite sprite)
+    {
+        if (costumeImage != null && sprite != null)
+            costumeImage.sprite = sprite;
     }
 }

@@ -21,7 +21,7 @@ public static class CostumeHelper
         return type switch
         {
             CostumeType.Top => 5,    // Top_1 ~ Top_5
-            CostumeType.Pants => 5,  // Pants_1 ~ Pants_5
+            CostumeType.Pants => 6,  // Pants_1 ~ Pants_6 (일부 의상은 6번 없음)
             CostumeType.Shoes => 2,  // Shoes_1, Shoes_2
             _ => 0
         };
@@ -70,6 +70,9 @@ public static class CostumeHelper
         controller.SetSprites(type, sprites);
     }
 
+    // 실패한 주소 캐시 (재시도 방지)
+    private static HashSet<string> failedAddresses = new HashSet<string>();
+
     /// <summary>
     /// Addressable에서 스프라이트 로드 (캐시 사용)
     /// </summary>
@@ -81,8 +84,27 @@ public static class CostumeHelper
             return cached;
         }
 
+        // 이미 실패한 주소는 스킵
+        if (failedAddresses.Contains(address))
+        {
+            return null;
+        }
+
         try
         {
+            // 먼저 키가 존재하는지 확인 (InvalidKeyException 방지)
+            var locHandle = Addressables.LoadResourceLocationsAsync(address);
+            await locHandle.ToUniTask();
+
+            if (locHandle.Status != AsyncOperationStatus.Succeeded || locHandle.Result.Count == 0)
+            {
+                Addressables.Release(locHandle);
+                failedAddresses.Add(address);
+                return null;
+            }
+            Addressables.Release(locHandle);
+
+            // 키가 존재하면 로드
             var handle = Addressables.LoadAssetAsync<Sprite>(address);
             await handle.ToUniTask();
 
@@ -93,13 +115,14 @@ public static class CostumeHelper
             }
             else
             {
-                Debug.LogWarning($"[CostumeHelper] Failed to load sprite: {address}");
+                failedAddresses.Add(address);
                 return null;
             }
         }
-        catch (System.Exception e)
+        catch (System.Exception)
         {
-            Debug.LogError($"[CostumeHelper] Exception loading sprite {address}: {e.Message}");
+            // 없는 스프라이트는 조용히 스킵 (에러 로깅 안 함)
+            failedAddresses.Add(address);
             return null;
         }
     }
@@ -363,12 +386,14 @@ public static class CostumeHelper
     }
 
     /// <summary>
-    /// 보유 의상 목록 가져오기 (타입별 필터링, itemList 기반)
+    /// 보유 의상 목록 가져오기 (타입별 필터링, itemList + ItemTable 기반)
     /// </summary>
     public static List<int> GetOwnedCostumes(CostumeType? typeFilter = null)
     {
         var saveData = SaveLoadManager.Data;
         if (saveData == null) return new List<int>();
+
+        var itemTable = DataTableManager.ItemTable;
 
         var result = new List<int>();
         foreach (var kvp in saveData.itemList)
@@ -379,6 +404,10 @@ public static class CostumeHelper
             // 의상 아이템이고 보유 중인 경우
             if (count > 0 && CostumeItemID.IsCostumeItem(itemId))
             {
+                // ItemTable에 존재하는지 확인
+                if (itemTable != null && itemTable.Get(itemId) == null)
+                    continue;
+
                 // 타입 필터가 있으면 체크
                 if (!typeFilter.HasValue || CostumeItemID.GetCostumeType(itemId) == typeFilter.Value)
                 {

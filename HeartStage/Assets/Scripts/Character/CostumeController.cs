@@ -13,8 +13,8 @@ public class CostumeController : MonoBehaviour
     [Header("상의 SpriteRenderers (Top_1 ~ Top_5)")]
     [SerializeField] private SpriteRenderer[] topRenderers = new SpriteRenderer[5];
 
-    [Header("하의 SpriteRenderers (Pants_1 ~ Pants_5)")]
-    [SerializeField] private SpriteRenderer[] pantsRenderers = new SpriteRenderer[5];
+    [Header("하의 SpriteRenderers (Pants_1 ~ Pants_6)")]
+    [SerializeField] private SpriteRenderer[] pantsRenderers = new SpriteRenderer[6];
 
     [Header("신발 SpriteRenderers (Shoes_1, Shoes_2)")]
     [SerializeField] private SpriteRenderer[] shoesRenderers = new SpriteRenderer[2];
@@ -83,7 +83,17 @@ public class CostumeController : MonoBehaviour
             _ => null
         };
 
-        if (renderers == null) return;
+        if (renderers == null || renderers.Length == 0)
+        {
+            Debug.LogWarning($"[CostumeController] SetSprites: renderers is null or empty for {type}");
+            return;
+        }
+
+        if (sprites == null || sprites.Length == 0)
+        {
+            Debug.LogWarning($"[CostumeController] SetSprites: sprites is null or empty for {type}");
+            return;
+        }
 
         int count = Mathf.Min(sprites.Length, renderers.Length);
         for (int i = 0; i < count; i++)
@@ -187,8 +197,8 @@ public class CostumeController : MonoBehaviour
                 topRenderers[i] = tr.GetComponent<SpriteRenderer>();
         }
 
-        // Pants (Pants_1 ~ Pants_5)
-        for (int i = 0; i < 5; i++)
+        // Pants (Pants_1 ~ Pants_6)
+        for (int i = 0; i < 6; i++)
         {
             var tr = FindChildRecursive(transform, $"Pants_{i + 1}");
             if (tr != null)
@@ -208,7 +218,7 @@ public class CostumeController : MonoBehaviour
         int foundTop = System.Array.FindAll(topRenderers, r => r != null).Length;
         int foundPants = System.Array.FindAll(pantsRenderers, r => r != null).Length;
         int foundShoes = System.Array.FindAll(shoesRenderers, r => r != null).Length;
-        Debug.Log($"[CostumeController] Auto find complete for {gameObject.name} - Top:{foundTop}/5, Pants:{foundPants}/5, Shoes:{foundShoes}/2");
+        Debug.Log($"[CostumeController] Auto find complete for {gameObject.name} - Top:{foundTop}/5, Pants:{foundPants}/6, Shoes:{foundShoes}/2");
     }
 
     /// <summary>

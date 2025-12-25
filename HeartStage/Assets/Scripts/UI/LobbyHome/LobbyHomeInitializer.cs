@@ -63,7 +63,12 @@ public class LobbyHomeInitializer : MonoBehaviour
             var imagePrefab = ResourceManager.Instance.Get<GameObject>(characterData.image_PrefabName);
 
             var root = Instantiate(characterBase, transform);
-            Instantiate(imagePrefab, root.transform);
+            var charObj = Instantiate(imagePrefab, root.transform);
+
+            // 의상 적용
+            var costumeController = charObj.GetComponent<CostumeController>();
+            if (costumeController != null)
+                costumeController.Initialize(characterData.char_name);
 
             float x = Random.Range(bounds.min.x, bounds.max.x);
             float y = Random.Range(bounds.min.y, bounds.max.y);

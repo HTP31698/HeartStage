@@ -63,7 +63,12 @@ public class CharacterAttack : MonoBehaviour
 
         // 캐릭터 이미지 추가
         var imageGo = ResourceManager.Instance.Get<GameObject>(data.image_PrefabName);
-        Instantiate(imageGo, gameObject.transform);
+        var imageInstance = Instantiate(imageGo, gameObject.transform);
+
+        // 의상 적용
+        var costumeController = imageInstance.GetComponent<CostumeController>();
+        if (costumeController != null)
+            costumeController.Initialize(data.char_name);
         // 액티브 스킬 등록
         var skillList = DataTableManager.CharacterTable.GetSkillIds(data.char_id);
         foreach (var skillId in skillList)

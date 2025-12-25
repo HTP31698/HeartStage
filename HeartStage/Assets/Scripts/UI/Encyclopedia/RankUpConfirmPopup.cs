@@ -11,6 +11,7 @@ public class RankUpConfirmPopup : MonoBehaviour
 {
     [Header("팝업 컨트롤")]
     [SerializeField] private GameObject dimBackground;           // 딤 배경
+    private CanvasGroup _dimCanvasGroup;
     [SerializeField] private Button closeButton;
 
     [Header("현재 등급 정보")]
@@ -55,6 +56,8 @@ public class RankUpConfirmPopup : MonoBehaviour
     private int _nextCharId;
     private RankUpData _rankUpData;
 
+    private bool _isOpen;
+
     private void Awake()
     {
         if (closeButton != null)
@@ -62,6 +65,22 @@ public class RankUpConfirmPopup : MonoBehaviour
 
         if (rankUpButton != null)
             rankUpButton.onClick.AddListener(OnRankUpButtonClick);
+
+        // 딤 배경 클릭 시 닫기
+        if (dimBackground != null)
+        {
+            var dimButton = dimBackground.GetComponent<Button>();
+            if (dimButton == null)
+                dimButton = dimBackground.AddComponent<Button>();
+            dimButton.transition = Selectable.Transition.None;
+            dimButton.onClick.AddListener(Close);
+        }
+    }
+
+    private void OnDisable()
+    {
+        // 비활성화될 때 상태 리셋 (강제 종료 시에도 다시 열 수 있도록)
+        _isOpen = false;
     }
 
     /// <summary>
@@ -69,6 +88,9 @@ public class RankUpConfirmPopup : MonoBehaviour
     /// </summary>
     public void Open(int charId)
     {
+        if (_isOpen)
+            return;
+
         _currentCharId = charId;
 
         var charData = DataTableManager.CharacterTable.Get(charId);
@@ -93,6 +115,11 @@ public class RankUpConfirmPopup : MonoBehaviour
             return;
         }
 
+        _isOpen = true;
+
+        // 팝업 먼저 활성화 (자식 오브젝트들이 활성화되려면 부모가 먼저 활성화되어야 함)
+        gameObject.SetActive(true);
+
         // 현재/다음 등급 정보 설정 (변경되는 스킬 기준)
         SetRankInfo(charData, nextCharData);
 
@@ -102,11 +129,15 @@ public class RankUpConfirmPopup : MonoBehaviour
         // 강화 버튼 상태 설정
         UpdateRankUpButton();
 
-        // 딤 배경 켜기
+        // 딤 배경 켜기 + alpha 설정
         if (dimBackground != null)
+        {
+            if (_dimCanvasGroup == null)
+                _dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>();
+            if (_dimCanvasGroup != null)
+                _dimCanvasGroup.alpha = 1f;
             dimBackground.SetActive(true);
-
-        gameObject.SetActive(true);
+        }
     }
 
     /// <summary>
@@ -114,13 +145,21 @@ public class RankUpConfirmPopup : MonoBehaviour
     /// </summary>
     public void Close()
     {
+        if (!_isOpen)
+            return;
+
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
 
         // 딤 배경 끄기
         if (dimBackground != null)
+        {
+            if (_dimCanvasGroup != null)
+                _dimCanvasGroup.alpha = 0f;
             dimBackground.SetActive(false);
+        }
 
+        _isOpen = false;
         gameObject.SetActive(false);
     }
 

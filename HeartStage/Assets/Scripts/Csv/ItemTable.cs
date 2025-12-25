@@ -74,4 +74,12 @@ public class ItemTable : DataTable
 
         return result;
     }
+
+    /// <summary>
+    /// 모든 아이템 ID 반환 (CSV 데이터 기반)
+    /// </summary>
+    public IEnumerable<int> GetAllItemIds()
+    {
+        return table.Keys;
+    }
 }

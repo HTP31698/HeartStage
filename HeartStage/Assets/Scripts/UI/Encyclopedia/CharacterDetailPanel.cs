@@ -193,8 +193,12 @@ public class CharacterDetailPanel : MonoBehaviour
         {
             Debug.LogWarning("[CharacterDetailPanel] characterData null");
             Clear();
+            NoteLoadingUI.Hide();
             return;
         }
+
+        // 로딩 표시
+        NoteLoadingUI.Show();
 
         _currentCharacterId = characterData.char_id;
         _currentCharacterData = characterData;
@@ -232,6 +236,9 @@ public class CharacterDetailPanel : MonoBehaviour
             characterRawImage.DOFade(1f, 0.25f).SetEase(Ease.OutQuad);
             characterRawImage.transform.DOScale(1f, 0.25f).SetEase(Ease.OutBack);
         }
+
+        // 로딩 숨기기
+        NoteLoadingUI.Hide();
 
         // 레벨업 구현 Onclick 리스너 등은 여기서 추가 가능
         ApplyLevelUpText(characterData.char_id);
@@ -938,7 +945,8 @@ public class CharacterDetailPanel : MonoBehaviour
             {
                 costumeController = _currentCharacterPrefab.GetComponent<CostumeController>();
             }
-            costumeSelectPopup.Open(_currentCharacterData.char_name, type, costumeController);
+            // RenderTexture도 함께 전달하여 의상 선택 팝업에서 실시간 프리뷰 가능
+            costumeSelectPopup.Open(_currentCharacterData.char_name, type, costumeController, _characterRenderTexture);
         }
     }
 
@@ -969,6 +977,9 @@ public class CharacterDetailPanel : MonoBehaviour
         if (saveData == null || _currentCharacterData == null)
             return;
 
+        // 로딩 표시
+        NoteLoadingUI.Show();
+
         string charName = _currentCharacterData.char_name;
         if (!saveData.equippedCostumeByChar.TryGetValue(charName, out var costume))
         {
@@ -976,6 +987,7 @@ public class CharacterDetailPanel : MonoBehaviour
             ClearCostumeSlot(topCostumeImage);
             ClearCostumeSlot(pantsCostumeImage);
             ClearCostumeSlot(shoesCostumeImage);
+            NoteLoadingUI.Hide();
             return;
         }
 
@@ -983,6 +995,9 @@ public class CharacterDetailPanel : MonoBehaviour
         await UpdateCostumeSlot(topCostumeImage, CostumeType.Top, costume.topItemId);
         await UpdateCostumeSlot(pantsCostumeImage, CostumeType.Pants, costume.pantsItemId);
         await UpdateCostumeSlot(shoesCostumeImage, CostumeType.Shoes, costume.shoesItemId);
+
+        // 로딩 숨기기
+        NoteLoadingUI.Hide();
     }
 
     private async UniTask UpdateCostumeSlot(Image slotImage, CostumeType type, int itemId)

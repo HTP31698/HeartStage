@@ -1,9 +1,9 @@
 using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// 의상 선택 팝업 - 상의/하의/신발 탭으로 보유 의상 선택
@@ -11,31 +11,43 @@ using UnityEngine.UI;
 /// </summary>
 public class CostumeSelectPopup : MonoBehaviour
 {
+    [Header("캐릭터 프리뷰 (실시간 의상 확인)")]
+    [SerializeField] private RawImage characterPreviewRawImage;  // 캐릭터 프리뷰용 RawImage
+
+    [Header("장착 중인 의상 이미지")]
+    [SerializeField] private Image topEquippedImage;
+    [SerializeField] private Image pantsEquippedImage;
+    [SerializeField] private Image shoesEquippedImage;
+
     [Header("탭 버튼")]
     [SerializeField] private Button topTabButton;
     [SerializeField] private Button pantsTabButton;
     [SerializeField] private Button shoesTabButton;
 
-    [Header("탭 텍스트 (선택 상태 표시용)")]
-    [SerializeField] private TMP_Text topTabText;
-    [SerializeField] private TMP_Text pantsTabText;
-    [SerializeField] private TMP_Text shoesTabText;
-
     [Header("리스트")]
     [SerializeField] private Transform contentRoot;
     [SerializeField] private GameObject costumeItemPrefab;
+    [SerializeField] private GridLayoutGroup gridLayout;
+    [SerializeField] private ScrollRect scrollRect;  // Viewport 너비 계산용
+    [SerializeField] private CanvasGroup listCanvasGroup;  // 로딩 중 숨김용
+    [SerializeField] private int columnCount = 4;
+    [SerializeField] private float cellSpacing = 10f;
 
     [Header("버튼")]
     [SerializeField] private Button applyButton;
     [SerializeField] private Button closeButton;
 
-    [Header("빈 목록 안내")]
-    [SerializeField] private GameObject emptyNotice;
+    [Header("딤 배경")]
+    [SerializeField] private GameObject dimBackground;  // 딤 배경
+    private CanvasGroup _dimCanvasGroup;
 
-    [Header("로딩 표시")]
-    [SerializeField] private GameObject loadingIndicator;
+#if UNITY_EDITOR
+    [Header("디버그")]
+    [SerializeField] private Button debugGetAllCostumesButton;
+#endif
 
-    public bool IsOpen => gameObject.activeSelf;
+    public bool IsOpen => _isOpen;
+    private bool _isOpen;
 
     private readonly List<GameObject> _spawnedItems = new();
     private readonly List<CostumeSlotItemUI> _items = new();
@@ -46,6 +58,7 @@ public class CostumeSelectPopup : MonoBehaviour
 
     // 캐릭터 프리뷰 관련 (CharacterDetailPanel의 캐릭터 사용)
     private CostumeController _costumeController;
+    private RenderTexture _sharedRenderTexture;  // CharacterDetailPanel에서 공유받은 RenderTexture
 
     // 원본 의상 저장 (닫을 때 복구용)
     private EquippedCostume _originalCostume;
@@ -72,7 +85,29 @@ public class CostumeSelectPopup : MonoBehaviour
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
 
+        // 딤 배경 클릭 시 닫기
+        if (dimBackground != null)
+        {
+            var dimButton = dimBackground.GetComponent<Button>();
+            if (dimButton == null)
+                dimButton = dimBackground.AddComponent<Button>();
+            dimButton.transition = Selectable.Transition.None;
+            dimButton.onClick.AddListener(Close);
+        }
+
+#if UNITY_EDITOR
+        if (debugGetAllCostumesButton != null)
+            debugGetAllCostumesButton.onClick.AddListener(DebugGetAllCostumes);
+#endif
+
         gameObject.SetActive(false);
+    }
+
+    private void OnDisable()
+    {
+        // 비활성화될 때 상태 리셋 (강제 종료 시에도 다시 열 수 있도록)
+        _isOpen = false;
+        NoteLoadingUI.ForceHide();
     }
 
     /// <summary>
@@ -81,21 +116,100 @@ public class CostumeSelectPopup : MonoBehaviour
     /// <param name="characterName">캐릭터 이름 (의상 저장에 사용)</param>
     /// <param name="initialTab">초기 탭</param>
     /// <param name="costumeController">미리보기용 CostumeController (CharacterDetailPanel의 캐릭터)</param>
-    public void Open(string characterName, CostumeType initialTab = CostumeType.Top, CostumeController costumeController = null)
+    /// <param name="renderTexture">캐릭터 렌더링용 RenderTexture (CharacterDetailPanel에서 공유)</param>
+    public void Open(string characterName, CostumeType initialTab = CostumeType.Top, CostumeController costumeController = null, RenderTexture renderTexture = null)
     {
+        // 이미 열려있으면 무시
+        if (_isOpen)
+            return;
+
+        _isOpen = true;
+
+        // 로딩 표시 (가장 먼저!)
+        NoteLoadingUI.Show();
+
         _characterName = characterName;
         _currentTab = initialTab;
         _selectedItemId = 0;
         _hasChanges = false;
         _costumeController = costumeController;
+        _sharedRenderTexture = renderTexture;
+
+        // 팝업 먼저 활성화 (자식 오브젝트들이 활성화되려면 부모가 먼저 활성화되어야 함)
+        gameObject.SetActive(true);
+
+        // 캐릭터 프리뷰 RawImage에 RenderTexture 연결
+        if (characterPreviewRawImage != null && _sharedRenderTexture != null)
+        {
+            characterPreviewRawImage.texture = _sharedRenderTexture;
+            characterPreviewRawImage.gameObject.SetActive(true);
+        }
+        else if (characterPreviewRawImage != null)
+        {
+            characterPreviewRawImage.gameObject.SetActive(false);
+        }
 
         // 원본 의상 저장
         SaveOriginalCostume();
 
-        gameObject.SetActive(true);
-        UpdateTabVisuals();
+        // 리스트 숨김 (로딩 중)
+        if (listCanvasGroup != null)
+            listCanvasGroup.alpha = 0;
+
+        // 딤 배경 켜기 + alpha 설정
+        if (dimBackground != null)
+        {
+            if (_dimCanvasGroup == null)
+                _dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>();
+            if (_dimCanvasGroup != null)
+                _dimCanvasGroup.alpha = 1f;
+            dimBackground.SetActive(true);
+        }
+
+        AdjustGridCellSize();
         UpdateApplyButtonState();
+        RefreshEquippedImagesAsync().Forget();
         RebuildListAsync().Forget();
+    }
+
+    /// <summary>
+    /// 화면 크기에 맞게 그리드 셀 크기 자동 조절
+    /// </summary>
+    private void AdjustGridCellSize()
+    {
+        if (gridLayout == null)
+            return;
+
+        // Viewport 너비 사용 (ScrollRect가 있으면)
+        float containerWidth = 0f;
+        if (scrollRect != null && scrollRect.viewport != null)
+        {
+            containerWidth = scrollRect.viewport.rect.width;
+        }
+        else if (contentRoot is RectTransform contentRect)
+        {
+            containerWidth = contentRect.rect.width;
+        }
+
+        if (containerWidth <= 0)
+        {
+            Debug.LogWarning($"[CostumeSelectPopup] AdjustGridCellSize: containerWidth is {containerWidth}, skipping");
+            return;
+        }
+
+        // 컨테이너 너비에서 패딩과 스페이싱 제외 후 셀 크기 계산
+        float totalSpacing = cellSpacing * (columnCount - 1);
+        float padding = gridLayout.padding.left + gridLayout.padding.right;
+        float availableWidth = containerWidth - totalSpacing - padding;
+        float cellSize = availableWidth / columnCount;
+
+        gridLayout.cellSize = new Vector2(cellSize, cellSize);
+        gridLayout.spacing = new Vector2(cellSpacing, cellSpacing);
+        gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        gridLayout.constraintCount = columnCount;
+        gridLayout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        gridLayout.startAxis = GridLayoutGroup.Axis.Horizontal;
+        gridLayout.childAlignment = TextAnchor.MiddleLeft;
     }
 
     private void SaveOriginalCostume()
@@ -131,6 +245,15 @@ public class CostumeSelectPopup : MonoBehaviour
             RestoreOriginalCostume();
         }
 
+        // 딤 배경 끄기
+        if (dimBackground != null)
+        {
+            if (_dimCanvasGroup != null)
+                _dimCanvasGroup.alpha = 0f;
+            dimBackground.SetActive(false);
+        }
+
+        _isOpen = false;
         _costumeController = null;
         gameObject.SetActive(false);
     }
@@ -156,108 +279,126 @@ public class CostumeSelectPopup : MonoBehaviour
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         _currentTab = newTab;
         _selectedItemId = 0;
-        UpdateTabVisuals();
         RebuildListAsync().Forget();
-    }
-
-    private void UpdateTabVisuals()
-    {
-        // 탭 버튼 색상/텍스트 업데이트
-        SetTabActive(topTabText, _currentTab == CostumeType.Top);
-        SetTabActive(pantsTabText, _currentTab == CostumeType.Pants);
-        SetTabActive(shoesTabText, _currentTab == CostumeType.Shoes);
-    }
-
-    private void SetTabActive(TMP_Text tabText, bool active)
-    {
-        if (tabText == null) return;
-        tabText.color = active ? Color.white : new Color(1f, 1f, 1f, 0.5f);
     }
 
     private async UniTaskVoid RebuildListAsync()
     {
-        // 로딩 표시
-        if (loadingIndicator != null)
-            loadingIndicator.SetActive(true);
-        if (emptyNotice != null)
-            emptyNotice.SetActive(false);
-
-        // 기존 아이템 정리
-        foreach (var go in _spawnedItems)
+        try
         {
-            if (go != null)
-                Destroy(go);
-        }
-        _spawnedItems.Clear();
-        _items.Clear();
-
-        // 보유 의상 가져오기
-        var ownedCostumes = CostumeHelper.GetOwnedCostumes(_currentTab);
-
-        // 프리로드 필요시 실행
-        if (CostumeHelper.NeedsPreload(_currentTab))
-        {
-            await CostumeHelper.PreloadOwnedCostumes(_currentTab);
-        }
-
-        // 현재 장착 의상 확인
-        int equippedItemId = GetEquippedItemId(_currentTab);
-
-        if (ownedCostumes.Count == 0)
-        {
-            if (emptyNotice != null)
-                emptyNotice.SetActive(true);
-            if (loadingIndicator != null)
-                loadingIndicator.SetActive(false);
-            UpdateApplyButtonState();
-            return;
-        }
-
-        // 아이템 생성
-        foreach (var itemId in ownedCostumes)
-        {
-            var itemData = DataTableManager.ItemTable?.Get(itemId);
-            string costumeName = itemData?.item_name ?? $"의상 {itemId}";
-            string iconKey = itemData?.prefab;
-
-            Sprite sprite = null;
-            if (!string.IsNullOrEmpty(iconKey))
+            // 기존 아이템 정리
+            foreach (var go in _spawnedItems)
             {
-                sprite = ResourceManager.Instance.GetSprite(iconKey);
+                if (go != null)
+                    Destroy(go);
+            }
+            _spawnedItems.Clear();
+            _items.Clear();
+
+            // 프리팹/contentRoot 검증
+            if (costumeItemPrefab == null)
+            {
+                Debug.LogError("[CostumeSelectPopup] costumeItemPrefab is null! Assign it in Inspector.");
+                return;
+            }
+            if (contentRoot == null)
+            {
+                Debug.LogError("[CostumeSelectPopup] contentRoot is null! Assign it in Inspector.");
+                return;
             }
 
-            // 스프라이트가 없으면 첫 번째 의상 스프라이트 사용
-            if (sprite == null)
+            // 보유 의상 가져오기
+            var ownedCostumes = CostumeHelper.GetOwnedCostumes(_currentTab);
+            if (ownedCostumes.Count == 0)
+                return;
+
+            // 현재 장착 의상 확인
+            int equippedItemId = GetEquippedItemId(_currentTab);
+
+            // 모든 아이템 동기적으로 생성
+            for (int i = 0; i < ownedCostumes.Count; i++)
             {
-                int spriteId = CostumeItemID.GetSpriteId(itemId);
-                string address = CostumeHelper.GetSpriteAddress(_currentTab, spriteId, 0);
-                sprite = await CostumeHelper.LoadSprite(address);
-            }
+                int itemId = ownedCostumes[i];
 
-            var go = Instantiate(costumeItemPrefab, contentRoot);
-            go.SetActive(true);
-            _spawnedItems.Add(go);
+                var itemData = DataTableManager.ItemTable?.Get(itemId);
+                string costumeName = itemData?.item_name ?? $"의상 {itemId}";
+                string iconKey = itemData?.prefab;
 
-            var item = go.GetComponent<CostumeSlotItemUI>();
-            if (item != null)
-            {
-                bool isEquipped = itemId == equippedItemId;
-                item.Setup(this, itemId, sprite, costumeName, isEquipped);
-                _items.Add(item);
+                // 동기적으로 스프라이트 가져오기 (ResourceManager에서만)
+                Sprite sprite = null;
+                if (!string.IsNullOrEmpty(iconKey))
+                    sprite = ResourceManager.Instance.GetSprite(iconKey);
 
-                // 장착 중인 의상은 자동 선택
-                if (isEquipped)
+                var go = Instantiate(costumeItemPrefab, contentRoot);
+                go.SetActive(true);
+                _spawnedItems.Add(go);
+
+                var item = go.GetComponent<CostumeSlotItemUI>();
+                if (item != null)
                 {
-                    _selectedItemId = itemId;
-                    item.SetSelected(true);
+                    bool isEquipped = itemId == equippedItemId;
+                    item.Setup(this, itemId, sprite, costumeName, isEquipped);
+                    _items.Add(item);
+
+                    if (isEquipped)
+                    {
+                        _selectedItemId = itemId;
+                        item.SetSelected(true);
+                    }
                 }
             }
+
+            // 레이아웃 강제 갱신
+            if (contentRoot is RectTransform contentRect)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
+
+            // 스프라이트가 없는 아이템들 비동기 로드 (백그라운드)
+            _ = LoadMissingSpritesAsync(ownedCostumes);
         }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[CostumeSelectPopup] RebuildListAsync error: {ex.Message}");
+        }
+        finally
+        {
+            // 리스트 표시
+            if (listCanvasGroup != null)
+                listCanvasGroup.alpha = 1;
 
-        if (loadingIndicator != null)
-            loadingIndicator.SetActive(false);
+            NoteLoadingUI.Hide();
+            UpdateApplyButtonState();
+        }
+    }
 
-        UpdateApplyButtonState();
+    /// <summary>
+    /// 스프라이트가 없는 아이템들의 스프라이트를 백그라운드에서 로드
+    /// </summary>
+    private async UniTask LoadMissingSpritesAsync(List<int> itemIds)
+    {
+        for (int i = 0; i < itemIds.Count && i < _items.Count; i++)
+        {
+            var item = _items[i];
+            int itemId = itemIds[i];
+
+            // 이미 스프라이트가 있으면 스킵
+            var itemData = DataTableManager.ItemTable?.Get(itemId);
+            if (itemData != null && !string.IsNullOrEmpty(itemData.prefab))
+            {
+                var existingSprite = ResourceManager.Instance.GetSprite(itemData.prefab);
+                if (existingSprite != null)
+                    continue;
+            }
+
+            // Addressable에서 스프라이트 로드
+            int spriteId = CostumeItemID.GetSpriteId(itemId);
+            if (spriteId > 0)
+            {
+                string address = CostumeHelper.GetSpriteAddress(_currentTab, spriteId, 0);
+                var sprite = await CostumeHelper.LoadSprite(address);
+                if (sprite != null && item != null)
+                    item.SetSprite(sprite);
+            }
+        }
     }
 
     private int GetEquippedItemId(CostumeType type)
@@ -282,9 +423,12 @@ public class CostumeSelectPopup : MonoBehaviour
     {
         _selectedItemId = clickedItem.ItemId;
 
+        // 선택 마크 + 장착 마크 업데이트
         foreach (var item in _items)
         {
-            item.SetSelected(item == clickedItem);
+            bool isClicked = item == clickedItem;
+            item.SetSelected(isClicked);
+            item.SetEquipped(isClicked);
         }
 
         // 현재 탭의 pending 값 업데이트
@@ -309,6 +453,7 @@ public class CostumeSelectPopup : MonoBehaviour
         // 프리뷰 캐릭터에 임시 적용
         ApplyPreviewCostume();
         UpdateApplyButtonState();
+        RefreshEquippedImagesAsync().Forget();
     }
 
     private void ApplyPreviewCostume()
@@ -327,6 +472,59 @@ public class CostumeSelectPopup : MonoBehaviour
         {
             applyButton.interactable = _hasChanges;
         }
+    }
+
+    /// <summary>
+    /// 상단 장착 의상 이미지 새로고침
+    /// </summary>
+    private async UniTaskVoid RefreshEquippedImagesAsync()
+    {
+        await UpdateEquippedSlot(topEquippedImage, CostumeType.Top, _pendingTopId);
+        await UpdateEquippedSlot(pantsEquippedImage, CostumeType.Pants, _pendingPantsId);
+        await UpdateEquippedSlot(shoesEquippedImage, CostumeType.Shoes, _pendingShoesId);
+    }
+
+    private async UniTask UpdateEquippedSlot(Image slotImage, CostumeType type, int itemId)
+    {
+        if (slotImage == null)
+            return;
+
+        if (itemId <= 0)
+        {
+            slotImage.sprite = null;
+            slotImage.color = new Color(1f, 1f, 1f, 0.3f);
+            return;
+        }
+
+        // ItemTable에서 아이콘 가져오기
+        var itemData = DataTableManager.ItemTable?.Get(itemId);
+        if (itemData != null && !string.IsNullOrEmpty(itemData.prefab))
+        {
+            var sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
+            if (sprite != null)
+            {
+                slotImage.sprite = sprite;
+                slotImage.color = Color.white;
+                return;
+            }
+        }
+
+        // 없으면 첫 번째 의상 스프라이트 사용
+        int spriteId = CostumeItemID.GetSpriteId(itemId);
+        if (spriteId > 0)
+        {
+            string address = CostumeHelper.GetSpriteAddress(type, spriteId, 0);
+            var sprite = await CostumeHelper.LoadSprite(address);
+            if (sprite != null)
+            {
+                slotImage.sprite = sprite;
+                slotImage.color = Color.white;
+                return;
+            }
+        }
+
+        slotImage.sprite = null;
+        slotImage.color = new Color(1f, 1f, 1f, 0.3f);
     }
 
     private void OnClickApply()
@@ -361,7 +559,85 @@ public class CostumeSelectPopup : MonoBehaviour
         OnCostumeChanged?.Invoke();
         ToastUI.Show("의상이 적용되었습니다.");
 
+        // 딤 배경 끄기
+        if (dimBackground != null)
+        {
+            if (_dimCanvasGroup != null)
+                _dimCanvasGroup.alpha = 0f;
+            dimBackground.SetActive(false);
+        }
+
+        _isOpen = false;
         _costumeController = null;
         gameObject.SetActive(false);
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// 디버그: 모든 의상 획득 (ItemTable에 존재하는 의상만)
+    /// </summary>
+    private void DebugGetAllCostumes()
+    {
+        var saveData = SaveLoadManager.Data;
+        if (saveData == null)
+        {
+            Debug.LogWarning("[CostumeSelectPopup] SaveData is null");
+            return;
+        }
+
+        var itemTable = DataTableManager.ItemTable;
+        if (itemTable == null)
+        {
+            Debug.LogWarning("[CostumeSelectPopup] ItemTable is null");
+            return;
+        }
+
+        // 잘못된 의상 아이템 정리 (ItemTable에 없는 의상 제거)
+        var invalidItems = new List<int>();
+        foreach (var kvp in saveData.itemList)
+        {
+            if (CostumeItemID.IsCostumeItem(kvp.Key) && itemTable.Get(kvp.Key) == null)
+            {
+                invalidItems.Add(kvp.Key);
+            }
+        }
+        foreach (var invalidId in invalidItems)
+        {
+            saveData.itemList.Remove(invalidId);
+            Debug.Log($"[CostumeSelectPopup] Removed invalid costume: {invalidId}");
+        }
+
+        int addedCount = 0;
+        int costumeItemCount = 0;
+        int totalItemCount = 0;
+        int alreadyOwnedCount = 0;
+
+        // ItemTable에 존재하는 의상만 추가 (CSV 데이터 기반)
+        foreach (int itemId in itemTable.GetAllItemIds())
+        {
+            totalItemCount++;
+            if (CostumeItemID.IsCostumeItem(itemId))
+            {
+                costumeItemCount++;
+                if (!saveData.itemList.ContainsKey(itemId) || saveData.itemList[itemId] == 0)
+                {
+                    saveData.itemList[itemId] = 1;
+                    addedCount++;
+                }
+                else
+                {
+                    alreadyOwnedCount++;
+                }
+            }
+        }
+
+        SaveLoadManager.SaveToServer().Forget();
+
+        Debug.Log($"[CostumeSelectPopup] Debug: ItemTable total={totalItemCount}, costumeItems={costumeItemCount}, added={addedCount}, alreadyOwned={alreadyOwnedCount}");
+        ToastUI.Show($"의상 {addedCount}개 획득! (이미 보유: {alreadyOwnedCount}개)");
+
+        // 리스트 새로고침
+        RebuildListAsync().Forget();
+    }
+#endif
 }
