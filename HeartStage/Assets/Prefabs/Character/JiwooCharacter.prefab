@@ -2038,6 +2038,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8512831186007205244}
   - component: {fileID: 7172530553861936921}
+  - component: {fileID: 3659037772670165859}
   m_Layer: 0
   m_Name: JiwooCharacter
   m_TagString: Untagged
@@ -2084,6 +2085,34 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &3659037772670165859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4944881544995945354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71fe256199cae034799c41d24366ee44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterName: 
+  topRenderers:
+  - {fileID: 4558835606851918367}
+  - {fileID: 4579170664921516978}
+  - {fileID: 642893175972872808}
+  - {fileID: 1854669678114294751}
+  - {fileID: 2130964183544011592}
+  pantsRenderers:
+  - {fileID: 3976954551314421008}
+  - {fileID: 2737483257842788993}
+  - {fileID: 8274970696702157688}
+  - {fileID: 5735066779524130637}
+  - {fileID: 5621239370149875630}
+  shoesRenderers:
+  - {fileID: 7146688850625627961}
+  - {fileID: 8959241040422500814}
 --- !u!1 &4986812442620710597
 GameObject:
   m_ObjectHideFlags: 0

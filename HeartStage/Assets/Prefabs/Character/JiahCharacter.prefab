@@ -623,6 +623,7 @@ GameObject:
   m_Component:
   - component: {fileID: 610349677804122250}
   - component: {fileID: 6183113455221528872}
+  - component: {fileID: 780089257476707371}
   m_Layer: 0
   m_Name: JiahCharacter
   m_TagString: Untagged
@@ -669,6 +670,34 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &780089257476707371
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2870070613548054042}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71fe256199cae034799c41d24366ee44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterName: 
+  topRenderers:
+  - {fileID: 7546135936698377014}
+  - {fileID: 5298056449963897259}
+  - {fileID: 5795201954740312197}
+  - {fileID: 5629489148485674494}
+  - {fileID: 6910433236709788994}
+  pantsRenderers:
+  - {fileID: 3455026547816135197}
+  - {fileID: 673862102996197669}
+  - {fileID: 7830310639464515323}
+  - {fileID: 1794519636057369760}
+  - {fileID: 4951001912329552371}
+  shoesRenderers:
+  - {fileID: 189735469644421391}
+  - {fileID: 5857313942004154912}
 --- !u!1 &2943638225256887014
 GameObject:
   m_ObjectHideFlags: 0

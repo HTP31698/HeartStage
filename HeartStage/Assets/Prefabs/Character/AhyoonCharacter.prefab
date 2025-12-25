@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6326417846114301322}
   - component: {fileID: 5103119799184809041}
+  - component: {fileID: 6980125231748537819}
   m_Layer: 0
   m_Name: AhyoonCharacter
   m_TagString: Untagged
@@ -56,6 +57,34 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &6980125231748537819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3533376757372815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71fe256199cae034799c41d24366ee44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterName: 
+  topRenderers:
+  - {fileID: 1040837240534369887}
+  - {fileID: 4813294841510138407}
+  - {fileID: 6821097836968236392}
+  - {fileID: 1861086318640322156}
+  - {fileID: 6386662645604952441}
+  pantsRenderers:
+  - {fileID: 554034291689642397}
+  - {fileID: 5706942866585727598}
+  - {fileID: 5489801086154647445}
+  - {fileID: 3254629260522780669}
+  - {fileID: 7680920210016931579}
+  shoesRenderers:
+  - {fileID: 388592972227122216}
+  - {fileID: 5970322111149831265}
 --- !u!1 &317849696004146708
 GameObject:
   m_ObjectHideFlags: 0

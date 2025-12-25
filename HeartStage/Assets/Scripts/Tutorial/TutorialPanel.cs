@@ -683,7 +683,7 @@ public class TutorialPanel : GenericWindow
         Vector3 originalPos = arrowRect.localPosition;
         float animationTime = 0f;
 
-        while (arrow.gameObject.activeSelf)
+        while (arrow != null && arrow.gameObject.activeSelf)
         {
             animationTime += Time.unscaledDeltaTime;
 
@@ -692,6 +692,9 @@ public class TutorialPanel : GenericWindow
             arrowRect.localPosition = originalPos + new Vector3(0, yOffset, 0);
 
             await UniTask.Yield();
+
+            // 오브젝트가 파괴되었는지 체크
+            if (this == null) return;
         }
     }
 
@@ -710,6 +713,9 @@ public class TutorialPanel : GenericWindow
     {
         // 한 프레임 기다림
         await UniTask.Yield();
+
+        // 오브젝트가 파괴되었는지 체크
+        if (this == null) return;
 
         if (!gameObject.activeSelf && isPlaying)
         {

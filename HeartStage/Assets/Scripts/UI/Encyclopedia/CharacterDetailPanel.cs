@@ -30,10 +30,14 @@ public class CharacterDetailPanel : MonoBehaviour
     [Header("캐릭터 치명타 데미지")]
     [SerializeField] private TextMeshProUGUI critDmgText;
 
-    [Header("캐릭터 이미지")]
-    [SerializeField] private Image characterImage;         // 기존 정적 이미지 (fallback용)
-    [SerializeField] private Transform characterPrefabParent;  // 캐릭터 프리팹이 생성될 부모
-    private GameObject _currentCharacterPrefab;            // 현재 생성된 캐릭터 프리팹
+    [Header("캐릭터 렌더링")]
+    [SerializeField] private RawImage characterRawImage;  // 캐릭터 표시용 RawImage
+    [SerializeField] private Camera characterCamera;  // 캐릭터 전용 카메라
+    [SerializeField] private float spawnDistance = 10f;  // 카메라 앞 거리
+    [SerializeField] private float characterPrefabScale = 1f;
+    [SerializeField] private RuntimeAnimatorController lobbyAnimController;
+    private GameObject _currentCharacterPrefab;
+    private RenderTexture _characterRenderTexture;
 
     [Header("트레이닝 포인트 (슬라이더 영역)")]
     [SerializeField] private Slider trainingPointSlider;             // 트레이닝 포인트 게이지
@@ -94,8 +98,6 @@ public class CharacterDetailPanel : MonoBehaviour
     private enum TabType { CharInfo, Performance, Position }
     private TabType _currentTab = TabType.CharInfo;
 
-    // 런타임에 만든 스프라이트 누수 방지용
-    private Sprite _runtimeSprite;
     // 현재 표시 중인 캐릭터 ID
     private int _currentCharacterId;
     // 랭크업 아이콘 애니메이션
@@ -182,12 +184,18 @@ public class CharacterDetailPanel : MonoBehaviour
 
     public void SetCharacter(CharacterCSVData characterData)
     {
+        SetCharacterAsync(characterData).Forget();
+    }
+
+    private async UniTaskVoid SetCharacterAsync(CharacterCSVData characterData)
+    {
         if (characterData == null)
         {
             Debug.LogWarning("[CharacterDetailPanel] characterData null");
             Clear();
             return;
         }
+
         _currentCharacterId = characterData.char_id;
         _currentCharacterData = characterData;
         _isBattleMode = false; // 새 캐릭터 선택 시 아이돌 모드로 리셋
@@ -203,8 +211,27 @@ public class CharacterDetailPanel : MonoBehaviour
         if (charInfoDescText != null)
             charInfoDescText.text = characterData.Info;
 
+        // RawImage 숨기기 (렌더링 준비 전)
+        if (characterRawImage != null)
+        {
+            characterRawImage.gameObject.SetActive(false);
+        }
+
         // 캐릭터 프리팹 생성 (Animator 포함된 UI 프리팹)
         SpawnCharacterPrefab(characterData.image_PrefabName);
+
+        // 2프레임 대기 (RenderTexture 렌더링 완료 대기)
+        await UniTask.DelayFrame(2);
+
+        // RawImage 켜고 페이드인 + 스케일업
+        if (characterRawImage != null)
+        {
+            characterRawImage.color = new Color(1f, 1f, 1f, 0f);
+            characterRawImage.transform.localScale = Vector3.one * 0.9f;
+            characterRawImage.gameObject.SetActive(true);
+            characterRawImage.DOFade(1f, 0.25f).SetEase(Ease.OutQuad);
+            characterRawImage.transform.DOScale(1f, 0.25f).SetEase(Ease.OutBack);
+        }
 
         // 레벨업 구현 Onclick 리스너 등은 여기서 추가 가능
         ApplyLevelUpText(characterData.char_id);
@@ -221,40 +248,6 @@ public class CharacterDetailPanel : MonoBehaviour
         UpdatePositionTab();
     }
 
-    private void ApplyCharacterImage(string imageKey)
-    {
-        if (characterImage == null)
-            return;
-
-        // 이전 스프라이트 정리
-        if (_runtimeSprite != null)
-        {
-            Destroy(_runtimeSprite);
-            _runtimeSprite = null;
-        }
-
-        if (string.IsNullOrEmpty(imageKey))
-        {
-            characterImage.sprite = null;
-            return;
-        }
-
-        var tex = ResourceManager.Instance.Get<Texture2D>(imageKey);
-        if (tex == null)
-        {
-            Debug.LogWarning($"[CharacterDetailPanel] Texture 로드 실패: {imageKey}");
-            characterImage.sprite = null;
-            return;
-        }
-
-        _runtimeSprite = Sprite.Create(
-            tex,
-            new Rect(0, 0, tex.width, tex.height),
-            new Vector2(0.5f, 0.5f)
-        );
-
-        characterImage.sprite = _runtimeSprite;
-    }
 
     public void ApplyLevelUpText(int charId)
     {
@@ -526,13 +519,7 @@ public class CharacterDetailPanel : MonoBehaviour
         critDmgText.text = "치명타 데미지 ";
         if (charInfoDescText != null)
             charInfoDescText.text = "";
-        characterImage.sprite = null;
 
-        if (_runtimeSprite != null)
-        {
-            Destroy(_runtimeSprite);
-            _runtimeSprite = null;
-        }
         if (trainingPointText != null) trainingPointText.text = "";
         SetLightStickCostText("");
         SetTrainingPointSlider(0, 1);
@@ -548,9 +535,23 @@ public class CharacterDetailPanel : MonoBehaviour
     public void ClosePanel()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+
+        // RawImage 숨기기 (다음 열 때 이전 캐릭터 안 보이게)
+        if (characterRawImage != null)
+            characterRawImage.gameObject.SetActive(false);
+
         gameObject.SetActive(false);
     }
-    public void OpenPanel() => gameObject.SetActive(true);
+    public void OpenPanel()
+    {
+        // RawImage 미리 숨기기 (뿅하고 나타나는 거 방지)
+        if (characterRawImage != null)
+            characterRawImage.gameObject.SetActive(false);
+
+        gameObject.SetActive(true);
+        transform.SetAsLastSibling();  // 제일 위에 표시
+        // 애니메이션은 WindowAnimator가 OnEnable에서 자동 재생
+    }
 
     private void OnEnable()
     {
@@ -561,26 +562,11 @@ public class CharacterDetailPanel : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
-        if (_runtimeSprite != null)
-        {
-            Destroy(_runtimeSprite);
-            _runtimeSprite = null;
-        }
-
-        // 캐릭터 프리팹 정리
-        ClearCharacterPrefab();
-
-        // 랭크업 아이콘 애니메이션 정리
-        _rankUpIconTween?.Kill();
-
-        // 팝업 콜백 해제
-        if (costumeSelectPopup != null)
-            costumeSelectPopup.OnCostumeChanged -= RefreshCostumeSlots;
-
-        if (rankUpConfirmPopup != null)
-            rankUpConfirmPopup.OnRankUpCompleted -= OnRankUpCompleted;
+        // RawImage 숨기기 (다음 열 때 이전 캐릭터 안 보이게)
+        if (characterRawImage != null)
+            characterRawImage.gameObject.SetActive(false);
     }
 
     #region 탭 시스템
@@ -792,23 +778,16 @@ public class CharacterDetailPanel : MonoBehaviour
     }
 
     /// <summary>
-    /// 캐릭터 UI 프리팹 생성 (Image + Animator 포함)
+    /// 캐릭터 프리팹 생성 및 RenderTexture로 렌더링
     /// </summary>
     private void SpawnCharacterPrefab(string prefabKey)
     {
         // 이전 프리팹 제거
-        if (_currentCharacterPrefab != null)
-        {
-            Destroy(_currentCharacterPrefab);
-            _currentCharacterPrefab = null;
-        }
+        ClearCharacterPrefab();
 
-        // characterPrefabParent가 없으면 기존 이미지 방식 사용
-        if (characterPrefabParent == null || string.IsNullOrEmpty(prefabKey))
+        if (string.IsNullOrEmpty(prefabKey))
         {
-            // fallback: 기존 정적 이미지
-            if (_currentCharacterData != null)
-                ApplyCharacterImage(_currentCharacterData.card_imageName);
+            Debug.LogWarning("[CharacterDetailPanel] prefabKey 없음");
             return;
         }
 
@@ -817,35 +796,83 @@ public class CharacterDetailPanel : MonoBehaviour
         if (prefab == null)
         {
             Debug.LogWarning($"[CharacterDetailPanel] 캐릭터 프리팹 로드 실패: {prefabKey}");
-            // fallback
-            if (_currentCharacterData != null)
-                ApplyCharacterImage(_currentCharacterData.card_imageName);
             return;
         }
 
-        // 기존 정적 이미지 숨기기
-        if (characterImage != null)
-            characterImage.gameObject.SetActive(false);
+        // RenderTexture 생성 (RawImage 크기에 맞춤)
+        SetupRenderTexture();
 
-        // 프리팹 생성
-        _currentCharacterPrefab = Instantiate(prefab, characterPrefabParent);
-        _currentCharacterPrefab.transform.localPosition = Vector3.zero;
-        _currentCharacterPrefab.transform.localRotation = Quaternion.identity;
-        _currentCharacterPrefab.transform.localScale = Vector3.one;
+        // 프리팹 생성 (카메라 앞에)
+        Vector3 spawnPos = characterCamera.transform.position + characterCamera.transform.forward * spawnDistance;
+        _currentCharacterPrefab = Instantiate(prefab);
+        _currentCharacterPrefab.transform.position = spawnPos;
+        _currentCharacterPrefab.transform.rotation = Quaternion.identity;
+        _currentCharacterPrefab.transform.localScale = Vector3.one * characterPrefabScale;
 
-        // UI에서 다른 요소보다 앞에 그려지도록 sibling index를 마지막으로 설정
-        _currentCharacterPrefab.transform.SetAsLastSibling();
-
-        // RectTransform 설정 (UI용)
-        var rectTransform = _currentCharacterPrefab.GetComponent<RectTransform>();
-        if (rectTransform != null)
+        // 애니메이션 컨트롤러 설정 + 즉시 Idle 상태로 전환
+        var animator = _currentCharacterPrefab.GetComponentInChildren<Animator>();
+        if (animator != null)
         {
-            rectTransform.anchoredPosition = Vector2.zero;
+            // Animator 끄고 위치 고정
+            animator.enabled = false;
+
+            if (lobbyAnimController != null)
+            {
+                animator.runtimeAnimatorController = lobbyAnimController;
+            }
+
+            // Animator 켜고 Idle 상태로
+            animator.enabled = true;
+            animator.Play("Idle_1", 0, 0f);
+            animator.Update(0f);  // 즉시 적용
+        }
+
+        // CostumeController 초기화
+        var costumeController = _currentCharacterPrefab.GetComponent<CostumeController>();
+        if (costumeController != null && _currentCharacterData != null)
+        {
+            costumeController.Initialize(_currentCharacterData.char_name);
         }
     }
 
     /// <summary>
-    /// 캐릭터 프리팹 제거
+    /// RenderTexture 설정
+    /// </summary>
+    private void SetupRenderTexture()
+    {
+        if (characterRawImage == null || characterCamera == null)
+            return;
+
+        // 기존 RenderTexture 해제
+        if (_characterRenderTexture != null)
+        {
+            characterCamera.targetTexture = null;
+            _characterRenderTexture.Release();
+            Destroy(_characterRenderTexture);
+        }
+
+        // RawImage 크기에 맞는 RenderTexture 생성
+        RectTransform rt = characterRawImage.rectTransform;
+        int width = Mathf.Max(1, (int)rt.rect.width);
+        int height = Mathf.Max(1, (int)rt.rect.height);
+
+        // 해상도 스케일 (선명도 조절)
+        width = Mathf.Max(256, width * 2);
+        height = Mathf.Max(256, height * 2);
+
+        _characterRenderTexture = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
+        _characterRenderTexture.antiAliasing = 2;
+        _characterRenderTexture.Create();
+
+        // 카메라에 RenderTexture 연결
+        characterCamera.targetTexture = _characterRenderTexture;
+
+        // RawImage에 RenderTexture 연결
+        characterRawImage.texture = _characterRenderTexture;
+    }
+
+    /// <summary>
+    /// 캐릭터 프리팹 및 RenderTexture 정리
     /// </summary>
     private void ClearCharacterPrefab()
     {
@@ -854,10 +881,31 @@ public class CharacterDetailPanel : MonoBehaviour
             Destroy(_currentCharacterPrefab);
             _currentCharacterPrefab = null;
         }
+    }
 
-        // 정적 이미지 다시 표시
-        if (characterImage != null)
-            characterImage.gameObject.SetActive(true);
+    private void OnDestroy()
+    {
+        ClearCharacterPrefab();
+
+        // RenderTexture 정리
+        if (_characterRenderTexture != null)
+        {
+            if (characterCamera != null)
+                characterCamera.targetTexture = null;
+            _characterRenderTexture.Release();
+            Destroy(_characterRenderTexture);
+            _characterRenderTexture = null;
+        }
+
+        // 랭크업 아이콘 애니메이션 정리
+        _rankUpIconTween?.Kill();
+
+        // 팝업 콜백 해제
+        if (costumeSelectPopup != null)
+            costumeSelectPopup.OnCostumeChanged -= RefreshCostumeSlots;
+
+        if (rankUpConfirmPopup != null)
+            rankUpConfirmPopup.OnRankUpCompleted -= OnRankUpCompleted;
     }
 
     #endregion
@@ -884,17 +932,33 @@ public class CharacterDetailPanel : MonoBehaviour
 
         if (costumeSelectPopup != null)
         {
-            costumeSelectPopup.Open(_currentCharacterData.char_name, type);
+            // 현재 캐릭터 프리팹의 CostumeController 전달
+            CostumeController costumeController = null;
+            if (_currentCharacterPrefab != null)
+            {
+                costumeController = _currentCharacterPrefab.GetComponent<CostumeController>();
+            }
+            costumeSelectPopup.Open(_currentCharacterData.char_name, type, costumeController);
         }
     }
 
     /// <summary>
-    /// 의상 슬롯 썸네일 새로고침
+    /// 의상 슬롯 썸네일 새로고침 + 프리팹 의상 업데이트
     /// </summary>
     private void RefreshCostumeSlots()
     {
         if (_currentCharacterData == null)
             return;
+
+        // 프리팹의 CostumeController 의상도 다시 로드
+        if (_currentCharacterPrefab != null)
+        {
+            var costumeController = _currentCharacterPrefab.GetComponent<CostumeController>();
+            if (costumeController != null)
+            {
+                costumeController.LoadEquippedCostume();
+            }
+        }
 
         RefreshCostumeSlotsAsync().Forget();
     }
@@ -939,8 +1003,7 @@ public class CharacterDetailPanel : MonoBehaviour
             var sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
             if (sprite != null)
             {
-                slotImage.sprite = sprite;
-                slotImage.color = Color.white;
+                ApplySpriteToSlot(slotImage, sprite);
                 return;
             }
         }
@@ -953,13 +1016,20 @@ public class CharacterDetailPanel : MonoBehaviour
             var sprite = await CostumeHelper.LoadSprite(address);
             if (sprite != null)
             {
-                slotImage.sprite = sprite;
-                slotImage.color = Color.white;
+                ApplySpriteToSlot(slotImage, sprite);
                 return;
             }
         }
 
         ClearCostumeSlot(slotImage);
+    }
+
+    private void ApplySpriteToSlot(Image slotImage, Sprite sprite)
+    {
+        slotImage.sprite = sprite;
+        slotImage.color = Color.white;
+        slotImage.type = Image.Type.Simple;
+        slotImage.preserveAspect = false;  // 슬롯 크기에 맞게 늘림
     }
 
     private void ClearCostumeSlot(Image slotImage)

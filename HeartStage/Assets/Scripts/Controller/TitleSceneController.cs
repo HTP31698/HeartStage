@@ -487,6 +487,21 @@ public class TitleSceneController : MonoBehaviour
 
         ItemInvenHelper.AddItem(ItemID.DreamEnergy, 100);
 
+        // 기본 의상 아이템 지급
+        ItemInvenHelper.AddItem(DefaultCostume.Top, 1);
+        ItemInvenHelper.AddItem(DefaultCostume.Pants, 1);
+        ItemInvenHelper.AddItem(DefaultCostume.Shoes, 1);
+
+        // 시작 캐릭터들에게 기본 의상 장착 (각자 별도 인스턴스)
+        foreach (var charName in new[] { "하나", "세라", "리아" })
+        {
+            SaveLoadManager.Data.equippedCostumeByChar[charName] = new EquippedCostume(
+                DefaultCostume.Top,
+                DefaultCostume.Pants,
+                DefaultCostume.Shoes
+            );
+        }
+
         if (QuestManager.Instance != null)
         {
             QuestManager.Instance.OnAttendance();

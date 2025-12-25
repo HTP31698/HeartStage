@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 의상 선택 팝업 - 상의/하의/신발 탭으로 보유 의상 선택
+/// 의상 클릭 시 임시 미리보기, 완료 버튼 클릭 시 실제 저장
 /// </summary>
 public class CostumeSelectPopup : MonoBehaviour
 {
@@ -26,7 +27,6 @@ public class CostumeSelectPopup : MonoBehaviour
 
     [Header("버튼")]
     [SerializeField] private Button applyButton;
-    [SerializeField] private Button unequipButton;  // 장착 해제 버튼
     [SerializeField] private Button closeButton;
 
     [Header("빈 목록 안내")]
@@ -44,6 +44,17 @@ public class CostumeSelectPopup : MonoBehaviour
     private int _selectedItemId;
     private string _characterName;
 
+    // 캐릭터 프리뷰 관련 (CharacterDetailPanel의 캐릭터 사용)
+    private CostumeController _costumeController;
+
+    // 원본 의상 저장 (닫을 때 복구용)
+    private EquippedCostume _originalCostume;
+    // 현재 탭별 선택된 의상 (임시)
+    private int _pendingTopId;
+    private int _pendingPantsId;
+    private int _pendingShoesId;
+    private bool _hasChanges;
+
     // 의상 적용 후 콜백
     public event Action OnCostumeChanged;
 
@@ -58,8 +69,6 @@ public class CostumeSelectPopup : MonoBehaviour
 
         if (applyButton != null)
             applyButton.onClick.AddListener(OnClickApply);
-        if (unequipButton != null)
-            unequipButton.onClick.AddListener(OnClickUnequip);
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
 
@@ -71,22 +80,71 @@ public class CostumeSelectPopup : MonoBehaviour
     /// </summary>
     /// <param name="characterName">캐릭터 이름 (의상 저장에 사용)</param>
     /// <param name="initialTab">초기 탭</param>
-    public void Open(string characterName, CostumeType initialTab = CostumeType.Top)
+    /// <param name="costumeController">미리보기용 CostumeController (CharacterDetailPanel의 캐릭터)</param>
+    public void Open(string characterName, CostumeType initialTab = CostumeType.Top, CostumeController costumeController = null)
     {
         _characterName = characterName;
         _currentTab = initialTab;
         _selectedItemId = 0;
+        _hasChanges = false;
+        _costumeController = costumeController;
+
+        // 원본 의상 저장
+        SaveOriginalCostume();
 
         gameObject.SetActive(true);
         UpdateTabVisuals();
+        UpdateApplyButtonState();
         RebuildListAsync().Forget();
+    }
+
+    private void SaveOriginalCostume()
+    {
+        var saveData = SaveLoadManager.Data;
+        if (saveData != null && !string.IsNullOrEmpty(_characterName))
+        {
+            if (saveData.equippedCostumeByChar.TryGetValue(_characterName, out var costume))
+            {
+                _originalCostume = new EquippedCostume(costume.topItemId, costume.pantsItemId, costume.shoesItemId);
+                _pendingTopId = costume.topItemId;
+                _pendingPantsId = costume.pantsItemId;
+                _pendingShoesId = costume.shoesItemId;
+            }
+            else
+            {
+                _originalCostume = new EquippedCostume();
+                _pendingTopId = 0;
+                _pendingPantsId = 0;
+                _pendingShoesId = 0;
+            }
+        }
     }
 
     public void Close()
     {
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+
+        // 변경 사항 적용 안 했으면 원래 의상으로 복구
+        if (_hasChanges)
+        {
+            RestoreOriginalCostume();
+        }
+
+        _costumeController = null;
         gameObject.SetActive(false);
+    }
+
+    private void RestoreOriginalCostume()
+    {
+        if (_originalCostume == null)
+            return;
+
+        // 캐릭터 의상 복구 (저장된 의상으로)
+        if (_costumeController != null)
+        {
+            _costumeController.LoadEquippedCostume();
+        }
     }
 
     private void SwitchTab(CostumeType newTab)
@@ -151,7 +209,7 @@ public class CostumeSelectPopup : MonoBehaviour
                 emptyNotice.SetActive(true);
             if (loadingIndicator != null)
                 loadingIndicator.SetActive(false);
-            UpdateButtonStates();
+            UpdateApplyButtonState();
             return;
         }
 
@@ -199,7 +257,7 @@ public class CostumeSelectPopup : MonoBehaviour
         if (loadingIndicator != null)
             loadingIndicator.SetActive(false);
 
-        UpdateButtonStates();
+        UpdateApplyButtonState();
     }
 
     private int GetEquippedItemId(CostumeType type)
@@ -229,127 +287,81 @@ public class CostumeSelectPopup : MonoBehaviour
             item.SetSelected(item == clickedItem);
         }
 
-        UpdateButtonStates();
-    }
-
-    private void UpdateButtonStates()
-    {
-        int equippedId = GetEquippedItemId(_currentTab);
-
-        // 적용 버튼: 선택한 의상이 있고, 현재 장착 의상과 다를 때만 활성화
-        if (applyButton != null)
+        // 현재 탭의 pending 값 업데이트
+        switch (_currentTab)
         {
-            bool canApply = _selectedItemId > 0 && _selectedItemId != equippedId;
-            applyButton.interactable = canApply;
+            case CostumeType.Top:
+                _pendingTopId = _selectedItemId;
+                break;
+            case CostumeType.Pants:
+                _pendingPantsId = _selectedItemId;
+                break;
+            case CostumeType.Shoes:
+                _pendingShoesId = _selectedItemId;
+                break;
         }
 
-        // 해제 버튼: 현재 장착 의상이 있을 때만 활성화
-        if (unequipButton != null)
+        // 변경 여부 체크
+        _hasChanges = (_pendingTopId != _originalCostume?.topItemId) ||
+                      (_pendingPantsId != _originalCostume?.pantsItemId) ||
+                      (_pendingShoesId != _originalCostume?.shoesItemId);
+
+        // 프리뷰 캐릭터에 임시 적용
+        ApplyPreviewCostume();
+        UpdateApplyButtonState();
+    }
+
+    private void ApplyPreviewCostume()
+    {
+        if (_costumeController == null)
+            return;
+
+        // CostumeController에 임시 의상 적용
+        _costumeController.ApplyTemporaryCostume(_pendingTopId, _pendingPantsId, _pendingShoesId);
+    }
+
+    private void UpdateApplyButtonState()
+    {
+        // 완료 버튼: 변경 사항이 있을 때만 활성화
+        if (applyButton != null)
         {
-            unequipButton.interactable = equippedId > 0;
+            applyButton.interactable = _hasChanges;
         }
     }
 
     private void OnClickApply()
     {
-        if (_selectedItemId <= 0)
+        if (!_hasChanges)
             return;
 
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        ApplyCostumeAsync(_selectedItemId).Forget();
+
+        ApplyAllPendingCostumesAsync().Forget();
     }
 
-    private async UniTaskVoid ApplyCostumeAsync(int itemId)
+    private async UniTaskVoid ApplyAllPendingCostumesAsync()
     {
         var saveData = SaveLoadManager.Data;
         if (saveData == null || string.IsNullOrEmpty(_characterName))
             return;
 
-        // SaveData 업데이트
-        if (!saveData.equippedCostumeByChar.TryGetValue(_characterName, out var costume))
-        {
-            costume = new EquippedCostume();
-        }
-
-        switch (_currentTab)
-        {
-            case CostumeType.Top:
-                costume.topItemId = itemId;
-                break;
-            case CostumeType.Pants:
-                costume.pantsItemId = itemId;
-                break;
-            case CostumeType.Shoes:
-                costume.shoesItemId = itemId;
-                break;
-        }
-
+        // 모든 pending 의상을 한 번에 저장
+        var costume = new EquippedCostume(_pendingTopId, _pendingPantsId, _pendingShoesId);
         saveData.equippedCostumeByChar[_characterName] = costume;
+
         await SaveLoadManager.SaveToServer();
 
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Enhance);
 
-        // 장착 표시 업데이트
-        foreach (var item in _items)
-        {
-            item.SetEquipped(item.ItemId == itemId);
-        }
+        // 변경 사항 적용 완료 표시
+        _hasChanges = false;
 
-        UpdateButtonStates();
         OnCostumeChanged?.Invoke();
-
         ToastUI.Show("의상이 적용되었습니다.");
-    }
 
-    private void OnClickUnequip()
-    {
-        if (SoundManager.Instance != null)
-            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        UnequipCostumeAsync().Forget();
-    }
-
-    private async UniTaskVoid UnequipCostumeAsync()
-    {
-        var saveData = SaveLoadManager.Data;
-        if (saveData == null || string.IsNullOrEmpty(_characterName))
-            return;
-
-        if (!saveData.equippedCostumeByChar.TryGetValue(_characterName, out var costume))
-            return;
-
-        switch (_currentTab)
-        {
-            case CostumeType.Top:
-                costume.topItemId = 0;
-                break;
-            case CostumeType.Pants:
-                costume.pantsItemId = 0;
-                break;
-            case CostumeType.Shoes:
-                costume.shoesItemId = 0;
-                break;
-        }
-
-        saveData.equippedCostumeByChar[_characterName] = costume;
-        await SaveLoadManager.SaveToServer();
-
-        // 장착 표시 모두 해제
-        foreach (var item in _items)
-        {
-            item.SetEquipped(false);
-        }
-
-        _selectedItemId = 0;
-        foreach (var item in _items)
-        {
-            item.SetSelected(false);
-        }
-
-        UpdateButtonStates();
-        OnCostumeChanged?.Invoke();
-
-        ToastUI.Show("의상이 해제되었습니다.");
+        _costumeController = null;
+        gameObject.SetActive(false);
     }
 }

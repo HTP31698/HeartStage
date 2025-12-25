@@ -125,6 +125,22 @@ public class LobbyManager : MonoBehaviour
 
         // 처음에 드림에너지 100개 주기
         ItemInvenHelper.AddItem(ItemID.DreamEnergy, 100);
+
+        // 기본 의상 아이템 지급
+        ItemInvenHelper.AddItem(DefaultCostume.Top, 1);
+        ItemInvenHelper.AddItem(DefaultCostume.Pants, 1);
+        ItemInvenHelper.AddItem(DefaultCostume.Shoes, 1);
+
+        // 시작 캐릭터들에게 기본 의상 장착
+        foreach (var charName in new[] { "하나", "세라", "리아" })
+        {
+            SaveLoadManager.Data.equippedCostumeByChar[charName] = new EquippedCostume(
+                DefaultCostume.Top,
+                DefaultCostume.Pants,
+                DefaultCostume.Shoes
+            );
+        }
+
         SaveLoadManager.SaveToServer().Forget();
 
         //현재 출석은 로그인을 확인해야 해서 부트씬으로 가야해 적용 안됨

@@ -2393,6 +2393,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8861770049195495172}
   - component: {fileID: 2035484134777620313}
+  - component: {fileID: -2610191074472514684}
   m_Layer: 0
   m_Name: RenaCharacter
   m_TagString: Untagged
@@ -2439,6 +2440,34 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &-2610191074472514684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7116018877252389756}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71fe256199cae034799c41d24366ee44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterName: 
+  topRenderers:
+  - {fileID: 4577887737982012754}
+  - {fileID: 5506200549389615763}
+  - {fileID: 7579299473262377156}
+  - {fileID: 7128102056498865565}
+  - {fileID: 5483686889668200775}
+  pantsRenderers:
+  - {fileID: 4135322893805545293}
+  - {fileID: 5762818030167140940}
+  - {fileID: 2737815532495055468}
+  - {fileID: 6076688491798674430}
+  - {fileID: 4352392915122021830}
+  shoesRenderers:
+  - {fileID: 4954827997196741853}
+  - {fileID: 79038532751754087}
 --- !u!1 &7351877320173650126
 GameObject:
   m_ObjectHideFlags: 0

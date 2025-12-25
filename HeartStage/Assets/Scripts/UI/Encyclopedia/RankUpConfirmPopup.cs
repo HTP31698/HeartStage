@@ -10,24 +10,33 @@ using UnityEngine.UI;
 public class RankUpConfirmPopup : MonoBehaviour
 {
     [Header("팝업 컨트롤")]
+    [SerializeField] private GameObject dimBackground;           // 딤 배경
     [SerializeField] private Button closeButton;
-    [SerializeField] private Button backgroundButton;  // 배경 클릭으로 닫기
 
     [Header("현재 등급 정보")]
     [SerializeField] private TextMeshProUGUI currentRankNameText;  // "에이스 연습생"
-    [SerializeField] private Image[] currentRankMics;              // 마이크 아이콘들
-    [SerializeField] private Sprite micOnSprite;
-    [SerializeField] private Sprite micOffSprite;
+
+    [Header("스킬 Content (2→3등급: 액티브 스킬 강화)")]
+    [SerializeField] private GameObject currentSkillContent;       // 현재 스킬 컨테이너
     [SerializeField] private TextMeshProUGUI currentSkillInfoText; // 스킬 설명
     [SerializeField] private Image currentSkillIcon;               // 스킬 아이콘
+    [SerializeField] private GameObject nextSkillContent;          // 다음 스킬 컨테이너
+    [SerializeField] private TextMeshProUGUI nextSkillInfoText;    // 스킬 설명 (변경 수치 빨간색)
+    [SerializeField] private Image nextSkillIcon;                  // 스킬 아이콘
+
+    [Header("패시브 Content (1→2, 3→4등급: 패시브 강화)")]
+    [SerializeField] private GameObject currentPassiveContent;     // 현재 패시브 컨테이너
     [SerializeField] private PassiveTileDisplay currentPassiveTile; // 패시브 타일 표시
+    [SerializeField] private TextMeshProUGUI currentPassiveInfoText; // 패시브 설명
+    [SerializeField] private GameObject nextPassiveContent;        // 다음 패시브 컨테이너
+    [SerializeField] private PassiveTileDisplay nextPassiveTile;   // 패시브 타일 표시
+    [SerializeField] private TextMeshProUGUI nextPassiveInfoText;  // 패시브 설명
+
+    [Header("중간 설명")]
+    [SerializeField] private TextMeshProUGUI upgradeDescText;      // "등급 강화 시, 강해진 퍼포먼스/포지션을 얻게 됩니다"
 
     [Header("다음 등급 정보")]
     [SerializeField] private TextMeshProUGUI nextRankNameText;     // "신인 아이돌"
-    [SerializeField] private Image[] nextRankMics;                 // 마이크 아이콘들
-    [SerializeField] private TextMeshProUGUI nextSkillInfoText;    // 스킬 설명 (변경 수치 빨간색)
-    [SerializeField] private Image nextSkillIcon;                  // 스킬 아이콘
-    [SerializeField] private PassiveTileDisplay nextPassiveTile;   // 패시브 타일 표시
 
     [Header("조각 게이지")]
     [SerializeField] private Image pieceIcon;                      // 조각 아이콘
@@ -50,9 +59,6 @@ public class RankUpConfirmPopup : MonoBehaviour
     {
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
-
-        if (backgroundButton != null)
-            backgroundButton.onClick.AddListener(Close);
 
         if (rankUpButton != null)
             rankUpButton.onClick.AddListener(OnRankUpButtonClick);
@@ -96,6 +102,10 @@ public class RankUpConfirmPopup : MonoBehaviour
         // 강화 버튼 상태 설정
         UpdateRankUpButton();
 
+        // 딤 배경 켜기
+        if (dimBackground != null)
+            dimBackground.SetActive(true);
+
         gameObject.SetActive(true);
     }
 
@@ -106,6 +116,10 @@ public class RankUpConfirmPopup : MonoBehaviour
     {
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+
+        // 딤 배경 끄기
+        if (dimBackground != null)
+            dimBackground.SetActive(false);
 
         gameObject.SetActive(false);
     }
@@ -142,22 +156,39 @@ public class RankUpConfirmPopup : MonoBehaviour
     /// </summary>
     private void SetRankInfo(CharacterCSVData currentCharData, CharacterCSVData nextCharData)
     {
-        // 등급 이름 및 마이크
+        // 등급 이름
         if (currentRankNameText != null)
             currentRankNameText.text = GetRankName(currentCharData.char_rank);
-        UpdateMicIcons(currentRankMics, currentCharData.char_rank);
 
         if (nextRankNameText != null)
             nextRankNameText.text = GetRankName(nextCharData.char_rank);
-        UpdateMicIcons(nextRankMics, nextCharData.char_rank);
+
+        // 등급에 따라 Content 표시 결정
+        // 1→2등급: 패시브 범위 강화 → PassiveContent
+        // 2→3등급: 액티브 스킬 강화 → SkillContent
+        // 3→4등급: 패시브 수치 강화 → PassiveContent
+        bool showSkillContent = currentCharData.char_rank == 2;  // 2→3등급만 스킬 표시
+        bool showPassiveContent = currentCharData.char_rank != 2; // 1→2, 3→4등급은 패시브 표시
+
+        SetContentVisibility(showSkillContent, showPassiveContent);
+
+        // 중간 설명 텍스트 설정
+        if (upgradeDescText != null)
+        {
+            upgradeDescText.text = showSkillContent
+                ? "등급 강화 시, 강해진 퍼포먼스를 얻게 됩니다"
+                : "등급 강화 시, 강해진 포지션을 얻게 됩니다";
+        }
 
         // 변경되는 스킬 찾기
         var (currentSkillId, nextSkillId) = FindChangedSkill(currentCharData, nextCharData);
 
-        // 현재 스킬 정보 표시
-        if (currentSkillId > 0)
+        // 스킬 정보 설정 (2→3등급)
+        if (showSkillContent && currentSkillId > 0 && nextSkillId > 0)
         {
             var currentSkillData = DataTableManager.SkillTable.Get(currentSkillId);
+            var nextSkillData = DataTableManager.SkillTable.Get(nextSkillId);
+
             if (currentSkillData != null)
             {
                 if (currentSkillInfoText != null)
@@ -165,16 +196,8 @@ public class RankUpConfirmPopup : MonoBehaviour
 
                 if (currentSkillIcon != null)
                     ApplySkillIcon(currentSkillIcon, currentSkillData.icon_prefab);
-
-                if (currentPassiveTile != null)
-                    currentPassiveTile.SetPattern(currentSkillData.passive_type);
             }
-        }
 
-        // 다음 스킬 정보 표시
-        if (nextSkillId > 0)
-        {
-            var nextSkillData = DataTableManager.SkillTable.Get(nextSkillId);
             if (nextSkillData != null)
             {
                 if (nextSkillInfoText != null)
@@ -182,11 +205,51 @@ public class RankUpConfirmPopup : MonoBehaviour
 
                 if (nextSkillIcon != null)
                     ApplySkillIcon(nextSkillIcon, nextSkillData.icon_prefab);
-
-                if (nextPassiveTile != null)
-                    nextPassiveTile.SetPattern(nextSkillData.passive_type);
             }
         }
+
+        // 패시브 정보 설정 (1→2, 3→4등급)
+        if (showPassiveContent && currentSkillId > 0 && nextSkillId > 0)
+        {
+            var currentSkillData = DataTableManager.SkillTable.Get(currentSkillId);
+            var nextSkillData = DataTableManager.SkillTable.Get(nextSkillId);
+
+            if (currentSkillData != null)
+            {
+                if (currentPassiveTile != null)
+                    currentPassiveTile.SetPattern(currentSkillData.passive_type, currentCharData.char_type);
+
+                if (currentPassiveInfoText != null)
+                    currentPassiveInfoText.text = currentSkillData.GetFormattedInfo();
+            }
+
+            if (nextSkillData != null)
+            {
+                if (nextPassiveTile != null)
+                    nextPassiveTile.SetPattern(nextSkillData.passive_type, nextCharData.char_type);
+
+                if (nextPassiveInfoText != null)
+                    nextPassiveInfoText.text = nextSkillData.GetFormattedInfo();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Content 표시/숨김 설정
+    /// </summary>
+    private void SetContentVisibility(bool showSkill, bool showPassive)
+    {
+        if (currentSkillContent != null)
+            currentSkillContent.SetActive(showSkill);
+
+        if (nextSkillContent != null)
+            nextSkillContent.SetActive(showSkill);
+
+        if (currentPassiveContent != null)
+            currentPassiveContent.SetActive(showPassive);
+
+        if (nextPassiveContent != null)
+            nextPassiveContent.SetActive(showPassive);
     }
 
     /// <summary>
@@ -272,21 +335,6 @@ public class RankUpConfirmPopup : MonoBehaviour
     }
 
     /// <summary>
-    /// 마이크 아이콘 업데이트
-    /// </summary>
-    private void UpdateMicIcons(Image[] mics, int rank)
-    {
-        if (mics == null) return;
-
-        for (int i = 0; i < mics.Length; i++)
-        {
-            if (mics[i] == null) continue;
-            bool isOn = i < rank;
-            mics[i].sprite = isOn ? micOnSprite : micOffSprite;
-        }
-    }
-
-    /// <summary>
     /// 스킬 아이콘 적용
     /// </summary>
     private void ApplySkillIcon(Image iconImage, string iconKey)
@@ -317,9 +365,6 @@ public class RankUpConfirmPopup : MonoBehaviour
     {
         if (closeButton != null)
             closeButton.onClick.RemoveAllListeners();
-
-        if (backgroundButton != null)
-            backgroundButton.onClick.RemoveAllListeners();
 
         if (rankUpButton != null)
             rankUpButton.onClick.RemoveAllListeners();

@@ -148,6 +148,16 @@ public enum CostumeType
 }
 
 /// <summary>
+/// 기본 의상 아이템 ID (모든 캐릭터가 기본 장착하는 의상)
+/// </summary>
+public static class DefaultCostume
+{
+    public static readonly int Top = 7408;      // 흰색 퍼프 크롭탑 상의 (Top/8)
+    public static readonly int Pants = 7508;    // 흰색 플리츠 스커트 (Pants/8)
+    public static readonly int Shoes = 7637;    // 붉은색 로퍼 (Shoes/37)
+}
+
+/// <summary>
 /// 의상 아이템 ID 베이스 및 유틸리티
 /// </summary>
 public static class CostumeItemID

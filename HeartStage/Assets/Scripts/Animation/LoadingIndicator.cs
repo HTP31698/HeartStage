@@ -80,6 +80,7 @@ public class LoadingIndicator : MonoBehaviour
         // 마지막에 잠깐 대기 후 반복
         _bounceSequence.AppendInterval(0.3f);
         _bounceSequence.SetLoops(-1, LoopType.Restart);
+        _bounceSequence.SetUpdate(true);  // TimeScale 무관하게 동작
     }
 
     /// <summary>

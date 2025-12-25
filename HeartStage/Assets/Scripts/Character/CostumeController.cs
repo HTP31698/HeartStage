@@ -157,9 +157,24 @@ public class CostumeController : MonoBehaviour
         // 기본 스프라이트로 복원은 별도 처리 필요
     }
 
+    /// <summary>
+    /// 임시 의상 적용 (미리보기용, SaveData 저장 안 함)
+    /// </summary>
+    public async void ApplyTemporaryCostume(int topId, int pantsId, int shoesId)
+    {
+        if (topId > 0)
+            await CostumeHelper.ApplyCostume(this, CostumeType.Top, topId);
+
+        if (pantsId > 0)
+            await CostumeHelper.ApplyCostume(this, CostumeType.Pants, pantsId);
+
+        if (shoesId > 0)
+            await CostumeHelper.ApplyCostume(this, CostumeType.Shoes, shoesId);
+    }
+
 #if UNITY_EDITOR
     /// <summary>
-    /// 에디터에서 자동으로 SpriteRenderer 참조 찾기
+    /// 에디터에서 자동으로 SpriteRenderer 참조 찾기 (하위 오브젝트 전체 검색)
     /// </summary>
     [ContextMenu("Auto Find Renderers")]
     private void AutoFindRenderers()
@@ -167,7 +182,7 @@ public class CostumeController : MonoBehaviour
         // Top (Top_1 ~ Top_5)
         for (int i = 0; i < 5; i++)
         {
-            var tr = transform.Find($"Top_{i + 1}");
+            var tr = FindChildRecursive(transform, $"Top_{i + 1}");
             if (tr != null)
                 topRenderers[i] = tr.GetComponent<SpriteRenderer>();
         }
@@ -175,7 +190,7 @@ public class CostumeController : MonoBehaviour
         // Pants (Pants_1 ~ Pants_5)
         for (int i = 0; i < 5; i++)
         {
-            var tr = transform.Find($"Pants_{i + 1}");
+            var tr = FindChildRecursive(transform, $"Pants_{i + 1}");
             if (tr != null)
                 pantsRenderers[i] = tr.GetComponent<SpriteRenderer>();
         }
@@ -183,13 +198,34 @@ public class CostumeController : MonoBehaviour
         // Shoes (Shoes_1, Shoes_2)
         for (int i = 0; i < 2; i++)
         {
-            var tr = transform.Find($"Shoes_{i + 1}");
+            var tr = FindChildRecursive(transform, $"Shoes_{i + 1}");
             if (tr != null)
                 shoesRenderers[i] = tr.GetComponent<SpriteRenderer>();
         }
 
         UnityEditor.EditorUtility.SetDirty(this);
-        Debug.Log($"[CostumeController] Auto find complete for {gameObject.name}");
+
+        int foundTop = System.Array.FindAll(topRenderers, r => r != null).Length;
+        int foundPants = System.Array.FindAll(pantsRenderers, r => r != null).Length;
+        int foundShoes = System.Array.FindAll(shoesRenderers, r => r != null).Length;
+        Debug.Log($"[CostumeController] Auto find complete for {gameObject.name} - Top:{foundTop}/5, Pants:{foundPants}/5, Shoes:{foundShoes}/2");
+    }
+
+    /// <summary>
+    /// 재귀적으로 자식 Transform 찾기
+    /// </summary>
+    private Transform FindChildRecursive(Transform parent, string name)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name == name)
+                return child;
+
+            var found = FindChildRecursive(child, name);
+            if (found != null)
+                return found;
+        }
+        return null;
     }
 #endif
 }

@@ -1177,6 +1177,10 @@ public class TutorialStage : MonoBehaviour
     private async UniTaskVoid ForceReactivate()
     {
         await UniTask.Yield();
+
+        // 오브젝트가 파괴되었는지 체크
+        if (this == null) return;
+
         if (!gameObject.activeSelf && isPlaying)
         {
             gameObject.SetActive(true);

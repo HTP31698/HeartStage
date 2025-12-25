@@ -429,7 +429,7 @@ public class WindowManager : MonoBehaviour
 
     private bool IsValidWindow(WindowType windowType)
     {
-        return windowType != WindowType.None && windows.ContainsKey(windowType) && windows[windowType] != null;
+        return windowType != WindowType.None && windows != null && windows.ContainsKey(windowType) && windows[windowType] != null;
     }
 
 

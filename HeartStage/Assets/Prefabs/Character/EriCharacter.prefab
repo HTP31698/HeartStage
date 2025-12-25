@@ -1501,6 +1501,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5436399152541076162}
   - component: {fileID: 5805475697675134691}
+  - component: {fileID: 6531934775412554938}
   m_Layer: 0
   m_Name: EriCharacter
   m_TagString: Untagged
@@ -1547,6 +1548,34 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &6531934775412554938
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3113231871558345456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71fe256199cae034799c41d24366ee44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterName: 
+  topRenderers:
+  - {fileID: 3688692006384845061}
+  - {fileID: 200243883217166941}
+  - {fileID: 6300195894749211750}
+  - {fileID: 1235543002322771757}
+  - {fileID: 546295177625609346}
+  pantsRenderers:
+  - {fileID: 5118776526655466178}
+  - {fileID: 7179722844132180806}
+  - {fileID: 882376830268015899}
+  - {fileID: 304937769501611374}
+  - {fileID: 34242554039757233}
+  shoesRenderers:
+  - {fileID: 7336540983108759807}
+  - {fileID: 2387576644749804058}
 --- !u!1 &3234266128269070508
 GameObject:
   m_ObjectHideFlags: 0

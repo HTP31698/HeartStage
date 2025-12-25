@@ -2470,6 +2470,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4356128190354300965}
   - component: {fileID: 2052232616812159267}
+  - component: {fileID: 7067840238284212666}
   m_Layer: 0
   m_Name: HanaCharacter
   m_TagString: Untagged
@@ -2516,6 +2517,34 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &7067840238284212666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6999561529290241185}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71fe256199cae034799c41d24366ee44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterName: 
+  topRenderers:
+  - {fileID: 5519703554303950562}
+  - {fileID: 2329913314299267}
+  - {fileID: 3715628439666808788}
+  - {fileID: 6910246801884605600}
+  - {fileID: 834428049868950825}
+  pantsRenderers:
+  - {fileID: 1814788819842507123}
+  - {fileID: 1059779407641786402}
+  - {fileID: 101165904601108071}
+  - {fileID: 309766746380107316}
+  - {fileID: 3456871952560291221}
+  shoesRenderers:
+  - {fileID: 4863813946349630783}
+  - {fileID: 3404975317235224581}
 --- !u!1 &7019853832517987313
 GameObject:
   m_ObjectHideFlags: 0

@@ -66,6 +66,17 @@ public static class CharacterHelper
             Debug.LogWarning($"[CharacterHelper] icon_imageName 이 비어있음. name={name}");
         }
 
+        // 5) 기본 의상 장착 (해당 캐릭터에 의상 설정이 없으면 기본 의상 장착)
+        if (!data.equippedCostumeByChar.ContainsKey(name))
+        {
+            data.equippedCostumeByChar[name] = new EquippedCostume(
+                DefaultCostume.Top,
+                DefaultCostume.Pants,
+                DefaultCostume.Shoes
+            );
+            Debug.Log($"[CharacterHelper] 기본 의상 장착: {name}");
+        }
+
         SaveLoadManager.SaveToServer().Forget();
     }
 
