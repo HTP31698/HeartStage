@@ -16,6 +16,7 @@ public class TutorialStage : MonoBehaviour
     [SerializeField] private Button startButton;
     [SerializeField] private GameObject fence;
     [SerializeField] private StageManager stageManager;
+    [SerializeField] private BossAlertUI bossAlertUI;
 
     private GameObject stageBorderParent;
     [SerializeField] private Image stageBorderImage;
@@ -292,12 +293,12 @@ public class TutorialStage : MonoBehaviour
             case "SkillGageArrow":
                 ActionSkillGageArrow();
                 break;
-            //case "SkillUse":
-            //    ActionSkillUse();
-            //    break;
-            //case "BossAlert":
-            //    ActionBossAlert();
-            //    break;
+            case "SkillUse":
+                ActionSkillUse();
+                break;
+            case "BossAlert":
+                ActionBossAlert();
+                break;
         }
     }
 
@@ -826,9 +827,6 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionSkillGageArrowAsync()
     {
-        // 자동 진행 모드 종료
-        isAutoProgression = false;
-
         // ActiveSkillManager 확인
         if (ActiveSkillManager.Instance == null)
         {
@@ -915,6 +913,53 @@ public class TutorialStage : MonoBehaviour
         return null;
     }
 
+    private void ActionSkillUse()
+    {
+        isAutoProgression = false;
+
+        HideAllArrows();
+        SetPanelTransparent(); 
+
+        // 모든 버튼과 캐릭터 상호작용 다시 활성화
+        EnableOtherButtons();
+        EnableCharacterInteraction();
+
+        // 튜토리얼 스크립트 UI 숨기기
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(false);
+        }
+    }
+
+    private void ActionBossAlert()
+    {
+        // BossAlert 윈도우가 열릴 때까지 대기하는 방식으로 구현
+        ActionBossAlertAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionBossAlertAsync()
+    {
+        // BossAlert UI가 활성화될 때까지 대기
+        await UniTask.WaitUntil(() =>
+        {
+            return bossAlertUI != null && bossAlertUI.gameObject.activeInHierarchy;
+        });
+
+        Debug.Log("[TutorialStage] 보스 알림 감지! 튜토리얼 재개");
+
+        // 튜토리얼 스크립트 UI 다시 활성화
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(true);
+        }
+
+        // 튜토리얼 다시 시작
+        isPlaying = true;
+        isAutoProgression = true;
+
+        // 다음 스크립트로 진행
+        NextScript();
+    }
 
     // 캐릭터 상호작용 비활성화
     private void DisableCharacterInteraction()
