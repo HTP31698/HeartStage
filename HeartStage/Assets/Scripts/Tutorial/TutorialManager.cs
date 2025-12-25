@@ -265,5 +265,4 @@ public class TutorialManager : MonoBehaviour
         }
         return false;
     }
-
 }

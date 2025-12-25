@@ -18,6 +18,7 @@ public class TutorialStage : MonoBehaviour
     [SerializeField] private StageManager stageManager;
     [SerializeField] private BossAlertUI bossAlertUI;
     [SerializeField] private Button feverButton;
+    [SerializeField] private Button selectWindowBackButton;
 
     private GameObject stageBorderParent;
     [SerializeField] private Image stageBorderImage;
@@ -85,6 +86,9 @@ public class TutorialStage : MonoBehaviour
         // 모든 버튼과 캐릭터 상호작용 다시 활성화
         EnableOtherButtons();
         EnableCharacterInteraction();
+
+        if (selectWindowBackButton != null)
+            selectWindowBackButton.interactable = true;
 
         if (currentScriptUI != null)
         {
@@ -332,6 +336,9 @@ public class TutorialStage : MonoBehaviour
         {
             // 패널을 투명하게 설정
             SetPanelTransparent();
+
+            if (selectWindowBackButton != null)
+                selectWindowBackButton.interactable = false;
 
             // characterInfoCloseButton을 제외한 다른 버튼들만 비활성화
             DisableOtherButtonsExceptInfo();
