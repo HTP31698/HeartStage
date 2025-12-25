@@ -12,6 +12,8 @@ public class TutorialStage : MonoBehaviour
     [SerializeField] private Image panelBackgroundImage; // 패널 
 
     [SerializeField] private Button characterInfoCloseButton;
+    [SerializeField] private Button returnButton;
+    [SerializeField] private Button startButton;
 
     private GameObject stageBorderParent;
     [SerializeField] private Image stageBorderImage;
@@ -25,6 +27,8 @@ public class TutorialStage : MonoBehaviour
     private Transform waitingCharacterSlot; // 대기 중인 캐릭터 슬롯
 
     private bool isWaitingForCharacterDrag = false; // 캐릭터 드래그 대기 상태
+    private bool isWaitingForStartButton = false; // 스타트 버튼 대기 상태 추가
+
     private int characterPlaceCount = 0; // 배치된 캐릭터 수 추적
     private int requiredCharacterCount = 3; // 필요한 캐릭터 수
 
@@ -38,7 +42,6 @@ public class TutorialStage : MonoBehaviour
 
         characterInfoCloseButton.onClick.AddListener(OnCharacterInfoCloseButtonClicked);
     }
-
     private void OnEnable()
     {
         // 스테이지 튜토리얼이 이미 완료되었는지 확인
@@ -62,11 +65,18 @@ public class TutorialStage : MonoBehaviour
         isTyping = false;
         isWaitingForCharacterClick = false;
         isWaitingForCharacterDrag = false;
+        isWaitingForStartButton = false; // 추가
         waitingCharacterSlot = null;
         characterPlaceCount = 0; // 초기화
 
         HideAllArrows();
         RestorePanel();
+
+        // 모든 버튼 다시 활성화
+        EnableOtherButtons();
+
+        // 캐릭터 상호작용 다시 활성화
+        EnableCharacterInteraction();
 
         if (currentScriptUI != null)
         {
@@ -81,6 +91,12 @@ public class TutorialStage : MonoBehaviour
             stageBorderParent = null;
         }
 
+        // 스타트 버튼 이벤트 해제
+        if (startButton != null)
+        {
+            startButton.onClick.RemoveListener(OnStartButtonClicked);
+        }
+
         this.gameObject.SetActive(false);
     }
 
@@ -88,8 +104,8 @@ public class TutorialStage : MonoBehaviour
     {
         if (!isPlaying) return;
         if (isWaitingForCharacterClick) return;
-        if (isWaitingForCharacterDrag) return; // 드래그 대기 중에도 화면 클릭 무시
-
+        if (isWaitingForCharacterDrag) return; 
+        if (isWaitingForStartButton) return; 
 
         if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
@@ -240,7 +256,13 @@ public class TutorialStage : MonoBehaviour
                 ActionBuffStageLine();
                 break;
             case "InfoArrow":
-                ActionInfoArrow();
+                ActionInfoArrow();            
+                break;
+            case "ReturnArrow":
+                ActionReturnArrow();
+                break;
+            case "StartArrow":
+                ActionStartArrow();
                 break;
         }
     }
@@ -633,6 +655,139 @@ public class TutorialStage : MonoBehaviour
         }
     }
 
+    private void ActionReturnArrow()
+    {
+        HideAllArrows();
+
+        if (returnButton != null)
+        {
+            ShowArrowOnTarget(returnButton.transform);
+        }
+    }
+
+    private void ActionStartArrow()
+    {
+        HideAllArrows();
+
+        if (startButton != null)
+        {
+            // 패널을 투명하게 설정
+            SetPanelTransparent();
+
+            // 다른 버튼들 비활성화
+            DisableOtherButtons();
+
+            // 캐릭터 드래그/클릭 비활성화
+            DisableCharacterInteraction();
+
+            // 스타트 버튼 클릭 이벤트 등록
+            startButton.onClick.AddListener(OnStartButtonClicked);
+
+            // 스타트 버튼 대기 상태로 설정
+            isWaitingForStartButton = true;
+
+            ShowArrowOnTarget(startButton.transform);
+        }
+    }
+
+    private void OnStartButtonClicked()
+    {
+        // 버튼 이벤트 해제
+        if (startButton != null)
+        {
+            startButton.onClick.RemoveListener(OnStartButtonClicked);
+        }
+
+        // 화살표 숨기기 및 패널 복원
+        HideAllArrows();
+        RestorePanel();
+
+        // 다른 버튼들 다시 활성화
+        EnableOtherButtons();
+
+        // 캐릭터 드래그/클릭 다시 활성화
+        EnableCharacterInteraction();
+
+        // 스타트 버튼 대기 상태 해제
+        isWaitingForStartButton = false;
+
+        // 다음 스크립트로 진행
+        NextScript();
+    }
+
+    // 캐릭터 상호작용 비활성화
+    private void DisableCharacterInteraction()
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            // OwnedCharacterSetup의 CanvasGroup으로 상호작용 차단
+            CanvasGroup characterCanvasGroup = ownedCharacterSetup.content.GetComponent<CanvasGroup>();
+            if (characterCanvasGroup == null)
+            {
+                characterCanvasGroup = ownedCharacterSetup.content.gameObject.AddComponent<CanvasGroup>();
+            }
+            characterCanvasGroup.blocksRaycasts = false;
+
+            // 추가적으로 각 DragMe 컴포넌트의 raycastTarget 비활성화
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                Image dragMeImage = dragMe.GetComponent<Image>();
+                if (dragMeImage != null)
+                {
+                    dragMeImage.raycastTarget = false;
+                }
+            }
+        }
+    }
+
+    // 캐릭터 상호작용 활성화
+    private void EnableCharacterInteraction()
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            // OwnedCharacterSetup의 CanvasGroup 상호작용 복원
+            CanvasGroup characterCanvasGroup = ownedCharacterSetup.content.GetComponent<CanvasGroup>();
+            if (characterCanvasGroup != null)
+            {
+                characterCanvasGroup.blocksRaycasts = true;
+            }
+
+            // 각 DragMe 컴포넌트의 raycastTarget 복원
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                Image dragMeImage = dragMe.GetComponent<Image>();
+                if (dragMeImage != null)
+                {
+                    dragMeImage.raycastTarget = true;
+                }
+            }
+        }
+    }
+
+    private void DisableOtherButtons()
+    {
+        if (returnButton != null)
+            returnButton.interactable = false;
+
+        if (infoButton != null)
+            infoButton.interactable = false;
+
+        if (characterInfoCloseButton != null)
+            characterInfoCloseButton.interactable = false;
+    }
+    private void EnableOtherButtons()
+    {
+        if (returnButton != null)
+            returnButton.interactable = true;
+
+        if (infoButton != null)
+            infoButton.interactable = true;
+
+        if (characterInfoCloseButton != null)
+            characterInfoCloseButton.interactable = true;
+    }
     private void ShowArrowOnTarget(Transform target)
     {
         if (arrow == null || target == null) return;
