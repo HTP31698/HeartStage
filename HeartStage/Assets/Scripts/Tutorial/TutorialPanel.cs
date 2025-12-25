@@ -100,6 +100,8 @@ public class TutorialPanel : GenericWindow
 
     public void StartLocationScript(int locationId)
     {
+        Debug.Log($"[TutorialPanel] Location {locationId} 시작");
+
         // 스크립트 로드
         currentScripts = DataTableManager.TutorialScriptTable.GetLocationScripts(locationId);
 
@@ -112,6 +114,7 @@ public class TutorialPanel : GenericWindow
 
         currentScriptIndex = 0;
 
+        // TutorialScriptPrefab 생성
         CreateScriptUI();
 
         // 진행 시작
@@ -138,6 +141,8 @@ public class TutorialPanel : GenericWindow
         }
 
         var script = currentScripts[currentScriptIndex];
+
+        Debug.Log($"[TutorialPanel] 스크립트 {currentScriptIndex}: {script.Name} - {script.Text.Substring(0, Mathf.Min(20, script.Text.Length))}...");
 
         // 타이핑 효과로 텍스트 표시
         StartTypingEffect(script.Text).Forget();
@@ -210,6 +215,7 @@ public class TutorialPanel : GenericWindow
         }
         else
         {
+            Debug.Log("[TutorialPanel] 모든 튜토리얼 완료");
             CompleteTutorial();
         }
     }
