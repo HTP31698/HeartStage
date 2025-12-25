@@ -916,21 +916,45 @@ public class TutorialStage : MonoBehaviour
     private void ActionSkillUse()
     {
         isAutoProgression = false;
+        isPlaying = false;
 
         HideAllArrows();
-        SetPanelTransparent(); 
 
-        // 모든 버튼과 캐릭터 상호작용 다시 활성화
-        EnableOtherButtons();
-        EnableCharacterInteraction();
-
-        // 튜토리얼 스크립트 UI 숨기기
         if (currentScriptUI != null)
         {
             currentScriptUI.gameObject.SetActive(false);
         }
+
+        SetPanelTransparent();
+        EnableOtherButtons();
+        EnableCharacterInteraction();
+
+        Debug.Log("[TutorialStage] 스킬 사용 완료. 게임 플레이 모드 전환");
+
+        // BossAlert 스크립트 찾아서 인덱스 설정
+        FindAndSetBossAlertScriptIndex();
+
+        // 바로 BossAlert 대기 시작
+        ActionBossAlertAsync().Forget();
     }
 
+    // BossAlert 액션이 있는 스크립트 찾기
+    private void FindAndSetBossAlertScriptIndex()
+    {
+        if (currentScripts == null) return;
+
+        for (int i = 0; i < currentScripts.Count; i++)
+        {
+            if (currentScripts[i].Action == "BossAlert")
+            {
+                currentScriptIndex = i;
+                Debug.Log($"[TutorialStage] BossAlert 스크립트 찾음! 인덱스: {i}");
+                return;
+            }
+        }
+
+        Debug.LogWarning("[TutorialStage] BossAlert 스크립트를 찾을 수 없습니다!");
+    }
     private void ActionBossAlert()
     {
         // BossAlert 윈도우가 열릴 때까지 대기하는 방식으로 구현
@@ -939,25 +963,52 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionBossAlertAsync()
     {
+        Debug.Log("[TutorialStage] BossAlert 대기 시작...");
+
         // BossAlert UI가 활성화될 때까지 대기
         await UniTask.WaitUntil(() =>
         {
             return bossAlertUI != null && bossAlertUI.gameObject.activeInHierarchy;
         });
 
-        Debug.Log("[TutorialStage] 보스 알림 감지! 튜토리얼 재개");
+        Debug.Log("[TutorialStage] BossAlert 활성화 확인!");
+
+        // BossAlert UI가 닫힐 때까지 대기
+        await UniTask.WaitUntil(() =>
+        {
+            return bossAlertUI == null || !bossAlertUI.gameObject.activeInHierarchy;
+        });
+
+        Debug.Log("[TutorialStage] BossAlert 닫힘 확인! 튜토리얼 재개 시작");
 
         // 튜토리얼 스크립트 UI 다시 활성화
         if (currentScriptUI != null)
         {
             currentScriptUI.gameObject.SetActive(true);
+            Debug.Log("[TutorialStage] 튜토리얼 UI 다시 활성화");
+        }
+        else
+        {
+            Debug.LogWarning("[TutorialStage] currentScriptUI가 null입니다!");
+        }
+
+        // 현재 스크립트 정보 확인
+        if (currentScripts != null && currentScriptIndex < currentScripts.Count)
+        {
+            var script = currentScripts[currentScriptIndex];
+            Debug.Log($"[TutorialStage] 현재 스크립트: {script.Text}");
+            Debug.Log($"[TutorialStage] 스크립트 액션: {script.Action}");
+        }
+        else
+        {
+            Debug.LogWarning($"[TutorialStage] 스크립트 없음 - Index: {currentScriptIndex}, Count: {(currentScripts?.Count ?? 0)}");
         }
 
         // 튜토리얼 다시 시작
         isPlaying = true;
         isAutoProgression = true;
 
-        // 다음 스크립트로 진행
+        Debug.Log("[TutorialStage] 다음 스크립트 진행...");
         NextScript();
     }
 
