@@ -7,7 +7,6 @@ using UnityEngine.EventSystems;
 
 public class TutorialManager : MonoBehaviour
 {
-    [SerializeField] private Button autoButton;
     [SerializeField] private Button skipButton;
 
     [SerializeField] private Image cutSceneImage;
@@ -76,12 +75,6 @@ public class TutorialManager : MonoBehaviour
 
     private void SetupUI()
     {
-        if (autoButton != null)
-        {
-            autoButton.onClick.RemoveAllListeners();
-            autoButton.onClick.AddListener(OnAutoButtonClicked);
-        }
-
         if (skipButton != null)
         {
             skipButton.onClick.RemoveAllListeners();
@@ -227,13 +220,7 @@ public class TutorialManager : MonoBehaviour
     {
         currentScriptIndex++;
         ShowCurrentScript();
-    }
-
-    private void OnAutoButtonClicked()
-    {
-        isAutoMode = !isAutoMode;
-        Debug.Log($"[TutorialManager] 자동 모드: {isAutoMode}");
-    }
+    } 
 
     private void OnSkipButtonClicked()
     {
@@ -271,8 +258,7 @@ public class TutorialManager : MonoBehaviour
         // Auto/Skip 버튼 위에서 클릭했는지만 체크
         foreach (var result in results)
         {
-            if (result.gameObject == autoButton?.gameObject ||
-                result.gameObject == skipButton?.gameObject)
+            if (result.gameObject == skipButton?.gameObject)
             {
                 return true;
             }

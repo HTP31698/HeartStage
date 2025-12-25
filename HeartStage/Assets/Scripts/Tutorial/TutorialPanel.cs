@@ -9,6 +9,7 @@ public class TutorialPanel : GenericWindow
     [SerializeField] private GameObject tutorialScriptPrefab;
     [SerializeField] private Transform contentParent;
     [SerializeField] private Image arrow;
+    [SerializeField] private LobbyUI lobbyUI;
 
     [Header("Reference")]
     [SerializeField] private TutorialNickNameScript nicknameWindow;
@@ -264,7 +265,7 @@ public class TutorialPanel : GenericWindow
                 OpenNicknameWindow();
                 break;
             case "BattleArrow":
-                ShowArrowOnButton(battleButton, OnBattleButtonClicked);
+                ActionBattleArrow();
                 break;
             case "TutorialStageArrow":
                 ShowTutorialStageArrow();
@@ -274,7 +275,115 @@ public class TutorialPanel : GenericWindow
                 break;
         }
     }
+    private void ActionBattleArrow()
+    {
+        // battleButton 외의 모든 버튼 비활성화
+        DisableOtherButtons(battleButton);
 
+        // 화살표 표시
+        ShowArrowOnButton(battleButton, OnBattleButtonClicked);
+    }
+
+    private void DisableOtherButtons(Button exceptButton)
+    {
+        // TutorialPanel 내부 버튼들
+        if (stageStartButton != null && stageStartButton != exceptButton)
+        {
+            stageStartButton.interactable = false;
+        }
+
+        // LobbyUI의 버튼들도 찾아서 비활성화
+        if (lobbyUI != null)
+        {
+            // Reflection을 사용해서 LobbyUI의 버튼들 비활성화
+            var lobbyUIType = typeof(LobbyUI);
+
+            // stageUiButton 비활성화
+            var stageUiButtonField = lobbyUIType.GetField("stageUiButton",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (stageUiButtonField != null)
+            {
+                var stageUiButton = stageUiButtonField.GetValue(lobbyUI) as Button;
+                if (stageUiButton != null && stageUiButton != exceptButton)
+                {
+                    stageUiButton.interactable = false;
+                }
+            }
+
+            // homeUiButton 비활성화
+            var homeUiButtonField = lobbyUIType.GetField("homeUiButton",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (homeUiButtonField != null)
+            {
+                var homeUiButton = homeUiButtonField.GetValue(lobbyUI) as Button;
+                if (homeUiButton != null && homeUiButton != exceptButton)
+                {
+                    homeUiButton.interactable = false;
+                }
+            }
+
+            // 나머지 버튼들도 동일하게...
+            DisableLobbyButton(lobbyUI, "gachaButton", exceptButton);
+            DisableLobbyButton(lobbyUI, "storeButton", exceptButton);
+            DisableLobbyButton(lobbyUI, "characterDictButton", exceptButton);
+            DisableLobbyButton(lobbyUI, "QuestButton", exceptButton);
+            DisableLobbyButton(lobbyUI, "specialDungeonButton", exceptButton);
+        }
+    }
+
+    private void DisableLobbyButton(LobbyUI lobbyUI, string buttonFieldName, Button exceptButton)
+    {
+        var lobbyUIType = typeof(LobbyUI);
+        var buttonField = lobbyUIType.GetField(buttonFieldName,
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        if (buttonField != null)
+        {
+            var button = buttonField.GetValue(lobbyUI) as Button;
+            if (button != null && button != exceptButton)
+            {
+                button.interactable = false;
+            }
+        }
+    }
+
+    private void EnableAllButtons()
+    {
+        // TutorialPanel 내부 버튼들
+        if (stageStartButton != null)
+        {
+            stageStartButton.interactable = true;
+        }
+
+        // LobbyUI 버튼들도 다시 활성화
+        if (lobbyUI != null)
+        {
+            EnableLobbyButton(lobbyUI, "stageUiButton");
+            EnableLobbyButton(lobbyUI, "homeUiButton");
+            EnableLobbyButton(lobbyUI, "gachaButton");
+            EnableLobbyButton(lobbyUI, "storeButton");
+            EnableLobbyButton(lobbyUI, "characterDictButton");
+            EnableLobbyButton(lobbyUI, "QuestButton");
+            EnableLobbyButton(lobbyUI, "specialDungeonButton");
+        }
+    }
+
+    //  LobbyUI 버튼 활성화 헬퍼 메서드
+    private void EnableLobbyButton(LobbyUI lobbyUI, string buttonFieldName)
+    {
+        var lobbyUIType = typeof(LobbyUI);
+        var buttonField = lobbyUIType.GetField(buttonFieldName,
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+        if (buttonField != null)
+        {
+            var button = buttonField.GetValue(lobbyUI) as Button;
+            if (button != null)
+            {
+                button.interactable = true;
+            }
+        }
+    }
     private void OpenNicknameWindow()
     {
         if (nicknameWindow != null)
@@ -337,6 +446,8 @@ public class TutorialPanel : GenericWindow
             tutorialSelectWindowPanel.SetActive(false);
         }
 
+        DisableOtherButtons(null);
+
         // WindowManager에서 StageWindow 찾기
         if (WindowManager.Instance != null)
         {
@@ -358,13 +469,38 @@ public class TutorialPanel : GenericWindow
 
                         if (tutorialButton != null)
                         {
+                            // 1. 모든 버튼 비활성화, 튜토리얼 버튼만 활성화
+                            DisableAllStageButtonsExcept(tutorialButton, stageWindow.transform);
+
+                            // 2. 스크롤 막기
+                            DisableAllScrollRects(stageWindow.transform);
+
                             ShowArrowOnButton(tutorialButton, () => OnTutorialStageButtonClicked(tutorialButton));
                         }
                     }
                 }
             }
         }
+    }
 
+    // 모든 StageWindow 내 버튼을 비활성화하고, exceptButton만 활성화
+    private void DisableAllStageButtonsExcept(Button exceptButton, Transform root)
+    {
+        var buttons = root.GetComponentsInChildren<Button>(true);
+        foreach (var btn in buttons)
+        {
+            btn.interactable = (btn == exceptButton);
+        }
+    }
+
+    // 모든 ScrollRect 비활성화
+    private void DisableAllScrollRects(Transform root)
+    {
+        var scrollRects = root.GetComponentsInChildren<UnityEngine.UI.ScrollRect>(true);
+        foreach (var scroll in scrollRects)
+        {
+            scroll.enabled = false;
+        }
     }
 
     // 튜토리얼 스테이지 버튼을 찾는 메서드
@@ -444,7 +580,7 @@ public class TutorialPanel : GenericWindow
             Vector3 arrowLocalPos = arrowRect.parent.InverseTransformPoint(buttonWorldPos);
 
             // 화살표를 버튼 위쪽으로 더 높게 오프셋 적용
-            arrowLocalPos.y += buttonRect.rect.height * 0.5f + 80f;
+            arrowLocalPos.y += buttonRect.rect.height * 0.5f + 90f;
 
             arrowRect.localPosition = arrowLocalPos;
         }
@@ -496,6 +632,8 @@ public class TutorialPanel : GenericWindow
 
         // 화살표 숨기기
         HideAllArrows();
+
+        EnableAllButtons();
 
         // TutorialPanel의 레이캐스트 차단 복원
         CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
@@ -582,6 +720,12 @@ public class TutorialPanel : GenericWindow
 
     private void ShowStageStartArrow()
     {
+        // stageStartButton만 활성화, 나머지 버튼은 모두 비활성화
+        DisableOtherButtons(stageStartButton);
+
+        // StageInfoWindow 내 버튼 제어
+        EnableOnlyStageStartButtonInStageInfo();
+
         ShowArrowOnButton(stageStartButton, OnStageStartButtonClicked);
     }
 
@@ -589,5 +733,32 @@ public class TutorialPanel : GenericWindow
     {
         OnButtonClickedCommon(stageStartButton);
         CompleteTutorial();
+    }
+
+    // StageInfoWindow 내에서 stageStartButton만 활성화, 나머지 버튼은 비활성화
+    private void EnableOnlyStageStartButtonInStageInfo()
+    {
+        if (lobbyUI != null)
+        {
+            var stageInfoWindowField = typeof(LobbyUI).GetField("stageInfoWindow", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var stageInfoWindow = stageInfoWindowField?.GetValue(lobbyUI) as StageInfoWindow;
+            if (stageInfoWindow != null)
+            {
+                var type = typeof(StageInfoWindow);
+
+                // stageStartButton만 활성화
+                var startBtnField = type.GetField("stageStartButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                var monitoringBtnField = type.GetField("monitoringButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+                var closeBtnField = type.GetField("closeButton", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public);
+
+                var startBtn = startBtnField?.GetValue(stageInfoWindow) as Button;
+                var monitoringBtn = monitoringBtnField?.GetValue(stageInfoWindow) as Button;
+                var closeBtn = closeBtnField?.GetValue(stageInfoWindow) as Button;
+
+                if (startBtn != null) startBtn.interactable = true;
+                if (monitoringBtn != null) monitoringBtn.interactable = false;
+                if (closeBtn != null) closeBtn.interactable = false;
+            }
+        }
     }
 }

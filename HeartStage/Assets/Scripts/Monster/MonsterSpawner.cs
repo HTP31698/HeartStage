@@ -1311,6 +1311,7 @@ public class MonsterSpawner : MonoBehaviour
         {
             WindowManager.Instance.OpenOverlay(WindowType.BossAlert);
         }
+
     }
 
     // 보스 소환몬스터 정리

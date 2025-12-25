@@ -12,6 +12,12 @@ public class TutorialStage : MonoBehaviour
     [SerializeField] private Image panelBackgroundImage; // 패널 
 
     [SerializeField] private Button characterInfoCloseButton;
+    [SerializeField] private Button returnButton;
+    [SerializeField] private Button startButton;
+    [SerializeField] private GameObject fence;
+    [SerializeField] private StageManager stageManager;
+    [SerializeField] private BossAlertUI bossAlertUI;
+    [SerializeField] private Button feverButton;
 
     private GameObject stageBorderParent;
     [SerializeField] private Image stageBorderImage;
@@ -22,6 +28,11 @@ public class TutorialStage : MonoBehaviour
     private bool isPlaying = false;
     private bool isTyping = false;
     private bool isWaitingForCharacterClick = false; // 캐릭터 클릭 대기 상태
+    private bool isWaitingForStartButton = false; // 스타트 버튼 대기 상태 추가
+    private bool isAutoProgression = false; // 자동 진행 모드 상태
+    private float autoProgressionInterval = 1.1f; // 자동 진행 간격
+    private float autoProgressionTimer = 0f; // 자동 진행 타이머
+
     private Transform waitingCharacterSlot; // 대기 중인 캐릭터 슬롯
 
     private bool isWaitingForCharacterDrag = false; // 캐릭터 드래그 대기 상태
@@ -62,11 +73,18 @@ public class TutorialStage : MonoBehaviour
         isTyping = false;
         isWaitingForCharacterClick = false;
         isWaitingForCharacterDrag = false;
+        isWaitingForStartButton = false;
+        isAutoProgression = false; // 자동 진행 모드 초기화
+        autoProgressionTimer = 0f; // 타이머 초기화
         waitingCharacterSlot = null;
-        characterPlaceCount = 0; // 초기화
+        characterPlaceCount = 0;
 
         HideAllArrows();
         RestorePanel();
+
+        // 모든 버튼과 캐릭터 상호작용 다시 활성화
+        EnableOtherButtons();
+        EnableCharacterInteraction();
 
         if (currentScriptUI != null)
         {
@@ -81,6 +99,12 @@ public class TutorialStage : MonoBehaviour
             stageBorderParent = null;
         }
 
+        // 스타트 버튼 이벤트 해제
+        if (startButton != null)
+        {
+            startButton.onClick.RemoveListener(OnStartButtonClicked);
+        }
+
         this.gameObject.SetActive(false);
     }
 
@@ -88,9 +112,25 @@ public class TutorialStage : MonoBehaviour
     {
         if (!isPlaying) return;
         if (isWaitingForCharacterClick) return;
-        if (isWaitingForCharacterDrag) return; // 드래그 대기 중에도 화면 클릭 무시
+        if (isWaitingForCharacterDrag) return;
+        if (isWaitingForStartButton) return;
 
+        // 자동 진행 모드일 때
+        if (isAutoProgression)
+        {
+            if (!isTyping)
+            {
+                autoProgressionTimer += Time.unscaledDeltaTime;
+                if (autoProgressionTimer >= autoProgressionInterval)
+                {
+                    autoProgressionTimer = 0f;
+                    NextScript();
+                }
+            }
+            return; // 자동 진행 모드일 때는 수동 클릭 무시
+        }
 
+        // 기존 수동 클릭 처리
         if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
             OnScreenClicked();
@@ -242,6 +282,33 @@ public class TutorialStage : MonoBehaviour
             case "InfoArrow":
                 ActionInfoArrow();
                 break;
+            case "ReturnArrow":
+                ActionReturnArrow();
+                break;
+            case "StartArrow":
+                ActionStartArrow();
+                break;
+            case "StopLineArrow":
+                ActionStopLineArrow();
+                break;
+            case "SkillGageArrow":
+                ActionSkillGageArrow();
+                break;
+            case "SkillUse":
+                ActionSkillUse();
+                break;
+            case "BossAlert":
+                ActionBossAlert();
+                break;
+            case "FeverArrow":
+                ActionFeverArrow();
+                break;
+            case "BossFight":
+                ActionBossFight();
+                break;
+            case "StageClear":
+                ActionStageClear();
+                break;
         }
     }
 
@@ -266,12 +333,51 @@ public class TutorialStage : MonoBehaviour
             // 패널을 투명하게 설정
             SetPanelTransparent();
 
+            // characterInfoCloseButton을 제외한 다른 버튼들만 비활성화
+            DisableOtherButtonsExceptInfo();
+
+            // 첫 번째 캐릭터 외의 모든 캐릭터 상호작용 비활성화
+            DisableOtherCharacterInteraction(firstCharacterSlot);
+
             // 캐릭터 클릭 대기 상태로 설정
             isWaitingForCharacterClick = true;
             waitingCharacterSlot = firstCharacterSlot;
 
             // 화살표를 대상 위에 표시
             ShowArrowOnTarget(firstCharacterSlot);
+        }
+    }
+
+    // characterInfoCloseButton을 제외한 다른 버튼들만 비활성화
+    private void DisableOtherButtonsExceptInfo()
+    {
+        if (returnButton != null)
+            returnButton.interactable = false;
+
+        if (infoButton != null)
+            infoButton.interactable = false;
+
+        // characterInfoCloseButton은 활성화 상태로 유지 (비활성화하지 않음)
+    }
+
+    // 특정 캐릭터를 제외한 나머지 캐릭터들의 상호작용 비활성화
+    private void DisableOtherCharacterInteraction(Transform targetCharacter)
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                // 타겟 캐릭터가 아닌 경우에만 비활성화
+                if (dragMe.transform != targetCharacter)
+                {
+                    Image dragMeImage = dragMe.GetComponent<Image>();
+                    if (dragMeImage != null)
+                    {
+                        dragMeImage.raycastTarget = false;
+                    }
+                }
+            }
         }
     }
 
@@ -633,6 +739,359 @@ public class TutorialStage : MonoBehaviour
         }
     }
 
+    private void ActionReturnArrow()
+    {
+        HideAllArrows(); 
+        if (returnButton != null)
+        {
+            ShowArrowOnTarget(returnButton.transform);
+        }
+    }
+
+    private void ActionStartArrow()
+    {
+        HideAllArrows();
+
+        if (startButton != null)
+        {
+            // 패널을 투명하게 설정
+            SetPanelTransparent();
+
+            // 다른 버튼들 비활성화
+            DisableOtherButtons();
+
+            // 캐릭터 드래그/클릭 비활성화
+            DisableCharacterInteraction();
+
+            // 스타트 버튼 클릭 이벤트 등록
+            startButton.onClick.AddListener(OnStartButtonClicked);
+
+            // 스타트 버튼 대기 상태로 설정
+            isWaitingForStartButton = true;
+
+            ShowArrowOnTarget(startButton.transform);
+        }
+    }
+
+    private void ActionStopLineArrow()
+    {
+        HideAllArrows();
+
+        if (fence != null)
+        {
+            ShowArrowOnFence();
+        }
+    }
+
+    // fence 위에 화살표 표시
+    private void ShowArrowOnFence()
+    {
+        if (arrow == null || fence == null) return;
+
+        arrow.gameObject.SetActive(true);
+        PositionArrowOverFence();
+        StartArrowAnimation().Forget();
+    }
+
+    // fence 위에 화살표 위치 지정
+    private void PositionArrowOverFence()
+    {
+        RectTransform arrowRect = arrow.GetComponent<RectTransform>();
+        if (arrowRect == null) return;
+
+        Camera uiCamera = Camera.main;
+
+        if (uiCamera != null)
+        {
+            // fence의 상단 위치 계산 (Renderer 바운드 사용)
+            Vector3 fenceTopPos = fence.transform.position;
+
+            Renderer fenceRenderer = fence.GetComponent<Renderer>();
+            if (fenceRenderer != null)
+            {
+                fenceTopPos.y += fenceRenderer.bounds.size.y * 0.5f;
+            }
+
+            // 추가 오프셋
+            fenceTopPos.y += 1f; // fence 위 1유닛 위에 화살표 표시
+
+            Vector3 screenPos = uiCamera.WorldToScreenPoint(fenceTopPos);
+
+            Vector2 localPos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                arrowRect.parent as RectTransform,
+                screenPos,
+                null,
+                out localPos
+            );
+
+            arrowRect.localPosition = localPos;
+        }
+    }
+
+    private void ActionSkillGageArrow()
+    {
+        HideAllArrows();
+        ActionSkillGageArrowAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionSkillGageArrowAsync()
+    {
+        // ActiveSkillManager 확인
+        if (ActiveSkillManager.Instance == null)
+        {
+            return;
+        }
+
+        // 스킬이 준비될 때까지 대기
+        Transform skillReadyCharacter = null;
+        await UniTask.WaitUntil(() =>
+        {
+            skillReadyCharacter = FindSkillReadyCharacter();
+            return skillReadyCharacter != null;
+        });
+
+        if (skillReadyCharacter != null)
+        {
+            ShowArrowOnSkillReadyCharacter(skillReadyCharacter);
+        }
+    }
+
+    // 스킬 준비된 캐릭터 위에 화살표 표시 (fence 방식과 동일)
+    private void ShowArrowOnSkillReadyCharacter(Transform characterTransform)
+    {
+        if (arrow == null || characterTransform == null) return;
+
+        arrow.gameObject.SetActive(true);
+        ArrowSkillReadyCharacter(characterTransform);
+        StartArrowAnimation().Forget();
+    }
+
+    // 스킬 준비된 캐릭터 위에 화살표 위치 지정
+    private void ArrowSkillReadyCharacter(Transform characterTransform)
+    {
+        RectTransform arrowRect = arrow.GetComponent<RectTransform>();
+        if (arrowRect == null) return;
+
+        Camera uiCamera = Camera.main;
+
+        if (uiCamera != null)
+        {
+            // 캐릭터의 상단 위치 계산 (Renderer 바운드 사용)
+            Vector3 characterTopPos = characterTransform.position;
+
+            Renderer characterRenderer = characterTransform.GetComponent<Renderer>();
+            if (characterRenderer != null)
+            {
+                characterTopPos.y += characterRenderer.bounds.size.y * 0.5f;
+            }
+
+            // 추가 오프셋
+            characterTopPos.y += 2.5f; // 캐릭터 위에 화살표 표시
+
+            Vector3 screenPos = uiCamera.WorldToScreenPoint(characterTopPos);
+
+            Vector2 localPos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                arrowRect.parent as RectTransform,
+                screenPos,
+                null,
+                out localPos
+            );
+
+            arrowRect.localPosition = localPos;
+        }
+    }
+
+    // 스킬이 준비된 캐릭터를 찾는 메서드
+    private Transform FindSkillReadyCharacter()
+    {
+        if (ActiveSkillManager.Instance == null)
+        {
+            return null;
+        }
+
+        // 스킬이 준비된 모든 캐릭터 가져오기
+        var readyCasters = ActiveSkillManager.Instance.GetAllReadySkillCasters();
+
+        // 스킬이 준비된 캐릭터가 있다면 첫 번째 것을 반환
+        if (readyCasters.Count > 0)
+        {
+            return readyCasters[0].transform;
+        }
+
+        return null;
+    }
+
+    private void ActionSkillUse()
+    {
+        isAutoProgression = false;
+        isPlaying = false;
+
+        HideAllArrows();
+
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(false);
+        }
+
+        SetPanelTransparent();
+        EnableOtherButtons();
+        EnableCharacterInteraction();
+
+        Debug.Log("[TutorialStage] 스킬 사용 완료. 게임 플레이 모드 전환");
+
+        // BossAlert 스크립트 찾아서 인덱스 설정
+        FindAndSetBossAlertScriptIndex();
+
+        // 바로 BossAlert 대기 시작
+        ActionBossAlertAsync().Forget();
+    }
+
+    // BossAlert 액션이 있는 스크립트 찾기
+    private void FindAndSetBossAlertScriptIndex()
+    {
+        if (currentScripts == null) return;
+
+        for (int i = 0; i < currentScripts.Count; i++)
+        {
+            if (currentScripts[i].Action == "BossAlert")
+            {
+                currentScriptIndex = i;
+                return;
+            }
+        }
+    }
+    private void ActionBossAlert()
+    {
+        ActionBossAlertAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionBossAlertAsync()
+    {
+        // BossAlert UI가 활성화될 때까지 대기
+        await UniTask.WaitUntil(() =>
+        {
+            return bossAlertUI != null && bossAlertUI.gameObject.activeInHierarchy;
+        });
+
+        // BossAlert UI가 닫힐 때까지 대기
+        await UniTask.WaitUntil(() =>
+        {
+            return bossAlertUI == null || !bossAlertUI.gameObject.activeInHierarchy;
+        });
+
+        // 튜토리얼 스크립트 UI 다시 활성화
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(true);
+        }
+
+        // 현재 스크립트 정보 확인
+        if (currentScripts != null && currentScriptIndex < currentScripts.Count)
+        {
+            var script = currentScripts[currentScriptIndex];
+        }
+
+        // 튜토리얼 다시 시작
+        isPlaying = true;
+        isAutoProgression = true;
+
+        NextScript();
+    }
+
+    // 캐릭터 상호작용 비활성화
+    private void DisableCharacterInteraction()
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            // OwnedCharacterSetup의 CanvasGroup으로 상호작용 차단
+            CanvasGroup characterCanvasGroup = ownedCharacterSetup.content.GetComponent<CanvasGroup>();
+            if (characterCanvasGroup == null)
+            {
+                characterCanvasGroup = ownedCharacterSetup.content.gameObject.AddComponent<CanvasGroup>();
+            }
+            characterCanvasGroup.blocksRaycasts = false;
+
+            // 추가적으로 각 DragMe 컴포넌트의 raycastTarget 비활성화
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                Image dragMeImage = dragMe.GetComponent<Image>();
+                if (dragMeImage != null)
+                {
+                    dragMeImage.raycastTarget = false;
+                }
+            }
+        }
+    }
+
+    // 모든 캐릭터 상호작용 활성화 (기존 메서드 수정)
+    private void EnableCharacterInteraction()
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            // OwnedCharacterSetup의 CanvasGroup 상호작용 복원
+            CanvasGroup characterCanvasGroup = ownedCharacterSetup.content.GetComponent<CanvasGroup>();
+            if (characterCanvasGroup != null)
+            {
+                characterCanvasGroup.blocksRaycasts = true;
+            }
+
+            // 모든 DragMe 컴포넌트의 raycastTarget 복원
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                Image dragMeImage = dragMe.GetComponent<Image>();
+                if (dragMeImage != null)
+                {
+                    dragMeImage.raycastTarget = true;
+                }
+            }
+        }
+    }
+
+    private void OnStartButtonClicked()
+    {
+        // 버튼 이벤트 해제
+        if (startButton != null)
+        {
+            startButton.onClick.RemoveListener(OnStartButtonClicked);
+        }
+
+        // 화살표 숨기기 및 패널 복원
+        HideAllArrows();
+        RestorePanel();
+
+        // 다른 버튼들 다시 활성화
+        EnableOtherButtons();
+
+        // 캐릭터 드래그/클릭 다시 활성화
+        EnableCharacterInteraction();
+
+        // 스타트 버튼 대기 상태 해제
+        isWaitingForStartButton = false;
+
+        // 자동 진행 모드 시작
+        isAutoProgression = true;
+
+        // 다음 스크립트로 진행
+        NextScript();
+    }
+
+    // 다른 버튼들 비활성화
+    private void DisableOtherButtons()
+    {
+        if (returnButton != null)
+            returnButton.interactable = false;
+
+        if (infoButton != null)
+            infoButton.interactable = false;
+
+        if (characterInfoCloseButton != null)
+            characterInfoCloseButton.interactable = false;
+    }
+
     private void ShowArrowOnTarget(Transform target)
     {
         if (arrow == null || target == null) return;
@@ -640,6 +1099,19 @@ public class TutorialStage : MonoBehaviour
         arrow.gameObject.SetActive(true);
         PositionArrowOverTarget(target);
         StartArrowAnimation().Forget();
+    }
+
+    // 다른 버튼들 다시 활성화
+    private void EnableOtherButtons()
+    {
+        if (returnButton != null)
+            returnButton.interactable = true;
+
+        if (infoButton != null)
+            infoButton.interactable = true;
+
+        if (characterInfoCloseButton != null)
+            characterInfoCloseButton.interactable = true;
     }
 
     private void PositionArrowOverTarget(Transform target)
@@ -707,7 +1179,116 @@ public class TutorialStage : MonoBehaviour
 
     private void OnCharacterInfoCloseButtonClicked()
     {
+        // 캐릭터 클릭 대기 중인 경우 상태 복원
+        if (isWaitingForCharacterClick)
+        {
+            // 화살표 숨기기 및 패널 복원
+            HideAllArrows();
+            RestorePanel();
+
+            // 모든 버튼과 캐릭터 상호작용 다시 활성화
+            EnableOtherButtons();
+            EnableCharacterInteraction();
+
+            // 캐릭터 클릭 대기 상태 해제
+            isWaitingForCharacterClick = false;
+            waitingCharacterSlot = null;
+        }
+
         NextScript();
         HideAllArrows();
+    }
+
+    private void ActionFeverArrow()
+    {
+        HideAllArrows();
+        if (feverButton != null)
+        {
+            ShowArrowOnTarget(feverButton.transform);
+        }
+    }
+
+    private void ActionBossFight()
+    {
+        HideAllArrows();
+
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(false);
+        }
+
+        isAutoProgression = false;
+        isPlaying = false;
+
+        Debug.Log("[TutorialStage] 보스 전투 시작. 스테이지 클리어 대기 모드");
+
+        // StageClear 스크립트 찾아서 인덱스 설정
+        FindAndSetStageClearScriptIndex();
+
+        // 바로 StageClear 대기 시작
+        ActionStageClearAsync().Forget();
+    }
+
+    // StageClear 액션이 있는 스크립트 찾기
+    private void FindAndSetStageClearScriptIndex()
+    {
+        if (currentScripts == null) return;
+
+        for (int i = 0; i < currentScripts.Count; i++)
+        {
+            if (currentScripts[i].Action == "StageClear")
+            {
+                currentScriptIndex = i;
+                Debug.Log($"[TutorialStage] StageClear 스크립트 찾음! 인덱스: {i}");
+                return;
+            }
+        }
+
+        Debug.LogWarning("[TutorialStage] StageClear 스크립트를 찾을 수 없습니다!");
+    }
+
+    private void ActionStageClear()
+    {
+        // 스테이지 클리어 대기하는 방식으로 구현
+        ActionStageClearAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionStageClearAsync()
+    {
+        // VictoryPanel이 활성화될 때까지 대기 (스테이지 클리어 시 나타남)
+        await UniTask.WaitUntil(() =>
+        {
+            return stageManager != null &&
+                   stageManager.VictoryPanel != null &&
+                   stageManager.VictoryPanel.gameObject.activeInHierarchy;
+        });
+
+        this.transform.SetAsLastSibling();
+
+        Canvas tutorialCanvas = this.GetComponent<Canvas>();
+        if (tutorialCanvas == null)
+        {
+            tutorialCanvas = this.gameObject.AddComponent<Canvas>();
+            tutorialCanvas.overrideSorting = true;
+        }
+
+        // 튜토리얼 스크립트 UI 다시 활성화
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(true);
+        }
+        else
+        {
+            CreateScriptUI();
+        }
+
+        // VictoryPanel보다 높은 Sort Order 설정
+        tutorialCanvas.sortingOrder = 1000;
+
+        // 튜토리얼 다시 시작
+        isPlaying = true;
+        isAutoProgression = true;
+
+        NextScript();
     }
 }

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using System;
 using System.Collections.Generic;
@@ -431,4 +431,6 @@ public class WindowManager : MonoBehaviour
     {
         return windowType != WindowType.None && windows.ContainsKey(windowType) && windows[windowType] != null;
     }
+
+
 }
