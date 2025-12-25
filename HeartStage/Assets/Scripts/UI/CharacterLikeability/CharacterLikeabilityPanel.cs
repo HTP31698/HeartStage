@@ -250,7 +250,15 @@ public class CharacterLikeabilityPanel : MonoBehaviour
             return;
         }
 
-        int count = await FriendCheerService.GetTotalCheerCountAsync(AuthManager.Instance.UserId, characterData.char_name);
+        string snapshotCharName = characterData.char_name;
+        int count = await FriendCheerService.GetTotalCheerCountAsync(AuthManager.Instance.UserId, snapshotCharName);
+
+        // 캐릭터 바뀌었으면 무시
+        if (characterData == null || characterData.char_name != snapshotCharName)
+            return;
+
+        if (this == null || gameObject == null)
+            return;
 
         friendCheerBubble.SetActive(count > 0);
         friendCheerCountText.text = count.ToString();

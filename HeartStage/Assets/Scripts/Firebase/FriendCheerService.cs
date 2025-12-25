@@ -36,7 +36,7 @@ public static class FriendCheerService
     // 특정 친구가 해당 캐릭터를 몇 번 응원했는지
     public static async UniTask<int> GetCheerCountAsync(string targetUid, string characterName, string fromUid)
     {
-        if (string.IsNullOrEmpty(targetUid) || string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(fromUid)) 
+        if (string.IsNullOrEmpty(targetUid) || string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(fromUid))
             return 0;
 
         string path = $"friendCheers/{targetUid}/{characterName}/{fromUid}/count";
@@ -54,7 +54,7 @@ public static class FriendCheerService
         var snap = await DB.Child(path).GetValueAsync();
 
         int total = 0;
-        if (!snap.Exists) 
+        if (!snap.Exists)
             return 0;
 
         foreach (var child in snap.Children)
@@ -74,7 +74,7 @@ public static class FriendCheerService
         string path = $"friendCheers/{targetUid}/{characterName}";
         var snap = await DB.Child(path).GetValueAsync();
 
-        if (!snap.Exists) 
+        if (!snap.Exists)
             return result;
 
         foreach (var child in snap.Children)
@@ -84,33 +84,50 @@ public static class FriendCheerService
         return result;
     }
 
-    // 응원 보상 1회 받음
+    // 응원 보상 1회 소비
     public static async UniTask<bool> ConsumeCheerAsync(string targetUid, string characterName, string fromUid)
     {
         if (string.IsNullOrEmpty(targetUid) || string.IsNullOrEmpty(characterName) || string.IsNullOrEmpty(fromUid))
             return false;
 
-        string path = $"friendCheers/{targetUid}/{characterName}/{fromUid}";
-        var cheerRef = DB.Child(path);
+        // count 필드만 트랜잭션 처리
+        string path = $"friendCheers/{targetUid}/{characterName}/{fromUid}/count";
+        var countRef = DB.Child(path);
 
         try
         {
-            await cheerRef.RunTransaction(mutableData =>
+            var snapshot = await countRef.RunTransaction(mutableData =>
             {
+                // 값이 없으면 실패
                 if (mutableData.Value == null)
+                {
                     return TransactionResult.Abort();
+                }
 
-                int count = Convert.ToInt32(mutableData.Value);
+                int currentCount;
 
-                if (count <= 1)
-                    mutableData.Value = null;      // 마지막 1회면 삭제
-                else
-                    mutableData.Value = count - 1; // 1회 차감
+                // 안전하게 변환 (int 또는 long 가능)
+                try
+                {
+                    currentCount = Convert.ToInt32(mutableData.Value);
+                }
+                catch
+                {
+                    return TransactionResult.Abort();
+                }
 
+                // 0 이하이면 abort
+                if (currentCount <= 0)
+                {
+                    return TransactionResult.Abort();
+                }
+
+                // 1회 차감
+                mutableData.Value = currentCount - 1;
                 return TransactionResult.Success(mutableData);
             });
 
-            return true;
+            return snapshot != null;
         }
         catch (Exception e)
         {

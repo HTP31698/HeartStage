@@ -30,9 +30,14 @@ public class ReceivedCheerChest : MonoBehaviour
     // 응원 리스트 서버에서 가져오기
     private async UniTask LoadFromServer()
     {
+        string snapshotCharacter = characterName;
         string targetUid = AuthManager.Instance.UserId;
 
-        Dictionary<string, int> cheerDict = await FriendCheerService.GetCheerListAsync(targetUid, characterName);
+        Dictionary<string, int> cheerDict = await FriendCheerService.GetCheerListAsync(targetUid, snapshotCharacter);
+
+        // Init 다시 호출됐으면 무시
+        if (this == null || characterName != snapshotCharacter)
+            return;
 
         foreach (var pair in cheerDict)
         {
@@ -41,8 +46,10 @@ public class ReceivedCheerChest : MonoBehaviour
 
             for (int i = 0; i < count; i++)
             {
+                if (this == null) return;
+
                 var go = Instantiate(receivedCheerItemPrefab, itemParent);
-                go.GetComponent<ReceivedCheerItem>().Init(characterName, fromUid);
+                go.GetComponent<ReceivedCheerItem>().Init(snapshotCharacter, fromUid);
             }
         }
     }
