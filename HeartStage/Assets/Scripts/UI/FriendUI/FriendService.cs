@@ -634,14 +634,7 @@ public static class FriendService
             return;
         }
 
-        string json = await PublicUserDataService.LoadFriendSaveDataAsync(friendUid);
-        if (string.IsNullOrEmpty(json))
-        {
-            Debug.LogWarning("친구 숙소 데이터 없음");
-            return;
-        }
-
-        var friendData = JsonConvert.DeserializeObject<SaveDataV1>(json);
+        var friendData = await PublicUserDataService.LoadFriendSaveDataAsync(friendUid);
         LobbyHomeInitializer.Instance?.OpenLobbyHomeWindow(friendData);
     }
 }

@@ -71,7 +71,7 @@ public class SaveLoadManager
     }
 
     // 친구의 데이터 변경 후 저장용
-    public static async UniTask SaveToServer(string userId, SaveDataV1 data)
+    public static async UniTask SaveFriendDataToServer(string userId, SaveDataV1 data)
     {
         if (string.IsNullOrEmpty(userId))
         {
@@ -80,7 +80,7 @@ public class SaveLoadManager
         }
 
         string json = JsonConvert.SerializeObject(data, Formatting.Indented);
-        await CloudSaveManager.Instance.SaveAsync(userId, json);
+        await CloudSaveManager.Instance.SaveFriendDataAsync(userId, json);
     }
 
     // 로컬에만 저장

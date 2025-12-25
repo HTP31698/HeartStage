@@ -1,17 +1,26 @@
-﻿using Firebase.Database;
-using Cysharp.Threading.Tasks;
-using UnityEngine;
+﻿using Cysharp.Threading.Tasks;
+using Firebase.Database;
+using Newtonsoft.Json;
 using System;
+using UnityEngine;
 
 public static class PublicUserDataService
 {
-    private static DatabaseReference DB =>
-        FirebaseDatabase.DefaultInstance.RootReference;
+    private static DatabaseReference DB => FirebaseDatabase.DefaultInstance.RootReference;
 
     private const float REQUEST_TIMEOUT_SECONDS = 5f;
 
-    // 친구(타인)의 공개 SaveData 로드 (읽기 전용)
-    public static async UniTask<string> LoadFriendSaveDataAsync(string friendUid)
+    // 친구의 SaveData 얻기
+    public static async UniTask<SaveDataV1> LoadFriendSaveDataAsync(string friendUid)
+    {
+        string json = await LoadFriendSaveDataJsonAsync(friendUid);
+        if (string.IsNullOrEmpty(json))
+            return null;
+
+        return JsonConvert.DeserializeObject<SaveDataV1>(json);
+    }
+
+    public static async UniTask<string> LoadFriendSaveDataJsonAsync(string friendUid)
     {
         if (string.IsNullOrEmpty(friendUid))
             return null;

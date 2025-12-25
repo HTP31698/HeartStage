@@ -135,7 +135,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         {
             cheerDict.Add(myUid, myNickname);
         }
-        SaveLoadManager.SaveToServer(LobbyHomeInitializer.Instance.friendUID, friendData).Forget();
+        SaveLoadManager.SaveFriendDataToServer(LobbyHomeInitializer.Instance.friendUID, friendData).Forget();
     }
     // 호감도 보상 UI 세팅
     private void SetRewardUI()

@@ -1,7 +1,8 @@
-﻿using Firebase.Database;
-using Cysharp.Threading.Tasks;
-using UnityEngine;
+﻿using Cysharp.Threading.Tasks;
+using Firebase.Database;
 using System;
+using System.Threading;
+using UnityEngine;
 
 public class CloudSaveManager : MonoBehaviour
 {
@@ -157,5 +158,48 @@ public class CloudSaveManager : MonoBehaviour
             Debug.LogError($"[CloudSave] 로드 오류: {ex.Message}");
             return null;
         }
+    }
+
+    // 친구 세이브데이터 저장용
+    public async UniTask SaveFriendDataAsync(string userId, string json)
+    {
+        await WaitForInitAsync();
+
+        if (!isAvailable || db == null)
+        {
+            Debug.LogWarning("[CloudSave] 사용 불가 상태, 저장 스킵");
+            return;
+        }
+
+        try
+        {
+            var cts = new CancellationTokenSource();
+            cts.CancelAfterSlim(TimeSpan.FromSeconds(REQUEST_TIMEOUT_SECONDS));
+            // 경로 자동 결정
+            string path = await ResolveUserSavePathAsync(userId);
+            await db.Child(path).SetRawJsonValueAsync(json).AsUniTask().AttachExternalCancellation(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.LogError("[CloudSave] 저장 타임아웃");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[CloudSave] 저장 오류: {ex.Message}");
+        }
+    }
+
+    // SaveData 경로 얻기
+    private async UniTask<string> ResolveUserSavePathAsync(string userId)
+    {
+        // registered 먼저 확인
+        string registeredPath = $"users/registered/{userId}/saveData";
+        var snapshot = await db.Child(registeredPath).GetValueAsync();
+
+        if (snapshot.Exists)
+            return registeredPath;
+
+        // 없으면 anonymous/active
+        return $"users/anonymous/active/{userId}/saveData";
     }
 }
