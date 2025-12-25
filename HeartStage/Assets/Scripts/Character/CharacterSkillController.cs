@@ -23,7 +23,7 @@ public class CharacterSkillController : MonoBehaviour
     private bool isDescShown = false;
     private float longPressTimer = 0f;
 
-    private const float LONG_PRESS_TIME = 1.5f;
+    private const float LONG_PRESS_TIME = 1.0f;
 
     private Vector3 pressStartPos;          // 최초 터치 위치
     private bool isOverUIThisFrame = false; // UI 체크 캐싱

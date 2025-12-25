@@ -189,8 +189,8 @@ public static class CostumeItemID
 
 public class CurrencyIcon
 {
-    public static readonly string lightStickIcon = "Star-Stick-Yellow-128";
-    public static readonly string heartStickIcon = "Star-Stick-Pink-128";
+    public static readonly string lightStickIcon = "LightStick";
+    public static readonly string heartStickIcon = "HeartStick";
     public static readonly string dollarIcon = "DollarIcon";
 
     // 0 : 없음
