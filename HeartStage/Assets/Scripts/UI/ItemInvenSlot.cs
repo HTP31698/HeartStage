@@ -42,6 +42,7 @@ public class ItemInvenSlot : MonoBehaviour
         if (!itemImage.enabled)
             return;
 
+        SoundManager.Instance.PlayUIButtonClickSound();
         ItemInventoryUI.Instance.OpenItemInfoPanel(itemId);
     }
 }

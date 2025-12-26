@@ -126,6 +126,8 @@ public class SoundName
     public static readonly string SFX_UI_Gacha_Result = "ui_gacha_result";
     public static readonly string SFX_UI_StageClear = "stage_clear_01";
     public static readonly string SFX_Boss_Appear = "boss_alert";
+    public static readonly string SFX_Purchase_Fail = string.Empty; // 상점에서 재화가 부족해서 아이템 구매 실패할 때
+    public static readonly string SFX_Purchase_Success = string.Empty; // 상점에서 아이템 구매 성공
 }
 
 public class ItemID

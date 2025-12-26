@@ -96,6 +96,7 @@ public class PurchaseConfirmPanel : MonoBehaviour
         if (!ItemInvenHelper.TryConsumeItem(currencyId, price))
         {
             ToastUI.Warning("재화가 부족합니다");
+            SoundManager.Instance.PlaySFX(SoundName.SFX_Purchase_Fail);
             return;
         }
 
@@ -105,6 +106,7 @@ public class PurchaseConfirmPanel : MonoBehaviour
             ItemInvenHelper.AddItem(item.id, item.amount);
         }
 
+        SoundManager.Instance.PlaySFX(SoundName.SFX_Purchase_Success);
         ToastUI.Show("구매 완료!");
 
         // 3) 끝
