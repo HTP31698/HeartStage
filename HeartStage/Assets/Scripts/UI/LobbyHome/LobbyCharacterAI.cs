@@ -274,5 +274,6 @@ public class LobbyCharacterAI : MonoBehaviour, ILobbyTapHandler
         DragZoomPanManager.Instance.FocusOnCharacter(transform);
         DragZoomPanManager.Instance.LockInput();
         CharacterLikeabilityWindow.Instance.SetBubbleTarget(transform);
+        SoundManager.Instance.PlaySFX(SoundName.SFX_LobbyCharacter_Touch);
     }
 }
