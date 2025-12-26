@@ -37,10 +37,6 @@ public class CostumeSelectPopup : MonoBehaviour
     [SerializeField] private Button applyButton;
     [SerializeField] private Button closeButton;
 
-    [Header("딤 배경")]
-    [SerializeField] private GameObject dimBackground;  // 딤 배경
-    private CanvasGroup _dimCanvasGroup;
-
 #if UNITY_EDITOR
     [Header("디버그")]
     [SerializeField] private Button debugGetAllCostumesButton;
@@ -48,6 +44,7 @@ public class CostumeSelectPopup : MonoBehaviour
 
     public bool IsOpen => _isOpen;
     private bool _isOpen;
+    private int _openFrame;  // 열린 프레임 (같은 프레임에 Close 방지)
 
     private readonly List<GameObject> _spawnedItems = new();
     private readonly List<CostumeSlotItemUI> _items = new();
@@ -85,22 +82,12 @@ public class CostumeSelectPopup : MonoBehaviour
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
 
-        // 딤 배경 클릭 시 닫기
-        if (dimBackground != null)
-        {
-            var dimButton = dimBackground.GetComponent<Button>();
-            if (dimButton == null)
-                dimButton = dimBackground.AddComponent<Button>();
-            dimButton.transition = Selectable.Transition.None;
-            dimButton.onClick.AddListener(Close);
-        }
-
 #if UNITY_EDITOR
         if (debugGetAllCostumesButton != null)
             debugGetAllCostumesButton.onClick.AddListener(DebugGetAllCostumes);
 #endif
-
-        gameObject.SetActive(false);
+        // 주의: 에디터에서 오브젝트를 미리 비활성화해두세요
+        // Awake()에서 SetActive(false) 호출하면 Open()에서 활성화가 안 됨
     }
 
     private void OnDisable()
@@ -124,6 +111,7 @@ public class CostumeSelectPopup : MonoBehaviour
             return;
 
         _isOpen = true;
+        _openFrame = Time.frameCount;  // 같은 프레임에 Close 방지용
 
         // 로딩 표시 (가장 먼저!)
         NoteLoadingUI.Show();
@@ -156,14 +144,11 @@ public class CostumeSelectPopup : MonoBehaviour
         if (listCanvasGroup != null)
             listCanvasGroup.alpha = 0;
 
-        // 딤 배경 켜기 + alpha 설정
-        if (dimBackground != null)
+        // 공용 딤 배경 표시 및 이벤트 구독
+        if (WindowManager.Instance != null)
         {
-            if (_dimCanvasGroup == null)
-                _dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>();
-            if (_dimCanvasGroup != null)
-                _dimCanvasGroup.alpha = 1f;
-            dimBackground.SetActive(true);
+            WindowManager.Instance.ShowDimManual();
+            WindowManager.Instance.OnDimClicked += OnDimClicked;
         }
 
         AdjustGridCellSize();
@@ -234,23 +219,45 @@ public class CostumeSelectPopup : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 딤 클릭으로 닫힐 때 호출
+    /// </summary>
+    private void OnDimClicked()
+    {
+        // 열린 프레임과 같은 프레임에서는 닫지 않음 (터치 중복 방지)
+        if (Time.frameCount == _openFrame)
+            return;
+
+        if (WindowManager.Instance != null)
+            WindowManager.Instance.OnDimClicked -= OnDimClicked;
+
+        // 변경 사항 적용 안 했으면 원래 의상으로 복구
+        if (_hasChanges)
+            RestoreOriginalCostume();
+
+        _isOpen = false;
+        _costumeController = null;
+        gameObject.SetActive(false);
+    }
+
     public void Close()
     {
+        // 열린 프레임과 같은 프레임에서는 닫지 않음 (터치 중복 방지)
+        if (Time.frameCount == _openFrame)
+            return;
+
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
 
         // 변경 사항 적용 안 했으면 원래 의상으로 복구
         if (_hasChanges)
-        {
             RestoreOriginalCostume();
-        }
 
-        // 딤 배경 끄기
-        if (dimBackground != null)
+        // 딤 배경 숨기기 및 이벤트 해제
+        if (WindowManager.Instance != null)
         {
-            if (_dimCanvasGroup != null)
-                _dimCanvasGroup.alpha = 0f;
-            dimBackground.SetActive(false);
+            WindowManager.Instance.OnDimClicked -= OnDimClicked;
+            WindowManager.Instance.HideDimManual();
         }
 
         _isOpen = false;
@@ -284,6 +291,9 @@ public class CostumeSelectPopup : MonoBehaviour
 
     private async UniTaskVoid RebuildListAsync()
     {
+        // 한 프레임 대기 (UI 업데이트 보장)
+        await UniTask.Yield();
+
         try
         {
             // 기존 아이템 정리
@@ -559,12 +569,11 @@ public class CostumeSelectPopup : MonoBehaviour
         OnCostumeChanged?.Invoke();
         ToastUI.Show("의상이 적용되었습니다.");
 
-        // 딤 배경 끄기
-        if (dimBackground != null)
+        // 딤 배경 숨기기 및 이벤트 해제
+        if (WindowManager.Instance != null)
         {
-            if (_dimCanvasGroup != null)
-                _dimCanvasGroup.alpha = 0f;
-            dimBackground.SetActive(false);
+            WindowManager.Instance.OnDimClicked -= OnDimClicked;
+            WindowManager.Instance.HideDimManual();
         }
 
         _isOpen = false;
