@@ -20,6 +20,8 @@ public class TutorialStage : MonoBehaviour
     [SerializeField] private Button feverButton;
     [SerializeField] private Button selectWindowBackButton;
 
+    [SerializeField] private DraggableSlot[] draggableSlots;
+
     private GameObject stageBorderParent;
     [SerializeField] private Image stageBorderImage;
 
@@ -93,6 +95,7 @@ public class TutorialStage : MonoBehaviour
         // 모든 버튼과 캐릭터 상호작용 다시 활성화
         EnableOtherButtons();
         EnableCharacterInteraction();
+        EnableCharacterSlotDragging();
 
         if (selectWindowBackButton != null)
             selectWindowBackButton.interactable = true;
@@ -451,29 +454,10 @@ public class TutorialStage : MonoBehaviour
         if (infoButton != null)
             infoButton.interactable = false;
 
-        // characterInfoCloseButton은 활성화 상태로 유지 (비활성화하지 않음)
+        // characterInfoCloseButton은 활성화 상태로 유지
     }
 
-    // 특정 캐릭터를 제외한 나머지 캐릭터들의 상호작용 비활성화
-    private void DisableOtherCharacterInteraction(Transform targetCharacter)
-    {
-        if (ownedCharacterSetup?.content != null)
-        {
-            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
-            foreach (var dragMe in dragMeComponents)
-            {
-                // 타겟 캐릭터가 아닌 경우에만 비활성화
-                if (dragMe.transform != targetCharacter)
-                {
-                    Image dragMeImage = dragMe.GetComponent<Image>();
-                    if (dragMeImage != null)
-                    {
-                        dragMeImage.raycastTarget = false;
-                    }
-                }
-            }
-        }
-    }
+
 
     private Transform FindFirstCharacterSlot()
     {
@@ -888,6 +872,9 @@ public class TutorialStage : MonoBehaviour
             // 캐릭터 드래그/클릭 비활성화
             DisableCharacterInteraction();
 
+            // 배치된 캐릭터들을 빼는 것 방지
+            DisableCharacterSlotDragging();
+
             // 스타트 버튼 클릭 이벤트 등록
             startButton.onClick.AddListener(OnStartButtonClicked);
 
@@ -1216,6 +1203,8 @@ public class TutorialStage : MonoBehaviour
             // 캐릭터 드래그/클릭 다시 활성화
             EnableCharacterInteraction();
 
+            EnableCharacterSlotDragging();
+
             // 스타트 버튼 대기 상태 해제
             isWaitingForStartButton = false;
 
@@ -1412,12 +1401,9 @@ public class TutorialStage : MonoBehaviour
             if (currentScripts[i].Action == "StageClear")
             {
                 currentScriptIndex = i;
-                Debug.Log($"[TutorialStage] StageClear 스크립트 찾음! 인덱스: {i}");
                 return;
             }
         }
-
-        Debug.LogWarning("[TutorialStage] StageClear 스크립트를 찾을 수 없습니다!");
     }
 
     private void ActionStageClear()
@@ -1463,5 +1449,56 @@ public class TutorialStage : MonoBehaviour
         isAutoProgression = true;
 
         NextScript();
+    }
+
+    private void DisableCharacterSlotDragging()
+    {
+        // DraggableSlot들을 찾아서 드래그 기능 비활성화
+        foreach (var slot in draggableSlots)
+        {
+            // DraggableSlot 컴포넌트 비활성화 (드래그 방지)
+            slot.enabled = false;
+
+            // 혹시 Image 컴포넌트가 있다면 raycast 차단
+            Image slotImage = slot.GetComponent<Image>();
+            if (slotImage != null)
+            {
+                slotImage.raycastTarget = false;
+            }
+
+            // receivingImage도 raycast 차단
+            if (slot.receivingImage != null)
+            {
+                slot.receivingImage.raycastTarget = false;
+            }
+        }
+
+        Debug.Log("[TutorialStage] 배치된 캐릭터 슬롯 드래그 비활성화 완료");
+    }
+
+    // 배치된 캐릭터 슬롯(DraggableSlot)의 드래그 기능 복원
+    private void EnableCharacterSlotDragging()
+    {
+        // DraggableSlot들을 찾아서 드래그 기능 복원
+        foreach (var slot in draggableSlots)
+        {
+            // DraggableSlot 컴포넌트 활성화
+            slot.enabled = true;
+
+            // Image 컴포넌트 raycast 복원
+            Image slotImage = slot.GetComponent<Image>();
+            if (slotImage != null)
+            {
+                slotImage.raycastTarget = true;
+            }
+
+            // receivingImage raycast 복원
+            if (slot.receivingImage != null)
+            {
+                slot.receivingImage.raycastTarget = true;
+            }
+        }
+
+        Debug.Log("[TutorialStage] 배치된 캐릭터 슬롯 드래그 복원 완료");
     }
 }
