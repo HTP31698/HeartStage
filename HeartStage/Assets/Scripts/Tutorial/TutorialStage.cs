@@ -41,7 +41,7 @@ public class TutorialStage : MonoBehaviour
     private int requiredCharacterCount = 3; // 필요한 캐릭터 수
 
     [SerializeField] private GameObject characterStage; // 캐릭터가 배치되는 스테이지
-    [SerializeField] private Button infoButton; 
+    [SerializeField] private Button infoButton;
 
     private void Awake()
     {
@@ -343,8 +343,8 @@ public class TutorialStage : MonoBehaviour
             // characterInfoCloseButton을 제외한 다른 버튼들만 비활성화
             DisableOtherButtonsExceptInfo();
 
-            // 첫 번째 캐릭터 외의 모든 캐릭터 상호작용 비활성화
-            DisableOtherCharacterInteraction(firstCharacterSlot);
+            // 캐릭터 드래그 완전히 차단 (정보창 열기만 허용)
+            DisableCharacterDragForInfoOnly(firstCharacterSlot);
 
             // 캐릭터 클릭 대기 상태로 설정
             isWaitingForCharacterClick = true;
@@ -352,6 +352,52 @@ public class TutorialStage : MonoBehaviour
 
             // 화살표를 대상 위에 표시
             ShowArrowOnTarget(firstCharacterSlot);
+        }
+    }
+
+    // IdolArrow에서 사용: 캐릭터 드래그는 차단하고 정보창 열기만 허용
+    private void DisableCharacterDragForInfoOnly(Transform targetCharacter)
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                if (dragMe.transform == targetCharacter)
+                {
+                    // 타겟 캐릭터는 정보창 열기만 가능하도록 설정
+                    dragMe.enabled = false; // 드래그 기능 완전 비활성화
+
+                    // 클릭 이벤트만 허용하기 위해 Button 컴포넌트 활성화
+                    Button characterButton = dragMe.GetComponent<Button>();
+                    if (characterButton == null)
+                    {
+                        characterButton = dragMe.gameObject.AddComponent<Button>();
+                    }
+
+                    // 정보창 열기 이벤트 등록
+                    characterButton.onClick.RemoveAllListeners();
+                    characterButton.onClick.AddListener(() => {
+                        // 캐릭터 정보창 열기 로직 (기존 DragMe의 정보창 열기 로직과 동일)
+                        var characterData = dragMe.GetComponent<DragMe>()?.characterData;
+                        if (characterData != null)
+                        {
+                            WindowManager.Instance.Open(WindowType.CharacterInfo);
+                            // CharacterInfoWindow에 데이터 설정하는 로직 추가 필요
+                        }
+                    });
+                }
+                else
+                {
+                    // 다른 캐릭터들은 완전히 비활성화
+                    dragMe.enabled = false;
+                    Image dragMeImage = dragMe.GetComponent<Image>();
+                    if (dragMeImage != null)
+                    {
+                        dragMeImage.raycastTarget = false;
+                    }
+                }
+            }
         }
     }
 
@@ -473,10 +519,41 @@ public class TutorialStage : MonoBehaviour
             // 패널을 투명하게 설정
             SetPanelTransparent();
 
+            // 캐릭터 드래그 활성화 (정상적인 드래그 허용)
+            EnableCharacterDragForPlacement();
+
             isWaitingForCharacterDrag = true;
 
             // 화살표를 대상 위에 표시하고 드래그 애니메이션 시작
             ShowDragArrowOnTarget(nextCharacterSlot);
+        }
+    }
+
+    // DragArrow에서 사용: 캐릭터 드래그를 정상적으로 허용
+    private void EnableCharacterDragForPlacement()
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                // 모든 DragMe 컴포넌트 활성화
+                dragMe.enabled = true;
+
+                // 임시로 추가된 Button 컴포넌트 제거 (IdolArrow에서 추가된 것)
+                Button tempButton = dragMe.GetComponent<Button>();
+                if (tempButton != null)
+                {
+                    DestroyImmediate(tempButton);
+                }
+
+                // raycastTarget 활성화
+                Image dragMeImage = dragMe.GetComponent<Image>();
+                if (dragMeImage != null)
+                {
+                    dragMeImage.raycastTarget = true;
+                }
+            }
         }
     }
 
@@ -748,7 +825,7 @@ public class TutorialStage : MonoBehaviour
 
     private void ActionReturnArrow()
     {
-        HideAllArrows(); 
+        HideAllArrows();
         if (returnButton != null)
         {
             ShowArrowOnTarget(returnButton.transform);
@@ -1049,10 +1126,20 @@ public class TutorialStage : MonoBehaviour
             DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
             foreach (var dragMe in dragMeComponents)
             {
+                // DragMe 컴포넌트 활성화
+                dragMe.enabled = true;
+
                 Image dragMeImage = dragMe.GetComponent<Image>();
                 if (dragMeImage != null)
                 {
                     dragMeImage.raycastTarget = true;
+                }
+
+                // 임시로 추가된 Button 컴포넌트 제거
+                Button tempButton = dragMe.GetComponent<Button>();
+                if (tempButton != null)
+                {
+                    DestroyImmediate(tempButton);
                 }
             }
         }
