@@ -33,6 +33,7 @@ public class TutorialStage : MonoBehaviour
     private bool isWaitingForCharacterClick = false; // 캐릭터 클릭 대기 상태
     private bool isWaitingForStartButton = false; // 스타트 버튼 대기 상태 추가
     private bool isAutoProgression = false; // 자동 진행 모드 상태
+    private bool closeCharacterInfoOnce = false; 
 
     private bool isProcessingInput = false; // 입력 처리 중 플래그 추가
     private float lastClickTime = 0f; // 마지막 클릭 시간
@@ -367,6 +368,8 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionIdolArrowAsync()
     {
+        closeCharacterInfoOnce = false;
+
         // OwnedCharacterSetup이 준비될 때까지 대기
         if (ownedCharacterSetup != null)
         {
@@ -1337,8 +1340,10 @@ public class TutorialStage : MonoBehaviour
         try
         {
             // 캐릭터 클릭 대기 중인 경우 상태 복원
-            if (isWaitingForCharacterClick)
+            if (isWaitingForCharacterClick && !closeCharacterInfoOnce)
             {
+                closeCharacterInfoOnce = true;
+
                 // 화살표 숨기기 및 패널 복원
                 HideAllArrows();
                 RestorePanel();
@@ -1350,9 +1355,10 @@ public class TutorialStage : MonoBehaviour
                 // 캐릭터 클릭 대기 상태 해제
                 isWaitingForCharacterClick = false;
                 waitingCharacterSlot = null;
+
+                NextScript();
             }
 
-            NextScript();
             HideAllArrows();
         }
         finally
