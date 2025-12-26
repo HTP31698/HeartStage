@@ -37,10 +37,8 @@ public class CostumeSelectPopup : MonoBehaviour
     [SerializeField] private Button applyButton;
     [SerializeField] private Button closeButton;
 
-#if UNITY_EDITOR
     [Header("디버그")]
     [SerializeField] private Button debugGetAllCostumesButton;
-#endif
 
     public bool IsOpen => _isOpen;
     private bool _isOpen;
@@ -82,10 +80,8 @@ public class CostumeSelectPopup : MonoBehaviour
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
 
-#if UNITY_EDITOR
         if (debugGetAllCostumesButton != null)
             debugGetAllCostumesButton.onClick.AddListener(DebugGetAllCostumes);
-#endif
         // 주의: 에디터에서 오브젝트를 미리 비활성화해두세요
         // Awake()에서 SetActive(false) 호출하면 Open()에서 활성화가 안 됨
     }
@@ -583,9 +579,12 @@ public class CostumeSelectPopup : MonoBehaviour
 
     private void DebugGetAllCostumes()
     {
+        ToastUI.Show("치트 버튼 클릭됨!");
+
         var saveData = SaveLoadManager.Data;
         if (saveData == null)
         {
+            ToastUI.Show("실패: SaveData가 null입니다");
             Debug.LogWarning("[CostumeSelectPopup] SaveData is null");
             return;
         }
@@ -593,6 +592,7 @@ public class CostumeSelectPopup : MonoBehaviour
         var itemTable = DataTableManager.ItemTable;
         if (itemTable == null)
         {
+            ToastUI.Show("실패: ItemTable이 null입니다");
             Debug.LogWarning("[CostumeSelectPopup] ItemTable is null");
             return;
         }
@@ -639,7 +639,7 @@ public class CostumeSelectPopup : MonoBehaviour
         SaveLoadManager.SaveToServer().Forget();
 
         Debug.Log($"[CostumeSelectPopup] Debug: ItemTable total={totalItemCount}, costumeItems={costumeItemCount}, added={addedCount}, alreadyOwned={alreadyOwnedCount}");
-        ToastUI.Show($"의상 {addedCount}개 획득! (이미 보유: {alreadyOwnedCount}개)");
+        ToastUI.Show($"전체:{totalItemCount} 의상:{costumeItemCount} 추가:{addedCount} 보유:{alreadyOwnedCount}");
 
         // 리스트 새로고침
         RebuildListAsync().Forget();
