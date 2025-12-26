@@ -148,6 +148,7 @@ public class CharacterDetailPanel : MonoBehaviour
 
     private void OnStatModeToggle()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         _isBattleMode = !_isBattleMode;
         UpdateStatTexts();
     }
@@ -464,7 +465,7 @@ public class CharacterDetailPanel : MonoBehaviour
 
         CharacterHelper.CommitUpgradeResult(startId, finalId);
 
-        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Enhance);
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_LevelUp);
 
         Debug.Log($"레벨업 완료 {startId} -> {finalId}");
 

@@ -82,7 +82,7 @@ public class FriendWindow : GenericWindow
         addTabButton?.onClick.AddListener(() => SwitchTab(TabType.Add));
 
         // 닫기
-        closeButton?.onClick.AddListener(() => WindowManager.Instance?.CloseOverlay(WindowType.Friend));
+        closeButton?.onClick.AddListener(OnClickCloseButton);
 
         // 관리 모드 버튼
         manageButton?.onClick.AddListener(OnClickManageButton);
@@ -216,6 +216,7 @@ public class FriendWindow : GenericWindow
         if (_currentTab == tab && !_isRefreshing && !_isManageMode && !_isSentRequestMode)
             return;
 
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         _currentTab = tab;
         _isManageMode = false;
         _isSentRequestMode = false;
@@ -474,6 +475,8 @@ public class FriendWindow : GenericWindow
 
     private async UniTaskVoid OnClickSendAllAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (sendAllButton != null)
             sendAllButton.interactable = false;
 
@@ -519,6 +522,8 @@ public class FriendWindow : GenericWindow
     {
         if (_isClaimingAll) return;
         _isClaimingAll = true;
+
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
         try
         {
@@ -606,6 +611,8 @@ public class FriendWindow : GenericWindow
 
     private async UniTaskVoid OnClickSearchAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (searchInput == null) return;
 
         string nickname = searchInput.text?.Trim();
@@ -695,6 +702,12 @@ public class FriendWindow : GenericWindow
 
     #endregion
 
+    private void OnClickCloseButton()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+        WindowManager.Instance?.CloseOverlay(WindowType.Friend);
+    }
+
     #region Helpers
 
     /// <summary>
@@ -733,6 +746,7 @@ public class FriendWindow : GenericWindow
         if (_currentTab != TabType.List)
             return;
 
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         _isManageMode = true;
         UpdateUIForTab();
         UpdateHeaderButtons();
@@ -741,6 +755,8 @@ public class FriendWindow : GenericWindow
 
     private void OnClickBackButton()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (_isManageMode)
         {
             _isManageMode = false;
@@ -768,6 +784,7 @@ public class FriendWindow : GenericWindow
 
     private void OnClickToggleRequestMode()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         _isSentRequestMode = !_isSentRequestMode;
         UpdateHeaderButtons();
         RefreshAsync().Forget();

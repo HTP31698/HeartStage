@@ -183,6 +183,8 @@ public class ConfirmDialog : MonoBehaviour
 
     private void OnClickConfirm()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         var callback = _onConfirm;
         _onConfirm = null;
         _onCancel = null;
@@ -193,6 +195,8 @@ public class ConfirmDialog : MonoBehaviour
 
     private void OnClickCancel()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+
         var callback = _onCancel;
         _onConfirm = null;
         _onCancel = null;
