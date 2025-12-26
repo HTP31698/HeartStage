@@ -20,6 +20,8 @@ public class TutorialStage : MonoBehaviour
     [SerializeField] private Button feverButton;
     [SerializeField] private Button selectWindowBackButton;
 
+    [SerializeField] private DraggableSlot[] draggableSlots;
+
     private GameObject stageBorderParent;
     [SerializeField] private Image stageBorderImage;
 
@@ -31,6 +33,12 @@ public class TutorialStage : MonoBehaviour
     private bool isWaitingForCharacterClick = false; // 캐릭터 클릭 대기 상태
     private bool isWaitingForStartButton = false; // 스타트 버튼 대기 상태 추가
     private bool isAutoProgression = false; // 자동 진행 모드 상태
+    private bool closeCharacterInfoOnce = false; 
+
+    private bool isProcessingInput = false; // 입력 처리 중 플래그 추가
+    private float lastClickTime = 0f; // 마지막 클릭 시간
+    private const float clickCool = 0.3f; 
+
     private float autoProgressionInterval = 1.1f; // 자동 진행 간격
     private float autoProgressionTimer = 0f; // 자동 진행 타이머
 
@@ -41,7 +49,7 @@ public class TutorialStage : MonoBehaviour
     private int requiredCharacterCount = 3; // 필요한 캐릭터 수
 
     [SerializeField] private GameObject characterStage; // 캐릭터가 배치되는 스테이지
-    [SerializeField] private Button infoButton; 
+    [SerializeField] private Button infoButton;
 
     private void Awake()
     {
@@ -78,6 +86,8 @@ public class TutorialStage : MonoBehaviour
         isAutoProgression = false; // 자동 진행 모드 초기화
         autoProgressionTimer = 0f; // 타이머 초기화
         waitingCharacterSlot = null;
+        isProcessingInput = false;
+        lastClickTime = 0f;
         characterPlaceCount = 0;
 
         HideAllArrows();
@@ -86,6 +96,7 @@ public class TutorialStage : MonoBehaviour
         // 모든 버튼과 캐릭터 상호작용 다시 활성화
         EnableOtherButtons();
         EnableCharacterInteraction();
+        EnableCharacterSlotDragging();
 
         if (selectWindowBackButton != null)
             selectWindowBackButton.interactable = true;
@@ -118,6 +129,8 @@ public class TutorialStage : MonoBehaviour
         if (isWaitingForCharacterClick) return;
         if (isWaitingForCharacterDrag) return;
         if (isWaitingForStartButton) return;
+        if (isProcessingInput) return; 
+
 
         // 자동 진행 모드일 때
         if (isAutoProgression)
@@ -134,7 +147,10 @@ public class TutorialStage : MonoBehaviour
             return; // 자동 진행 모드일 때는 수동 클릭 무시
         }
 
-        // 기존 수동 클릭 처리
+        if (Time.unscaledTime - lastClickTime < clickCool)
+            return;
+
+        // 클릭 처리
         if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
         {
             OnScreenClicked();
@@ -143,14 +159,36 @@ public class TutorialStage : MonoBehaviour
 
     private void OnScreenClicked()
     {
-        if (isTyping)
+        if (isProcessingInput) return;
+
+        if (Time.unscaledTime - lastClickTime < clickCool)
+            return;
+
+        lastClickTime = Time.unscaledTime;
+        isProcessingInput = true;
+
+        try
         {
-            isTyping = false;
+            if (isTyping)
+            {
+                isTyping = false;
+            }
+            else
+            {
+                NextScript();
+            }
         }
-        else
+        finally
         {
-            NextScript();
+            ResetInputProcessingFlag().Forget();
         }
+    }
+
+    // 입력 처리 플래그를 다음 프레임에서 해제
+    private async UniTaskVoid ResetInputProcessingFlag()
+    {
+        await UniTask.Yield();
+        isProcessingInput = false;
     }
 
     public void StartLocationScript(int locationId)
@@ -211,11 +249,18 @@ public class TutorialStage : MonoBehaviour
         }
 
         isTyping = false;
+
+        // 약간의 딜레이 후에 액션 실행 바로 눌리는거 방지
+        await UniTask.Delay(100, DelayType.UnscaledDeltaTime);
+
         ExecuteScriptAction(currentScripts[currentScriptIndex]);
     }
 
     private void NextScript()
     {
+        if (isProcessingInput && currentScriptIndex >= currentScripts.Count - 1)
+            return;
+
         currentScriptIndex++;
         ShowCurrentScript();
     }
@@ -275,22 +320,22 @@ public class TutorialStage : MonoBehaviour
         switch (script.Action)
         {
             case "IdolArrow":
-                ActionIdolArrow();
+                ActionIdolArrow(); // 아이돌 정보창 열기
                 break;
             case "DragArrow":
-                ActionDragArrow();
+                ActionDragArrow(); // 캐릭터 드래그 배치
                 break;
             case "BuffStageLine":
-                ActionBuffStageLine();
+                ActionBuffStageLine(); // 스테이지 라인 강조
                 break;
             case "InfoArrow":
-                ActionInfoArrow();
+                ActionInfoArrow(); // 버프 정보창 
                 break;
             case "ReturnArrow":
-                ActionReturnArrow();
+                ActionReturnArrow(); // 리턴 버튼
                 break;
             case "StartArrow":
-                ActionStartArrow();
+                ActionStartArrow(); // 스타트 
                 break;
             case "StopLineArrow":
                 ActionStopLineArrow();
@@ -323,6 +368,8 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionIdolArrowAsync()
     {
+        closeCharacterInfoOnce = false;
+
         // OwnedCharacterSetup이 준비될 때까지 대기
         if (ownedCharacterSetup != null)
         {
@@ -343,8 +390,8 @@ public class TutorialStage : MonoBehaviour
             // characterInfoCloseButton을 제외한 다른 버튼들만 비활성화
             DisableOtherButtonsExceptInfo();
 
-            // 첫 번째 캐릭터 외의 모든 캐릭터 상호작용 비활성화
-            DisableOtherCharacterInteraction(firstCharacterSlot);
+            // 캐릭터 드래그 완전히 차단 (정보창 열기만 허용)
+            DisableCharacterDragForInfoOnly(firstCharacterSlot);
 
             // 캐릭터 클릭 대기 상태로 설정
             isWaitingForCharacterClick = true;
@@ -352,6 +399,52 @@ public class TutorialStage : MonoBehaviour
 
             // 화살표를 대상 위에 표시
             ShowArrowOnTarget(firstCharacterSlot);
+        }
+    }
+
+    // IdolArrow에서 사용: 캐릭터 드래그는 차단하고 정보창 열기만 허용
+    private void DisableCharacterDragForInfoOnly(Transform targetCharacter)
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                if (dragMe.transform == targetCharacter)
+                {
+                    // 타겟 캐릭터는 정보창 열기만 가능하도록 설정
+                    dragMe.enabled = false; // 드래그 기능 완전 비활성화
+
+                    // 클릭 이벤트만 허용하기 위해 Button 컴포넌트 활성화
+                    Button characterButton = dragMe.GetComponent<Button>();
+                    if (characterButton == null)
+                    {
+                        characterButton = dragMe.gameObject.AddComponent<Button>();
+                    }
+
+                    // 정보창 열기 이벤트 등록
+                    characterButton.onClick.RemoveAllListeners();
+                    characterButton.onClick.AddListener(() => {
+                        // 캐릭터 정보창 열기 로직 (기존 DragMe의 정보창 열기 로직과 동일)
+                        var characterData = dragMe.GetComponent<DragMe>()?.characterData;
+                        if (characterData != null)
+                        {
+                            WindowManager.Instance.Open(WindowType.CharacterInfo);
+                            // CharacterInfoWindow에 데이터 설정하는 로직 추가 필요
+                        }
+                    });
+                }
+                else
+                {
+                    // 다른 캐릭터들은 완전히 비활성화
+                    dragMe.enabled = false;
+                    Image dragMeImage = dragMe.GetComponent<Image>();
+                    if (dragMeImage != null)
+                    {
+                        dragMeImage.raycastTarget = false;
+                    }
+                }
+            }
         }
     }
 
@@ -364,29 +457,10 @@ public class TutorialStage : MonoBehaviour
         if (infoButton != null)
             infoButton.interactable = false;
 
-        // characterInfoCloseButton은 활성화 상태로 유지 (비활성화하지 않음)
+        // characterInfoCloseButton은 활성화 상태로 유지
     }
 
-    // 특정 캐릭터를 제외한 나머지 캐릭터들의 상호작용 비활성화
-    private void DisableOtherCharacterInteraction(Transform targetCharacter)
-    {
-        if (ownedCharacterSetup?.content != null)
-        {
-            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
-            foreach (var dragMe in dragMeComponents)
-            {
-                // 타겟 캐릭터가 아닌 경우에만 비활성화
-                if (dragMe.transform != targetCharacter)
-                {
-                    Image dragMeImage = dragMe.GetComponent<Image>();
-                    if (dragMeImage != null)
-                    {
-                        dragMeImage.raycastTarget = false;
-                    }
-                }
-            }
-        }
-    }
+
 
     private Transform FindFirstCharacterSlot()
     {
@@ -473,10 +547,41 @@ public class TutorialStage : MonoBehaviour
             // 패널을 투명하게 설정
             SetPanelTransparent();
 
+            // 캐릭터 드래그 활성화 (정상적인 드래그 허용)
+            EnableCharacterDragForPlacement();
+
             isWaitingForCharacterDrag = true;
 
             // 화살표를 대상 위에 표시하고 드래그 애니메이션 시작
             ShowDragArrowOnTarget(nextCharacterSlot);
+        }
+    }
+
+    // DragArrow에서 사용: 캐릭터 드래그를 정상적으로 허용
+    private void EnableCharacterDragForPlacement()
+    {
+        if (ownedCharacterSetup?.content != null)
+        {
+            DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
+            foreach (var dragMe in dragMeComponents)
+            {
+                // 모든 DragMe 컴포넌트 활성화
+                dragMe.enabled = true;
+
+                // 임시로 추가된 Button 컴포넌트 제거 (IdolArrow에서 추가된 것)
+                Button tempButton = dragMe.GetComponent<Button>();
+                if (tempButton != null)
+                {
+                    DestroyImmediate(tempButton);
+                }
+
+                // raycastTarget 활성화
+                Image dragMeImage = dragMe.GetComponent<Image>();
+                if (dragMeImage != null)
+                {
+                    dragMeImage.raycastTarget = true;
+                }
+            }
         }
     }
 
@@ -748,7 +853,7 @@ public class TutorialStage : MonoBehaviour
 
     private void ActionReturnArrow()
     {
-        HideAllArrows(); 
+        HideAllArrows();
         if (returnButton != null)
         {
             ShowArrowOnTarget(returnButton.transform);
@@ -769,6 +874,9 @@ public class TutorialStage : MonoBehaviour
 
             // 캐릭터 드래그/클릭 비활성화
             DisableCharacterInteraction();
+
+            // 배치된 캐릭터들을 빼는 것 방지
+            DisableCharacterSlotDragging();
 
             // 스타트 버튼 클릭 이벤트 등록
             startButton.onClick.AddListener(OnStartButtonClicked);
@@ -1049,10 +1157,20 @@ public class TutorialStage : MonoBehaviour
             DragMe[] dragMeComponents = ownedCharacterSetup.content.GetComponentsInChildren<DragMe>();
             foreach (var dragMe in dragMeComponents)
             {
+                // DragMe 컴포넌트 활성화
+                dragMe.enabled = true;
+
                 Image dragMeImage = dragMe.GetComponent<Image>();
                 if (dragMeImage != null)
                 {
                     dragMeImage.raycastTarget = true;
+                }
+
+                // 임시로 추가된 Button 컴포넌트 제거
+                Button tempButton = dragMe.GetComponent<Button>();
+                if (tempButton != null)
+                {
+                    DestroyImmediate(tempButton);
                 }
             }
         }
@@ -1060,30 +1178,49 @@ public class TutorialStage : MonoBehaviour
 
     private void OnStartButtonClicked()
     {
-        // 버튼 이벤트 해제
-        if (startButton != null)
+        // 입력 처리 중이면 무시
+        if (isProcessingInput) return;
+
+        // 클릭 쿨다운 체크
+        if (Time.unscaledTime - lastClickTime < clickCool) return;
+
+        // 클릭 시간 업데이트 및 입력 처리 플래그 설정
+        lastClickTime = Time.unscaledTime;
+        isProcessingInput = true;
+
+        try
         {
-            startButton.onClick.RemoveListener(OnStartButtonClicked);
+            // 버튼 이벤트 해제
+            if (startButton != null)
+            {
+                startButton.onClick.RemoveListener(OnStartButtonClicked);
+            }
+
+            // 화살표 숨기기 및 패널 복원
+            HideAllArrows();
+            RestorePanel();
+
+            // 다른 버튼들 다시 활성화
+            EnableOtherButtons();
+
+            // 캐릭터 드래그/클릭 다시 활성화
+            EnableCharacterInteraction();
+
+            EnableCharacterSlotDragging();
+
+            // 스타트 버튼 대기 상태 해제
+            isWaitingForStartButton = false;
+
+            // 자동 진행 모드 시작
+            isAutoProgression = true;
+
+            // 다음 스크립트로 진행
+            NextScript();
         }
-
-        // 화살표 숨기기 및 패널 복원
-        HideAllArrows();
-        RestorePanel();
-
-        // 다른 버튼들 다시 활성화
-        EnableOtherButtons();
-
-        // 캐릭터 드래그/클릭 다시 활성화
-        EnableCharacterInteraction();
-
-        // 스타트 버튼 대기 상태 해제
-        isWaitingForStartButton = false;
-
-        // 자동 진행 모드 시작
-        isAutoProgression = true;
-
-        // 다음 스크립트로 진행
-        NextScript();
+        finally
+        {
+            ResetInputProcessingFlag().Forget();
+        }
     }
 
     // 다른 버튼들 비활성화
@@ -1190,24 +1327,44 @@ public class TutorialStage : MonoBehaviour
 
     private void OnCharacterInfoCloseButtonClicked()
     {
-        // 캐릭터 클릭 대기 중인 경우 상태 복원
-        if (isWaitingForCharacterClick)
+        // 입력 처리 중이면 무시
+        if (isProcessingInput) return;
+
+        // 클릭 쿨다운 체크
+        if (Time.unscaledTime - lastClickTime < clickCool) return;
+
+        // 클릭 시간 업데이트 및 입력 처리 플래그 설정
+        lastClickTime = Time.unscaledTime;
+        isProcessingInput = true;
+
+        try
         {
-            // 화살표 숨기기 및 패널 복원
+            // 캐릭터 클릭 대기 중인 경우 상태 복원
+            if (isWaitingForCharacterClick && !closeCharacterInfoOnce)
+            {
+                closeCharacterInfoOnce = true;
+
+                // 화살표 숨기기 및 패널 복원
+                HideAllArrows();
+                RestorePanel();
+
+                // 모든 버튼과 캐릭터 상호작용 다시 활성화
+                EnableOtherButtons();
+                EnableCharacterInteraction();
+
+                // 캐릭터 클릭 대기 상태 해제
+                isWaitingForCharacterClick = false;
+                waitingCharacterSlot = null;
+
+                NextScript();
+            }
+
             HideAllArrows();
-            RestorePanel();
-
-            // 모든 버튼과 캐릭터 상호작용 다시 활성화
-            EnableOtherButtons();
-            EnableCharacterInteraction();
-
-            // 캐릭터 클릭 대기 상태 해제
-            isWaitingForCharacterClick = false;
-            waitingCharacterSlot = null;
         }
-
-        NextScript();
-        HideAllArrows();
+        finally
+        {
+            ResetInputProcessingFlag().Forget();
+        }
     }
 
     private void ActionFeverArrow()
@@ -1250,12 +1407,9 @@ public class TutorialStage : MonoBehaviour
             if (currentScripts[i].Action == "StageClear")
             {
                 currentScriptIndex = i;
-                Debug.Log($"[TutorialStage] StageClear 스크립트 찾음! 인덱스: {i}");
                 return;
             }
         }
-
-        Debug.LogWarning("[TutorialStage] StageClear 스크립트를 찾을 수 없습니다!");
     }
 
     private void ActionStageClear()
@@ -1301,5 +1455,56 @@ public class TutorialStage : MonoBehaviour
         isAutoProgression = true;
 
         NextScript();
+    }
+
+    private void DisableCharacterSlotDragging()
+    {
+        // DraggableSlot들을 찾아서 드래그 기능 비활성화
+        foreach (var slot in draggableSlots)
+        {
+            // DraggableSlot 컴포넌트 비활성화 (드래그 방지)
+            slot.enabled = false;
+
+            // 혹시 Image 컴포넌트가 있다면 raycast 차단
+            Image slotImage = slot.GetComponent<Image>();
+            if (slotImage != null)
+            {
+                slotImage.raycastTarget = false;
+            }
+
+            // receivingImage도 raycast 차단
+            if (slot.receivingImage != null)
+            {
+                slot.receivingImage.raycastTarget = false;
+            }
+        }
+
+        Debug.Log("[TutorialStage] 배치된 캐릭터 슬롯 드래그 비활성화 완료");
+    }
+
+    // 배치된 캐릭터 슬롯(DraggableSlot)의 드래그 기능 복원
+    private void EnableCharacterSlotDragging()
+    {
+        // DraggableSlot들을 찾아서 드래그 기능 복원
+        foreach (var slot in draggableSlots)
+        {
+            // DraggableSlot 컴포넌트 활성화
+            slot.enabled = true;
+
+            // Image 컴포넌트 raycast 복원
+            Image slotImage = slot.GetComponent<Image>();
+            if (slotImage != null)
+            {
+                slotImage.raycastTarget = true;
+            }
+
+            // receivingImage raycast 복원
+            if (slot.receivingImage != null)
+            {
+                slot.receivingImage.raycastTarget = true;
+            }
+        }
+
+        Debug.Log("[TutorialStage] 배치된 캐릭터 슬롯 드래그 복원 완료");
     }
 }
