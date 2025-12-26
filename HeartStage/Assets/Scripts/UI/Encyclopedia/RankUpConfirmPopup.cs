@@ -9,9 +9,6 @@ using UnityEngine.UI;
 /// </summary>
 public class RankUpConfirmPopup : MonoBehaviour
 {
-    [Header("팝업 컨트롤")]
-    [SerializeField] private GameObject dimBackground;           // 딤 배경
-    private CanvasGroup _dimCanvasGroup;
     [SerializeField] private Button closeButton;
 
     [Header("현재 등급 정보")]
@@ -57,6 +54,7 @@ public class RankUpConfirmPopup : MonoBehaviour
     private RankUpData _rankUpData;
 
     private bool _isOpen;
+    private int _openFrame;  // 열린 프레임 (같은 프레임에 Close 방지)
 
     private void Awake()
     {
@@ -65,16 +63,6 @@ public class RankUpConfirmPopup : MonoBehaviour
 
         if (rankUpButton != null)
             rankUpButton.onClick.AddListener(OnRankUpButtonClick);
-
-        // 딤 배경 클릭 시 닫기
-        if (dimBackground != null)
-        {
-            var dimButton = dimBackground.GetComponent<Button>();
-            if (dimButton == null)
-                dimButton = dimBackground.AddComponent<Button>();
-            dimButton.transition = Selectable.Transition.None;
-            dimButton.onClick.AddListener(Close);
-        }
     }
 
     private void OnDisable()
@@ -116,6 +104,7 @@ public class RankUpConfirmPopup : MonoBehaviour
         }
 
         _isOpen = true;
+        _openFrame = Time.frameCount;  // 같은 프레임에 Close 방지용
 
         // 팝업 먼저 활성화 (자식 오브젝트들이 활성화되려면 부모가 먼저 활성화되어야 함)
         gameObject.SetActive(true);
@@ -129,15 +118,31 @@ public class RankUpConfirmPopup : MonoBehaviour
         // 강화 버튼 상태 설정
         UpdateRankUpButton();
 
-        // 딤 배경 켜기 + alpha 설정
-        if (dimBackground != null)
+        // 공용 딤 배경 표시 및 이벤트 구독
+        if (WindowManager.Instance != null)
         {
-            if (_dimCanvasGroup == null)
-                _dimCanvasGroup = dimBackground.GetComponent<CanvasGroup>();
-            if (_dimCanvasGroup != null)
-                _dimCanvasGroup.alpha = 1f;
-            dimBackground.SetActive(true);
+            WindowManager.Instance.ShowDimManual();
+            WindowManager.Instance.OnDimClicked += OnDimClicked;
         }
+    }
+
+    /// <summary>
+    /// 딤 클릭으로 닫힐 때 호출
+    /// </summary>
+    private void OnDimClicked()
+    {
+        // 열린 프레임과 같은 프레임에서는 닫지 않음 (터치 중복 방지)
+        if (Time.frameCount == _openFrame)
+            return;
+
+        if (WindowManager.Instance != null)
+            WindowManager.Instance.OnDimClicked -= OnDimClicked;
+
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+
+        _isOpen = false;
+        gameObject.SetActive(false);
     }
 
     /// <summary>
@@ -145,18 +150,21 @@ public class RankUpConfirmPopup : MonoBehaviour
     /// </summary>
     public void Close()
     {
+        // 열린 프레임과 같은 프레임에서는 닫지 않음 (터치 중복 방지)
+        if (Time.frameCount == _openFrame)
+            return;
+
         if (!_isOpen)
             return;
 
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
 
-        // 딤 배경 끄기
-        if (dimBackground != null)
+        // 딤 배경 숨기기 및 이벤트 해제
+        if (WindowManager.Instance != null)
         {
-            if (_dimCanvasGroup != null)
-                _dimCanvasGroup.alpha = 0f;
-            dimBackground.SetActive(false);
+            WindowManager.Instance.OnDimClicked -= OnDimClicked;
+            WindowManager.Instance.HideDimManual();
         }
 
         _isOpen = false;

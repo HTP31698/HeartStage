@@ -98,10 +98,18 @@ public class CostumeController : MonoBehaviour
         int count = Mathf.Min(sprites.Length, renderers.Length);
         for (int i = 0; i < count; i++)
         {
-            if (renderers[i] != null && sprites[i] != null)
+            if (renderers[i] != null)
             {
+                // sprites[i]가 null이면 렌더러도 null로 설정 (5개짜리 의상의 6번째 등)
                 renderers[i].sprite = sprites[i];
             }
+        }
+
+        // 남은 렌더러 클리어 (스프라이트 배열보다 렌더러가 많을 때)
+        for (int i = sprites.Length; i < renderers.Length; i++)
+        {
+            if (renderers[i] != null)
+                renderers[i].sprite = null;
         }
     }
 

@@ -934,20 +934,25 @@ public class CharacterDetailPanel : MonoBehaviour
             return;
         }
 
+        // 이미 팝업이 열려있으면 무시 (더블 터치 방지)
+        if (costumeSelectPopup != null && costumeSelectPopup.IsOpen)
+            return;
+
         if (SoundManager.Instance != null)
             SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
-        if (costumeSelectPopup != null)
+        if (costumeSelectPopup == null)
+            return;
+
+        // 현재 캐릭터 프리팹의 CostumeController 전달
+        CostumeController costumeController = null;
+        if (_currentCharacterPrefab != null)
         {
-            // 현재 캐릭터 프리팹의 CostumeController 전달
-            CostumeController costumeController = null;
-            if (_currentCharacterPrefab != null)
-            {
-                costumeController = _currentCharacterPrefab.GetComponent<CostumeController>();
-            }
-            // RenderTexture도 함께 전달하여 의상 선택 팝업에서 실시간 프리뷰 가능
-            costumeSelectPopup.Open(_currentCharacterData.char_name, type, costumeController, _characterRenderTexture);
+            costumeController = _currentCharacterPrefab.GetComponent<CostumeController>();
         }
+
+        // 팝업 열기 (내부에서 NoteLoadingUI 표시 및 데이터 로드)
+        costumeSelectPopup.Open(_currentCharacterData.char_name, type, costumeController, _characterRenderTexture);
     }
 
     /// <summary>
