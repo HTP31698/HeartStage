@@ -115,6 +115,8 @@ public class FriendDeleteItemUI : MonoBehaviour
 
     private void OnClickIcon()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (string.IsNullOrEmpty(_friendUid))
             return;
 
@@ -131,6 +133,8 @@ public class FriendDeleteItemUI : MonoBehaviour
 
     private async UniTaskVoid OnClickDeleteAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (string.IsNullOrEmpty(_friendUid))
             return;
 

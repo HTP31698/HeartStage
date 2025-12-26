@@ -77,6 +77,8 @@ public class FriendAddItemUI : MonoBehaviour
 
     private void OnClickIcon()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (_profileData == null || string.IsNullOrEmpty(_profileData.uid))
             return;
 
@@ -98,6 +100,8 @@ public class FriendAddItemUI : MonoBehaviour
 
     private async UniTaskVoid OnClickRequestAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (_profileData == null)
             return;
 

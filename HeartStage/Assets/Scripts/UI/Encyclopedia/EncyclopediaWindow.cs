@@ -239,6 +239,8 @@ public class EncyclopediaWindow : GenericWindow
 
     private void OnCharacterSelectedByName(string name)
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (detailPanel == null)
         {
             Debug.LogWarning("[EncyclopediaWindow] detailPanel null");
