@@ -29,6 +29,10 @@ public class TutorialPanel : GenericWindow
     private bool isTyping = false;
     private bool isWaitingForBattleButton = false; // 배틀 버튼 대기 상태
 
+    private bool isProcessingClick = false; // 클릭 처리 중인지 여부
+    private float clickCooldown = 0.3f; // 클릭 쿨다운 시간
+    private float lastClickTime = 0f; // 마지막 클릭 시간
+
     protected override void Awake()
     {
         base.Awake();
@@ -65,6 +69,8 @@ public class TutorialPanel : GenericWindow
         isPlaying = false;
         isTyping = false;
         isWaitingForBattleButton = false;
+        isProcessingClick = false; // 추가
+        lastClickTime = 0f; // 추가
 
         // 백그라운드 패널 복원
         if (backgroundPanel != null)
@@ -91,6 +97,11 @@ public class TutorialPanel : GenericWindow
 
         // 배틀 버튼 대기 중이면 화면 클릭 무시
         if (isWaitingForBattleButton) return;
+
+        if (isProcessingClick) return;
+
+        if (Time.unscaledTime - lastClickTime < clickCooldown)
+            return;
 
         // 마우스 클릭 또는 터치 감지 (TutorialManager와 동일)
         if (Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began))
@@ -186,16 +197,33 @@ public class TutorialPanel : GenericWindow
             return;
         }
 
-        if (isTyping)
+        isProcessingClick = true;
+        lastClickTime = Time.unscaledTime;
+
+        try
         {
-            // 타이핑 중이면 즉시 완료
-            isTyping = false;
+            if (isTyping)
+            {
+                // 타이핑 중이면 즉시 완료
+                isTyping = false;
+            }
+            else
+            {
+                // 타이핑이 끝났으면 다음 대사로
+                NextScript();
+            }
         }
-        else
+        finally
         {
-            // 타이핑이 끝났으면 다음 대사로
-            NextScript();
+            // 다음 프레임에서 클릭 처리 플래그 해제
+            ResetClickProcessingFlag().Forget();
         }
+    }
+
+    private async UniTaskVoid ResetClickProcessingFlag()
+    {
+        await UniTask.Yield();
+        isProcessingClick = false;
     }
 
     private void NextScript()
@@ -588,16 +616,30 @@ public class TutorialPanel : GenericWindow
 
     private void OnBattleButtonClicked()
     {
+        // 클릭 처리 중이면 무시
+        if (isProcessingClick) return;
+
+        isProcessingClick = true;
+        lastClickTime = Time.unscaledTime;
+
         if (tutorialSelectWindowPanel != null)
         {
             tutorialSelectWindowPanel.SetActive(true);
         }
+
         OnButtonClickedCommon(battleButton);
+        ResetClickProcessingFlag().Forget();
     }
 
     // 튜토리얼 스테이지 버튼 클릭
     private void OnTutorialStageButtonClicked(Button tutorialButton)
     {
+        // 클릭 처리 중이면 무시
+        if (isProcessingClick) return;
+
+        isProcessingClick = true;
+        lastClickTime = Time.unscaledTime;
+
         // 버튼 이벤트 해제
         if (tutorialButton != null)
         {
@@ -619,6 +661,8 @@ public class TutorialPanel : GenericWindow
 
         // 다음 스크립트로 넘어가지 말고 바로 StageStartArrow 실행
         ShowStageStartArrow();
+
+        ResetClickProcessingFlag().Forget();
     }
 
     // 버튼 클릭 시 공통 처리
@@ -737,8 +781,16 @@ public class TutorialPanel : GenericWindow
 
     private void OnStageStartButtonClicked()
     {
+        // 클릭 처리 중이면 무시
+        if (isProcessingClick) return;
+
+        isProcessingClick = true;
+        lastClickTime = Time.unscaledTime;
+
         OnButtonClickedCommon(stageStartButton);
         CompleteTutorial();
+
+        ResetClickProcessingFlag().Forget();
     }
 
     // StageInfoWindow 내에서 stageStartButton만 활성화, 나머지 버튼은 비활성화

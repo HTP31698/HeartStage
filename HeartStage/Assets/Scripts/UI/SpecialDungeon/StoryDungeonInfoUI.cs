@@ -34,8 +34,6 @@ public class StoryDungeonInfoUI : GenericWindow
         {
             CreateStoryInfoPrefab(stageData);
         }
-
-        Debug.Log($"스토리 던전 UI: 총 {createdStoryPrefabs.Count}개의 스테이지 프리팹 생성 완료");
     }
 
     /// 개별 StoryInfoPrefab 생성
