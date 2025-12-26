@@ -6,6 +6,7 @@ public class ReverseCharmSkill : BaseProjectileSkill
     {
         poolId = "ReverseCharm";
         skillId = 31206;
+        sfxName = SoundName.SFX_ReverseCharm_Skill;
     }
 
     protected override Vector3 GetStartPosition() => transform.position;

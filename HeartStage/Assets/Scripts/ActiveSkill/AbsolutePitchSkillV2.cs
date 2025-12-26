@@ -6,6 +6,7 @@ public class AbsolutePitchSkillV2 : BaseProjectileSkill
     {
         poolId = "AbsolutePitchSkillV2";
         skillId = 31221;
+        sfxName = SoundName.SFX_AbsolutePitch_Skill;
     }
 
     protected override Vector3 GetStartPosition() => transform.position;

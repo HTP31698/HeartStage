@@ -12,6 +12,7 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
     // 각각 독립적으로 설정 가능
     protected string poolId;    // PoolManager에 등록할 고유 이름
     protected int skillId; // 스킬 ID
+    protected string sfxName; // sfx 이름
     protected string skillDataName;
 
     protected PenetrationType penetrationType = PenetrationType.NonPenetrate;
@@ -154,6 +155,8 @@ public abstract class BaseProjectileSkill : MonoBehaviour, ISkillBehavior
             boomerangDist,
             isBlackHole
         );
+        // SFX Play
+        SoundManager.Instance.PlaySFX(sfxName);
 
         // 장판 스킬 시
         if (skillData.skill_duration > 0f)

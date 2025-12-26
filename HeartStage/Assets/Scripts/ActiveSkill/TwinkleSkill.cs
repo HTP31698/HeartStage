@@ -6,6 +6,7 @@ public class TwinkleSkill : BaseProjectileSkill
     {
         poolId = "TwinkleSkill";
         skillId = 31214;
+        sfxName = SoundName.SFX_Twinkle_Skill;
     }
 
     protected override Vector3 GetStartPosition() => transform.position;

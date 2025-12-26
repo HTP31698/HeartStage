@@ -6,6 +6,7 @@ public class HeartBombSkillV2 : BaseProjectileSkill
     {
         poolId = "HeartBombV2";
         skillId = 31209;
+        sfxName = SoundName.SFX_HeartBomb_Skill;
     }
 
     protected override Vector3 GetStartPosition() => GetCenterInMonsters();

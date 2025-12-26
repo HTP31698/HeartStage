@@ -128,6 +128,17 @@ public class SoundName
     public static readonly string SFX_Boss_Appear = "boss_alert";
     public static readonly string SFX_Purchase_Fail = string.Empty; // 상점에서 재화가 부족해서 아이템 구매 실패할 때
     public static readonly string SFX_Purchase_Success = string.Empty; // 상점에서 아이템 구매 성공
+    public static readonly string SFX_Character_Default_Attack = string.Empty; // 캐릭터 기본 공격 발사 시
+    public static readonly string SFX_Meteor_Melody_Skill = string.Empty; // 유성의 멜로디 스킬, 승아 캐릭터 스킬
+    public static readonly string SFX_Fairy_Skill = string.Empty; // 입덕 요정 스킬(부메랑), 에리 캐릭터 스킬
+    public static readonly string SFX_Twinkle_Skill = string.Empty; // 시선을 끄는 눈빛 스킬(블랙홀), 레나 캐릭터 스킬
+    public static readonly string SFX_Acrobat_Skill = string.Empty; // 곡예사 스킬(단일로 여러발 발사 관통 x), 지우 캐릭터 스킬
+    public static readonly string SFX_MaknaeOnTop_Skill = string.Empty; // 막내온탑 스킬(넉백시키는 벽 발사), 지아 캐릭터 스킬
+    public static readonly string SFX_AbsolutePitch_Skill = string.Empty; // 절대음감 스킬(단일로 여러발 발사 관통 o), 아윤 캐릭터 스킬
+    public static readonly string SFX_FaceGenius_Skill = string.Empty; // 얼굴천재 스킬(맞으면 실명시킴), 하나 캐릭터 스킬
+    public static readonly string SFX_SonicAttack_Skill = string.Empty; // 엔터테이너 스킬(음파 공격), 세라 캐릭터 스킬
+    public static readonly string SFX_ReverseCharm_Skill = string.Empty; // 반전매력 스킬(유혹), 리아 캐릭터 스킬
+    public static readonly string SFX_HeartBomb_Skill = string.Empty; // 다이너마이트 스킬(광역 공격 + 스턴), 지안 캐릭터 스킬
 }
 
 public class ItemID

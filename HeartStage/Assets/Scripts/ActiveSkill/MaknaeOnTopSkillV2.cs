@@ -6,6 +6,7 @@ public class MaknaeOnTopSkillV2 : BaseProjectileSkill
     {
         poolId = "MaknaeOnTopSkillV2";
         skillId = 31219;
+        sfxName = SoundName.SFX_MaknaeOnTop_Skill;
     }
 
     protected override Vector3 GetStartPosition() => transform.position;

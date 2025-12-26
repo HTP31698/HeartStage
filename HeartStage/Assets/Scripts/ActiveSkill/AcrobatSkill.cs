@@ -6,6 +6,7 @@ public class AcrobatSkill : BaseProjectileSkill
     {
         poolId = "AcrobatSkill";
         skillId = 31216;
+        sfxName = SoundName.SFX_Acrobat_Skill;
     }
 
     protected override Vector3 GetStartPosition() => transform.position;

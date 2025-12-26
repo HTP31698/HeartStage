@@ -6,6 +6,7 @@ public class SonicAttackSkillV2 : BaseProjectileSkill
     {
         poolId = "SonicAttackV2";
         skillId = 31205;
+        sfxName = SoundName.SFX_SonicAttack_Skill;
     }
 
     protected override Vector3 GetStartPosition() => transform.position;

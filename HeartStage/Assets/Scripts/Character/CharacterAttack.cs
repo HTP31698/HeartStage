@@ -1,6 +1,7 @@
 ﻿using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
+using System.Xml.Linq;
 using UnityEngine;
 
 public class CharacterAttack : MonoBehaviour
@@ -164,6 +165,9 @@ public class CharacterAttack : MonoBehaviour
         var dir = (targetPos - transform.position).normalized;
         projectile.GetComponent<CharacterProjectile>()
             .SetMissile(data.projectile_AssetName, data.hitEffect_AssetName, transform.position, dir, data.bullet_speed, final, penetration:penetrate, isCritical: isCritical);
+
+        // 사운드 
+        SoundManager.Instance.PlaySFX(SoundName.SFX_Character_Default_Attack);
     }
 
     private async UniTask FireAsync(Vector3 targetpos, float delay)
