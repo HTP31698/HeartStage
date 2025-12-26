@@ -4,6 +4,7 @@ using UnityEngine.UI;
 public class StoryDungeonUI : GenericWindow
 {
     [SerializeField] private Button stroyButton;
+    [SerializeField] private Button seraStoryButton;
 
     protected override void Awake()
     {
