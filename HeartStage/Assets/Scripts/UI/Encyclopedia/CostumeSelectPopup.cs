@@ -427,6 +427,8 @@ public class CostumeSelectPopup : MonoBehaviour
 
     public void OnClickItem(CostumeSlotItemUI clickedItem)
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_ChangeCloth);
+
         _selectedItemId = clickedItem.ItemId;
 
         // 선택 마크 + 장착 마크 업데이트

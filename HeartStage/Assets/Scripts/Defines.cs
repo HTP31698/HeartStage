@@ -126,6 +126,8 @@ public class SoundName
     public static readonly string SFX_UI_Gacha_Result = "ui_gacha_result";
     public static readonly string SFX_UI_StageClear = "stage_clear_01";
     public static readonly string SFX_Boss_Appear = "boss_alert";
+
+    public static readonly string SFX_UI_ChangeCloth = "ui_change_cloth"; // 옷 바뀔떄 나는 효과음
 }
 
 public class ItemID

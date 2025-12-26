@@ -97,6 +97,7 @@ public class SettingPanelUI : GenericWindow
 
     private void OnClickCopyUid()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         string uid = AuthManager.Instance?.UserId;
         if (string.IsNullOrEmpty(uid))
         {
@@ -110,6 +111,7 @@ public class SettingPanelUI : GenericWindow
 
     private void OnClickLogout()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         ConfirmDialog.ShowLogout(
             onConfirm: () =>
             {
@@ -126,13 +128,19 @@ public class SettingPanelUI : GenericWindow
     private void OnToggle30Changed(bool isOn)
     {
         if (isOn)
+        {
+            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
             SetFPS(30);
+        }
     }
 
     private void OnToggle60Changed(bool isOn)
     {
         if (isOn)
+        {
+            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
             SetFPS(60);
+        }
     }
 
     private void SetFPS(int fps)

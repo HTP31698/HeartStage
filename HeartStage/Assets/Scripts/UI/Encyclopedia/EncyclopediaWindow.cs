@@ -59,6 +59,7 @@ public class EncyclopediaWindow : GenericWindow
             _currentPage--;
             RenderButtons();
             UpdatePaginationUI();
+            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         }
     }
 
@@ -69,6 +70,7 @@ public class EncyclopediaWindow : GenericWindow
             _currentPage++;
             RenderButtons();
             UpdatePaginationUI();
+            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         }
     }
 
