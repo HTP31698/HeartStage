@@ -1,18 +1,19 @@
-﻿using UnityEngine;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 public class StoryDungeonInfoUI : GenericWindow
 {
     [Header("Story Stage Settings")]
-    [SerializeField] private Transform content; 
-    [SerializeField] private GameObject storyInfoPrefab; 
+    [SerializeField] private Transform content;
+    [SerializeField] private GameObject storyInfoPrefab;
 
     private List<StoryInfoPrefab> createdStoryPrefabs = new List<StoryInfoPrefab>();
 
     public override void Open()
     {
         base.Open();
-        CreateAllStoryStages();
+        CreateFilteredStoryStages();
     }
 
     public override void Close()
@@ -21,8 +22,8 @@ public class StoryDungeonInfoUI : GenericWindow
         ClearAllStoryStages();
     }
 
-    /// 모든 스토리 스테이지 프리팹 생성
-    private void CreateAllStoryStages()
+    /// 필터된 스토리 스테이지 프리팹 생성
+    private void CreateFilteredStoryStages()
     {
         // 기존 프리팹들 정리
         ClearAllStoryStages();
@@ -30,10 +31,36 @@ public class StoryDungeonInfoUI : GenericWindow
         // 스토리 스테이지 데이터 가져오기
         var orderedStoryStages = DataTableManager.StoryTable.GetOrderedStoryStages();
 
-        foreach (var stageData in orderedStoryStages)
+        // 현재 설정된 필터에 따라 스토리 필터링
+        var filteredStages = FilterStoriesByCharacter(orderedStoryStages, StoryDungeonUI.currentStoryFilter);
+
+        foreach (var stageData in filteredStages)
         {
             CreateStoryInfoPrefab(stageData);
         }
+    }
+
+    /// 캐릭터별로 스토리 필터링
+    private List<StoryStageCSVData> FilterStoriesByCharacter(List<StoryStageCSVData> allStories, string characterFilter)
+    {
+        if (string.IsNullOrEmpty(characterFilter))
+        {
+            // 필터가 없으면 모든 스토리 반환
+            return allStories;
+        }
+
+        // need_char 컬럼 기준으로 필터링
+        return allStories.Where(story => IsStoryForCharacter(story, characterFilter)).ToList();
+    }
+
+    /// 특정 캐릭터의 스토리인지 판단 (need_char 컬럼 기준)
+    private bool IsStoryForCharacter(StoryStageCSVData story, string characterFilter)
+    {
+        if (story == null || string.IsNullOrEmpty(characterFilter))
+            return true;
+
+        // CSV의 need_char 컬럼과 필터 문자열 비교
+        return story.need_char == characterFilter;
     }
 
     /// 개별 StoryInfoPrefab 생성
@@ -62,7 +89,6 @@ public class StoryDungeonInfoUI : GenericWindow
                 rectTransform.anchoredPosition3D = Vector3.zero;
             }
         }
-
         else
         {
             Destroy(stageObject);
