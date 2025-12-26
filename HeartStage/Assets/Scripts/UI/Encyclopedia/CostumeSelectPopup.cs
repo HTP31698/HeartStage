@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -581,10 +581,6 @@ public class CostumeSelectPopup : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-#if UNITY_EDITOR
-    /// <summary>
-    /// 디버그: 모든 의상 획득 (ItemTable에 존재하는 의상만)
-    /// </summary>
     private void DebugGetAllCostumes()
     {
         var saveData = SaveLoadManager.Data;
@@ -648,5 +644,4 @@ public class CostumeSelectPopup : MonoBehaviour
         // 리스트 새로고침
         RebuildListAsync().Forget();
     }
-#endif
 }
