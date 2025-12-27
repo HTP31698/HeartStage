@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 
 public class StoryDungeonInfoUI : GenericWindow
 {
@@ -77,15 +78,15 @@ public class StoryDungeonInfoUI : GenericWindow
         else
         {
             // 3프레임 연속으로 올바른 위치에 있으면 체크 중단
-            StartCoroutine(StopPositionCheckAfterDelay());
+            StopPositionCheckAfterDelay().Forget();
         }
     }
 
-    private IEnumerator StopPositionCheckAfterDelay()
+    private async UniTaskVoid StopPositionCheckAfterDelay()
     {
-        yield return null;
-        yield return null;
-        yield return null; // 3프레임 대기
+        await UniTask.NextFrame();
+        await UniTask.NextFrame();
+        await UniTask.NextFrame(); // 3프레임 대기
 
         needsPositionFix = false;
         Debug.Log("위치 강제 수정 완료 - LateUpdate 체크 중단");
@@ -133,7 +134,6 @@ public class StoryDungeonInfoUI : GenericWindow
         Debug.Log($"StoryDungeonInfoUI를 인덱스 {targetIndex}로 이동 완료");
     }
 
-    // 나머지 코드는 동일...
     private void CreateFilteredStoryStages()
     {
         ClearAllStoryStages();
