@@ -28,16 +28,7 @@ public class MonitoringItemPrefab : MonoBehaviour
         // 아이템 아이콘 설정
         if (itemIcon != null && !string.IsNullOrEmpty(itemData.prefab))
         {
-            var texture = ResourceManager.Instance.Get<Texture2D>(itemData.prefab);
-            if (texture != null)
-            {
-                itemIcon.sprite = Sprite.Create
-                (
-                    texture,
-                    new Rect(0, 0, texture.width, texture.height),
-                    new Vector2(0.5f, 0.5f)
-                );
-            }
+            itemIcon.sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
         }
     }
 }

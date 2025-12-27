@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -326,9 +326,7 @@ public class RankUpConfirmPopup : MonoBehaviour
             var itemData = DataTableManager.ItemTable?.Get(_rankUpData.Upgrade_ingrd_Itm1);
             if (itemData != null && !string.IsNullOrEmpty(itemData.prefab))
             {
-                var sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
-                if (sprite != null)
-                    pieceIcon.sprite = sprite;
+                pieceIcon.sprite = ResourceManager.Instance.GetSprite(itemData.prefab);
             }
         }
     }
@@ -386,11 +384,10 @@ public class RankUpConfirmPopup : MonoBehaviour
     /// </summary>
     private void ApplySkillIcon(Image iconImage, string iconKey)
     {
-        if (iconImage == null || string.IsNullOrEmpty(iconKey)) return;
+        if (iconImage == null || string.IsNullOrEmpty(iconKey)) 
+            return;
 
-        var sprite = ResourceManager.Instance.GetSprite(iconKey);
-        if (sprite != null)
-            iconImage.sprite = sprite;
+        iconImage.sprite = ResourceManager.Instance.GetSprite(iconKey);
     }
 
     /// <summary>
