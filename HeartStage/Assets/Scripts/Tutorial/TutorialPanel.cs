@@ -63,6 +63,8 @@ public class TutorialPanel : GenericWindow
 
     public override void Close()
     {
+        SoundManager.Instance?.StopVoiceSFX();
+
         base.Close();
 
         // 정리
@@ -154,7 +156,9 @@ public class TutorialPanel : GenericWindow
 
         var script = currentScripts[currentScriptIndex];
 
-        Debug.Log($"[TutorialPanel] 스크립트 {currentScriptIndex}: {script.Name} - {script.Text.Substring(0, Mathf.Min(20, script.Text.Length))}...");
+        SoundManager.Instance?.StopVoiceSFX();
+
+        PlayVoiceForCurrentScript(script);
 
         // 타이핑 효과로 텍스트 표시
         StartTypingEffect(script.Text).Forget();
@@ -818,5 +822,15 @@ public class TutorialPanel : GenericWindow
                 if (closeBtn != null) closeBtn.interactable = false;
             }
         }
+    }
+
+    private void PlayVoiceForCurrentScript(TutorialScriptCSVData script)
+    {
+        if (string.IsNullOrEmpty(script.Voice))
+        {
+            return;
+        }
+
+        SoundManager.Instance?.PlayVoiceSFX(script.Voice);
     }
 }

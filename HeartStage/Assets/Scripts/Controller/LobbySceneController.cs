@@ -293,14 +293,11 @@ public class LobbySceneController : MonoBehaviour
             saveData.isTutorialCutsceneCompleted &&
             saveData.isStageTutorialCompleted)
         {
-            Debug.Log("[LobbySceneController] 모든 튜토리얼 완료됨. 튜토리얼을 실행하지 않습니다.");
             return;
         }
 
-        // 1. 컷씬 튜토리얼이 미완료면 컷씬 시작
-        if (!saveData.isTutorialCutsceneCompleted && !ShouldSkipCutscene())
+        if (!saveData.isTutorialCutsceneCompleted)
         {
-            Debug.Log("[LobbySceneController] 컷씬 튜토리얼 시작");
             GameSceneManager.ChangeScene(SceneType.TutorialCutScene);
             return;
         }
@@ -312,13 +309,5 @@ public class LobbySceneController : MonoBehaviour
             WindowManager.Instance.OpenOverlay(WindowType.TutorialPanel);
             return;
         }
-
-        Debug.Log("[LobbySceneController] 실행할 튜토리얼 없음");
-    }
-
-    private bool ShouldSkipCutscene()
-    {
-        // 컷씬을 건너뛰어야 하는 조건들
-        return false;
     }
 }

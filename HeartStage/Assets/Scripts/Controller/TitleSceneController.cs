@@ -595,9 +595,10 @@ public class TitleSceneController : MonoBehaviour
 
     private async UniTaskVoid GoToLobby()
     {
-        if (SaveLoadManager.Data != null && !SaveLoadManager.Data.isTutorialCompleted)
+        if (SaveLoadManager.Data != null &&
+            !SaveLoadManager.Data.isTutorialCompleted &&
+            !SaveLoadManager.Data.isTutorialCutsceneCompleted)
         {
-            // 튜토리얼 미완료 유저는 튜토리얼 씬으로 이동
             await GameSceneManager.ChangeScene(SceneType.TutorialCutScene);
             return;
         }

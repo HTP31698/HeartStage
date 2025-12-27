@@ -135,21 +135,23 @@ public class TutorialManager : MonoBehaviour
         if (currentScriptIndex >= currentScripts.Count)
         {
             OnCutsceneComplete();
+            SoundManager.Instance?.StopVoiceSFX();
+
             return;
         }
 
         var script = currentScripts[currentScriptIndex];
 
         // 이전 음성 즉시 정지 (다음 대사로 넘어갈 때마다 호출)
-        //SoundManager.Instance?.StopVoiceSFX();
+        SoundManager.Instance?.StopVoiceSFX();
 
         SetCutsceneImage(currentScriptIndex);
 
         if (nameText != null)
             nameText.text = script.Name;
 
-        // 음성 재생 - Voice 필드에 값이 있는 경우에만
-        //PlayVoiceForCurrentScript(script);
+        // 음성 재생 
+        PlayVoiceForCurrentScript(script);
 
         StartTypingEffect(script.Text).Forget();
     }
@@ -227,24 +229,26 @@ public class TutorialManager : MonoBehaviour
         OnCutsceneComplete();
     }
 
-    private void OnCutsceneComplete()
+    private async void OnCutsceneComplete()
     {
         isPlaying = false;
         isAutoMode = false;
 
         // 음성 정지
-        //SoundManager.Instance?.StopVoiceSFX();
+        SoundManager.Instance?.StopVoiceSFX();
 
         Debug.Log("[TutorialManager] 튜토리얼 컷씬 완료");
 
         if (SaveLoadManager.Data != null)
         {
             SaveLoadManager.Data.isTutorialCutsceneCompleted = true;
-            SaveLoadManager.SaveToServer().Forget();
+
+            await SaveLoadManager.SaveToServer();
+            Debug.Log("[TutorialManager] 저장 완료 확인됨");
         }
 
-        // 다음 씬으로 이동 (로비 또는 튜토리얼 플레이 씬)
-        GameSceneManager.ChangeScene(SceneType.LobbyScene);
+        // 저장 완료 후 씬 전환
+        await GameSceneManager.ChangeScene(SceneType.LobbyScene);
     }
 
     private bool IsClickOnButton()
