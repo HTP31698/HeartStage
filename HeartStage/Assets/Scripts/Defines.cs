@@ -86,6 +86,7 @@ public enum WindowType
     StoryStageRewardUI = 20,
     TutorialPanel = 21,
     TutorialNickNameWindow = 22,
+    SeraStoryDungeonInfo = 23,
 
     // 친구 관련 오버레이
     Friend = 30,            // 통합 친구 창 (목록/요청/추가 탭)

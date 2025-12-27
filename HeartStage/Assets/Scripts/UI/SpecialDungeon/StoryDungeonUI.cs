@@ -37,6 +37,12 @@ public class StoryDungeonUI : GenericWindow
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
+        // 세라 스토리 창이 열려있으면 먼저 닫기
+        if (IsSeraStoryDungeonInfoActive())
+        {
+            WindowManager.Instance.CloseOverlay(WindowType.SeraStoryDungeonInfo);
+        }
+
         // 토글 방식으로 처리
         if (IsStoryDungeonInfoActive() && currentStoryFilter == "하나")
         {
@@ -63,24 +69,23 @@ public class StoryDungeonUI : GenericWindow
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
-        // 토글 방식으로 처리
-        if (IsStoryDungeonInfoActive() && currentStoryFilter == "세라")
+        // 하나 스토리 창이 열려있으면 먼저 닫기
+        if (IsStoryDungeonInfoActive())
         {
-            // 같은 필터가 이미 열려있으면 닫기만
             WindowManager.Instance.CloseOverlay(WindowType.StoryDungeonInfo);
+        }
+
+        // 토글 방식으로 처리 - 세라 전용 창 사용
+        if (IsSeraStoryDungeonInfoActive())
+        {
+            // 세라 창이 이미 열려있으면 닫기만
+            WindowManager.Instance.CloseOverlay(WindowType.SeraStoryDungeonInfo);
         }
         else
         {
-            // 닫혀있거나 다른 필터면 세라 스토리로 열기
+            // 세라 스토리 창 열기
             currentStoryFilter = "세라";
-
-            if (IsStoryDungeonInfoActive())
-            {
-                // 다른 필터로 열려있으면 먼저 닫고 다시 열기
-                WindowManager.Instance.CloseOverlay(WindowType.StoryDungeonInfo);
-            }
-
-            WindowManager.Instance.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
+            WindowManager.Instance.OpenOverlayNoDim(WindowType.SeraStoryDungeonInfo);
         }
     }
 
@@ -91,6 +96,21 @@ public class StoryDungeonUI : GenericWindow
         foreach (var windowPair in windows)
         {
             if (windowPair.windowType == WindowType.StoryDungeonInfo)
+            {
+                return windowPair.window != null && windowPair.window.gameObject.activeSelf;
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsSeraStoryDungeonInfoActive()
+    {
+        var windows = WindowManager.Instance.windowList;
+
+        foreach (var windowPair in windows)
+        {
+            if (windowPair.windowType == WindowType.SeraStoryDungeonInfo)
             {
                 return windowPair.window != null && windowPair.window.gameObject.activeSelf;
             }
