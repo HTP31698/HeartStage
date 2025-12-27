@@ -1,7 +1,8 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class ReceivedCheerChest : MonoBehaviour
 {
@@ -10,10 +11,11 @@ public class ReceivedCheerChest : MonoBehaviour
     public Button getAllButton;
 
     private string characterName;
+    private CancellationTokenSource allGetCts;
 
     private void Awake()
     {
-        getAllButton.onClick.AddListener(AllGet);
+        getAllButton.onClick.AddListener(() => AllGet().Forget());
     }
 
     public void Init(string characterName)
@@ -54,14 +56,40 @@ public class ReceivedCheerChest : MonoBehaviour
         }
     }
 
-    private async void AllGet()
+    private async UniTaskVoid AllGet()
     {
-        var items = itemParent.GetComponentsInChildren<ReceivedCheerItem>();
+        if (allGetCts != null)
+            return;
 
-        foreach (var item in items)
+        allGetCts = new CancellationTokenSource();
+        var token = allGetCts.Token;
+
+        try
         {
-            if (item.receiveButton.interactable)
-                await item.ReceiveAsync();
+            SoundManager.Instance.PlayUIButtonClickSound();
+
+            var items = itemParent.GetComponentsInChildren<ReceivedCheerItem>();
+
+            foreach (var item in items)
+            {
+                if (token.IsCancellationRequested)
+                    return;
+
+                if (item.receiveButton.interactable)
+                    await item.ReceiveAsync().AttachExternalCancellation(token);
+            }
         }
+        finally
+        {
+            allGetCts?.Dispose();
+            allGetCts = null; 
+        }
+    }
+
+    private void OnDisable()
+    {
+        allGetCts?.Cancel();
+        allGetCts?.Dispose();
+        allGetCts = null;
     }
 }

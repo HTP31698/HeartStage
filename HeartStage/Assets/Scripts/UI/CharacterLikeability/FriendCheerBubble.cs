@@ -17,7 +17,7 @@ public class FriendCheerBubble : MonoBehaviour
 
     private void OnClick()
     {
-        Debug.Log("OnClick");
         panel.OpenFriendCheerPopup();
+        SoundManager.Instance.PlayUIButtonClickSound();
     }
 }

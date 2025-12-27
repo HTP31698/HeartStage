@@ -18,5 +18,6 @@ public class LikeabilityRewardBubble : MonoBehaviour
     private void OnClick()
     {
         panel.OpenRewardPopup();
+        SoundManager.Instance.PlayUIButtonClickSound();
     }
 }

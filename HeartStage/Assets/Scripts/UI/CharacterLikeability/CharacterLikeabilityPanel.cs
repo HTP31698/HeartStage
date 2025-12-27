@@ -110,6 +110,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         int newLike = Mathf.Min((int)likeabilityGuage.value + likeabilityData.like_point, (int)likeabilityGuage.maxValue);
         CharacterHelper.SetLikeability(characterData.char_name, newLike);
         RefreshLikeabilityUI();
+        SoundManager.Instance.PlaySFX(SoundName.SFX_LobbyCharacter_Cheer);
     }
 
     // 응원하기 친구 숙소일때
@@ -127,6 +128,7 @@ public class CharacterLikeabilityPanel : MonoBehaviour
         int rewardAmount = UnityEngine.Random.Range(likeabilityData.random_item_min, likeabilityData.random_item_max + 1);
         ItemInvenHelper.AddItem(likeabilityData.random_item, rewardAmount);
         friendCheerRewardUI.Init(likeabilityData.like_reward_item1, rewardAmount);
+        SoundManager.Instance.PlaySFX(SoundName.SFX_LobbyCharacter_Cheer);
 
         UpdateCheerUpButtonInteractable();
         await UpdateFriendCheerBubbleFromServer();

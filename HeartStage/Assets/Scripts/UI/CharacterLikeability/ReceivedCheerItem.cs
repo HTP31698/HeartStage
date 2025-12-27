@@ -37,6 +37,7 @@ public class ReceivedCheerItem : MonoBehaviour
 
         receiveButton.interactable = false;
         receiveEffect.Play();
+        SoundManager.Instance.PlaySFX(SoundName.SFX_CheerReward);
 
         string myUid = AuthManager.Instance.UserId;
 

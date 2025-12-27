@@ -42,6 +42,7 @@ public class LikeabilityRewardPopup : MonoBehaviour
     {
         panel.ReceiveNextLikeabilityReward();
         Close();
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Gacha_Result);
     }
 
     /// <summary>
