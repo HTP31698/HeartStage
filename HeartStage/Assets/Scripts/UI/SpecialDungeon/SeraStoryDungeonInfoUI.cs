@@ -13,6 +13,9 @@ public class SeraStoryDungeonInfoUI : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        AdjustSiblingIndex();
+
         CreateFilteredStoryStages();
     }
 
@@ -20,6 +23,26 @@ public class SeraStoryDungeonInfoUI : GenericWindow
     {
         base.Close();
         ClearAllStoryStages();
+    }
+
+    /// 세라 스토리 프리팹 바로 뒤에 위치하도록
+    private void AdjustSiblingIndex()
+    {
+        Transform parent = transform.parent;
+        if (parent == null) return;
+
+        // 세라 스토리 프리팹을 찾아서 그 뒤에 위치
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == "SeraStoryPrefab")
+            {
+                // 세라 프리팹 바로 뒤 인덱스로 이동
+                transform.SetSiblingIndex(i + 1);
+                Debug.Log($"SeraStoryDungeonInfoUI를 SeraStoryPrefab 뒤로 이동: 인덱스 {i + 1}");
+                break;
+            }
+        }
     }
 
     /// 필터된 스토리 스테이지 프리팹 생성
