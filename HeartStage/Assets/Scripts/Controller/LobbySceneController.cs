@@ -288,8 +288,6 @@ public class LobbySceneController : MonoBehaviour
         var saveData = SaveLoadManager.Data as SaveDataV1;
         if (saveData == null) return;
 
-        Debug.Log($"[LobbySceneController] 튜토리얼 상태 체크: 컷씬={saveData.isTutorialCutsceneCompleted}, 로비={saveData.isTutorialCompleted}, 스테이지={saveData.isStageTutorialCompleted}");
-
         // 먼저 모든 튜토리얼이 완료된 경우 체크
         if (saveData.isTutorialCompleted &&
             saveData.isTutorialCutsceneCompleted &&
