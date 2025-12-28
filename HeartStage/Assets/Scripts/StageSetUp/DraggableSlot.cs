@@ -102,6 +102,9 @@ public class DraggableSlot : MonoBehaviour,
 
         m_DraggingIcons.Remove(eventData.pointerId);  // <- null 넣지 말고 제거
         m_DraggingPlanes.Remove(eventData.pointerId);
+
+        // 드래그 종료 시 패시브 미리보기 정리 (TrashZone 드롭 등 모든 케이스 커버)
+        _window?.ClearPassivePreview();
     }
 
     public static T FindInParents<T>(GameObject go) where T : Component

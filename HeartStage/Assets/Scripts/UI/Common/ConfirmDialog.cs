@@ -29,6 +29,8 @@ public class ConfirmDialog : MonoBehaviour
     [SerializeField] private Button confirmButton;
     [SerializeField] private Button cancelButton;
     [SerializeField] private Button closeButton;
+    [SerializeField] private TMP_Text confirmButtonText;
+    [SerializeField] private TMP_Text cancelButtonText;
 
     private Action _onConfirm;
     private Action _onCancel;
@@ -138,6 +140,12 @@ public class ConfirmDialog : MonoBehaviour
     {
         if (messageText != null)
             messageText.text = message;
+
+        if (confirmButtonText != null)
+            confirmButtonText.text = confirmText;
+
+        if (cancelButtonText != null)
+            cancelButtonText.text = cancelText;
     }
 
     private void Close()

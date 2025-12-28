@@ -267,12 +267,15 @@ public class StageSetupWindow : MonoBehaviour
         await UniTask.Yield(); // UI 렌더링 시간 확보
 
         RebuildPassiveTiles();
+        await UniTask.Yield(); // 애니메이션 업데이트 기회
 
         GetStagePos();
+        await UniTask.Yield();
 
-        var allies = PlaceAll();
+        var allies = await PlaceAll();
 
         SynergyManager.ApplySynergies(DraggableSlots, allies);
+        await UniTask.Yield();
 
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
@@ -286,7 +289,7 @@ public class StageSetupWindow : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private List<GameObject> PlaceAll()
+    private async UniTask<List<GameObject>> PlaceAll()
     {
         DespawnAllAllies();
 
@@ -300,6 +303,9 @@ public class StageSetupWindow : MonoBehaviour
             Vector3 spawnPosition = SpawnPos[slotIndex].transform.position;
             var obj = PlaceCharacter(characterId, spawnPosition, slotIndex);
             allies.Add(obj);
+
+            // 각 캐릭터 배치 후 프레임 양보 (애니메이션 업데이트 기회)
+            await UniTask.Yield();
         }
 
         ApplySortingOrderByY(allies);

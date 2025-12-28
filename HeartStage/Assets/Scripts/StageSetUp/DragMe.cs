@@ -190,6 +190,15 @@ public class DragMe : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
             // 세로 드래그 중 → 아이콘 따라다니기
             if (m_DraggingIcons.TryGetValue(id, out var icon) && icon != null)
                 SetDraggedPosition(eventData);
+
+            // 슬롯 위가 아니면 패시브 미리보기 정리
+            bool overSlot = eventData.pointerEnter != null &&
+                            eventData.pointerEnter.GetComponent<DraggableSlot>() != null;
+            if (!overSlot)
+            {
+                var stageWindow = FindInParents<StageSetupWindow>(gameObject);
+                stageWindow?.ClearPassivePreview();
+            }
         }
         else if (dir == DragDirection.Horizontal)
         {
@@ -292,6 +301,10 @@ public class DragMe : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHa
 
         IsVerticalDrag = false;
         SetDragJustEndedFlag().Forget();
+
+        // 드래그 종료 시 패시브 미리보기 정리
+        var stageWindow = FindInParents<StageSetupWindow>(gameObject);
+        stageWindow?.ClearPassivePreview();
 
         if (s_ActivePointerId == eventData.pointerId)
         {
