@@ -4,15 +4,15 @@ using UnityEngine;
 
 public class ItemTypeID
 {
-    public const int Equipment = 4;
-    public const int Cloth = 5;
     public const int Piece = 6;
+    public const int Shirts = 7;
+    public const int Pants = 8;
+    public const int Shoes = 9;
 }
 
 public enum ItemInventorySorting
 {
     All,
-    Equipment,
     Cloth,
     Piece
 }
@@ -45,9 +45,6 @@ public class ItemInventoryUI : MonoBehaviour
             case ItemInventorySorting.All:
                 ShowAll();
                 break;
-            case ItemInventorySorting.Equipment:
-                ShowEquipment();
-                break;
             case ItemInventorySorting.Cloth:
                 ShowCloth();
                 break;
@@ -71,24 +68,6 @@ public class ItemInventoryUI : MonoBehaviour
         currentSorting = ItemInventorySorting.All;
     }
 
-    // 소모품 보이기
-    public void ShowEquipment()
-    {
-        ClearAll();
-        var saveItemList = SaveLoadManager.Data.itemList;
-        int index = 0;
-        foreach (var item in saveItemList)
-        {
-            var itemData = DataTableManager.ItemTable.Get(item.Key);            
-            if (itemData.item_type != ItemTypeID.Equipment)                
-                continue;
-
-            itemSlotList[index++].Init(item.Key, item.Value);
-        }
-
-        currentSorting = ItemInventorySorting.Equipment;
-    }
-
     // 의상 보이기
     public void ShowCloth()
     {
@@ -98,7 +77,7 @@ public class ItemInventoryUI : MonoBehaviour
         foreach (var item in saveItemList)
         {
             var itemData = DataTableManager.ItemTable.Get(item.Key);
-            if (itemData.item_type != ItemTypeID.Cloth)
+            if (itemData.item_type != ItemTypeID.Shirts && itemData.item_type != ItemTypeID.Pants && itemData.item_type != ItemTypeID.Shoes)
                 continue;
 
             itemSlotList[index++].Init(item.Key, item.Value);
