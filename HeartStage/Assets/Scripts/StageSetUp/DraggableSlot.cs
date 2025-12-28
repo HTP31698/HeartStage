@@ -19,6 +19,9 @@ public class DraggableSlot : MonoBehaviour,
     //public Color highlightColor = Color.yellow;
     public CharacterData characterData;
 
+    [Header("빈 슬롯 기본 이미지")]
+    [SerializeField] private Sprite emptySlotSprite;
+
     //드래그 슬롯 이벤트 추가
     public static System.Action OnAnySlotChanged;
     //부모추가
@@ -249,7 +252,7 @@ public class DraggableSlot : MonoBehaviour,
     {
         if (leaving == null) return;
 
-        if (receivingImage) receivingImage.sprite = null;
+        if (receivingImage) receivingImage.sprite = emptySlotSprite;
         if (characterData == leaving) characterData = null;
 
         var src = DragSourceRegistry.GetSource(leaving);
@@ -268,11 +271,11 @@ public class DraggableSlot : MonoBehaviour,
         return img != null ? img.sprite : null;
     }
 
-    // 슬롯의 표시 스프라이트 설정
+    // 슬롯의 표시 스프라이트 설정 (null이면 빈 슬롯 이미지 적용)
     private void SetSlotSprite(DraggableSlot slot, Sprite s)
     {
         var img = slot.receivingImage != null ? slot.receivingImage : slot.GetComponent<Image>();
-        if (img != null) img.sprite = s;
+        if (img != null) img.sprite = s != null ? s : slot.emptySlotSprite;
     }
 
     // Slot -> Slot 드롭 처리 (스왑/이동)
