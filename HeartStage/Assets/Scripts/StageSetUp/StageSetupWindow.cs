@@ -75,7 +75,11 @@ public class StageSetupWindow : MonoBehaviour
 
     [SerializeField] private SynergyPanel synergyPanel;
 
-    //스폰 캐릭터 리스트 
+    [Header("배치 스탯 정보창")]
+    [SerializeField] private Button powerInfoButton;           // i 버튼
+    [SerializeField] private PlacementPowerInfoPanel powerInfoPanel;  // 정보 패널
+
+    //스폰 캐릭터 리스트
     private readonly List<GameObject> _spawnedAllies = new();
 
     // 준비 완료 플래그
@@ -104,6 +108,12 @@ public class StageSetupWindow : MonoBehaviour
             BackButton.onClick.AddListener(BackButtonClick);
         if (ResetAllButton != null)
             ResetAllButton.onClick.AddListener(ResetAllButtonClick);
+        if (powerInfoButton != null)
+            powerInfoButton.onClick.AddListener(TogglePowerInfoPanel);
+
+        // 정보창 초기 숨김
+        if (powerInfoPanel != null)
+            powerInfoPanel.gameObject.SetActive(false);
 
         // 데이터 준비 + 스테이지 적용
         await WaitAndApplyStage();
@@ -154,7 +164,23 @@ public class StageSetupWindow : MonoBehaviour
             BackButton.onClick.RemoveListener(BackButtonClick);
         if (ResetAllButton != null)
             ResetAllButton.onClick.RemoveListener(ResetAllButtonClick);
+        if (powerInfoButton != null)
+            powerInfoButton.onClick.RemoveListener(TogglePowerInfoPanel);
         DraggableSlot.OnAnySlotChanged -= HandleSlotChanged;
+    }
+
+    private void TogglePowerInfoPanel()
+    {
+        if (powerInfoPanel == null) return;
+
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+        bool isActive = powerInfoPanel.gameObject.activeSelf;
+        powerInfoPanel.gameObject.SetActive(!isActive);
+
+        // 열릴 때 갱신
+        if (!isActive)
+            powerInfoPanel.Refresh();
     }
 
     private void BackButtonClick()
@@ -269,6 +295,10 @@ public class StageSetupWindow : MonoBehaviour
             Debug.LogWarning("[StageSetupWindow] No units deployed!");
             return;
         }
+
+        // 정보창 닫기
+        if (powerInfoPanel != null)
+            powerInfoPanel.gameObject.SetActive(false);
 
         // 음표 로딩 표시
         NoteLoadingUI.Show();
@@ -640,6 +670,100 @@ public class StageSetupWindow : MonoBehaviour
             _spawnedAllies.RemoveAt(i);
         }
     }
+
+    #region PowerInfoWindow용 데이터 접근
+
+    /// <summary>
+    /// 배치된 캐릭터 데이터 목록 (슬롯 인덱스, CharacterData)
+    /// </summary>
+    public List<(int slotIndex, CharacterData data)> GetPlacedCharacters()
+    {
+        var result = new List<(int, CharacterData)>();
+        if (DraggableSlots == null) return result;
+
+        for (int i = 0; i < DraggableSlots.Length; i++)
+        {
+            if (_enabledMask != null && !_enabledMask[i]) continue;
+
+            var slot = DraggableSlots[i];
+            if (slot != null && slot.characterData != null)
+                result.Add((i, slot.characterData));
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// 현재 활성화된 시너지 목록
+    /// </summary>
+    public List<SynergyManager.ActiveSynergy> GetActiveSynergies()
+    {
+        return SynergyManager.Evaluate(DraggableSlots);
+    }
+
+    /// <summary>
+    /// 특정 슬롯에 적용되는 패시브 효과들 (effectId, value)
+    /// </summary>
+    public List<(int effectId, float value)> GetPassiveEffectsForSlot(int slotIndex)
+    {
+        var result = new List<(int, float)>();
+
+        // PassiveIndexs가 최신 상태인지 확인하기 위해 GetStagePos 호출
+        GetStagePos();
+
+        if (PassiveIndexs != null && PassiveIndexs.TryGetValue(slotIndex, out var effects))
+        {
+            foreach (var e in effects)
+                result.Add((e.effectId, e.value));
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// 스탯 타입별 총 버프 비율 계산 (시너지 + 패시브 타일)
+    /// </summary>
+    public Dictionary<StatType, float> CalculateTotalBuffsForSlot(int slotIndex)
+    {
+        var buffs = new Dictionary<StatType, float>();
+
+        // 1) 시너지 버프 수집
+        var actives = GetActiveSynergies();
+        foreach (var active in actives)
+        {
+            var data = active.data;
+            if (data == null) continue;
+
+            // AlliesAll 타겟인 경우만 캐릭터에 적용
+            if ((SynergyTarget)data.skill_target != SynergyTarget.AlliesAll)
+                continue;
+
+            AddEffectToBuff(buffs, data.effect_type1, data.effect_val1);
+            AddEffectToBuff(buffs, data.effect_type2, data.effect_val2);
+            AddEffectToBuff(buffs, data.effect_type3, data.effect_val3);
+        }
+
+        // 2) 패시브 타일 버프 수집
+        GetStagePos(); // PassiveIndexs 갱신
+        if (PassiveIndexs != null && PassiveIndexs.TryGetValue(slotIndex, out var passiveEffects))
+        {
+            foreach (var e in passiveEffects)
+                AddEffectToBuff(buffs, e.effectId, e.value);
+        }
+
+        return buffs;
+    }
+
+    private void AddEffectToBuff(Dictionary<StatType, float> buffs, int effectId, float value)
+    {
+        if (effectId == 0) return;
+
+        var statType = (StatType)effectId;
+        if (!buffs.ContainsKey(statType))
+            buffs[statType] = 0f;
+
+        buffs[statType] += value;
+    }
+
+    #endregion
 
     // 캐릭터 렌더링 순서 조정
     private void ApplySortingOrderByY(List<GameObject> allies)
