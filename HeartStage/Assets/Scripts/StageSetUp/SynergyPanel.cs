@@ -6,8 +6,16 @@ public class SynergyPanel : MonoBehaviour
     [SerializeField] private SynergyButton[] slots;          // 미리 만들어둔 버튼 3개
     [SerializeField] private SynergyDetailPanel detailPanel; // 클릭 시 열릴 상세창
 
+    [Header("시너지 아이콘 (별도 관리)")]
+    [SerializeField] private UnityEngine.UI.Image synergyIcon1;
+    [SerializeField] private UnityEngine.UI.Image synergyIcon2;
+    [SerializeField] private UnityEngine.UI.Image synergyIcon3;
+
     // 현재 어떤 시너지 id가 어떤 슬롯 버튼을 쓰는지
     private readonly Dictionary<int, SynergyButton> buttonsById = new Dictionary<int, SynergyButton>();
+
+    // 아이콘 배열로 접근하기 위한 프로퍼티
+    private UnityEngine.UI.Image[] SynergyIcons => new[] { synergyIcon1, synergyIcon2, synergyIcon3 };
 
     private void Awake()
     {
@@ -28,6 +36,9 @@ public class SynergyPanel : MonoBehaviour
             slot.onClick = OnButtonClicked;
         }
 
+        // 시너지 아이콘 초기화 (비활성화)
+        ClearSynergyIcons();
+
         if (detailPanel != null)
             detailPanel.gameObject.SetActive(false);
     }
@@ -47,6 +58,9 @@ public class SynergyPanel : MonoBehaviour
             slot.InitEmpty();                // 내용만 비우기
             slot.onClick = OnButtonClicked;
         }
+
+        // 시너지 아이콘도 초기화
+        ClearSynergyIcons();
     }
 
     /// 현재 "발동 중"인 시너지 목록을 받아서,
@@ -67,6 +81,9 @@ public class SynergyPanel : MonoBehaviour
             if (slot == null) continue;
             slot.InitEmpty();
         }
+
+        // 시너지 아이콘도 초기화
+        ClearSynergyIcons();
 
         // 2) 발동된 시너지가 없으면 → 빈칸 3개 유지
         if (actives == null || actives.Count == 0)
@@ -109,6 +126,13 @@ public class SynergyPanel : MonoBehaviour
             // GameObject는 이미 켜져 있으니까 내용만 채우면 됨
             slot.Init(csv, active: true);
 
+            // 별도 시너지 아이콘 업데이트
+            if (!string.IsNullOrEmpty(csv.synergy_icon_address))
+            {
+                var sprite = ResourceManager.Instance.GetSprite(csv.synergy_icon_address);
+                UpdateSynergyIcon(slotIndex, sprite);
+            }
+
             buttonsById[id] = slot;
             slotIndex++;
         }
@@ -121,5 +145,52 @@ public class SynergyPanel : MonoBehaviour
             return;
 
         detailPanel.Show(data, btn.IsActive);
+    }
+
+    /// <summary>
+    /// 시너지 아이콘 모두 비활성화
+    /// </summary>
+    private void ClearSynergyIcons()
+    {
+        foreach (var icon in SynergyIcons)
+        {
+            if (icon != null)
+                icon.gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 시너지 아이콘 업데이트 (스프라이트 설정 + 활성화)
+    /// </summary>
+    public void UpdateSynergyIcon(int index, Sprite sprite)
+    {
+        var icons = SynergyIcons;
+        if (index < 0 || index >= icons.Length)
+            return;
+
+        var icon = icons[index];
+        if (icon == null)
+            return;
+
+        if (sprite != null)
+        {
+            icon.sprite = sprite;
+            icon.gameObject.SetActive(true);
+        }
+        else
+        {
+            icon.gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
+    /// 특정 인덱스의 시너지 아이콘 가져오기
+    /// </summary>
+    public UnityEngine.UI.Image GetSynergyIcon(int index)
+    {
+        var icons = SynergyIcons;
+        if (index < 0 || index >= icons.Length)
+            return null;
+        return icons[index];
     }
 }

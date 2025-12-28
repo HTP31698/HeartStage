@@ -161,6 +161,14 @@ public class StageSetupWindow : MonoBehaviour
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
 
+        // 사용한 에너지 환불
+        var stageData = StageManager.Instance?.GetCurrentStageData();
+        if (stageData != null && stageData.debut_stamina > 0)
+        {
+            ItemInvenHelper.AddItem(ItemID.DreamEnergy, stageData.debut_stamina);
+            Debug.Log($"[StageSetupWindow] 에너지 환불: {stageData.debut_stamina}");
+        }
+
         // 돌아가기 플래그 설정 (로비에서 StageInfoWindow 자동 오픈용)
         SaveLoadManager.Data.returnToStageInfo = true;
 
