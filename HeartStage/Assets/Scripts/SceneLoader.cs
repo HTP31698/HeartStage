@@ -128,6 +128,12 @@ public class SceneLoader : MonoBehaviour
     }
 
     /// <summary>
+    /// 로딩 중인지 여부
+    /// </summary>
+    public static bool IsLoading => Instance != null && Instance._loadingUI != null
+                                    && Instance._loadingUI.gameObject.activeSelf;
+
+    /// <summary>
     /// 로딩 UI 즉시 표시 (버튼 클릭 시 바로 호출)
     /// </summary>
     public static void ShowLoading()
