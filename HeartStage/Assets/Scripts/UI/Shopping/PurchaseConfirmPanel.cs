@@ -40,11 +40,11 @@ public class PurchaseConfirmPanel : MonoBehaviour
         // Shop_item_type1 이 표시되게 일단
         if (SaveLoadManager.Data.itemList.ContainsKey(shopTableData.Shop_item_type1))
         {
-            currentAmountText.text = $"현재 보유량: {SaveLoadManager.Data.itemList[shopTableData.Shop_item_type1]}";
+            currentAmountText.text = $"현재 보유량 : {SaveLoadManager.Data.itemList[shopTableData.Shop_item_type1]}";
         }
         else
         {
-            currentAmountText.text = "현재 보유량: 0";
+            currentAmountText.text = "현재 보유량 : 0";
         }
 
         wholePanel.gameObject.SetActive(true);
@@ -62,11 +62,11 @@ public class PurchaseConfirmPanel : MonoBehaviour
         // Shop_item_type1 이 표시되게 일단
         if (SaveLoadManager.Data.itemList.ContainsKey(shopTableData.Shop_item_type1))
         {
-            currentAmountText.text = $"현재 보유량: {SaveLoadManager.Data.itemList[shopTableData.Shop_item_type1]}";
+            currentAmountText.text = $"현재 보유량 : {SaveLoadManager.Data.itemList[shopTableData.Shop_item_type1]}";
         }
         else
         {
-            currentAmountText.text = "현재 보유량: 0";
+            currentAmountText.text = "현재 보유량 : 0";
         }
 
         wholePanel.gameObject.SetActive(true);
