@@ -324,6 +324,9 @@ public class TutorialStage : MonoBehaviour
             case "StartArrow":
                 ActionStartArrow(); // 스타트 
                 break;
+            case "StopGame":
+                ActionStopGame();
+                break;
             case "StopLineArrow":
                 ActionStopLineArrow();
                 break;
@@ -1508,8 +1511,10 @@ public class TutorialStage : MonoBehaviour
     private void ActionResumeBattle()
     {
         Time.timeScale = 1f;
-
-        NextScript();
     }
 
+    private void ActionStopGame()
+    {
+        Time.timeScale = 0f;
+    }
 }
