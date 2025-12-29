@@ -8,6 +8,9 @@ public class StageSceneController : MonoBehaviour
     public OwnedCharacterSetup ownedSetup;
     public MonsterSpawner monsterSpawner;
 
+    [Header("튜토리얼")]
+    public TutorialStage tutorialStage; 
+
     private async void Awake()
     {
         // 1) 참조 들어올 때까지 (Awake/Start 순서 안전망)
@@ -29,5 +32,18 @@ public class StageSceneController : MonoBehaviour
 
         // 5) 로딩 UI 닫기
         await SceneLoader.HideLoadingWithDelay(0);
+
+        // 6) 로딩 완료 후 튜토리얼 시작
+        StartTutorialIfNeeded();
+    }
+
+    private void StartTutorialIfNeeded()
+    {
+        // TutorialStage가 존재하고 활성화되어 있다면 튜토리얼 시작
+        if (tutorialStage != null && tutorialStage.gameObject.activeSelf)
+        {
+            tutorialStage.StartLocationScript(3);
+            Debug.Log("[StageSceneController] 로딩 완료 후 튜토리얼 시작");
+        }
     }
 }
