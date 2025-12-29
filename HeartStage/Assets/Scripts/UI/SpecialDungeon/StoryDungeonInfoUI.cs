@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
+using Cysharp.Threading.Tasks;
 
 public class StoryDungeonInfoUI : GenericWindow
 {
@@ -9,29 +12,132 @@ public class StoryDungeonInfoUI : GenericWindow
     [SerializeField] private GameObject storyInfoPrefab;
 
     private List<StoryInfoPrefab> createdStoryPrefabs = new List<StoryInfoPrefab>();
+    private bool needsPositionFix = false; // 위치 수정이 필요한지 플래그
 
     public override void Open()
     {
         base.Open();
+
+        needsPositionFix = true; // 위치 수정 플래그 설정
+
+        // 하나 스토리 프리팹 바로 뒤에 위치하도록 Sibling Index 조정
+        AdjustSiblingIndex();
+
         CreateFilteredStoryStages();
     }
 
     public override void Close()
     {
         base.Close();
+        needsPositionFix = false; // 플래그 리셋
         ClearAllStoryStages();
     }
 
-    /// 필터된 스토리 스테이지 프리팹 생성
+    private void LateUpdate()
+    {
+        // 위치 수정이 필요한 경우에만 계속 체크
+        if (needsPositionFix)
+        {
+            ForceCorrectPosition();
+        }
+    }
+
+    /// 강제로 올바른 위치에 배치
+    private void ForceCorrectPosition()
+    {
+        Transform parent = transform.parent;
+        if (parent == null) return;
+
+        // 하나 프리팹 찾기
+        int hanaIndex = -1;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            if (parent.GetChild(i).name == "HanaStoryPrefab")
+            {
+                hanaIndex = i;
+                break;
+            }
+        }
+
+        if (hanaIndex == -1) return;
+
+        int targetIndex = hanaIndex + 1;
+        int currentIndex = transform.GetSiblingIndex();
+
+        // 목표 위치가 아니면 계속 수정
+        if (currentIndex != targetIndex)
+        {
+            transform.SetSiblingIndex(targetIndex);
+
+            // 레이아웃 강제 업데이트
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(parent as RectTransform);
+
+            Debug.Log($"[LateUpdate] 위치 강제 수정: {currentIndex} -> {targetIndex}");
+        }
+        else
+        {
+            // 3프레임 연속으로 올바른 위치에 있으면 체크 중단
+            StopPositionCheckAfterDelay().Forget();
+        }
+    }
+
+    private async UniTaskVoid StopPositionCheckAfterDelay()
+    {
+        await UniTask.NextFrame();
+        await UniTask.NextFrame();
+        await UniTask.NextFrame(); // 3프레임 대기
+
+        needsPositionFix = false;
+        Debug.Log("위치 강제 수정 완료 - LateUpdate 체크 중단");
+    }
+
+    /// 하나 스토리 프리팩 바로 뒤에 위치하도록 Sibling Index 조정
+    private void AdjustSiblingIndex()
+    {
+        Transform parent = transform.parent;
+        if (parent == null)
+        {
+            Debug.LogError("부모 Transform이 null입니다!");
+            return;
+        }
+
+        // 하나 스토리 프리팩을 찾기
+        int hanaIndex = -1;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == "HanaStoryPrefab")
+            {
+                hanaIndex = i;
+                break;
+            }
+        }
+
+        if (hanaIndex == -1)
+        {
+            Debug.LogWarning("HanaStoryPrefab을 찾을 수 없습니다!");
+            return;
+        }
+
+        int targetIndex = hanaIndex + 1;
+        int currentIndex = transform.GetSiblingIndex();
+
+        Debug.Log($"현재 StoryDungeonInfoUI 인덱스: {currentIndex}, 목표 인덱스: {targetIndex}");
+
+        transform.SetSiblingIndex(targetIndex);
+
+        // 즉시 레이아웃 업데이트
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(parent as RectTransform);
+
+        Debug.Log($"StoryDungeonInfoUI를 인덱스 {targetIndex}로 이동 완료");
+    }
+
     private void CreateFilteredStoryStages()
     {
-        // 기존 프리팹들 정리
         ClearAllStoryStages();
-
-        // 스토리 스테이지 데이터 가져오기
         var orderedStoryStages = DataTableManager.StoryTable.GetOrderedStoryStages();
-
-        // 현재 설정된 필터에 따라 스토리 필터링
         var filteredStages = FilterStoriesByCharacter(orderedStoryStages, StoryDungeonUI.currentStoryFilter);
 
         foreach (var stageData in filteredStages)
@@ -40,30 +146,22 @@ public class StoryDungeonInfoUI : GenericWindow
         }
     }
 
-    /// 캐릭터별로 스토리 필터링
     private List<StoryStageCSVData> FilterStoriesByCharacter(List<StoryStageCSVData> allStories, string characterFilter)
     {
         if (string.IsNullOrEmpty(characterFilter))
         {
-            // 필터가 없으면 모든 스토리 반환
             return allStories;
         }
-
-        // need_char 컬럼 기준으로 필터링
         return allStories.Where(story => IsStoryForCharacter(story, characterFilter)).ToList();
     }
 
-    /// 특정 캐릭터의 스토리인지 판단 (need_char 컬럼 기준)
     private bool IsStoryForCharacter(StoryStageCSVData story, string characterFilter)
     {
         if (story == null || string.IsNullOrEmpty(characterFilter))
             return true;
-
-        // CSV의 need_char 컬럼과 필터 문자열 비교
         return story.need_char == characterFilter;
     }
 
-    /// 개별 StoryInfoPrefab 생성
     private void CreateStoryInfoPrefab(StoryStageCSVData stageData)
     {
         if (storyInfoPrefab == null || content == null)
@@ -76,13 +174,8 @@ public class StoryDungeonInfoUI : GenericWindow
 
         if (storyInfo != null)
         {
-            // 스테이지 데이터 설정
             storyInfo.SetStageData(stageData, OnStoryStageSelected);
-
-            // 생성된 프리팹 관리 목록에 추가
             createdStoryPrefabs.Add(storyInfo);
-
-            // Transform 설정
             stageObject.transform.localScale = Vector3.one;
             if (stageObject.transform is RectTransform rectTransform)
             {
@@ -95,7 +188,6 @@ public class StoryDungeonInfoUI : GenericWindow
         }
     }
 
-    /// 스토리 스테이지 선택 시 호출되는 콜백
     private void OnStoryStageSelected(int storyStageId)
     {
         var stageData = DataTableManager.StoryTable.GetStoryStage(storyStageId);
@@ -105,7 +197,6 @@ public class StoryDungeonInfoUI : GenericWindow
         }
     }
 
-    /// 생성된 모든 스토리 스테이지 프리팹 정리
     private void ClearAllStoryStages()
     {
         foreach (var storyPrefab in createdStoryPrefabs)

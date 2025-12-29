@@ -315,7 +315,7 @@ public class StoryManager : MonoBehaviour
     private bool IsNonCombatStoryStage(int storyStageId)
     {
         // 66001(던전 1)과 66004(던전 4)는 전투가 없음
-        bool isNonCombat = storyStageId == 66001 || storyStageId == 66004;
+        bool isNonCombat = storyStageId == 66001 || storyStageId == 66004 || storyStageId == 66005 || storyStageId == 66008; ;
         return isNonCombat;
     }
 

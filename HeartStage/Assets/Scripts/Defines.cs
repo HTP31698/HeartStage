@@ -86,6 +86,7 @@ public enum WindowType
     StoryStageRewardUI = 20,
     TutorialPanel = 21,
     TutorialNickNameWindow = 22,
+    SeraStoryDungeonInfo = 23,
 
     // 친구 관련 오버레이
     Friend = 30,            // 통합 친구 창 (목록/요청/추가 탭)
@@ -127,14 +128,14 @@ public class SoundName
     public static readonly string SFX_UI_StageClear = "stage_clear_01";
     public static readonly string SFX_Boss_Appear = "boss_alert";
 
-    public static readonly string SFX_UI_ChangeCloth = "ui_change_cloth"; // 옷 바뀔떄 나는 효과음
+    public static readonly string SFX_UI_ChangeCloth = "equipment_01"; // 옷 바뀔떄 나는 효과음
     public static readonly string SFX_LobbyCharacter_Touch = string.Empty; // 숙소에서 캐릭터 터치시
     public static readonly string SFX_LobbyCharacter_Cheer = string.Empty; // 숙소에서 캐릭터 응원시
     public static readonly string SFX_CheerReward = string.Empty; // 친구 응원 보상 획득 버튼 누를 시 폭죽 터지는 연출과 함께 나는 소리
     public static readonly string SFX_Purchase_Fail = string.Empty; // 상점에서 재화가 부족해서 아이템 구매 실패할 때
     public static readonly string SFX_Purchase_Success = string.Empty; // 상점에서 아이템 구매 성공
-    public static readonly string SFX_Character_Default_Attack = string.Empty; // 캐릭터 기본 공격 발사 시
-    public static readonly string SFX_Meteor_Melody_Skill = string.Empty; // 유성의 멜로디 스킬, 승아 캐릭터 스킬
+    public static readonly string SFX_Character_Default_Attack = "base_attack_01"; // 캐릭터 기본 공격 발사 시
+    public static readonly string SFX_Meteor_Melody_Skill = "meteor_melody_skill"; // 유성의 멜로디 스킬, 승아 캐릭터 스킬
     public static readonly string SFX_Fairy_Skill = string.Empty; // 입덕 요정 스킬(부메랑), 에리 캐릭터 스킬
     public static readonly string SFX_Twinkle_Skill = string.Empty; // 시선을 끄는 눈빛 스킬(블랙홀), 레나 캐릭터 스킬
     public static readonly string SFX_Acrobat_Skill = string.Empty; // 곡예사 스킬(단일로 여러발 발사 관통 x), 지우 캐릭터 스킬

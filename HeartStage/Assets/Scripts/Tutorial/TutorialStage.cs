@@ -78,6 +78,8 @@ public class TutorialStage : MonoBehaviour
 
     public void Close()
     {
+        SoundManager.Instance?.StopVoiceSFX();
+
         isPlaying = false;
         isTyping = false;
         isWaitingForCharacterClick = false;
@@ -226,6 +228,11 @@ public class TutorialStage : MonoBehaviour
         }
 
         var script = currentScripts[currentScriptIndex];
+
+        SoundManager.Instance?.StopVoiceSFX();
+
+        PlayVoiceForCurrentScript(script);
+
         StartTypingEffect(script.Text).Forget();
     }
 
@@ -296,6 +303,8 @@ public class TutorialStage : MonoBehaviour
 
     private void CompleteTutorial()
     {
+        SoundManager.Instance?.StopVoiceSFX();
+
         HideAllArrows();
         RestorePanel();
         HideStageAreaBorder();
@@ -1504,7 +1513,15 @@ public class TutorialStage : MonoBehaviour
                 slot.receivingImage.raycastTarget = true;
             }
         }
+    }
 
-        Debug.Log("[TutorialStage] 배치된 캐릭터 슬롯 드래그 복원 완료");
+    private void PlayVoiceForCurrentScript(TutorialScriptCSVData script)
+    {
+        if (string.IsNullOrEmpty(script.Voice))
+        {
+            return;
+        }
+
+        SoundManager.Instance?.PlayVoiceSFX(script.Voice);
     }
 }
