@@ -717,27 +717,33 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionSkillGageArrowAsync()
     {
+        Debug.Log($"[TutorialStage] SkillGageArrow 액션 시작 - currentScriptIndex: {currentScriptIndex}");
+
+        // 이미 스킬 대기 중이면 무시
+        if (isWaitingForSkillReady)
+        {
+            Debug.Log("[TutorialStage] 이미 스킬 대기 중 - 무시");
+            return;
+        }
+
         // 이미 준비된 스킬이 있는지 확인
         Transform skillReadyCharacter = FindSkillReadyCharacter();
 
         if (skillReadyCharacter != null)
         {
-            Debug.Log("[TutorialStage] 이미 준비된 스킬 발견 - 바로 표시");
-            ShowArrowOnSkillReadyCharacter(skillReadyCharacter);
+            Debug.Log("[TutorialStage] 이미 준비된 스킬 발견 - 화살표만 표시");
+            // 텍스트 표시 없이 화살표만 표시
+            arrow.gameObject.SetActive(true);
+            ArrowSkillReadyCharacter(skillReadyCharacter);
+            StartArrowAnimation().Forget();
             return;
         }
 
+        // 스킬이 아직 준비되지 않았으면 대기 상태로 설정
         isWaitingForSkillReady = true;
+        Debug.Log("[TutorialStage] 스킬이 준비될 때까지 대기 중...");
 
-        // 스킬이 준비될 때까지 대기
         await UniTask.WaitUntil(() => !isWaitingForSkillReady);
-
-        // 스킬이 준비되면 다시 캐릭터 찾기 및 화살표 표시
-        skillReadyCharacter = FindSkillReadyCharacter();
-        if (skillReadyCharacter != null)
-        {
-            ShowArrowOnSkillReadyCharacter(skillReadyCharacter);
-        }
     }
 
     // 스킬이 준비되었을 때 호출되는 이벤트 핸들러
@@ -745,8 +751,31 @@ public class TutorialStage : MonoBehaviour
     {
         if (isWaitingForSkillReady)
         {
-            Debug.Log("[TutorialStage] 스킬 준비 완료! SkillGageArrow 액션 실행");
+            Debug.Log("[TutorialStage] 스킬 준비 완료! 다음 스크립트로 진행");
             isWaitingForSkillReady = false;
+
+            // 스킬 준비된 캐릭터 찾기
+            Transform skillReadyCharacter = FindSkillReadyCharacter();
+            if (skillReadyCharacter != null)
+            {
+                // 다음 스크립트로 이동
+                currentScriptIndex++;
+
+                // 현재 스크립트가 유효한지 확인
+                if (currentScriptIndex < currentScripts.Count)
+                {
+                    ShowArrowOnSkillReadyCharacter(skillReadyCharacter);
+                }
+                else
+                {
+                    // 스크립트가 끝났으면 다음 로케이션으로
+                    CheckNextLocation();
+                }
+            }
+            else
+            {
+                NextScript();
+            }
         }
     }
 
@@ -755,30 +784,59 @@ public class TutorialStage : MonoBehaviour
     {
         if (arrow == null || characterTransform == null) return;
 
-        // 현재 스크립트 UI 표시
-        if (currentScriptUI != null)
-        {
-            currentScriptUI.gameObject.SetActive(true);
-        }
+        ShowCurrentScriptTextOnly();
 
         arrow.gameObject.SetActive(true);
         ArrowSkillReadyCharacter(characterTransform);
         StartArrowAnimation().Forget();
-
-        AutoProgressAfterSkillShow().Forget();
     }
 
-    // 스킬 화살표 표시 후 자동으로 다음 스크립트로 진행
-    private async UniTaskVoid AutoProgressAfterSkillShow()
+    // 텍스트만 표시하고 액션은 실행하지 않는 메서드 추가
+    private void ShowCurrentScriptTextOnly()
     {
-        // 2초 후 자동으로 다음 스크립트로 진행
-        await UniTask.Delay(2000, DelayType.UnscaledDeltaTime);
-
-        if (isPlaying)
+        if (currentScriptIndex >= currentScripts.Count)
         {
-            Debug.Log("[TutorialStage] 스킬 화살표 표시 완료 - 다음 스크립트로 진행");
-            NextScript();
+            CheckNextLocation();
+            return;
         }
+
+        var script = currentScripts[currentScriptIndex];
+
+        // 현재 스크립트 UI가 비활성화된 경우 활성화
+        if (currentScriptUI != null && !currentScriptUI.gameObject.activeInHierarchy)
+        {
+            currentScriptUI.gameObject.SetActive(true);
+        }
+
+        SoundManager.Instance?.StopVoiceSFX();
+        PlayVoiceForCurrentScript(script);
+
+        // 액션 없이 텍스트만 타이핑 효과로 표시
+        StartTypingEffectTextOnly(script.Text).Forget();
+    }
+
+    // 액션 실행 없이 텍스트만 타이핑하는 메서드
+    private async UniTask StartTypingEffectTextOnly(string text)
+    {
+        if (currentScriptUI == null) return;
+
+        isTyping = true;
+        currentScriptUI.SetTutorialText("");
+
+        for (int i = 0; i <= text.Length; i++)
+        {
+            if (!isTyping || !isPlaying)
+            {
+                currentScriptUI.SetTutorialText(text);
+                break;
+            }
+
+            currentScriptUI.SetTutorialText(text.Substring(0, i));
+            await UniTask.Delay(25, DelayType.UnscaledDeltaTime);
+        }
+
+        isTyping = false;
+        // 여기서는 ExecuteScriptAction을 호출하지 않음!
     }
 
     // 스킬 준비된 캐릭터 위에 화살표 위치 지정
@@ -936,7 +994,73 @@ public class TutorialStage : MonoBehaviour
     private void ActionResumeBattle()
     {
         Time.timeScale = 1f;
-        WaitForVoiceAsync().Forget();
+
+        // 스킬이 이미 준비되었는지 확인
+        Transform skillReadyCharacter = FindSkillReadyCharacter();
+
+        if (skillReadyCharacter != null)
+        {
+            // 이미 스킬이 준비된 경우, 음성 재생 후 바로 다음 스크립트로
+            WaitForVoiceAndNextScript().Forget();
+        }
+        else
+        {
+            // 스킬이 아직 준비되지 않은 경우, 음성 재생 후 스킬 준비 대기
+            WaitForVoiceAndSkillReady().Forget();
+        }
+    }
+
+    // 음성 재생 후 바로 다음 스크립트 진행
+    private async UniTaskVoid WaitForVoiceAndNextScript()
+    {
+        // 현재 스크립트에 음성이 있는지 확인하고 재생 완료 대기
+        if (currentScripts != null && currentScriptIndex < currentScripts.Count)
+        {
+            var currentScript = currentScripts[currentScriptIndex];
+
+            if (!string.IsNullOrEmpty(currentScript.Voice))
+            {
+                // 음성 재생이 완료될 때까지 대기
+                await UniTask.WaitUntil(() => !SoundManager.Instance.IsVoicePlaying());
+
+                // 추가 딜레이
+                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
+            }
+        }
+
+        NextScript();
+    }
+
+    // 음성 재생 후 스킬 준비 대기
+    private async UniTaskVoid WaitForVoiceAndSkillReady()
+    {
+        // 현재 스크립트에 음성이 있는지 확인하고 재생 완료 대기
+        if (currentScripts != null && currentScriptIndex < currentScripts.Count)
+        {
+            var currentScript = currentScripts[currentScriptIndex];
+
+            if (!string.IsNullOrEmpty(currentScript.Voice))
+            {
+                // 음성 재생이 완료될 때까지 대기
+                await UniTask.WaitUntil(() => !SoundManager.Instance.IsVoicePlaying());
+
+                // 추가 딜레이
+                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
+            }
+        }
+
+        // 화면 클릭 UI 숨기기
+        HideAllArrows();
+        SetPanelTransparent();
+
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(false);
+        }
+
+        // 스킬 준비 대기 상태로 설정
+        isWaitingForSkillReady = true;
+        Debug.Log("[TutorialStage] 스킬이 준비될 때까지 대기 중...");
     }
 
     private void ActionStopGame()
@@ -1285,6 +1409,8 @@ public class TutorialStage : MonoBehaviour
 
         while (arrow.gameObject.activeSelf && isPlaying)
         {
+            if (arrow == null || arrowRect == null) break;
+
             animationTime += Time.unscaledDeltaTime;
             float yOffset = Mathf.Sin(animationTime * 2f) * 10f;
             arrowRect.localPosition = originalPos + new Vector3(0, yOffset, 0);
@@ -1538,6 +1664,8 @@ public class TutorialStage : MonoBehaviour
                 currentScriptUI.gameObject.SetActive(false);
             }
 
+            isPlaying = false;
+
             DelayedStopGameAsync().Forget();
         }
         finally
@@ -1550,6 +1678,8 @@ public class TutorialStage : MonoBehaviour
     private async UniTaskVoid DelayedStopGameAsync()
     {
         await UniTask.Delay(5000, DelayType.UnscaledDeltaTime);
+
+        isPlaying = true;
 
         // StopGame 액션 실행
         ActionStopGame();
