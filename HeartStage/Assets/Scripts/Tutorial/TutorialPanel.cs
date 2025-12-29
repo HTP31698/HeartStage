@@ -171,7 +171,7 @@ public class TutorialPanel : GenericWindow
         isTyping = true;
         currentScriptUI.SetTutorialText("");
 
-        float textSpeed = 0.1f;
+        float textSpeed = 0.05f;
 
         for (int i = 0; i <= text.Length; i++)
         {

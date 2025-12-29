@@ -32,15 +32,11 @@ public class TutorialStage : MonoBehaviour
     private bool isTyping = false;
     private bool isWaitingForCharacterClick = false; // 캐릭터 클릭 대기 상태
     private bool isWaitingForStartButton = false; // 스타트 버튼 대기 상태 추가
-    private bool isAutoProgression = false; // 자동 진행 모드 상태
     private bool closeCharacterInfoOnce = false; 
 
     private bool isProcessingInput = false; // 입력 처리 중 플래그 추가
     private float lastClickTime = 0f; // 마지막 클릭 시간
     private const float clickCool = 0.3f; 
-
-    private float autoProgressionInterval = 1.1f; // 자동 진행 간격
-    private float autoProgressionTimer = 0f; // 자동 진행 타이머
 
     private Transform waitingCharacterSlot; // 대기 중인 캐릭터 슬롯
 
@@ -72,8 +68,6 @@ public class TutorialStage : MonoBehaviour
                 return;
             }
         }
-
-        StartLocationScript(3);
     }
 
     public void Close()
@@ -85,12 +79,12 @@ public class TutorialStage : MonoBehaviour
         isWaitingForCharacterClick = false;
         isWaitingForCharacterDrag = false;
         isWaitingForStartButton = false;
-        isAutoProgression = false; // 자동 진행 모드 초기화
-        autoProgressionTimer = 0f; // 타이머 초기화
         waitingCharacterSlot = null;
         isProcessingInput = false;
         lastClickTime = 0f;
         characterPlaceCount = 0;
+
+        Time.timeScale = 1f;
 
         HideAllArrows();
         RestorePanel();
@@ -132,22 +126,6 @@ public class TutorialStage : MonoBehaviour
         if (isWaitingForCharacterDrag) return;
         if (isWaitingForStartButton) return;
         if (isProcessingInput) return; 
-
-
-        // 자동 진행 모드일 때
-        if (isAutoProgression)
-        {
-            if (!isTyping)
-            {
-                autoProgressionTimer += Time.unscaledDeltaTime;
-                if (autoProgressionTimer >= autoProgressionInterval)
-                {
-                    autoProgressionTimer = 0f;
-                    NextScript();
-                }
-            }
-            return; // 자동 진행 모드일 때는 수동 클릭 무시
-        }
 
         if (Time.unscaledTime - lastClickTime < clickCool)
             return;
@@ -252,7 +230,7 @@ public class TutorialStage : MonoBehaviour
             }
 
             currentScriptUI.SetTutorialText(text.Substring(0, i));
-            await UniTask.Delay(50, DelayType.UnscaledDeltaTime);
+            await UniTask.Delay(25, DelayType.UnscaledDeltaTime);
         }
 
         isTyping = false;
@@ -348,6 +326,9 @@ public class TutorialStage : MonoBehaviour
                 break;
             case "StopLineArrow":
                 ActionStopLineArrow();
+                break;
+            case "ResumeBattle":
+                ActionResumeBattle();
                 break;
             case "SkillGageArrow":
                 ActionSkillGageArrow();
@@ -955,6 +936,7 @@ public class TutorialStage : MonoBehaviour
 
     private void ActionSkillGageArrow()
     {
+        Time.timeScale = 0f;
         HideAllArrows();
         ActionSkillGageArrowAsync().Forget();
     }
@@ -1049,7 +1031,8 @@ public class TutorialStage : MonoBehaviour
 
     private void ActionSkillUse()
     {
-        isAutoProgression = false;
+        Time.timeScale = 1f;
+
         isPlaying = false;
 
         HideAllArrows();
@@ -1119,7 +1102,6 @@ public class TutorialStage : MonoBehaviour
 
         // 튜토리얼 다시 시작
         isPlaying = true;
-        isAutoProgression = true;
 
         NextScript();
     }
@@ -1220,8 +1202,8 @@ public class TutorialStage : MonoBehaviour
             // 스타트 버튼 대기 상태 해제
             isWaitingForStartButton = false;
 
-            // 자동 진행 모드 시작
-            isAutoProgression = true;
+            // 게임 시작 후 즉시 일시정지 (튜토리얼 진행을 위해)
+            Time.timeScale = 0f;
 
             // 다음 스크립트로 진행
             NextScript();
@@ -1394,7 +1376,6 @@ public class TutorialStage : MonoBehaviour
             currentScriptUI.gameObject.SetActive(false);
         }
 
-        isAutoProgression = false;
         isPlaying = false;
 
         Debug.Log("[TutorialStage] 보스 전투 시작. 스테이지 클리어 대기 모드");
@@ -1461,7 +1442,6 @@ public class TutorialStage : MonoBehaviour
 
         // 튜토리얼 다시 시작
         isPlaying = true;
-        isAutoProgression = true;
 
         NextScript();
     }
@@ -1524,4 +1504,12 @@ public class TutorialStage : MonoBehaviour
 
         SoundManager.Instance?.PlayVoiceSFX(script.Voice);
     }
+
+    private void ActionResumeBattle()
+    {
+        Time.timeScale = 1f;
+
+        NextScript();
+    }
+
 }
