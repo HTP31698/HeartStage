@@ -14,16 +14,34 @@ public class QuestEditorWindow : EditorWindow
 {
     // CSV 경로
     private const string CSV_PATH = "Assets/DataTables/QuestTable.csv";
+    private const string PROGRESS_CSV_PATH = "Assets/DataTables/QuestProgressTable.csv";
+    private const string TITLE_CSV_PATH = "Assets/DataTables/TitleTable.csv";
+    private const string ITEM_CSV_PATH = "Assets/DataTables/ItemTable.csv";
+    private const string STAGE_CSV_PATH = "Assets/DataTables/StageTable.csv";
+    private const string MONSTER_CSV_PATH = "Assets/DataTables/MonsterTable.csv";
 
     // 편집용 데이터
     private List<QuestEditData> quests = new List<QuestEditData>();
+    private List<ProgressRewardData> progressRewards = new List<ProgressRewardData>();
+    private List<TitleEditData> titleList = new List<TitleEditData>();
+    private Dictionary<int, string> titles = new Dictionary<int, string>();
+    private Dictionary<int, string> items = new Dictionary<int, string>();
+    private Dictionary<int, string> stages = new Dictionary<int, string>();
+    private Dictionary<int, string> monsters = new Dictionary<int, string>();
     private int selectedIndex = -1;
+    private int selectedTitleIndex = -1;
 
     // UI 상태
     private Vector2 leftScrollPos;
     private Vector2 rightScrollPos;
+    private Vector2 progressScrollPos;
+    private Vector2 titleScrollPos;
     private string searchQuery = "";
     private int filterType = -1; // -1=전체, 0=업적, 1=일일, 2=주간
+    private int currentTab = 0; // 0=퀘스트, 1=진행도 보상, 2=칭호
+
+    // TargetID 드롭다운 상태
+    private int tempTargetIdSelection = 0;
 
     // 레이아웃
     private const float LeftPanelWidth = 320f;
@@ -38,32 +56,7 @@ public class QuestEditorWindow : EditorWindow
     private readonly Color normalBgColor = new Color(0.22f, 0.22f, 0.22f);
     private readonly Color warningColor = new Color(1f, 0.8f, 0.2f);
 
-    // 아이템 정의
-    private static readonly Dictionary<int, string> ITEMS = new Dictionary<int, string>
-    {
-        { 0, "(없음)" },
-        { 7101, "라이트 스틱" },
-        { 7102, "하트 스틱" },
-        { 7104, "드림 에너지" },
-        { 7105, "트레이닝 포인트" },
-        { 7108, "캐릭터 뽑기 티켓" },
-        { 7109, "의상 뽑기 티켓" },
-        { 7110, "하나 조각" },
-        { 7113, "세라 조각" },
-        { 7114, "리아 조각" },
-        { 7115, "지안 조각" }
-    };
-
-    // 칭호 정의
-    private static readonly Dictionary<int, string> TITLES = new Dictionary<int, string>
-    {
-        { 0, "(없음)" },
-        { 41001, "초급 천사" },
-        { 41002, "중급 천사" },
-        { 41003, "고급 천사" },
-        { 41004, "루미나 가디언즈의 신입" },
-        { 41005, "거리무대 지킴이" }
-    };
+    // 아이템, 칭호는 CSV에서 동적 로드 (items, titles 필드 사용)
 
     // 이벤트 타입 정의
     private static readonly string[] EVENT_TYPE_NAMES = new string[]
@@ -114,6 +107,35 @@ public class QuestEditorWindow : EditorWindow
         public int Target_ID;
     }
 
+    /// <summary>
+    /// 진행도 보상 데이터
+    /// </summary>
+    private class ProgressRewardData
+    {
+        public int progress_reward_ID;
+        public int progress_type; // 1=일일, 2=주간
+        public int progress_amount; // 20, 40, 60, 80, 100
+        public int reward1;
+        public int reward1_amount;
+        public int reward2;
+        public int reward2_amount;
+        public int reward3;
+        public int reward3_amount;
+        public string Notfill_icon;
+        public string filled_icon;
+        public string get_reward_icon;
+    }
+
+    /// <summary>
+    /// 칭호 편집 데이터
+    /// </summary>
+    private class TitleEditData
+    {
+        public int Title_ID;
+        public string Title_name;
+        public string prefab;
+    }
+
     [MenuItem("Tools/Quest Editor", false, 10)]
     public static void ShowWindow()
     {
@@ -123,6 +145,11 @@ public class QuestEditorWindow : EditorWindow
 
     private void OnEnable()
     {
+        LoadItemCSV();
+        LoadStageCSV();
+        LoadMonsterCSV();
+        LoadTitleCSV();
+        LoadProgressCSV();
         LoadCSV();
         saveChangesMessage = "저장되지 않은 변경사항이 있습니다.\n저장하시겠습니까?";
     }
@@ -261,17 +288,284 @@ public class QuestEditorWindow : EditorWindow
         return 0;
     }
 
+    private void LoadItemCSV()
+    {
+        items.Clear();
+        items[0] = "(없음)";
+
+        if (!File.Exists(ITEM_CSV_PATH))
+        {
+            Debug.LogWarning($"[QuestEditor] 아이템 CSV 파일이 없습니다: {ITEM_CSV_PATH}");
+            return;
+        }
+
+        string[] lines = File.ReadAllLines(ITEM_CSV_PATH, Encoding.UTF8);
+        if (lines.Length < 2) return;
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            string[] values = ParseCSVLine(lines[i]);
+            if (values.Length < 2) continue;
+
+            int id = ParseInt(values[0].Trim());
+            string name = values[1].Trim();
+
+            if (id > 0 && !string.IsNullOrEmpty(name))
+            {
+                items[id] = name;
+            }
+        }
+
+        Debug.Log($"[QuestEditor] {items.Count - 1}개 아이템 로드 완료");
+    }
+
+    private void LoadStageCSV()
+    {
+        stages.Clear();
+        stages[0] = "(모든 스테이지)";
+
+        if (!File.Exists(STAGE_CSV_PATH))
+        {
+            Debug.LogWarning($"[QuestEditor] 스테이지 CSV 파일이 없습니다: {STAGE_CSV_PATH}");
+            return;
+        }
+
+        string[] lines = File.ReadAllLines(STAGE_CSV_PATH, Encoding.UTF8);
+        if (lines.Length < 2) return;
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            string[] values = ParseCSVLine(lines[i]);
+            if (values.Length < 2) continue;
+
+            int id = ParseInt(values[0].Trim());
+            string name = values[1].Trim();
+
+            if (id > 0 && !string.IsNullOrEmpty(name))
+            {
+                stages[id] = $"[{id}] {name}";
+            }
+        }
+
+        Debug.Log($"[QuestEditor] {stages.Count - 1}개 스테이지 로드 완료");
+    }
+
+    private void LoadMonsterCSV()
+    {
+        monsters.Clear();
+        monsters[0] = "(모든 보스)";
+
+        if (!File.Exists(MONSTER_CSV_PATH))
+        {
+            Debug.LogWarning($"[QuestEditor] 몬스터 CSV 파일이 없습니다: {MONSTER_CSV_PATH}");
+            return;
+        }
+
+        string[] lines = File.ReadAllLines(MONSTER_CSV_PATH, Encoding.UTF8);
+        if (lines.Length < 2) return;
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            string[] values = ParseCSVLine(lines[i]);
+            if (values.Length < 3) continue;
+
+            int id = ParseInt(values[0].Trim());
+            string name = values[1].Trim();
+            int monType = ParseInt(values[2].Trim());
+
+            // mon_type 2 = 보스
+            if (id > 0 && monType == 2 && !string.IsNullOrEmpty(name))
+            {
+                monsters[id] = $"[{id}] {name}";
+            }
+        }
+
+        Debug.Log($"[QuestEditor] {monsters.Count - 1}개 보스 로드 완료");
+    }
+
+    private void LoadTitleCSV()
+    {
+        titles.Clear();
+        titleList.Clear();
+        titles[0] = "(없음)";
+
+        if (!File.Exists(TITLE_CSV_PATH))
+        {
+            Debug.LogWarning($"[QuestEditor] 칭호 CSV 파일이 없습니다: {TITLE_CSV_PATH}");
+            return;
+        }
+
+        string[] lines = File.ReadAllLines(TITLE_CSV_PATH, Encoding.UTF8);
+        if (lines.Length < 2) return;
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            string[] values = lines[i].Split(',');
+            if (values.Length < 2) continue;
+
+            int id = ParseInt(values[0].Trim());
+            string name = values[1].Trim();
+            string prefab = values.Length >= 3 ? values[2].Trim() : "";
+
+            if (id > 0 && !string.IsNullOrEmpty(name))
+            {
+                titles[id] = name;
+                titleList.Add(new TitleEditData
+                {
+                    Title_ID = id,
+                    Title_name = name,
+                    prefab = prefab
+                });
+            }
+        }
+
+        titleList = titleList.OrderBy(t => t.Title_ID).ToList();
+        Debug.Log($"[QuestEditor] {titles.Count - 1}개 칭호 로드 완료");
+    }
+
+    private void SaveTitleCSV()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("Title_ID,Title_name,prefab");
+
+        var sorted = titleList.OrderBy(t => t.Title_ID).ToList();
+
+        foreach (var t in sorted)
+        {
+            sb.AppendLine($"{t.Title_ID},{t.Title_name},{t.prefab ?? ""}");
+        }
+
+        File.WriteAllText(TITLE_CSV_PATH, sb.ToString(), Encoding.UTF8);
+        AssetDatabase.Refresh();
+
+        // titles 딕셔너리도 갱신
+        titles.Clear();
+        titles[0] = "(없음)";
+        foreach (var t in sorted)
+        {
+            titles[t.Title_ID] = t.Title_name;
+        }
+
+        Debug.Log($"[QuestEditor] {sorted.Count}개 칭호 저장 완료: {TITLE_CSV_PATH}");
+    }
+
+    private void LoadProgressCSV()
+    {
+        progressRewards.Clear();
+
+        if (!File.Exists(PROGRESS_CSV_PATH))
+        {
+            Debug.LogWarning($"[QuestEditor] 진행도 보상 CSV 파일이 없습니다: {PROGRESS_CSV_PATH}");
+            return;
+        }
+
+        string[] lines = File.ReadAllLines(PROGRESS_CSV_PATH, Encoding.UTF8);
+        if (lines.Length < 2) return;
+
+        string[] headers = ParseCSVLine(lines[0]);
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(lines[i])) continue;
+            string[] values = ParseCSVLine(lines[i]);
+            if (values.Length < headers.Length) continue;
+
+            var pr = new ProgressRewardData();
+            for (int j = 0; j < headers.Length; j++)
+            {
+                string h = headers[j].Trim();
+                string v = values[j].Trim();
+
+                switch (h)
+                {
+                    case "progress_reward_ID": pr.progress_reward_ID = ParseInt(v); break;
+                    case "progress_type": pr.progress_type = ParseInt(v); break;
+                    case "progress_amount": pr.progress_amount = ParseInt(v); break;
+                    case "reward1": pr.reward1 = ParseInt(v); break;
+                    case "reward1_amount": pr.reward1_amount = ParseInt(v); break;
+                    case "reward2": pr.reward2 = ParseInt(v); break;
+                    case "reward2_amount": pr.reward2_amount = ParseInt(v); break;
+                    case "reward3": pr.reward3 = ParseInt(v); break;
+                    case "reward3_amount": pr.reward3_amount = ParseInt(v); break;
+                    case "Notfill_icon": pr.Notfill_icon = v; break;
+                    case "filled_icon": pr.filled_icon = v; break;
+                    case "get_reward_icon": pr.get_reward_icon = v; break;
+                }
+            }
+
+            if (pr.progress_reward_ID > 0)
+            {
+                progressRewards.Add(pr);
+            }
+        }
+
+        progressRewards = progressRewards.OrderBy(p => p.progress_type).ThenBy(p => p.progress_amount).ToList();
+        Debug.Log($"[QuestEditor] {progressRewards.Count}개 진행도 보상 로드 완료");
+    }
+
+    private void SaveProgressCSV()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("progress_reward_ID,progress_type,progress_amount,reward1,reward1_amount,reward2,reward2_amount,reward3,reward3_amount,Notfill_icon,filled_icon,get_reward_icon");
+
+        var sorted = progressRewards.OrderBy(p => p.progress_type).ThenBy(p => p.progress_amount).ToList();
+
+        foreach (var pr in sorted)
+        {
+            sb.AppendLine($"{pr.progress_reward_ID},{pr.progress_type},{pr.progress_amount},{pr.reward1},{pr.reward1_amount},{pr.reward2},{pr.reward2_amount},{pr.reward3},{pr.reward3_amount},{pr.Notfill_icon ?? "Progress1"},{pr.filled_icon ?? "Progress2"},{pr.get_reward_icon ?? "Progress3"}");
+        }
+
+        File.WriteAllText(PROGRESS_CSV_PATH, sb.ToString(), Encoding.UTF8);
+        AssetDatabase.Refresh();
+        Debug.Log($"[QuestEditor] {sorted.Count}개 진행도 보상 저장 완료: {PROGRESS_CSV_PATH}");
+    }
+
     #endregion
 
     #region GUI
 
     private void OnGUI()
     {
-        EditorGUILayout.BeginHorizontal();
-        DrawLeftPanel();
-        DrawSeparator();
-        DrawRightPanel();
+        // 상단 탭
+        EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+        GUI.backgroundColor = currentTab == 0 ? new Color(0.4f, 0.6f, 1f) : Color.white;
+        if (GUILayout.Toggle(currentTab == 0, "📋 퀘스트", EditorStyles.toolbarButton, GUILayout.Width(100)))
+            currentTab = 0;
+
+        GUI.backgroundColor = currentTab == 1 ? new Color(0.4f, 0.8f, 0.4f) : Color.white;
+        if (GUILayout.Toggle(currentTab == 1, "📊 진행도 보상", EditorStyles.toolbarButton, GUILayout.Width(100)))
+            currentTab = 1;
+
+        GUI.backgroundColor = currentTab == 2 ? new Color(1f, 0.8f, 0.4f) : Color.white;
+        if (GUILayout.Toggle(currentTab == 2, "🏅 칭호", EditorStyles.toolbarButton, GUILayout.Width(80)))
+            currentTab = 2;
+
+        GUI.backgroundColor = Color.white;
+        GUILayout.FlexibleSpace();
         EditorGUILayout.EndHorizontal();
+
+        // 탭에 따른 패널
+        if (currentTab == 0)
+        {
+            EditorGUILayout.BeginHorizontal();
+            DrawLeftPanel();
+            DrawSeparator();
+            DrawRightPanel();
+            EditorGUILayout.EndHorizontal();
+        }
+        else if (currentTab == 1)
+        {
+            DrawProgressRewardsPanel();
+        }
+        else
+        {
+            DrawTitleManagePanel();
+        }
     }
 
     private void DrawLeftPanel()
@@ -529,25 +823,76 @@ public class QuestEditorWindow : EditorWindow
             EditorGUILayout.HelpBox(EVENT_TYPE_HINTS[quest.Event_type], quest.Event_type == 0 ? MessageType.Warning : MessageType.Info);
 
             // Target ID
+            bool isStageEvent = quest.Event_type == 2; // ClearStage
+            bool isBossEvent = quest.Event_type == 4; // BossKill
+            bool canEditTarget = isStageEvent || isBossEvent;
+
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Target ID", GUILayout.Width(100));
-            GUI.enabled = quest.Event_type == 2 || quest.Event_type == 4; // ClearStage or BossKill
-            int newTargetId = EditorGUILayout.IntField(quest.Target_ID);
-            if (newTargetId != quest.Target_ID)
-            {
-                quest.Target_ID = newTargetId;
-                MarkDirty();
-            }
-            GUI.enabled = true;
-            EditorGUILayout.EndHorizontal();
 
+            // 현재 값 표시
+            var targetStyle = new GUIStyle(EditorStyles.label)
+            {
+                normal = { textColor = quest.Target_ID == 0 ? Color.gray : new Color(0.4f, 0.8f, 1f) },
+                fontStyle = FontStyle.Bold
+            };
+            string currentTargetName = "(미적용)";
             if (quest.Target_ID > 0)
             {
-                EditorGUILayout.LabelField($"  → 특정 대상 #{quest.Target_ID}만 카운트", EditorStyles.miniLabel);
+                if (isStageEvent && stages.ContainsKey(quest.Target_ID))
+                    currentTargetName = stages[quest.Target_ID];
+                else if (isBossEvent && monsters.ContainsKey(quest.Target_ID))
+                    currentTargetName = monsters[quest.Target_ID];
+                else
+                    currentTargetName = $"#{quest.Target_ID}";
             }
-            else if (quest.Event_type == 2 || quest.Event_type == 4)
+            EditorGUILayout.LabelField(currentTargetName, targetStyle, GUILayout.Width(200));
+
+            EditorGUILayout.EndHorizontal();
+
+            // 드롭다운으로 선택
+            if (canEditTarget)
             {
-                EditorGUILayout.LabelField("  → 0 = 모든 대상 카운트", EditorStyles.miniLabel);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("대상 선택", GUILayout.Width(100));
+
+                Dictionary<int, string> targetDict = isStageEvent ? stages : monsters;
+                var targetIds = targetDict.Keys.ToArray();
+                var targetNames = targetDict.Values.ToArray();
+
+                // 현재 선택된 인덱스 찾기
+                int currentIdx = System.Array.IndexOf(targetIds, tempTargetIdSelection);
+                if (currentIdx < 0) currentIdx = 0;
+
+                int newIdx = EditorGUILayout.Popup(currentIdx, targetNames, GUILayout.Width(200));
+                tempTargetIdSelection = targetIds[newIdx];
+
+                // 적용 버튼
+                GUI.backgroundColor = tempTargetIdSelection != quest.Target_ID ? new Color(0.4f, 0.8f, 0.4f) : Color.gray;
+                GUI.enabled = tempTargetIdSelection != quest.Target_ID;
+                if (GUILayout.Button("✓ 적용", GUILayout.Width(60)))
+                {
+                    quest.Target_ID = tempTargetIdSelection;
+                    MarkDirty();
+                }
+                GUI.enabled = true;
+                GUI.backgroundColor = Color.white;
+
+                EditorGUILayout.EndHorizontal();
+
+                // 설명
+                if (quest.Target_ID == 0)
+                {
+                    EditorGUILayout.LabelField($"  → 0 = 모든 {(isStageEvent ? "스테이지" : "보스")} 카운트", EditorStyles.miniLabel);
+                }
+                else
+                {
+                    EditorGUILayout.LabelField($"  → 특정 대상 #{quest.Target_ID}만 카운트", EditorStyles.miniLabel);
+                }
+            }
+            else
+            {
+                EditorGUILayout.LabelField("  → 이벤트 타입을 ClearStage 또는 BossKill로 설정하면 대상을 지정할 수 있습니다", EditorStyles.miniLabel);
             }
 
             // C# 매핑 코드
@@ -624,8 +969,8 @@ public class QuestEditorWindow : EditorWindow
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("칭호", GUILayout.Width(100));
             GUI.enabled = quest.Quest_type == 0;
-            var titleIds = TITLES.Keys.ToArray();
-            var titleNames = TITLES.Values.ToArray();
+            var titleIds = titles.Keys.ToArray();
+            var titleNames = titles.Values.ToArray();
             int titleIdx = System.Array.IndexOf(titleIds, quest.Title_ID);
             if (titleIdx < 0) titleIdx = 0;
             int newTitleIdx = EditorGUILayout.Popup(titleIdx, titleNames);
@@ -740,8 +1085,8 @@ public class QuestEditorWindow : EditorWindow
         EditorGUILayout.BeginHorizontal();
         EditorGUILayout.LabelField(label, GUILayout.Width(60));
 
-        var itemIds = ITEMS.Keys.ToArray();
-        var itemNames = ITEMS.Values.ToArray();
+        var itemIds = items.Keys.ToArray();
+        var itemNames = items.Values.ToArray();
         int itemIdx = System.Array.IndexOf(itemIds, itemId);
         if (itemIdx < 0) itemIdx = 0;
 
@@ -767,8 +1112,318 @@ public class QuestEditorWindow : EditorWindow
     {
         if (itemId == 0 || amount <= 0) return;
 
-        string itemName = ITEMS.ContainsKey(itemId) ? ITEMS[itemId] : $"Item #{itemId}";
+        string itemName = items.ContainsKey(itemId) ? items[itemId] : $"Item #{itemId}";
         EditorGUILayout.LabelField($"[{itemName} x{amount}]", GUILayout.Width(150));
+    }
+
+    private void DrawProgressRewardsPanel()
+    {
+        EditorGUILayout.BeginVertical();
+
+        // 헤더
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("진행도 게이지 보상 편집", EditorStyles.boldLabel);
+        GUILayout.FlexibleSpace();
+
+        if (GUILayout.Button("↻ 새로고침", GUILayout.Width(80)))
+        {
+            LoadProgressCSV();
+        }
+
+        GUI.backgroundColor = new Color(0.5f, 1f, 0.5f);
+        if (GUILayout.Button("💾 저장", GUILayout.Width(70)))
+        {
+            SaveProgressCSV();
+        }
+        GUI.backgroundColor = Color.white;
+
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space(10);
+
+        progressScrollPos = EditorGUILayout.BeginScrollView(progressScrollPos);
+
+        // 일일 보상
+        DrawSection("📅 일일 퀘스트 진행도 보상", () =>
+        {
+            DrawProgressRewardsTable(1);
+        });
+
+        EditorGUILayout.Space(10);
+
+        // 주간 보상
+        DrawSection("📆 주간 퀘스트 진행도 보상", () =>
+        {
+            DrawProgressRewardsTable(2);
+        });
+
+        EditorGUILayout.EndScrollView();
+        EditorGUILayout.EndVertical();
+    }
+
+    private void DrawProgressRewardsTable(int progressType)
+    {
+        var rewards = progressRewards.Where(p => p.progress_type == progressType).OrderBy(p => p.progress_amount).ToList();
+
+        if (rewards.Count == 0)
+        {
+            EditorGUILayout.HelpBox("진행도 보상 데이터가 없습니다.", MessageType.Warning);
+            return;
+        }
+
+        // 헤더
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("진행도", EditorStyles.boldLabel, GUILayout.Width(60));
+        EditorGUILayout.LabelField("보상 1", EditorStyles.boldLabel, GUILayout.Width(180));
+        EditorGUILayout.LabelField("보상 2", EditorStyles.boldLabel, GUILayout.Width(180));
+        EditorGUILayout.LabelField("보상 3", EditorStyles.boldLabel, GUILayout.Width(180));
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space(5);
+
+        var itemIds = items.Keys.ToArray();
+        var itemNames = items.Values.ToArray();
+
+        foreach (var pr in rewards)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            // 진행도
+            var thresholdStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                normal = { textColor = new Color(1f, 0.6f, 0.2f) },
+                fontSize = 14
+            };
+            EditorGUILayout.LabelField($"{pr.progress_amount}%", thresholdStyle, GUILayout.Width(60));
+
+            // 보상 1
+            DrawProgressRewardSlot(itemIds, itemNames, ref pr.reward1, ref pr.reward1_amount);
+
+            // 보상 2
+            DrawProgressRewardSlot(itemIds, itemNames, ref pr.reward2, ref pr.reward2_amount);
+
+            // 보상 3
+            DrawProgressRewardSlot(itemIds, itemNames, ref pr.reward3, ref pr.reward3_amount);
+
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+        }
+    }
+
+    private void DrawProgressRewardSlot(int[] itemIds, string[] itemNames, ref int itemId, ref int amount)
+    {
+        int itemIdx = System.Array.IndexOf(itemIds, itemId);
+        if (itemIdx < 0) itemIdx = 0;
+
+        int newItemIdx = EditorGUILayout.Popup(itemIdx, itemNames, GUILayout.Width(120));
+        if (itemIds[newItemIdx] != itemId)
+        {
+            itemId = itemIds[newItemIdx];
+        }
+
+        int newAmount = EditorGUILayout.IntField(amount, GUILayout.Width(50));
+        if (newAmount != amount)
+        {
+            amount = Mathf.Max(0, newAmount);
+        }
+    }
+
+    private void DrawTitleManagePanel()
+    {
+        EditorGUILayout.BeginVertical();
+
+        // 헤더
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("🏅 칭호 관리", EditorStyles.boldLabel);
+        GUILayout.FlexibleSpace();
+
+        if (GUILayout.Button("↻ 새로고침", GUILayout.Width(80)))
+        {
+            LoadTitleCSV();
+            selectedTitleIndex = -1;
+        }
+
+        GUI.backgroundColor = new Color(0.4f, 0.8f, 0.4f);
+        if (GUILayout.Button("+ 새 칭호", GUILayout.Width(80)))
+        {
+            AddNewTitle();
+        }
+        GUI.backgroundColor = Color.white;
+
+        GUI.backgroundColor = new Color(0.5f, 1f, 0.5f);
+        if (GUILayout.Button("💾 저장", GUILayout.Width(70)))
+        {
+            SaveTitleCSV();
+        }
+        GUI.backgroundColor = Color.white;
+
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.Space(10);
+
+        EditorGUILayout.BeginHorizontal();
+
+        // 좌측: 칭호 목록
+        EditorGUILayout.BeginVertical(GUILayout.Width(250));
+        EditorGUILayout.LabelField($"칭호 목록 ({titleList.Count}개)", EditorStyles.boldLabel);
+
+        titleScrollPos = EditorGUILayout.BeginScrollView(titleScrollPos, GUILayout.Height(400));
+
+        for (int i = 0; i < titleList.Count; i++)
+        {
+            var title = titleList[i];
+            bool isSelected = (i == selectedTitleIndex);
+
+            Rect itemRect = EditorGUILayout.BeginHorizontal(GUILayout.Height(30));
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                Color bgColor = isSelected ? selectedBgColor : normalBgColor;
+                EditorGUI.DrawRect(itemRect, bgColor);
+            }
+
+            if (Event.current.type == EventType.MouseDown && itemRect.Contains(Event.current.mousePosition))
+            {
+                selectedTitleIndex = i;
+                GUI.FocusControl(null);
+                Event.current.Use();
+                Repaint();
+            }
+
+            GUILayout.Space(10);
+
+            var idStyle = new GUIStyle(EditorStyles.miniLabel) { normal = { textColor = Color.gray } };
+            EditorGUILayout.LabelField($"#{title.Title_ID}", idStyle, GUILayout.Width(60));
+
+            var nameStyle = new GUIStyle(EditorStyles.label)
+            {
+                fontStyle = isSelected ? FontStyle.Bold : FontStyle.Normal,
+                normal = { textColor = isSelected ? Color.white : new Color(0.9f, 0.9f, 0.9f) }
+            };
+            EditorGUILayout.LabelField(title.Title_name, nameStyle);
+
+            EditorGUILayout.EndHorizontal();
+            GUILayout.Space(2);
+        }
+
+        EditorGUILayout.EndScrollView();
+        EditorGUILayout.EndVertical();
+
+        // 구분선
+        EditorGUILayout.BeginVertical(GUILayout.Width(2));
+        Rect sepRect = GUILayoutUtility.GetRect(2, 400);
+        EditorGUI.DrawRect(sepRect, new Color(0.15f, 0.15f, 0.15f));
+        EditorGUILayout.EndVertical();
+
+        // 우측: 편집 패널
+        EditorGUILayout.BeginVertical();
+
+        if (selectedTitleIndex >= 0 && selectedTitleIndex < titleList.Count)
+        {
+            var title = titleList[selectedTitleIndex];
+
+            DrawSection("📝 칭호 편집", () =>
+            {
+                // Title ID
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Title ID", GUILayout.Width(80));
+                int newId = EditorGUILayout.IntField(title.Title_ID, GUILayout.Width(100));
+                if (newId != title.Title_ID && newId > 0)
+                {
+                    // ID 중복 체크
+                    if (!titleList.Any(t => t != title && t.Title_ID == newId))
+                    {
+                        title.Title_ID = newId;
+                    }
+                    else
+                    {
+                        EditorUtility.DisplayDialog("오류", "이미 사용 중인 ID입니다.", "확인");
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+
+                // Title Name
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("칭호 이름", GUILayout.Width(80));
+                string newName = EditorGUILayout.TextField(title.Title_name);
+                if (newName != title.Title_name)
+                {
+                    title.Title_name = newName;
+                }
+                EditorGUILayout.EndHorizontal();
+
+                // Prefab
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("프리팹", GUILayout.Width(80));
+                string newPrefab = EditorGUILayout.TextField(title.prefab ?? "");
+                if (newPrefab != (title.prefab ?? ""))
+                {
+                    title.prefab = newPrefab;
+                }
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.Space(10);
+
+                // 삭제 버튼
+                GUI.backgroundColor = new Color(1f, 0.4f, 0.4f);
+                if (GUILayout.Button("🗑️ 칭호 삭제", GUILayout.Height(30)))
+                {
+                    if (EditorUtility.DisplayDialog("삭제", $"칭호 '{title.Title_name}'을 삭제합니다.", "삭제", "취소"))
+                    {
+                        titleList.RemoveAt(selectedTitleIndex);
+                        selectedTitleIndex = Mathf.Min(selectedTitleIndex, titleList.Count - 1);
+                    }
+                }
+                GUI.backgroundColor = Color.white;
+            });
+
+            EditorGUILayout.Space(10);
+
+            // 미리보기
+            DrawSection("👁️ 미리보기", () =>
+            {
+                EditorGUILayout.BeginVertical("Box");
+
+                var previewStyle = new GUIStyle(EditorStyles.label)
+                {
+                    fontSize = 16,
+                    fontStyle = FontStyle.Bold,
+                    normal = { textColor = new Color(1f, 0.8f, 0.4f) },
+                    alignment = TextAnchor.MiddleCenter
+                };
+                EditorGUILayout.LabelField(title.Title_name, previewStyle, GUILayout.Height(30));
+
+                EditorGUILayout.EndVertical();
+            });
+        }
+        else
+        {
+            EditorGUILayout.HelpBox("좌측에서 칭호를 선택하세요.", MessageType.Info);
+        }
+
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.EndVertical();
+    }
+
+    private void AddNewTitle()
+    {
+        int maxId = titleList.Count > 0 ? titleList.Max(t => t.Title_ID) : 41000;
+        int newId = maxId + 1;
+
+        var newTitle = new TitleEditData
+        {
+            Title_ID = newId,
+            Title_name = "새 칭호",
+            prefab = ""
+        };
+
+        titleList.Add(newTitle);
+        titleList = titleList.OrderBy(t => t.Title_ID).ToList();
+        selectedTitleIndex = titleList.IndexOf(newTitle);
+
+        Debug.Log($"[QuestEditor] 새 칭호 추가: #{newId}");
     }
 
     #endregion

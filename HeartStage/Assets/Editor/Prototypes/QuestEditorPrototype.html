@@ -990,9 +990,14 @@
             <div class="header-left">
                 <div class="logo">
                     <div class="logo-icon">💫</div>
-                    <span>HeartStage Quest Editor</span>
+                    <span>HeartStage Editor</span>
                 </div>
-                <div class="header-stats">
+                <!-- 메인 탭 -->
+                <div class="main-tabs" style="display: flex; gap: 4px; margin-left: 20px;">
+                    <button class="btn main-tab active" id="tabQuest" onclick="switchMainTab('quest')">📋 퀘스트</button>
+                    <button class="btn main-tab" id="tabTitle" onclick="switchMainTab('title')">🏅 칭호</button>
+                </div>
+                <div class="header-stats" id="questStats">
                     <div class="stat-item">
                         <span>전체:</span>
                         <span class="count" id="totalCount">0</span>
@@ -1012,11 +1017,17 @@
                 </div>
             </div>
             <div class="header-actions">
+                <button class="btn" onclick="showDataModal()" title="스테이지/몬스터/칭호 데이터 로드">
+                    <span>📂</span> 데이터 로드
+                </button>
                 <button class="btn" onclick="showImportModal()">
                     <span>📥</span> CSV 가져오기
                 </button>
                 <button class="btn btn-primary" onclick="exportCSV()">
-                    <span>📤</span> CSV 내보내기
+                    <span>📤</span> 퀘스트 CSV
+                </button>
+                <button class="btn" onclick="exportProgressRewardsCSV()" title="진행도 게이지 보상 CSV 내보내기">
+                    <span>📊</span> 진행도 보상
                 </button>
             </div>
         </header>
@@ -1090,8 +1101,66 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ★ 칭호 에디터 (탭 전환 시 표시) -->
+            <section class="editor title-editor" id="titleEditor" style="display: none; flex: 1;">
+                <div class="editor-header">
+                    <div class="editor-title">
+                        <h2>🏅 칭호 관리</h2>
+                        <span class="quest-id" id="titleCount">0개</span>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="btn" onclick="loadTitleCSV()">
+                            <span>📥</span> CSV 불러오기
+                        </button>
+                        <button class="btn btn-primary" onclick="exportTitleCSV()">
+                            <span>📤</span> CSV 내보내기
+                        </button>
+                    </div>
+                </div>
+                <div class="editor-content" style="padding: 20px;">
+                    <!-- 칭호 테이블 -->
+                    <div class="form-section">
+                        <div class="form-section-header">
+                            <span class="icon">📋</span>
+                            <h3>칭호 목록</h3>
+                            <button class="btn btn-success" style="margin-left: auto; padding: 6px 12px;" onclick="addNewTitle()">
+                                <span>➕</span> 새 칭호
+                            </button>
+                        </div>
+                        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                            <thead>
+                                <tr style="background: var(--bg-input);">
+                                    <th style="padding: 10px; text-align: left; width: 100px;">ID</th>
+                                    <th style="padding: 10px; text-align: left;">칭호 이름</th>
+                                    <th style="padding: 10px; text-align: left; width: 150px;">프리팹</th>
+                                    <th style="padding: 10px; text-align: left; width: 120px;">사용처</th>
+                                    <th style="padding: 10px; text-align: center; width: 80px;">삭제</th>
+                                </tr>
+                            </thead>
+                            <tbody id="titleTableBody">
+                                <!-- JS로 생성 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 칭호-퀘스트 연결 현황 -->
+                    <div class="form-section" style="margin-top: 20px;">
+                        <div class="form-section-header">
+                            <span class="icon">🔗</span>
+                            <h3>칭호 사용 현황</h3>
+                        </div>
+                        <div id="titleUsageInfo" style="font-size: 13px; color: var(--text-muted); line-height: 1.8;">
+                            <!-- JS로 생성 -->
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
+
+    <!-- 숨겨진 파일 인풋 -->
+    <input type="file" id="titleCSVInput" accept=".csv" style="display: none;" onchange="handleTitleCSVImport(event)">
 
     <!-- CSV 가져오기 모달 -->
     <div class="modal-overlay" id="importModal">
@@ -1123,6 +1192,103 @@
     <!-- 토스트 컨테이너 -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- 데이터 로드 모달 -->
+    <div class="modal-overlay" id="dataModal">
+        <div class="modal" style="max-width: 850px;">
+            <div class="modal-header">
+                <h3>📂 스테이지/몬스터 데이터 로드</h3>
+                <button class="modal-close" onclick="hideDataModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+                    CSV 또는 SO(.asset) 파일을 로드하면 Target ID 선택 시 드롭다운으로 표시됩니다.
+                </p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
+                    <!-- 스테이지 데이터 -->
+                    <div class="form-section" style="margin: 0;">
+                        <div class="form-section-header" style="border: none; padding: 0; margin-bottom: 12px;">
+                            <span class="icon">🏆</span>
+                            <h3>스테이지</h3>
+                        </div>
+                        <div class="dropzone" style="padding: 15px;" onclick="document.getElementById('stageFileInput').click()">
+                            <div style="font-size: 24px; margin-bottom: 6px;">📄</div>
+                            <div style="font-size: 11px;">StageTable.csv</div>
+                        </div>
+                        <input type="file" id="stageFileInput" accept=".csv" style="display: none;" onchange="handleStageFile(event)">
+                        <div id="stageDataStatus" style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+                            0개
+                        </div>
+                    </div>
+
+                    <!-- 몬스터 데이터 -->
+                    <div class="form-section" style="margin: 0;">
+                        <div class="form-section-header" style="border: none; padding: 0; margin-bottom: 12px;">
+                            <span class="icon">👹</span>
+                            <h3>몬스터</h3>
+                        </div>
+                        <div class="dropzone" style="padding: 15px;" onclick="document.getElementById('monsterFileInput').click()">
+                            <div style="font-size: 24px; margin-bottom: 6px;">📄</div>
+                            <div style="font-size: 11px;">MonsterTable.csv</div>
+                        </div>
+                        <input type="file" id="monsterFileInput" accept=".csv" style="display: none;" onchange="handleMonsterFile(event)">
+                        <div id="monsterDataStatus" style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+                            0개 (보스 0)
+                        </div>
+                    </div>
+
+                    <!-- 칭호 데이터 -->
+                    <div class="form-section" style="margin: 0;">
+                        <div class="form-section-header" style="border: none; padding: 0; margin-bottom: 12px;">
+                            <span class="icon">🏅</span>
+                            <h3>칭호</h3>
+                        </div>
+                        <div class="dropzone" style="padding: 15px;" onclick="document.getElementById('titleFileInput').click()">
+                            <div style="font-size: 24px; margin-bottom: 6px;">📄</div>
+                            <div style="font-size: 11px;">TitleTable.csv</div>
+                        </div>
+                        <input type="file" id="titleFileInput" accept=".csv" style="display: none;" onchange="handleTitleFile(event)">
+                        <div id="titleDataStatus" style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+                            기본 7개
+                        </div>
+                    </div>
+
+                    <!-- 진행도 보상 데이터 -->
+                    <div class="form-section" style="margin: 0;">
+                        <div class="form-section-header" style="border: none; padding: 0; margin-bottom: 12px;">
+                            <span class="icon">📊</span>
+                            <h3>진행도 보상</h3>
+                        </div>
+                        <div class="dropzone" style="padding: 15px;" onclick="loadProgressRewardsCSV()">
+                            <div style="font-size: 24px; margin-bottom: 6px;">📄</div>
+                            <div style="font-size: 11px;">QuestProgressTable.csv</div>
+                        </div>
+                        <div id="progressDataStatus" style="margin-top: 8px; font-size: 11px; color: var(--text-muted);">
+                            일일 5개, 주간 5개
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SO 폴더 로드 -->
+                <div class="form-section" style="margin-top: 20px; margin-bottom: 0;">
+                    <div class="form-section-header" style="border: none; padding: 0; margin-bottom: 12px;">
+                        <span class="icon">📁</span>
+                        <h3>또는 ScriptableObject 폴더 선택</h3>
+                    </div>
+                    <div class="dropzone" style="padding: 20px;" onclick="document.getElementById('soFolderInput').click()">
+                        <div style="font-size: 28px; margin-bottom: 8px;">📁</div>
+                        <div style="font-size: 12px;">Assets/ScriptableObject 폴더 선택</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Monsters/, StageWaveData/ 하위 .asset 파일을 자동 파싱</div>
+                    </div>
+                    <input type="file" id="soFolderInput" webkitdirectory multiple style="display: none;" onchange="handleSOFolder(event)">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="hideDataModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ========================================
         // 데이터 정의
@@ -1142,13 +1308,16 @@
             7115: { name: '지안 조각', icon: '🧩' }
         };
 
-        const TITLES = {
+        // ★ 칭호 데이터 (TitleTable.csv 로드 시 덮어씀)
+        let TITLES = {
             0: '(없음)',
             41001: '초급 천사',
             41002: '중급 천사',
             41003: '고급 천사',
             41004: '루미나 가디언즈의 신입',
-            41005: '거리무대 지킴이'
+            41005: '거리무대 지킴이',
+            41006: '프로듀서',
+            41007: '마음을 이끄는 자'
         };
 
         const QUEST_TYPES = {
@@ -1167,6 +1336,11 @@
             6: { name: 'ShopPurchase', display: '상점 구매', icon: '🛒', requiresTarget: false, targetDesc: '' },
             7: { name: 'FanAmountReach', display: '팬수 달성', icon: '👥', requiresTarget: false, targetDesc: 'Quest_required가 목표 팬수' }
         };
+
+        // ★ SO/CSV에서 로드한 데이터
+        let stageData = [];    // { id, name, step1, step2 }
+        let monsterData = [];  // { id, name, type } - type=2가 보스
+        let bossData = [];     // monsterData에서 type=2인 것만
 
         // 기본 퀘스트 데이터 (실제 CSV 기반)
         let quests = [];
@@ -1432,8 +1606,10 @@
                             </div>
                             <div class="form-group" id="targetIdGroup" style="${eventInfo.requiresTarget ? '' : 'opacity: 0.5;'}">
                                 <label>Target ID <span id="targetIdOptional">${eventInfo.requiresTarget ? '' : '(선택)'}</span></label>
-                                <input type="number" id="targetId" value="${quest.Target_ID || 0}" placeholder="0"
-                                       ${eventInfo.requiresTarget ? '' : 'disabled'} oninput="updatePreview()">
+                                <div id="targetIdContainer">
+                                    ${eventInfo.requiresTarget ? renderTargetIdSelect(quest.Event_type, quest.Target_ID) :
+                                      `<input type="number" id="targetId" value="${quest.Target_ID || 0}" placeholder="0" disabled oninput="updatePreview()">`}
+                                </div>
                                 <div class="helper" id="targetIdHint">${eventInfo.targetDesc || '이 이벤트는 Target ID가 필요 없습니다'}</div>
                             </div>
                         </div>
@@ -1544,6 +1720,9 @@
                     </div>
                 </div>
 
+                <!-- 진행도 게이지 보상 (일일/주간만) -->
+                ${renderProgressRewardEditor(quest.Quest_type)}
+
                 <!-- 미리보기 -->
                 <div class="form-section">
                     <div class="form-section-header">
@@ -1609,26 +1788,29 @@
             const eventType = parseInt(document.getElementById('eventType').value);
             const info = EVENT_TYPES[eventType];
             const targetIdGroup = document.getElementById('targetIdGroup');
-            const targetIdInput = document.getElementById('targetId');
+            const targetIdContainer = document.getElementById('targetIdContainer');
             const targetIdHint = document.getElementById('targetIdHint');
             const targetIdOptional = document.getElementById('targetIdOptional');
             const eventTypeInfo = document.getElementById('eventTypeInfo');
 
+            // 현재 값 가져오기
+            const currentTargetId = parseInt(document.getElementById('targetId')?.value) || 0;
+
             if (info.requiresTarget) {
                 targetIdGroup.style.opacity = '1';
-                targetIdInput.disabled = false;
                 targetIdOptional.textContent = '';
                 targetIdHint.textContent = info.targetDesc;
+                // 드롭다운으로 교체
+                targetIdContainer.innerHTML = renderTargetIdSelect(eventType, currentTargetId);
             } else {
                 targetIdGroup.style.opacity = '0.5';
-                targetIdInput.disabled = true;
-                targetIdInput.value = 0;
                 targetIdOptional.textContent = '(선택)';
                 targetIdHint.textContent = '이 이벤트는 Target ID가 필요 없습니다';
+                targetIdContainer.innerHTML = `<input type="number" id="targetId" value="0" placeholder="0" disabled oninput="updatePreview()">`;
             }
 
             const required = parseInt(document.getElementById('questRequired')?.value) || 1;
-            const targetId = parseInt(targetIdInput.value) || 0;
+            const targetId = parseInt(document.getElementById('targetId')?.value) || 0;
             eventTypeInfo.innerHTML = getEventTypeDescription(eventType, targetId, required);
             updatePreview();
         }
@@ -1991,6 +2173,754 @@
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
+        }
+
+        // ========================================
+        // 데이터 로드 (스테이지/몬스터)
+        // ========================================
+
+        function showDataModal() {
+            document.getElementById('dataModal').classList.add('show');
+            updateDataStatus();
+        }
+
+        function hideDataModal() {
+            document.getElementById('dataModal').classList.remove('show');
+        }
+
+        function updateDataStatus() {
+            document.getElementById('stageDataStatus').textContent = `로드된 데이터: ${stageData.length}개`;
+            document.getElementById('monsterDataStatus').textContent =
+                `로드된 데이터: ${monsterData.length}개 (보스: ${bossData.length}개)`;
+        }
+
+        function handleStageFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                if (file.name.endsWith('.csv')) {
+                    parseStageCSV(text);
+                } else if (file.name.endsWith('.asset')) {
+                    parseStageAsset(text, file.name);
+                }
+                updateDataStatus();
+                showToast(`스테이지 데이터 ${stageData.length}개 로드됨`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        function handleMonsterFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                if (file.name.endsWith('.csv')) {
+                    parseMonsterCSV(text);
+                } else if (file.name.endsWith('.asset')) {
+                    parseMonsterAsset(text, file.name);
+                }
+                bossData = monsterData.filter(m => m.type === 2);
+                updateDataStatus();
+                showToast(`몬스터 데이터 ${monsterData.length}개 (보스 ${bossData.length}개) 로드됨`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        function handleSOFolder(event) {
+            const files = Array.from(event.target.files);
+            let stageCount = 0;
+            let monsterCount = 0;
+
+            // .asset 파일만 필터링
+            const assetFiles = files.filter(f => f.name.endsWith('.asset'));
+
+            const readPromises = assetFiles.map(file => {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const text = e.target.result;
+                        const path = file.webkitRelativePath || file.name;
+
+                        // StageWaveData 폴더의 파일
+                        if (path.includes('StageWaveData') || path.includes('stage')) {
+                            // StageWaveData는 wave_id가 있음, StageTable은 stage_ID
+                            // 현재 SO는 StageWaveData만 있으므로 CSV를 권장
+                        }
+
+                        // Monsters 폴더의 파일
+                        if (path.includes('Monsters') || path.includes('Monster')) {
+                            const parsed = parseMonsterAssetText(text);
+                            if (parsed) {
+                                // 중복 체크
+                                if (!monsterData.find(m => m.id === parsed.id)) {
+                                    monsterData.push(parsed);
+                                    monsterCount++;
+                                }
+                            }
+                        }
+
+                        resolve();
+                    };
+                    reader.readAsText(file);
+                });
+            });
+
+            Promise.all(readPromises).then(() => {
+                bossData = monsterData.filter(m => m.type === 2);
+                updateDataStatus();
+                showToast(`SO 파싱 완료: 몬스터 ${monsterCount}개`, 'success');
+            });
+        }
+
+        function parseStageCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].replace(/^\uFEFF/, '').split(',').map(h => h.trim());
+
+            stageData = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length < 3) continue;
+
+                const idIdx = headers.indexOf('stage_ID');
+                const nameIdx = headers.indexOf('stage_name');
+                const step1Idx = headers.indexOf('stage_step1');
+                const step2Idx = headers.indexOf('stage_step2');
+
+                if (idIdx === -1) continue;
+
+                const id = parseInt(values[idIdx]) || 0;
+                const name = values[nameIdx] || '';
+                const step1 = parseInt(values[step1Idx]) || 0;
+                const step2 = parseInt(values[step2Idx]) || 0;
+
+                if (id > 0) {
+                    stageData.push({ id, name, step1, step2 });
+                }
+            }
+        }
+
+        function parseMonsterCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].replace(/^\uFEFF/, '').split(',').map(h => h.trim());
+
+            monsterData = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length < 3) continue;
+
+                const idIdx = headers.indexOf('mon_id');
+                const nameIdx = headers.indexOf('mon_name');
+                const typeIdx = headers.indexOf('mon_type');
+
+                if (idIdx === -1) continue;
+
+                const id = parseInt(values[idIdx]) || 0;
+                const name = values[nameIdx] || '';
+                const type = parseInt(values[typeIdx]) || 0;
+
+                if (id > 0) {
+                    monsterData.push({ id, name, type });
+                }
+            }
+            bossData = monsterData.filter(m => m.type === 2);
+        }
+
+        function parseMonsterAssetText(text) {
+            // YAML 형식의 .asset 파일 파싱
+            try {
+                const idMatch = text.match(/^\s*id:\s*(\d+)/m);
+                const nameMatch = text.match(/^\s*monsterName:\s*["']?(.+?)["']?\s*$/m);
+                const typeMatch = text.match(/^\s*monsterType:\s*(\d+)/m);
+
+                if (!idMatch) return null;
+
+                return {
+                    id: parseInt(idMatch[1]),
+                    name: nameMatch ? decodeUnicodeEscapes(nameMatch[1]) : `Monster_${idMatch[1]}`,
+                    type: typeMatch ? parseInt(typeMatch[1]) : 1
+                };
+            } catch (e) {
+                console.error('Asset parse error:', e);
+                return null;
+            }
+        }
+
+        function decodeUnicodeEscapes(str) {
+            // Unity YAML의 유니코드 이스케이프 디코딩
+            return str.replace(/\\u([0-9A-Fa-f]{4})/g, (match, hex) => {
+                return String.fromCharCode(parseInt(hex, 16));
+            });
+        }
+
+        // ========================================
+        // Target ID 드롭다운 생성
+        // ========================================
+
+        function getTargetIdOptions(eventType) {
+            if (eventType === 2 && stageData.length > 0) {
+                // 스테이지 클리어
+                return stageData.map(s => ({
+                    id: s.id,
+                    label: `${s.id} - ${s.name} (${s.step1}-${s.step2})`
+                }));
+            } else if (eventType === 4 && bossData.length > 0) {
+                // 보스 처치
+                return bossData.map(b => ({
+                    id: b.id,
+                    label: `${b.id} - ${b.name}`
+                }));
+            } else if (eventType === 3 && monsterData.length > 0) {
+                // 몬스터 처치 (전체)
+                return monsterData.slice(0, 50).map(m => ({
+                    id: m.id,
+                    label: `${m.id} - ${m.name}`
+                }));
+            }
+            return [];
+        }
+
+        function renderTargetIdSelect(eventType, currentValue) {
+            const options = getTargetIdOptions(eventType);
+
+            if (options.length === 0) {
+                // 데이터 없으면 기본 input
+                return `
+                    <input type="number" id="targetId" value="${currentValue || 0}" placeholder="0"
+                           oninput="updatePreview()">
+                    <div class="helper" style="color: var(--warning);">
+                        💡 [데이터 로드] 버튼으로 CSV/SO를 로드하면 드롭다운으로 선택 가능
+                    </div>
+                `;
+            }
+
+            // 드롭다운 + 직접입력 옵션
+            return `
+                <select id="targetId" onchange="onTargetIdChange()">
+                    <option value="0" ${currentValue == 0 ? 'selected' : ''}>0 - 모든 대상</option>
+                    ${options.map(o =>
+                        `<option value="${o.id}" ${currentValue == o.id ? 'selected' : ''}>${o.label}</option>`
+                    ).join('')}
+                    <option value="custom">직접 입력...</option>
+                </select>
+                <input type="number" id="targetIdCustom" value="${currentValue || 0}"
+                       style="display: none; margin-top: 6px;" placeholder="직접 입력"
+                       oninput="document.getElementById('targetId').value = this.value; updatePreview();">
+            `;
+        }
+
+        function onTargetIdChange() {
+            const select = document.getElementById('targetId');
+            const customInput = document.getElementById('targetIdCustom');
+
+            if (select.value === 'custom') {
+                customInput.style.display = 'block';
+                customInput.focus();
+            } else {
+                customInput.style.display = 'none';
+            }
+            updatePreview();
+        }
+
+        // ========================================
+        // 메인 탭 전환 (퀘스트 ↔ 칭호)
+        // ========================================
+
+        function switchMainTab(tab) {
+            const questTab = document.getElementById('tabQuest');
+            const titleTab = document.getElementById('tabTitle');
+            const questStats = document.getElementById('questStats');
+            const sidebar = document.querySelector('.sidebar');
+            const questEditor = document.querySelector('.editor:not(.title-editor)');
+            const titleEditor = document.getElementById('titleEditor');
+
+            if (tab === 'quest') {
+                questTab.classList.add('active');
+                titleTab.classList.remove('active');
+                questStats.style.display = 'flex';
+                sidebar.style.display = 'flex';
+                questEditor.style.display = 'flex';
+                titleEditor.style.display = 'none';
+            } else if (tab === 'title') {
+                questTab.classList.remove('active');
+                titleTab.classList.add('active');
+                questStats.style.display = 'none';
+                sidebar.style.display = 'none';
+                questEditor.style.display = 'none';
+                titleEditor.style.display = 'flex';
+                renderTitleTable();
+                updateTitleUsage();
+            }
+        }
+
+        // ========================================
+        // 칭호 테이블 렌더링
+        // ========================================
+
+        function renderTitleTable() {
+            const tbody = document.getElementById('titleTableBody');
+            const titleIds = Object.keys(TITLES).filter(id => id !== '0').map(id => parseInt(id)).sort((a, b) => a - b);
+
+            document.getElementById('titleCount').textContent = `${titleIds.length}개`;
+
+            let html = '';
+            titleIds.forEach(id => {
+                const title = TITLES[id];
+                const prefab = TITLE_PREFABS[id] || '';
+                const usage = getTitleUsage(id);
+
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 10px;">
+                            <input type="number" value="${id}"
+                                   style="width: 80px; padding: 6px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text);"
+                                   data-original-id="${id}"
+                                   onchange="updateTitleId(this, ${id})">
+                        </td>
+                        <td style="padding: 10px;">
+                            <input type="text" value="${title}"
+                                   style="width: 100%; padding: 6px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text);"
+                                   onchange="updateTitleName(${id}, this.value)">
+                        </td>
+                        <td style="padding: 10px;">
+                            <input type="text" value="${prefab}" placeholder="(없음)"
+                                   style="width: 100%; padding: 6px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text);"
+                                   onchange="updateTitlePrefab(${id}, this.value)">
+                        </td>
+                        <td style="padding: 10px; font-size: 11px; color: var(--text-muted);">
+                            ${usage || '<span style="color: var(--warning);">미사용</span>'}
+                        </td>
+                        <td style="padding: 10px; text-align: center;">
+                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;"
+                                    onclick="deleteTitle(${id})">🗑️</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // 칭호 프리팹 저장용 (TitleTable.csv의 prefab 컬럼)
+        let TITLE_PREFABS = {
+            41006: 'Producer'
+        };
+
+        function getTitleUsage(titleId) {
+            const usages = [];
+
+            // 퀘스트에서 사용하는지 확인
+            quests.forEach(q => {
+                if (q.Title_ID === titleId) {
+                    usages.push(`퀘스트 #${q.Quest_ID}`);
+                }
+            });
+
+            // 스토리 보상으로 사용하는지 (StoryStageTable 기반)
+            const storyTitleMap = {
+                41006: '스토리 66003',
+                41007: '스토리 66007'
+            };
+            if (storyTitleMap[titleId]) {
+                usages.push(storyTitleMap[titleId]);
+            }
+
+            return usages.join(', ');
+        }
+
+        function updateTitleUsage() {
+            const container = document.getElementById('titleUsageInfo');
+
+            // 퀘스트에서 칭호 보상 사용 현황
+            const titleQuestMap = {};
+            quests.forEach(q => {
+                if (q.Title_ID && q.Title_ID > 0) {
+                    if (!titleQuestMap[q.Title_ID]) {
+                        titleQuestMap[q.Title_ID] = [];
+                    }
+                    titleQuestMap[q.Title_ID].push(q);
+                }
+            });
+
+            let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">';
+
+            // 퀘스트 보상 칭호
+            html += '<div>';
+            html += '<strong style="color: var(--daily);">📋 퀘스트 보상 칭호:</strong><br>';
+            if (Object.keys(titleQuestMap).length === 0) {
+                html += '<span style="color: var(--text-muted);">없음</span>';
+            } else {
+                Object.keys(titleQuestMap).forEach(titleId => {
+                    const titleName = TITLES[titleId] || `(ID: ${titleId})`;
+                    const questList = titleQuestMap[titleId].map(q => `#${q.Quest_ID}`).join(', ');
+                    html += `• <strong>${titleName}</strong>: ${questList}<br>`;
+                });
+            }
+            html += '</div>';
+
+            // 스토리 보상 칭호
+            html += '<div>';
+            html += '<strong style="color: var(--achievement);">📖 스토리 보상 칭호:</strong><br>';
+            html += '• <strong>프로듀서 (41006)</strong>: 스토리 66003<br>';
+            html += '• <strong>마음을 이끄는 자 (41007)</strong>: 스토리 66007<br>';
+            html += '</div>';
+
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        // ========================================
+        // 칭호 CRUD
+        // ========================================
+
+        function addNewTitle() {
+            // 가장 큰 ID + 1
+            const ids = Object.keys(TITLES).map(id => parseInt(id)).filter(id => id > 0);
+            const newId = ids.length > 0 ? Math.max(...ids) + 1 : 41001;
+
+            TITLES[newId] = '새 칭호';
+            TITLE_PREFABS[newId] = '';
+
+            renderTitleTable();
+            updateTitleUsage();
+            showToast(`칭호 #${newId} 추가됨`, 'success');
+        }
+
+        function updateTitleId(input, oldId) {
+            const newId = parseInt(input.value);
+            if (isNaN(newId) || newId <= 0) {
+                input.value = oldId;
+                showToast('올바른 ID를 입력하세요', 'error');
+                return;
+            }
+
+            if (TITLES[newId] && newId !== oldId) {
+                input.value = oldId;
+                showToast('이미 존재하는 ID입니다', 'error');
+                return;
+            }
+
+            // 이름과 프리팹 이동
+            TITLES[newId] = TITLES[oldId];
+            TITLE_PREFABS[newId] = TITLE_PREFABS[oldId] || '';
+            delete TITLES[oldId];
+            delete TITLE_PREFABS[oldId];
+
+            // 퀘스트의 Title_ID도 업데이트
+            quests.forEach(q => {
+                if (q.Title_ID === oldId) {
+                    q.Title_ID = newId;
+                }
+            });
+            saveToLocalStorage();
+
+            renderTitleTable();
+            updateTitleUsage();
+            showToast(`칭호 ID 변경: ${oldId} → ${newId}`, 'success');
+        }
+
+        function updateTitleName(id, newName) {
+            TITLES[id] = newName;
+            updateTitleUsage();
+            showToast('칭호 이름 수정됨', 'success');
+        }
+
+        function updateTitlePrefab(id, newPrefab) {
+            TITLE_PREFABS[id] = newPrefab;
+            showToast('프리팹 수정됨', 'success');
+        }
+
+        function deleteTitle(id) {
+            // 사용 중인지 확인
+            const usedInQuest = quests.some(q => q.Title_ID === id);
+            if (usedInQuest) {
+                showToast('퀘스트에서 사용 중인 칭호는 삭제할 수 없습니다', 'error');
+                return;
+            }
+
+            if (!confirm(`칭호 "${TITLES[id]}" (ID: ${id})를 삭제하시겠습니까?`)) {
+                return;
+            }
+
+            delete TITLES[id];
+            delete TITLE_PREFABS[id];
+
+            renderTitleTable();
+            updateTitleUsage();
+            showToast('칭호 삭제됨', 'success');
+        }
+
+        // ========================================
+        // 칭호 CSV 가져오기/내보내기
+        // ========================================
+
+        function loadTitleCSV() {
+            document.getElementById('titleCSVInput').click();
+        }
+
+        function handleTitleCSVImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                parseTitleCSV(e.target.result);
+                renderTitleTable();
+                updateTitleUsage();
+                showToast('칭호 CSV 로드 완료', 'success');
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // 리셋
+        }
+
+        function handleTitleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                parseTitleCSV(e.target.result);
+                document.getElementById('titleDataStatus').textContent = `${Object.keys(TITLES).length - 1}개`;
+                showToast(`칭호 ${Object.keys(TITLES).length - 1}개 로드됨`, 'success');
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function parseTitleCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].replace(/^\uFEFF/, '').split(',').map(h => h.trim());
+
+            const idIdx = headers.indexOf('Title_ID');
+            const nameIdx = headers.indexOf('Title_name');
+            const prefabIdx = headers.indexOf('prefab');
+
+            if (idIdx === -1 || nameIdx === -1) {
+                showToast('CSV 형식 오류: Title_ID, Title_name 컬럼이 필요합니다', 'error');
+                return;
+            }
+
+            // 기존 데이터 초기화 (0번 제외)
+            TITLES = { 0: '(없음)' };
+            TITLE_PREFABS = {};
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length < 2) continue;
+
+                const id = parseInt(values[idIdx]) || 0;
+                const name = values[nameIdx] || '';
+                const prefab = prefabIdx >= 0 ? (values[prefabIdx] || '') : '';
+
+                if (id > 0 && name) {
+                    TITLES[id] = name;
+                    if (prefab) TITLE_PREFABS[id] = prefab;
+                }
+            }
+        }
+
+        function exportTitleCSV() {
+            let csv = 'Title_ID,Title_name,prefab\n';
+
+            const ids = Object.keys(TITLES).filter(id => id !== '0').map(id => parseInt(id)).sort((a, b) => a - b);
+
+            ids.forEach(id => {
+                const name = TITLES[id] || '';
+                const prefab = TITLE_PREFABS[id] || '';
+                csv += `${id},${name},${prefab}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'TitleTable.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showToast('TitleTable.csv 다운로드 완료!', 'success');
+        }
+
+        // ========================================
+        // 진행도 게이지 보상 (Progress Gauge Rewards)
+        // C# QuestProgressTable.csv 형식과 동일하게 구성
+        // ========================================
+
+        // 진행도별 보상 데이터 (C# CSV 형식: 보상 3종까지)
+        let progressRewards = {
+            daily: [
+                { id: 13201020, threshold: 20, reward1: 7101, reward1_amount: 100, reward2: 7104, reward2_amount: 10, reward3: 0, reward3_amount: 0 },
+                { id: 13201040, threshold: 40, reward1: 7101, reward1_amount: 100, reward2: 7104, reward2_amount: 10, reward3: 0, reward3_amount: 0 },
+                { id: 13201060, threshold: 60, reward1: 7101, reward1_amount: 100, reward2: 7104, reward2_amount: 10, reward3: 0, reward3_amount: 0 },
+                { id: 13201080, threshold: 80, reward1: 7101, reward1_amount: 100, reward2: 7104, reward2_amount: 10, reward3: 0, reward3_amount: 0 },
+                { id: 13201100, threshold: 100, reward1: 7101, reward1_amount: 100, reward2: 7104, reward2_amount: 10, reward3: 0, reward3_amount: 0 }
+            ],
+            weekly: [
+                { id: 13202020, threshold: 20, reward1: 7102, reward1_amount: 20, reward2: 7101, reward2_amount: 150, reward3: 0, reward3_amount: 0 },
+                { id: 13202040, threshold: 40, reward1: 7102, reward1_amount: 40, reward2: 7101, reward2_amount: 150, reward3: 0, reward3_amount: 0 },
+                { id: 13202060, threshold: 60, reward1: 7102, reward1_amount: 60, reward2: 7101, reward2_amount: 150, reward3: 0, reward3_amount: 0 },
+                { id: 13202080, threshold: 80, reward1: 7102, reward1_amount: 80, reward2: 7101, reward2_amount: 150, reward3: 0, reward3_amount: 0 },
+                { id: 13202100, threshold: 100, reward1: 7102, reward1_amount: 100, reward2: 7101, reward2_amount: 150, reward3: 0, reward3_amount: 0 }
+            ]
+        };
+
+        function renderProgressRewardEditor(questType) {
+            // 업적은 진행도 게이지 없음
+            if (questType === 0) return '';
+
+            const type = questType === 1 ? 'daily' : 'weekly';
+            const rewards = progressRewards[type];
+            const typeLabel = type === 'daily' ? '일일' : '주간';
+
+            let html = `
+                <div class="form-section" style="background: linear-gradient(135deg, rgba(63, 185, 80, 0.05), rgba(88, 166, 255, 0.05));">
+                    <div class="form-section-header">
+                        <span class="icon">📊</span>
+                        <h3>진행도 게이지 보상 (${typeLabel})</h3>
+                        <span class="hint">QuestProgressTable.csv 형식</span>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background: var(--bg-input);">
+                                <th style="padding: 8px; text-align: center; width: 60px;">진행도</th>
+                                <th style="padding: 8px; text-align: center;" colspan="2">보상 1</th>
+                                <th style="padding: 8px; text-align: center;" colspan="2">보상 2</th>
+                                <th style="padding: 8px; text-align: center;" colspan="2">보상 3</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            rewards.forEach((r, idx) => {
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 8px; text-align: center; font-weight: bold; color: var(--primary);">${r.threshold}%</td>
+                        ${renderRewardCell(type, idx, 1, r.reward1, r.reward1_amount)}
+                        ${renderRewardCell(type, idx, 2, r.reward2, r.reward2_amount)}
+                        ${renderRewardCell(type, idx, 3, r.reward3, r.reward3_amount)}
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            return html;
+        }
+
+        function renderRewardCell(type, rowIdx, rewardNum, itemId, amount) {
+            return `
+                <td style="padding: 4px;">
+                    <select style="width: 100%; padding: 4px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 10px;"
+                            onchange="updateProgressReward('${type}', ${rowIdx}, 'reward${rewardNum}', parseInt(this.value))">
+                        ${Object.entries(ITEMS).map(([id, item]) =>
+                            `<option value="${id}" ${itemId == id ? 'selected' : ''}>${item.icon} ${item.name}</option>`
+                        ).join('')}
+                    </select>
+                </td>
+                <td style="padding: 4px; width: 60px;">
+                    <input type="number" value="${amount}" min="0"
+                           style="width: 100%; padding: 4px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 11px; text-align: center;"
+                           onchange="updateProgressReward('${type}', ${rowIdx}, 'reward${rewardNum}_amount', parseInt(this.value))">
+                </td>
+            `;
+        }
+
+        function updateProgressReward(type, idx, field, value) {
+            progressRewards[type][idx][field] = value;
+            showToast('진행도 보상 수정됨', 'success');
+        }
+
+        function exportProgressRewardsCSV() {
+            // C# QuestProgressTable.csv 형식과 동일
+            let csv = 'progress_reward_ID,progress_type,progress_amount,reward1,reward1_amount,reward2,reward2_amount,reward3,reward3_amount,Notfill_icon,filled_icon,get_reward_icon\n';
+
+            ['daily', 'weekly'].forEach(type => {
+                const progressType = type === 'daily' ? 1 : 2;
+                progressRewards[type].forEach(r => {
+                    csv += `${r.id},${progressType},${r.threshold},${r.reward1},${r.reward1_amount},${r.reward2},${r.reward2_amount},${r.reward3},${r.reward3_amount},Progress1,Progress2,Progress3\n`;
+                });
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'QuestProgressTable.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showToast('QuestProgressTable.csv 다운로드 완료! → Assets/DataTables/에 복사하세요', 'success');
+        }
+
+        function loadProgressRewardsCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    parseProgressRewardsCSV(ev.target.result);
+                    updateProgressDataStatus();
+                    showToast('QuestProgressTable.csv 로드 완료', 'success');
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function updateProgressDataStatus() {
+            const status = document.getElementById('progressDataStatus');
+            if (status) {
+                status.textContent = `일일 ${progressRewards.daily.length}개, 주간 ${progressRewards.weekly.length}개`;
+            }
+        }
+
+        function parseProgressRewardsCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].replace(/^\uFEFF/, '').split(',').map(h => h.trim());
+
+            progressRewards.daily = [];
+            progressRewards.weekly = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',');
+                if (values.length < 9) continue;
+
+                const id = parseInt(values[0]) || 0;
+                const progressType = parseInt(values[1]) || 1;
+                const threshold = parseInt(values[2]) || 0;
+
+                const reward = {
+                    id: id,
+                    threshold: threshold,
+                    reward1: parseInt(values[3]) || 0,
+                    reward1_amount: parseInt(values[4]) || 0,
+                    reward2: parseInt(values[5]) || 0,
+                    reward2_amount: parseInt(values[6]) || 0,
+                    reward3: parseInt(values[7]) || 0,
+                    reward3_amount: parseInt(values[8]) || 0
+                };
+
+                if (progressType === 1) {
+                    progressRewards.daily.push(reward);
+                } else if (progressType === 2) {
+                    progressRewards.weekly.push(reward);
+                }
+            }
+
+            // 정렬
+            progressRewards.daily.sort((a, b) => a.threshold - b.threshold);
+            progressRewards.weekly.sort((a, b) => a.threshold - b.threshold);
         }
     </script>
 </body>

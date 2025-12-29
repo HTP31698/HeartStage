@@ -75,7 +75,7 @@ public class LobbySceneController : MonoBehaviour
         }
     }
 
-    private async UniTask InitializeQuestsIfNeeded()
+    private UniTask InitializeQuestsIfNeeded()
     {
         bool needInitDaily = dailyQuestsComponent != null && !dailyQuestsComponent.IsInitialized;
         bool needInitWeekly = weeklyQuestsComponent != null && !weeklyQuestsComponent.IsInitialized;
@@ -83,16 +83,18 @@ public class LobbySceneController : MonoBehaviour
 
         if (needInitDaily && needInitWeekly && needInitArchivement)
         {
-            await InitializeQuestComponentAsync(dailyQuestsComponent);
-            await InitializeQuestComponentAsync(weeklyQuestsComponent);
+            InitializeQuestComponent(dailyQuestsComponent);
+            InitializeQuestComponent(weeklyQuestsComponent);
         }
         else
         {
             Debug.Log("[LobbySceneController] 퀘스트 UI 이미 초기화됨.  로딩 스킵");
         }
+
+        return UniTask.CompletedTask;
     }
 
-    private async UniTask InitializeQuestComponentAsync(MonoBehaviour questComponent)
+    private void InitializeQuestComponent(MonoBehaviour questComponent)
     {
         if (questComponent == null)
             return;
@@ -102,11 +104,11 @@ public class LobbySceneController : MonoBehaviour
 
         go.SetActive(true);
         if (questComponent is DailyQuests dq)
-            await dq.InitializeAsync();
+            dq.Initialize();
         else if (questComponent is WeeklyQuests wq)
-            await wq.InitializeAsync();
+            wq.Initialize();
         else if (questComponent is ArchivementQuests aq)
-            await aq.InitializeAsync();
+            aq.Initialize();
 
         go.SetActive(wasActive);
     }

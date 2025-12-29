@@ -45,6 +45,9 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
     [Header("이 진행도는 어떤 타입인가? (Weekly 추천)")]
     [SerializeField] private ProgressType progressType = ProgressType.Weekly;
 
+    [Header("애니메이션")]
+    [SerializeField] private QuestProgressAnimator progressAnimator;
+
     private QuestTable QuestTable => DataTableManager.QuestTable;
     private QuestProgressTable QuestProgressTable => DataTableManager.QuestProgressTable;
 
@@ -55,9 +58,9 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
 
     public bool IsInitialized { get; private set; }
 
-    private async void Start()
+    private void Start()
     {
-        await InitializeAsync();
+        Initialize();
     }
 
     private void OnEnable()
@@ -77,7 +80,7 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
         SaveWeeklyStateAsync().Forget();
     }
 
-    public async UniTask InitializeAsync()
+    public void Initialize()
     {
         if (IsInitialized)
             return;
@@ -99,7 +102,7 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
         if (State.weekKey != weekKey)
         {
             ResetWeeklyState(weekKey);
-            await SaveWeeklyStateAsync();
+            SaveWeeklyStateAsync().Forget();
         }
 
         if (progressSlider != null)
@@ -113,7 +116,7 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
         BuildWeeklyQuestList();
         HookRewardButtonEvents();
         InitQuestProgressDataFromTable();
-        await LoadRewardIconsAsync();
+        LoadRewardIcons();
 
         UpdateRewardButtons();
         CreateWeeklyQuestItems();
@@ -328,7 +331,7 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
         }
     }
 
-    private async UniTask LoadRewardIconsAsync()
+    private void LoadRewardIcons()
     {
         for (int i = 0; i < rewardSlots.Length; i++)
         {
@@ -340,20 +343,17 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
             {
                 if (!string.IsNullOrEmpty(slot.data.Notfill_icon))
                 {
-                    var h = Addressables.LoadAssetAsync<Sprite>(slot.data.Notfill_icon);
-                    slot.notFilledSprite = await h.Task;
+                    slot.notFilledSprite = ResourceManager.Instance.GetSprite(slot.data.Notfill_icon);
                 }
 
                 if (!string.IsNullOrEmpty(slot.data.filled_icon))
                 {
-                    var h = Addressables.LoadAssetAsync<Sprite>(slot.data.filled_icon);
-                    slot.filledSprite = await h.Task;
+                    slot.filledSprite = ResourceManager.Instance.GetSprite(slot.data.filled_icon);
                 }
 
                 if (!string.IsNullOrEmpty(slot.data.get_reward_icon))
                 {
-                    var h = Addressables.LoadAssetAsync<Sprite>(slot.data.get_reward_icon);
-                    slot.claimedSprite = await h.Task;
+                    slot.claimedSprite = ResourceManager.Instance.GetSprite(slot.data.get_reward_icon);
                 }
             }
             catch (Exception ex)
@@ -424,7 +424,34 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
             return;
         }
 
-        GiveProgressReward(slot.data);
+        // 버튼 팝 애니메이션
+        if (progressAnimator != null)
+        {
+            await progressAnimator.PlayRewardButtonClaimAsync(index, slot.claimedSprite);
+        }
+
+        // 실제 보상 지급
+        var acquirePanel = FindFirstObjectByType<ItemAcquirePanel>();
+        var data = slot.data;
+
+        if (data.reward1 != 0 && data.reward1_amount > 0)
+        {
+            ItemInvenHelper.AddItem(data.reward1, data.reward1_amount);
+            if (acquirePanel != null)
+                acquirePanel.Open(data.reward1, data.reward1_amount);
+        }
+        if (data.reward2 != 0 && data.reward2_amount > 0)
+        {
+            ItemInvenHelper.AddItem(data.reward2, data.reward2_amount);
+            if (acquirePanel != null)
+                acquirePanel.Open(data.reward2, data.reward2_amount);
+        }
+        if (data.reward3 != 0 && data.reward3_amount > 0)
+        {
+            ItemInvenHelper.AddItem(data.reward3, data.reward3_amount);
+            if (acquirePanel != null)
+                acquirePanel.Open(data.reward3, data.reward3_amount);
+        }
 
         if (State.claimed == null || State.claimed.Length != rewardSlots.Length)
             State.claimed = new bool[rewardSlots.Length];
@@ -437,31 +464,190 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
 
     public void ClaimAllAvailableRewards()
     {
+        ClaimAllAndCollectRewardsAsync().Forget();
+    }
+
+    /// <summary>
+    /// 모든 보상 수령 + 결과 반환 (애니메이션 포함)
+    /// 1) 퀘스트 보상 먼저 (진행도 증가) - 하트 날아가는 애니메이션
+    /// 2) 진행도 보상 수령 - 버튼 팝 애니메이션
+    /// </summary>
+    public async UniTask<CollectedRewards> ClaimAllAndCollectRewardsAsync()
+    {
+        var collected = new CollectedRewards();
+        InitStateStructure();
+
+        // 1) 수령 가능한 퀘스트 정보 수집
+        var claimableQuests = new List<(WeeklyQuestItemUI item, QuestData data, int progressAmount)>();
+
+        foreach (var item in _questItems)
+        {
+            if (item == null)
+                continue;
+
+            int id = item.QuestId;
+
+            // 이미 보상 받은 퀘스트면 스킵
+            if (State.completedQuestIds.Contains(id))
+                continue;
+
+            // 조건 만족 안 했으면 스킵
+            if (!State.clearedQuestIds.Contains(id))
+                continue;
+
+            // QuestData 찾기
+            QuestData data = _weeklyQuestList.Find(q => q.Quest_ID == id);
+            if (data == null)
+                continue;
+
+            int progressAmount = data.progress_amount > 0 ? data.progress_amount : 20;
+            claimableQuests.Add((item, data, progressAmount));
+        }
+
+        // 수령할 퀘스트가 없으면 바로 리턴
+        if (claimableQuests.Count == 0)
+        {
+            // 진행도 보상만 체크
+            await ClaimProgressRewardsAsync(collected);
+            return collected;
+        }
+
+        // 2) 애니메이션 실행 (있으면)
+        if (progressAnimator != null)
+        {
+            var claimInfos = new List<(Vector3, int)>();
+            foreach (var (item, data, progressAmount) in claimableQuests)
+            {
+                // 받기 버튼 위치에서 하트 시작
+                Vector3 startPos = item.ClaimButtonTransform.position;
+                claimInfos.Add((startPos, progressAmount));
+            }
+
+            int startProgress = State.progress;
+
+            // 애니메이션 실행 + 임계값 도달 시 아이콘 변경
+            await progressAnimator.PlayClaimAllAnimationAsync(
+                claimInfos,
+                startProgress,
+                onThresholdReached: (buttonIndex, threshold) =>
+                {
+                    // 아이콘 변경 (notFilled → filled)
+                    if (buttonIndex >= 0 && buttonIndex < rewardSlots.Length)
+                    {
+                        var slot = rewardSlots[buttonIndex];
+                        if (slot?.iconImage != null && slot.filledSprite != null)
+                            slot.iconImage.sprite = slot.filledSprite;
+                    }
+                }
+            );
+        }
+
+        // 3) 실제 보상 지급 + 상태 업데이트
+        foreach (var (item, data, progressAmount) in claimableQuests)
+        {
+            // 보상 수집
+            CollectQuestReward(data, collected);
+
+            // 상태 업데이트
+            State.completedQuestIds.Add(data.Quest_ID);
+            State.progress = Mathf.Clamp(State.progress + progressAmount, 0, 100);
+
+            item.SetState(cleared: true, completed: true);
+        }
+
+        // 슬라이더 갱신 (애니메이션 없을 때만)
+        if (progressAnimator == null && progressSlider != null)
+            progressSlider.value = State.progress;
+
+        // 4) 진행도 보상 수령
+        await ClaimProgressRewardsAsync(collected);
+
+        await SaveWeeklyStateAsync();
+
+        return collected;
+    }
+
+    /// <summary>
+    /// 진행도 보상 수령 (애니메이션 포함)
+    /// </summary>
+    private async UniTask ClaimProgressRewardsAsync(CollectedRewards collected)
+    {
         for (int i = 0; i < rewardSlots.Length; i++)
         {
-            ClaimRewardInternal(i).Forget();
+            var slot = rewardSlots[i];
+            if (slot == null || slot.data == null)
+                continue;
+
+            bool claimed = State.claimed != null && i < State.claimed.Length && State.claimed[i];
+            if (claimed)
+                continue;
+
+            if (State.progress < slot.data.progress_amount)
+                continue;
+
+            // 버튼 팝 애니메이션
+            if (progressAnimator != null)
+            {
+                await progressAnimator.PlayRewardButtonClaimAsync(i, slot.claimedSprite);
+            }
+
+            // 보상 수집
+            CollectProgressReward(slot.data, collected);
+
+            // 상태 업데이트
+            if (State.claimed == null || State.claimed.Length != rewardSlots.Length)
+                State.claimed = new bool[rewardSlots.Length];
+            State.claimed[i] = true;
+        }
+
+        UpdateRewardButtons();
+    }
+
+    /// <summary>
+    /// 퀘스트 보상 수집 (실제 지급 + CollectedRewards에 기록)
+    /// </summary>
+    private void CollectQuestReward(QuestData questData, CollectedRewards collected)
+    {
+        if (questData.Quest_reward1 != 0 && questData.Quest_reward1_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+            collected.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+        }
+
+        if (questData.Quest_reward2 != 0 && questData.Quest_reward2_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
+            collected.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
+        }
+
+        if (questData.Quest_reward3 != 0 && questData.Quest_reward3_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
+            collected.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
         }
     }
 
-    private void GiveProgressReward(QuestProgressData data)
+    /// <summary>
+    /// 진행도 보상 수집 (실제 지급 + CollectedRewards에 기록)
+    /// </summary>
+    private void CollectProgressReward(QuestProgressData data, CollectedRewards collected)
     {
-        // 진행도 보상 지급
         if (data.reward1 != 0 && data.reward1_amount > 0)
         {
             ItemInvenHelper.AddItem(data.reward1, data.reward1_amount);
-            Debug.Log($"[WeeklyQuests] 진행도 보상 지급: Item {data.reward1} x {data.reward1_amount}");
+            collected.AddItem(data.reward1, data.reward1_amount);
         }
 
         if (data.reward2 != 0 && data.reward2_amount > 0)
         {
             ItemInvenHelper.AddItem(data.reward2, data.reward2_amount);
-            Debug.Log($"[WeeklyQuests] 진행도 보상 지급: Item {data.reward2} x {data.reward2_amount}");
+            collected.AddItem(data.reward2, data.reward2_amount);
         }
 
         if (data.reward3 != 0 && data.reward3_amount > 0)
         {
             ItemInvenHelper.AddItem(data.reward3, data.reward3_amount);
-            Debug.Log($"[WeeklyQuests] 진행도 보상 지급: Item {data.reward3} x {data.reward3_amount}");
+            collected.AddItem(data.reward3, data.reward3_amount);
         }
     }
 
@@ -507,6 +693,11 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
 
     public void OnQuestItemClickedComplete(QuestData questData, QuestItemUIBase itemUI)
     {
+        OnQuestItemClickedCompleteAsync(questData, itemUI).Forget();
+    }
+
+    private async UniTaskVoid OnQuestItemClickedCompleteAsync(QuestData questData, QuestItemUIBase itemUI)
+    {
         if (questData == null || itemUI == null)
             return;
 
@@ -517,13 +708,37 @@ public class WeeklyQuests : MonoBehaviour, IQuestItemOwner
 
         if (!alreadyCompleted)
         {
+            int progressAmount = questData.progress_amount > 0 ? questData.progress_amount : 20;
+            int currentProgress = State.progress;
+
+            // 애니메이션 실행 (있으면)
+            if (progressAnimator != null)
+            {
+                Vector3 startPos = itemUI.ClaimButtonTransform.position;
+
+                await progressAnimator.PlayClaimAnimationAsync(
+                    startPos,
+                    progressAmount,
+                    currentProgress,
+                    onThresholdReached: (buttonIndex, threshold) =>
+                    {
+                        // 임계값 도달 시 아이콘 변경 (notFilled → filled)
+                        if (buttonIndex >= 0 && buttonIndex < rewardSlots.Length)
+                        {
+                            var slot = rewardSlots[buttonIndex];
+                            if (slot?.iconImage != null && slot.filledSprite != null)
+                                slot.iconImage.sprite = slot.filledSprite;
+                        }
+                    }
+                );
+            }
+
             State.completedQuestIds.Add(id);
 
             // 개별 주간 퀘스트 보상 지급
             GiveQuestReward(questData);
 
             // 상단 진행도 게이지 증가 (progress_amount가 있으면 사용, 없으면 기본 20)
-            int progressAmount = questData.progress_amount > 0 ? questData.progress_amount : 20;
             AddProgress(progressAmount);
             // AddProgress 안에서 Save 호출
         }

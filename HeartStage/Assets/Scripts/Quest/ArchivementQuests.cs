@@ -28,7 +28,7 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
 
     public bool IsInitialized { get; private set; }
 
-    private async void OnEnable()
+    private void OnEnable()
     {
         // Achievement 퀘스트 완료 이벤트 등록
         QuestManager.AchievementQuestCompleted -= OnAchievementQuestClearedExternally;
@@ -36,7 +36,7 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
 
         if (!IsInitialized)
         {
-            await InitializeAsync();
+            Initialize();
         }
         else
         {
@@ -50,7 +50,7 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
         QuestManager.AchievementQuestCompleted -= OnAchievementQuestClearedExternally;
     }
 
-    public async UniTask InitializeAsync()
+    public void Initialize()
     {
         InitStateStructure();
         BuildAchievementQuestList();
@@ -58,8 +58,6 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
         RefreshAllItemStatesFromSave();
 
         IsInitialized = true;
-
-        await UniTask.CompletedTask;
     }
 
     private void InitStateStructure()
@@ -225,8 +223,21 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
 
     public void ClaimAllAvailableRewards()
     {
+        ClaimAllAndCollectRewardsAsync().Forget();
+    }
+
+    /// <summary>
+    /// 모든 보상 수령 + 결과 반환
+    /// 업적은 진행도 보상이 없고 퀘스트 보상만 있음
+    /// </summary>
+    public async UniTask<CollectedRewards> ClaimAllAndCollectRewardsAsync()
+    {
+        var collected = new CollectedRewards();
+
         if (_questItems == null)
-            return;
+            return collected;
+
+        InitStateStructure();
 
         foreach (var item in _questItems)
         {
@@ -245,11 +256,61 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
             if (!cleared)
                 continue;
 
-            // QuestData 찾아서 동일 로직 재사용
+            // QuestData 찾기
             var questData = _achievementQuestList.Find(q => q.Quest_ID == id);
-            if (questData != null)
+            if (questData == null)
+                continue;
+
+            // 보상 수집
+            CollectQuestReward(questData, collected);
+
+            // 상태 업데이트
+            if (State.completedQuestIds == null)
+                State.completedQuestIds = new List<int>();
+            State.completedQuestIds.Add(id);
+
+            item.SetState(cleared: true, completed: true);
+        }
+
+        await SaveAchievementStateAsync();
+
+        return collected;
+    }
+
+    /// <summary>
+    /// 퀘스트 보상 수집 (실제 지급 + CollectedRewards에 기록)
+    /// </summary>
+    private void CollectQuestReward(QuestData questData, CollectedRewards collected)
+    {
+        if (questData.Quest_reward1 != 0 && questData.Quest_reward1_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+            collected.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
+        }
+
+        if (questData.Quest_reward2 != 0 && questData.Quest_reward2_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
+            collected.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
+        }
+
+        if (questData.Quest_reward3 != 0 && questData.Quest_reward3_A > 0)
+        {
+            ItemInvenHelper.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
+            collected.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
+        }
+
+        // 칭호 지급
+        if (questData.Title_ID > 0)
+        {
+            var data = SaveLoadManager.Data;
+            if (data.ownedTitleIds == null)
+                data.ownedTitleIds = new List<int>();
+
+            if (!data.ownedTitleIds.Contains(questData.Title_ID))
             {
-                OnQuestItemClickedComplete(questData, item);
+                data.ownedTitleIds.Add(questData.Title_ID);
+                collected.AddTitle(questData.Title_ID);
             }
         }
     }

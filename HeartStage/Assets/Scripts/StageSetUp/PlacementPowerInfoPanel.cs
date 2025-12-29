@@ -57,10 +57,6 @@ public class PlacementPowerInfoPanel : MonoBehaviour
 
     private void OnEnable()
     {
-        // StageSetupWindow 자동 연결
-        if (stageSetupWindow == null)
-            stageSetupWindow = FindObjectOfType<StageSetupWindow>();
-
         // 슬롯 변경 이벤트 구독
         DraggableSlot.OnAnySlotChanged += UpdateUI;
 

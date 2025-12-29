@@ -1,119 +1,281 @@
-﻿using UnityEngine;
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.UI;
 
+/// <summary>
+/// 퀘스트 윈도우 - 일일/주간/업적 탭 통합 관리
+/// FriendWindow 패턴 적용: TabType enum, SwitchTab(), Open()/Close()
+/// </summary>
 public class QuestWindow : GenericWindow
 {
-    [Header("퀘스트 UI 총괄 창")]
-    [SerializeField] private GameObject questWindow;
+    #region TabType
 
-    [Header("일일 / 주간 / 업적 퀘스트 창")]
-    [SerializeField] private GameObject dailyQuests;
-    [SerializeField] private GameObject weeklyQuests;
-    [SerializeField] private GameObject achievementQuests;
+    public enum TabType
+    {
+        Daily,
+        Weekly,
+        Achievement
+    }
 
-    [Header("각 탭의 스크립트 (Daily/Weekly/업적)")]
-    [SerializeField] private DailyQuests dailyQuestsComponent;
-    [SerializeField] private WeeklyQuests weeklyQuestsComponent;
-    [SerializeField] private ArchivementQuests achievementQuestsComponent;
+    #endregion
 
-    [Header("종료 버튼")]
-    [SerializeField] private Button ExitButton;
+    #region Serialized Fields
 
-    [Header("일일 / 주간 / 업적 버튼")]
-    [SerializeField] private Button DailyButton;
-    [SerializeField] private Button WeeklyButton;
-    [SerializeField] private Button AchievementButton;
+    [Header("탭 (일일 / 주간 / 업적)")]
+    [SerializeField] private DailyQuests dailyTab;
+    [SerializeField] private WeeklyQuests weeklyTab;
+    [SerializeField] private ArchivementQuests achievementTab;
 
-    [Header("전체 보상 받기 버튼")]
-    [SerializeField] private Button AllReceiveButton;
+    [Header("버튼")]
+    [SerializeField] private Button exitButton;
+    [SerializeField] private Button dailyTabButton;
+    [SerializeField] private Button weeklyTabButton;
+    [SerializeField] private Button achievementTabButton;
+    [SerializeField] private Button allReceiveButton;
+
+    [Header("보상 요약 패널")]
+    [SerializeField] private RewardSummaryPanel rewardSummaryPanel;
+
+    #endregion
+
+    #region Private Fields
+
+    private TabType _currentTab = TabType.Daily;
+    private bool _isOpen;
+    private bool _isClaiming;  // 중복 클릭 방지
+    private CancellationTokenSource _cts;  // 창 닫힐 때 취소용
+
+    #endregion
+
+    #region Unity Lifecycle
 
     private void OnEnable()
     {
-        ExitButton.onClick.AddListener(CloseQuestWindow);
-        DailyButton.onClick.AddListener(OpenDailyQuests);
-        WeeklyButton.onClick.AddListener(OpenWeeklyQuests);
-        AchievementButton.onClick.AddListener(OpenAchievementQuests);
-        AllReceiveButton.onClick.AddListener(AllReceiveButtonFunction);
-
-        // 기본적으로 일일 퀘스트 창을 엽니다.
-        // 버튼도 눌린 상태로 유지해줍니다.
-        DailyButton.Select();
-        OpenDailyQuests();
+        BindButtons();
+        Open();
     }
 
-    public void CloseQuestWindow()
+    private void OnDisable()
     {
-        questWindow.SetActive(false);
+        // 진행 중인 작업 취소
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _isClaiming = false;
+
+        UnbindButtons();
+        CloseAllContents();
     }
 
-    public void OpenDailyQuests()
+    #endregion
+
+    #region Public API
+
+    /// <summary>
+    /// 퀘스트 창 열기 (기본: Daily 탭)
+    /// </summary>
+    public void Open(TabType initialTab = TabType.Daily)
     {
-        dailyQuests.SetActive(true);
-        weeklyQuests.SetActive(false);
-        achievementQuests.SetActive(false);
+        if (_isOpen) return;
+        _isOpen = true;
 
-        DailyButton.interactable = false;
-        WeeklyButton.interactable = true;
-        AchievementButton.interactable = true;
-
-        AllReceiveButton.gameObject.SetActive(true);
+        SwitchTab(initialTab);
     }
 
-    public void OpenWeeklyQuests()
+    /// <summary>
+    /// 퀘스트 창 닫기
+    /// </summary>
+    public override void Close()
     {
-        dailyQuests.SetActive(false);
-        weeklyQuests.SetActive(true);
-        achievementQuests.SetActive(false);
+        if (!_isOpen) return;
+        _isOpen = false;
 
-        DailyButton.interactable = true;
-        WeeklyButton.interactable = false;
-        AchievementButton.interactable = true;
-
-        AllReceiveButton.gameObject.SetActive(true);
+        CloseAllContents();
+        gameObject.SetActive(false);
     }
 
-    public void OpenAchievementQuests()
+    /// <summary>
+    /// 탭 전환
+    /// </summary>
+    public void SwitchTab(TabType tab)
     {
-        dailyQuests.SetActive(false);
-        weeklyQuests.SetActive(false);
-        achievementQuests.SetActive(true);
-
-        DailyButton.interactable = true;
-        WeeklyButton.interactable = true;
-        AchievementButton.interactable = false;
-
-        // 업적 탭에서는 전체받기 버튼 숨김
-        AllReceiveButton.gameObject.SetActive(false);
+        _currentTab = tab;
+        UpdateTabContents();
+        UpdateTabButtonStates();
+        UpdateAllReceiveButton();
     }
 
-    public void AllReceiveButtonFunction()
+    #endregion
+
+    #region Tab Management
+
+    private void UpdateTabContents()
     {
-        if (dailyQuests.activeSelf && dailyQuestsComponent != null)
+        // 모든 탭 비활성화 후 선택된 탭만 활성화
+        if (dailyTab != null)
+            dailyTab.gameObject.SetActive(_currentTab == TabType.Daily);
+        if (weeklyTab != null)
+            weeklyTab.gameObject.SetActive(_currentTab == TabType.Weekly);
+        if (achievementTab != null)
+            achievementTab.gameObject.SetActive(_currentTab == TabType.Achievement);
+    }
+
+    private void UpdateTabButtonStates()
+    {
+        // 선택된 탭 버튼은 비활성화 (눌린 상태 표시)
+        if (dailyTabButton != null)
+            dailyTabButton.interactable = _currentTab != TabType.Daily;
+        if (weeklyTabButton != null)
+            weeklyTabButton.interactable = _currentTab != TabType.Weekly;
+        if (achievementTabButton != null)
+            achievementTabButton.interactable = _currentTab != TabType.Achievement;
+    }
+
+    private void UpdateAllReceiveButton()
+    {
+        // 모든 탭에서 전체받기 버튼 표시
+        if (allReceiveButton != null)
+            allReceiveButton.gameObject.SetActive(true);
+    }
+
+    private void CloseAllContents()
+    {
+        if (dailyTab != null)
+            dailyTab.gameObject.SetActive(false);
+        if (weeklyTab != null)
+            weeklyTab.gameObject.SetActive(false);
+        if (achievementTab != null)
+            achievementTab.gameObject.SetActive(false);
+    }
+
+    #endregion
+
+    #region Button Handlers
+
+    private void BindButtons()
+    {
+        if (exitButton != null)
+            exitButton.onClick.AddListener(OnClickExit);
+        if (dailyTabButton != null)
+            dailyTabButton.onClick.AddListener(OnClickDailyTab);
+        if (weeklyTabButton != null)
+            weeklyTabButton.onClick.AddListener(OnClickWeeklyTab);
+        if (achievementTabButton != null)
+            achievementTabButton.onClick.AddListener(OnClickAchievementTab);
+        if (allReceiveButton != null)
+            allReceiveButton.onClick.AddListener(OnClickAllReceive);
+    }
+
+    private void UnbindButtons()
+    {
+        if (exitButton != null)
+            exitButton.onClick.RemoveListener(OnClickExit);
+        if (dailyTabButton != null)
+            dailyTabButton.onClick.RemoveListener(OnClickDailyTab);
+        if (weeklyTabButton != null)
+            weeklyTabButton.onClick.RemoveListener(OnClickWeeklyTab);
+        if (achievementTabButton != null)
+            achievementTabButton.onClick.RemoveListener(OnClickAchievementTab);
+        if (allReceiveButton != null)
+            allReceiveButton.onClick.RemoveListener(OnClickAllReceive);
+    }
+
+    private void OnClickExit()
+    {
+        Close();
+    }
+
+    private void OnClickDailyTab()
+    {
+        SwitchTab(TabType.Daily);
+    }
+
+    private void OnClickWeeklyTab()
+    {
+        SwitchTab(TabType.Weekly);
+    }
+
+    private void OnClickAchievementTab()
+    {
+        SwitchTab(TabType.Achievement);
+    }
+
+    private void OnClickAllReceive()
+    {
+        OnClickAllReceiveAsync().Forget();
+    }
+
+    private async UniTaskVoid OnClickAllReceiveAsync()
+    {
+        // 중복 클릭 방지
+        if (_isClaiming) return;
+        _isClaiming = true;
+
+        // 기존 토큰 정리 후 새로 생성
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+
+        if (allReceiveButton != null)
+            allReceiveButton.interactable = false;
+
+        CollectedRewards collected = null;
+
+        try
         {
-            dailyQuestsComponent.ClaimAllAvailableRewards();
-        }
+            // 현재 활성화된 탭에서 전체 보상 받기
+            switch (_currentTab)
+            {
+                case TabType.Daily:
+                    if (dailyTab != null)
+                        collected = await dailyTab.ClaimAllAndCollectRewardsAsync();
+                    break;
+                case TabType.Weekly:
+                    if (weeklyTab != null)
+                        collected = await weeklyTab.ClaimAllAndCollectRewardsAsync();
+                    break;
+                case TabType.Achievement:
+                    if (achievementTab != null)
+                        collected = await achievementTab.ClaimAllAndCollectRewardsAsync();
+                    break;
+            }
 
-        if (weeklyQuests.activeSelf && weeklyQuestsComponent != null)
-        {
-            weeklyQuestsComponent.ClaimAllAvailableRewards();
-        }
+            // 취소되었으면 UI 업데이트 하지 않음
+            if (_cts == null || _cts.IsCancellationRequested)
+                return;
 
-        if (achievementQuests.activeSelf && achievementQuestsComponent != null)
+            // 보상 요약 패널 표시
+            if (collected != null && collected.HasAnyReward && rewardSummaryPanel != null)
+            {
+                rewardSummaryPanel.Open(collected.Items, collected.TitleIds);
+            }
+            else if (collected == null || !collected.HasAnyReward)
+            {
+                ToastUI.Show("받을 수 있는 보상이 없습니다.");
+            }
+        }
+        catch (System.OperationCanceledException)
         {
-            achievementQuestsComponent.ClaimAllAvailableRewards();
+            // 창이 닫혀서 취소됨 - 정상
+            Debug.Log("[QuestWindow] 보상 수령 취소됨");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[QuestWindow] 보상 수령 중 오류: {ex}");
+            if (_cts != null && !_cts.IsCancellationRequested)
+                ToastUI.Show("보상 수령 중 오류가 발생했습니다.");
+        }
+        finally
+        {
+            _isClaiming = false;
+
+            // 창이 아직 활성화 상태면 버튼 복원
+            if (allReceiveButton != null && gameObject.activeInHierarchy)
+                allReceiveButton.interactable = true;
         }
     }
 
-    public void OnDisable()
-    {
-        dailyQuests.SetActive(false);
-        weeklyQuests.SetActive(false);
-        achievementQuests.SetActive(false);
-        ExitButton.onClick.RemoveListener(CloseQuestWindow);
-        DailyButton.onClick.RemoveListener(OpenDailyQuests);
-        WeeklyButton.onClick.RemoveListener(OpenWeeklyQuests);
-        AchievementButton.onClick.RemoveListener(OpenAchievementQuests);
-        AllReceiveButton.onClick.RemoveListener(AllReceiveButtonFunction);
-    }
+    #endregion
 }
 
