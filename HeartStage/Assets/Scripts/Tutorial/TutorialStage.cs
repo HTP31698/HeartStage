@@ -1205,17 +1205,26 @@ public class TutorialStage : MonoBehaviour
             // 스타트 버튼 대기 상태 해제
             isWaitingForStartButton = false;
 
-            // 게임 시작 후 즉시 일시정지 (튜토리얼 진행을 위해)
-            Time.timeScale = 0f;
-
-            // 다음 스크립트로 진행
-            NextScript();
+            DelayedStopGameAsync().Forget();
         }
         finally
         {
             ResetInputProcessingFlag().Forget();
         }
     }
+
+    // 후에 StopGame 액션을 실행하는 메서드 추가
+    private async UniTaskVoid DelayedStopGameAsync()
+    {
+        await UniTask.Delay(5000, DelayType.UnscaledDeltaTime);
+
+        // StopGame 액션 실행
+        ActionStopGame();
+
+        // 다음 스크립트로 진행
+        NextScript();
+    }
+
 
     // 다른 버튼들 비활성화
     private void DisableOtherButtons()
