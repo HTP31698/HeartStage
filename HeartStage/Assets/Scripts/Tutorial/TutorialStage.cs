@@ -1147,8 +1147,6 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionBossAlertAsync()
     {
-        Debug.Log("[TutorialStage] BossAlert 대기 시작...");
-
         // 스크립트 UI 숨기기 (보스 알람 나올 때까지)
         if (currentScriptUI != null)
         {
@@ -1189,13 +1187,12 @@ public class TutorialStage : MonoBehaviour
 
         // 현재 스크립트(BossAlert)의 텍스트를 표시 (NextScript 하지 않음)
         var script = currentScripts[currentScriptIndex];
-        Debug.Log($"[TutorialStage] BossAlert 스크립트 표시: {script.Text}");
         
         // 음성 재생
         PlayVoiceForCurrentScript(script);
         
         // 타이핑 효과로 텍스트 표시 (executeAction=false로 다시 BossAlert 액션 실행 방지)
-        StartTypingEffect(script.Text, false);
+        StartTypingEffect(script.Text, false).Forget();
     }
 
     // StageClear 액션이 있는 스크립트 찾기

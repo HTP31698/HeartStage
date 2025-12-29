@@ -261,6 +261,9 @@ public class StageInfoWindow : GenericWindow
 
     private void OnStageStartButtonClicked()
     {
+        SoundManager.Instance.StopBGM();
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (currentStageData == null)
             return;
 
