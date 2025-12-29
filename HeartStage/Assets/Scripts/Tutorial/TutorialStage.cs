@@ -225,7 +225,7 @@ public class TutorialStage : MonoBehaviour
         StartTypingEffect(script.Text).Forget();
     }
 
-    private async UniTask StartTypingEffect(string text)
+    private async UniTask StartTypingEffect(string text, bool executeAction = true)
     {
         if (currentScriptUI == null) return;
 
@@ -249,7 +249,10 @@ public class TutorialStage : MonoBehaviour
         // 약간의 딜레이 후에 액션 실행 바로 눌리는거 방지
         await UniTask.Delay(100, DelayType.UnscaledDeltaTime);
 
-        ExecuteScriptAction(currentScripts[currentScriptIndex]);
+        if (executeAction)
+        {
+            ExecuteScriptAction(currentScripts[currentScriptIndex]);
+        }
     }
 
     private void NextScript()
@@ -294,8 +297,7 @@ public class TutorialStage : MonoBehaviour
     {
         SoundManager.Instance?.StopVoiceSFX();
 
-        HideAllArrows();
-        RestorePanel();
+        ResetUIState();
         HideStageAreaBorder();
 
         if (SaveLoadManager.Data != null)
@@ -486,8 +488,7 @@ public class TutorialStage : MonoBehaviour
                 closeCharacterInfoOnce = true;
 
                 // 화살표 숨기기 및 패널 복원
-                HideAllArrows();
-                RestorePanel();
+                ResetUIState();
 
                 // 모든 버튼과 캐릭터 상호작용 다시 활성화
                 EnableOtherButtons();
@@ -650,8 +651,7 @@ public class TutorialStage : MonoBehaviour
         Debug.Log($"[TutorialStage] {characterPlaceCount}번째 캐릭터 배치 완료!");
 
         // 화살표 숨기기 및 패널 복원
-        HideAllArrows();
-        RestorePanel();
+        ResetUIState();
 
         // 드래그 대기 상태 해제
         isWaitingForCharacterDrag = false;
@@ -717,12 +717,9 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionSkillGageArrowAsync()
     {
-        Debug.Log($"[TutorialStage] SkillGageArrow 액션 시작 - currentScriptIndex: {currentScriptIndex}");
-
         // 이미 스킬 대기 중이면 무시
         if (isWaitingForSkillReady)
         {
-            Debug.Log("[TutorialStage] 이미 스킬 대기 중 - 무시");
             return;
         }
 
@@ -731,8 +728,6 @@ public class TutorialStage : MonoBehaviour
 
         if (skillReadyCharacter != null)
         {
-            Debug.Log("[TutorialStage] 이미 준비된 스킬 발견 - 화살표만 표시");
-            // 텍스트 표시 없이 화살표만 표시
             arrow.gameObject.SetActive(true);
             ArrowSkillReadyCharacter(skillReadyCharacter);
             StartArrowAnimation().Forget();
@@ -741,7 +736,6 @@ public class TutorialStage : MonoBehaviour
 
         // 스킬이 아직 준비되지 않았으면 대기 상태로 설정
         isWaitingForSkillReady = true;
-        Debug.Log("[TutorialStage] 스킬이 준비될 때까지 대기 중...");
 
         await UniTask.WaitUntil(() => !isWaitingForSkillReady);
     }
@@ -751,7 +745,6 @@ public class TutorialStage : MonoBehaviour
     {
         if (isWaitingForSkillReady)
         {
-            Debug.Log("[TutorialStage] 스킬 준비 완료! 다음 스크립트로 진행");
             isWaitingForSkillReady = false;
 
             // 스킬 준비된 캐릭터 찾기
@@ -791,7 +784,7 @@ public class TutorialStage : MonoBehaviour
         StartArrowAnimation().Forget();
     }
 
-    // 텍스트만 표시하고 액션은 실행하지 않는 메서드 추가
+    // 텍스트만 표시하고 액션은 실행하지 않는 메서드
     private void ShowCurrentScriptTextOnly()
     {
         if (currentScriptIndex >= currentScripts.Count)
@@ -812,31 +805,7 @@ public class TutorialStage : MonoBehaviour
         PlayVoiceForCurrentScript(script);
 
         // 액션 없이 텍스트만 타이핑 효과로 표시
-        StartTypingEffectTextOnly(script.Text).Forget();
-    }
-
-    // 액션 실행 없이 텍스트만 타이핑하는 메서드
-    private async UniTask StartTypingEffectTextOnly(string text)
-    {
-        if (currentScriptUI == null) return;
-
-        isTyping = true;
-        currentScriptUI.SetTutorialText("");
-
-        for (int i = 0; i <= text.Length; i++)
-        {
-            if (!isTyping || !isPlaying)
-            {
-                currentScriptUI.SetTutorialText(text);
-                break;
-            }
-
-            currentScriptUI.SetTutorialText(text.Substring(0, i));
-            await UniTask.Delay(25, DelayType.UnscaledDeltaTime);
-        }
-
-        isTyping = false;
-        // 여기서는 ExecuteScriptAction을 호출하지 않음!
+        StartTypingEffect(script.Text, executeAction: false).Forget();
     }
 
     // 스킬 준비된 캐릭터 위에 화살표 위치 지정
@@ -1013,41 +982,14 @@ public class TutorialStage : MonoBehaviour
     // 음성 재생 후 바로 다음 스크립트 진행
     private async UniTaskVoid WaitForVoiceAndNextScript()
     {
-        // 현재 스크립트에 음성이 있는지 확인하고 재생 완료 대기
-        if (currentScripts != null && currentScriptIndex < currentScripts.Count)
-        {
-            var currentScript = currentScripts[currentScriptIndex];
-
-            if (!string.IsNullOrEmpty(currentScript.Voice))
-            {
-                // 음성 재생이 완료될 때까지 대기
-                await UniTask.WaitUntil(() => !SoundManager.Instance.IsVoicePlaying());
-
-                // 추가 딜레이
-                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
-            }
-        }
-
+        await WaitForVoiceComplete();
         NextScript();
     }
 
     // 음성 재생 후 스킬 준비 대기
     private async UniTaskVoid WaitForVoiceAndSkillReady()
     {
-        // 현재 스크립트에 음성이 있는지 확인하고 재생 완료 대기
-        if (currentScripts != null && currentScriptIndex < currentScripts.Count)
-        {
-            var currentScript = currentScripts[currentScriptIndex];
-
-            if (!string.IsNullOrEmpty(currentScript.Voice))
-            {
-                // 음성 재생이 완료될 때까지 대기
-                await UniTask.WaitUntil(() => !SoundManager.Instance.IsVoicePlaying());
-
-                // 추가 딜레이
-                await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
-            }
-        }
+        await WaitForVoiceComplete();
 
         // 화면 클릭 UI 숨기기
         HideAllArrows();
@@ -1474,6 +1416,13 @@ public class TutorialStage : MonoBehaviour
         HideStageAreaBorder();
     }
 
+    // 화살표 숨기기 + 패널 복원을 함께 수행하는 헬퍼 메서드
+    private void ResetUIState()
+    {
+        HideAllArrows();
+        RestorePanel();
+    }
+
     #endregion
 
     #region Stage Border Effects
@@ -1645,8 +1594,7 @@ public class TutorialStage : MonoBehaviour
             }
 
             // 화살표 숨기기 및 패널 복원
-            HideAllArrows();
-            RestorePanel();
+            ResetUIState();
 
             // 다른 버튼들 다시 활성화
             EnableOtherButtons();
@@ -1702,23 +1650,25 @@ public class TutorialStage : MonoBehaviour
         SoundManager.Instance?.PlayVoiceSFX(script.Voice);
     }
 
-    // 음성 재생 완료를 기다리고 UI를 숨기는 메서드
-    private async UniTaskVoid WaitForVoiceAsync()
+    // 음성 재생 완료를 기다리는 공통 메서드
+    private async UniTask WaitForVoiceComplete()
     {
-        // 현재 스크립트에 음성이 있는지 확인
         if (currentScripts != null && currentScriptIndex < currentScripts.Count)
         {
             var currentScript = currentScripts[currentScriptIndex];
 
             if (!string.IsNullOrEmpty(currentScript.Voice))
             {
-                // 음성 재생이 완료될 때까지 대기
                 await UniTask.WaitUntil(() => !SoundManager.Instance.IsVoicePlaying());
-
-                // 추가 딜레이 (음성 끝나고 바로 사라지면 어색할 수 있으므로)
                 await UniTask.Delay(500, DelayType.UnscaledDeltaTime);
             }
         }
+    }
+
+    // 음성 재생 완료를 기다리고 UI를 숨기는 메서드
+    private async UniTaskVoid WaitForVoiceAsync()
+    {
+        await WaitForVoiceComplete();
 
         // 화살표 숨기기
         HideAllArrows();
