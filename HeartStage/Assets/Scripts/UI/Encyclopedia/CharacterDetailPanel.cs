@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -670,9 +670,7 @@ public class CharacterDetailPanel : MonoBehaviour
         // 스킬 아이콘
         if (performanceSkillIcon != null && !string.IsNullOrEmpty(skillData.icon_prefab))
         {
-            var sprite = ResourceManager.Instance.GetSprite(skillData.icon_prefab);
-            if (sprite != null)
-                performanceSkillIcon.sprite = sprite;
+            performanceSkillIcon.sprite = ResourceManager.Instance.GetSprite(skillData.icon_prefab);
         }
     }
 
