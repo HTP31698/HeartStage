@@ -15,6 +15,8 @@ public class ActiveSkillManager : MonoBehaviour
     [SerializeField] private Vector3 uiWorldOffset = new Vector3(0f, 2f, 0f);
     [SerializeField] private ActiveSkillDesc activeSkillDesc;
 
+    public static System.Action OnAnySkillReady; // 스킬 준비 알림용 이벤트
+
     private void Awake()
     {
         if (Instance == null)
@@ -41,7 +43,15 @@ public class ActiveSkillManager : MonoBehaviour
                 continue;
             }
 
+            // 스킬 준비 상태 변화 감지
+            bool wasReady = timer.WasReadyLastFrame;
             timer.UpdateTimer(Time.deltaTime);
+
+            // 스킬이 새로 준비되었을 때 이벤트 발생
+            if (!wasReady && timer.IsReady)
+            {
+                OnAnySkillReady?.Invoke();
+            }
         }
     }
 
@@ -49,7 +59,7 @@ public class ActiveSkillManager : MonoBehaviour
     public void TryUseSkill(GameObject caster, int skillId)
     {
         var timer = activeTimers.Find(t => t.Caster == caster && t.SkillData.skill_id == skillId);
-        if (timer == null) 
+        if (timer == null)
             return;
 
         if (timer.IsReady)
@@ -161,18 +171,21 @@ public class ActiveSkillTimer
 {
     private float currentTime;
     private Vector3 offset;
+    private bool wasReadyLastFrame; // 이전 프레임의 준비 상태를 추적
 
     public SkillData SkillData { get; private set; }
     public GameObject Caster { get; private set; }
     public CooldownUIHandler UI { get; private set; }
 
     public bool IsReady => currentTime <= 0f;
+    public bool WasReadyLastFrame => wasReadyLastFrame; // 이전 프레임 준비 상태 반환
 
     public ActiveSkillTimer(GameObject caster, SkillData data, Slider prefab, Canvas canvas, Vector3 uiOffset)
     {
         Caster = caster;
         SkillData = data;
         currentTime = SkillData.skill_cool;
+        wasReadyLastFrame = false; // 초기에는 준비되지 않은 상태
         offset = uiOffset;
 
         UI = new CooldownUIHandler(caster, prefab, canvas, offset);
@@ -184,12 +197,15 @@ public class ActiveSkillTimer
     public void StartCooldown()
     {
         currentTime = SkillData.skill_cool;
+        wasReadyLastFrame = false; // 쿨다운 시작 시 준비되지 않은 상태로 설정
         UI.Show();
         UI.ResetSlider();
     }
 
     public void UpdateTimer(float delta)
     {
+        bool wasReadyBefore = IsReady;  // 업데이트 전 상태 저장
+
         if (!IsReady)
         {
             float speedFactor = 1f;
@@ -211,11 +227,14 @@ public class ActiveSkillTimer
                 skillController?.SkillReady();
             }
         }
+
+        wasReadyLastFrame = wasReadyBefore;  // 이전 상태를 다음 프레임을 위해 저장
     }
 
     public void Reset()
     {
         currentTime = 0;
+        wasReadyLastFrame = true; // 리셋 시 준비 완료 상태로 설정
         UI.Hide();
     }
 

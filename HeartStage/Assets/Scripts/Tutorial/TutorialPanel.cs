@@ -10,6 +10,7 @@ public class TutorialPanel : GenericWindow
     [SerializeField] private Transform contentParent;
     [SerializeField] private Image arrow;
     [SerializeField] private LobbyUI lobbyUI;
+    [SerializeField] private Button skipButton;
 
     [Header("Reference")]
     [SerializeField] private TutorialNickNameScript nicknameWindow;
@@ -57,6 +58,13 @@ public class TutorialPanel : GenericWindow
 
         base.Open();
 
+        // 스킵 버튼 이벤트 등록
+        if (skipButton != null)
+        {
+            skipButton.onClick.RemoveAllListeners();
+            skipButton.onClick.AddListener(OnSkipButtonClicked);
+        }
+
         // Location 1부터 시작
         StartLocationScript(1);
     }
@@ -91,6 +99,12 @@ public class TutorialPanel : GenericWindow
 
         // 모든 버튼 이벤트 해제
         RemoveAllButtonListeners();
+
+        // 스킵 버튼 이벤트 해제
+        if (skipButton != null)
+        {
+            skipButton.onClick.RemoveAllListeners();
+        }
     }
 
     private void Update()
@@ -171,7 +185,7 @@ public class TutorialPanel : GenericWindow
         isTyping = true;
         currentScriptUI.SetTutorialText("");
 
-        float textSpeed = 0.1f;
+        float textSpeed = 0.05f;
 
         for (int i = 0; i <= text.Length; i++)
         {
@@ -832,5 +846,11 @@ public class TutorialPanel : GenericWindow
         }
 
         SoundManager.Instance?.PlayVoiceSFX(script.Voice);
+    }
+
+    private void OnSkipButtonClicked()
+    {
+        Debug.Log("[TutorialPanel] 스킵 버튼 클릭 - 튜토리얼 완료 처리");
+        CompleteTutorial();
     }
 }
