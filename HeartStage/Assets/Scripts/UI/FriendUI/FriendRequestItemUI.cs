@@ -141,6 +141,8 @@ public class FriendRequestItemUI : MonoBehaviour
 
     private void OnClickIcon()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (string.IsNullOrEmpty(_fromUid))
             return;
 
@@ -150,6 +152,8 @@ public class FriendRequestItemUI : MonoBehaviour
 
     private async UniTaskVoid OnClickAcceptAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (string.IsNullOrEmpty(_fromUid))
             return;
 
@@ -190,6 +194,8 @@ public class FriendRequestItemUI : MonoBehaviour
 
     private async UniTaskVoid OnClickRejectAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (string.IsNullOrEmpty(_fromUid))
             return;
 

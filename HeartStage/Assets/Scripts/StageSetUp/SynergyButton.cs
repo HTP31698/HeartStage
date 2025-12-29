@@ -46,7 +46,7 @@ public class SynergyButton : MonoBehaviour
             nameText.text = data.synergy_name;
 
         if (icon != null)
-            icon.gameObject.SetActive(true); // 아이콘 표시 (아이콘 스프라이트를 따로 넣고 싶으면 여기서 설정)
+            icon.gameObject.SetActive(true);
 
         if (activeMark != null)
             activeMark.SetActive(active);

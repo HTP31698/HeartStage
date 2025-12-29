@@ -115,6 +115,8 @@ public class FriendSentRequestItemUI : MonoBehaviour
 
     private void OnClickIcon()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (string.IsNullOrEmpty(_targetUid))
             return;
 
@@ -131,6 +133,8 @@ public class FriendSentRequestItemUI : MonoBehaviour
 
     private async UniTaskVoid OnClickCancelAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (string.IsNullOrEmpty(_targetUid))
             return;
 

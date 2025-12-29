@@ -19,6 +19,9 @@ public class LoadingUI : MonoBehaviour
     [Header("퍼센트 텍스트 (슬라이더 안/위)")]
     [SerializeField] private TextMeshProUGUI percentText;
 
+    [Header("음표 로딩 인디케이터 (선택)")]
+    [SerializeField] private LoadingIndicator loadingIndicator;
+
     // 현재 팁 비활성
     //[Header("선택: 로딩 팁 텍스트")]
     //[SerializeField] private TextMeshProUGUI tipText;
@@ -50,6 +53,10 @@ public class LoadingUI : MonoBehaviour
         if (percentText != null)
             percentText.text = "0%";
 
+        // 음표 애니메이션 시작
+        if (loadingIndicator != null)
+            loadingIndicator.gameObject.SetActive(true);
+
         SetupRandomImage();
 
         //현재 팁 비활성
@@ -58,6 +65,10 @@ public class LoadingUI : MonoBehaviour
 
     public void Hide()
     {
+        // 음표 애니메이션 정지
+        if (loadingIndicator != null)
+            loadingIndicator.gameObject.SetActive(false);
+
         if (root != null)
             root.SetActive(false);
         root.transform.SetAsLastSibling();

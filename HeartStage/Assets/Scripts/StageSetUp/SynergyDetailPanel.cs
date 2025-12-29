@@ -50,27 +50,9 @@ public class SynergyDetailPanel : MonoBehaviour
 
     private string BuildEffectText(SynergyCSVData data)
     {
-        // effect_type1~3, effect_val1~3을 사람이 읽기 좋은 텍스트로
-        // 일단 간단히 값만:
-        var sb = new System.Text.StringBuilder();
-
-        void AppendEffect(int type, float val)
-        {
-            if (type == 0) return;
-            if (sb.Length > 0) sb.AppendLine();
-
-            // 실제로는 effect_type → "공격력 +{0}%" 같은 텍스트 매핑해도 됨
-            sb.Append($"Effect {type} : {val * 100f}%");
-        }
-
-        AppendEffect(data.effect_type1, data.effect_val1);
-        AppendEffect(data.effect_type2, data.effect_val2);
-        AppendEffect(data.effect_type3, data.effect_val3);
-
-        if (sb.Length == 0)
-            sb.Append("효과 없음");
-
-        return sb.ToString();
+        // CSV의 synergy_info에서 {val1}, {val2}, {val3}를 실제 값으로 치환
+        string formatted = data.GetFormattedInfo();
+        return string.IsNullOrEmpty(formatted) ? "효과 없음" : formatted;
     }
 
     public void Hide()

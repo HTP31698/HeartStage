@@ -32,6 +32,11 @@ public class NoteLoadingUI : MonoBehaviour
     }
 
     /// <summary>
+    /// 로딩 중인지 여부
+    /// </summary>
+    public static bool IsLoading => Instance != null && Instance._loadingCount > 0;
+
+    /// <summary>
     /// 로딩 표시 (카운터 +1)
     /// </summary>
     public static void Show()

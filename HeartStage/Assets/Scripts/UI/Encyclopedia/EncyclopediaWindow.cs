@@ -239,6 +239,37 @@ public class EncyclopediaWindow : GenericWindow
 
     private void OnCharacterSelectedByName(string name)
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+        // 미보유 캐릭터 체크
+        var saveData = SaveLoadManager.Data;
+        bool isUnlocked = false;
+        if (saveData?.unlockedByName != null && saveData.unlockedByName.TryGetValue(name, out bool unlocked))
+        {
+            isUnlocked = unlocked;
+        }
+
+        if (!isUnlocked)
+        {
+            // 미보유 캐릭터 - ConfirmDialog로 안내
+            ConfirmDialog.Show(
+                "보유하지 않은 캐릭터입니다.\n뽑기창으로 이동 하시겠습니까?",
+                "이동",
+                "닫기",
+                onConfirm: () =>
+                {
+                    // 뽑기 탭으로 이동
+                    if (WindowManager.Instance.Open(WindowType.Gacha))
+                    {
+                        var lobbyUI = FindFirstObjectByType<LobbyUI>();
+                        if (lobbyUI != null)
+                            lobbyUI.UpdateButtonStates(WindowType.Gacha);
+                    }
+                }
+            );
+            return;
+        }
+
         if (detailPanel == null)
         {
             Debug.LogWarning("[EncyclopediaWindow] detailPanel null");

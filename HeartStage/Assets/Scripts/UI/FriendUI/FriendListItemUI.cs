@@ -118,6 +118,8 @@ public class FriendListItemUI : MonoBehaviour
 
     private void OnClickIcon()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (string.IsNullOrEmpty(_friendUid))
             return;
 
@@ -243,6 +245,8 @@ public class FriendListItemUI : MonoBehaviour
 
     private async UniTaskVoid OnClickSendAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (sendEnergyButton != null)
             sendEnergyButton.interactable = false;
 
@@ -277,6 +281,8 @@ public class FriendListItemUI : MonoBehaviour
 
     private async UniTaskVoid OnClickReceiveAsync()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
         if (receiveEnergyButton != null)
             receiveEnergyButton.interactable = false;
 
@@ -311,6 +317,7 @@ public class FriendListItemUI : MonoBehaviour
 
     private void OnClickVisitHouse()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         FriendService.VisitFriendHouseAsync(_friendUid).Forget();
         WindowManager.Instance?.CloseOverlay(WindowType.Friend);
         LobbyHomeInitializer.Instance.friendUID = _friendUid;
