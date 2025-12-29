@@ -350,7 +350,7 @@ public class TutorialStage : MonoBehaviour
                 ActionSkillGageArrow();
                 break;
             case "SkillUse":
-                //ActionSkillUse();
+                ActionSkillUse();
                 break;
             case "BossAlert":
                 ActionBossAlert();
@@ -362,7 +362,6 @@ public class TutorialStage : MonoBehaviour
                 ActionBossFight();
                 break;
             case "StageClear":
-                ActionStageClear();
                 break;
         }
     }
@@ -728,6 +727,12 @@ public class TutorialStage : MonoBehaviour
 
         if (skillReadyCharacter != null)
         {
+            // 화면 클릭 차단 해제 (스킬 이미 준비됨)
+            blockScreenClick = false;
+
+            // 게임 일시정지
+            Time.timeScale = 0f;
+
             arrow.gameObject.SetActive(true);
             ArrowSkillReadyCharacter(skillReadyCharacter);
             StartArrowAnimation().Forget();
@@ -746,6 +751,12 @@ public class TutorialStage : MonoBehaviour
         if (isWaitingForSkillReady)
         {
             isWaitingForSkillReady = false;
+
+            // 화면 클릭 차단 해제
+            blockScreenClick = false;
+
+            // 게임 일시정지
+            Time.timeScale = 0f;
 
             // 스킬 준비된 캐릭터 찾기
             Transform skillReadyCharacter = FindSkillReadyCharacter();
@@ -857,6 +868,38 @@ public class TutorialStage : MonoBehaviour
         return null;
     }
 
+    // 스킬 사용 - 음성 재생 후 스크립트 닫고 게임 재개
+    private void ActionSkillUse()
+    {
+        ActionSkillUseAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionSkillUseAsync()
+    {
+        // 화면 클릭 차단 (음성 재생 중 + BossAlert까지)
+        blockScreenClick = true;
+
+        // 음성 재생 완료 대기
+        await WaitForVoiceComplete();
+
+        HideAllArrows();
+
+        // 스크립트 UI 닫기
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(false);
+        }
+
+        // 게임 재개
+        Time.timeScale = 1f;
+
+        // 다음 스크립트(BossAlert)로 인덱스 이동 (ShowCurrentScript 호출 안함)
+        currentScriptIndex++;
+        
+        // BossAlert 액션 직접 실행 (스크립트 표시는 보스 알림 후에 ActionBossAlertAsync에서 처리)
+        ActionBossAlert();
+    }
+
     #endregion
 
     #region Other Action Methods
@@ -930,6 +973,10 @@ public class TutorialStage : MonoBehaviour
     private void ActionFeverArrow()
     {
         HideAllArrows();
+
+        // 게임 일시정지
+        Time.timeScale = 0f;
+
         if (feverButton != null)
         {
             ShowArrowOnTarget(feverButton.transform);
@@ -940,6 +987,9 @@ public class TutorialStage : MonoBehaviour
     {
         HideAllArrows();
 
+        // 게임 재개
+        Time.timeScale = 1f;
+
         if (currentScriptUI != null)
         {
             currentScriptUI.gameObject.SetActive(false);
@@ -947,21 +997,15 @@ public class TutorialStage : MonoBehaviour
 
         isPlaying = false;
 
-        // StageClear 스크립트 찾아서 인덱스 설정
-        FindAndSetStageClearScriptIndex();
-
         // 바로 StageClear 대기 시작
-        ActionStageClearAsync().Forget();
-    }
-
-    private void ActionStageClear()
-    {
-        // 스테이지 클리어 대기하는 방식으로 구현
         ActionStageClearAsync().Forget();
     }
 
     private void ActionResumeBattle()
     {
+        // 화면 클릭 차단 (스킬 준비될 때까지)
+        blockScreenClick = true;
+
         Time.timeScale = 1f;
 
         // 스킬이 이미 준비되었는지 확인
@@ -1026,33 +1070,55 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionBossAlertAsync()
     {
+        Debug.Log("[TutorialStage] BossAlert 대기 시작...");
+
+        // 스크립트 UI 숨기기 (보스 알람 나올 때까지)
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(false);
+        }
+
         // BossAlert UI가 활성화될 때까지 대기
         await UniTask.WaitUntil(() =>
         {
-            return bossAlertUI != null && bossAlertUI.gameObject.activeInHierarchy;
+            bool isActive = bossAlertUI != null && bossAlertUI.gameObject.activeInHierarchy;
+            return isActive;
         });
+
+        Debug.Log("[TutorialStage] BossAlert UI 활성화됨, 닫힐 때까지 대기...");
 
         // BossAlert UI가 닫힐 때까지 대기
         await UniTask.WaitUntil(() =>
         {
-            return bossAlertUI == null || !bossAlertUI.gameObject.activeInHierarchy;
+            bool isClosed = bossAlertUI == null || !bossAlertUI.gameObject.activeInHierarchy;
+            return isClosed;
         });
+
+        Debug.Log("[TutorialStage] BossAlert UI 닫힘, 스크립트 표시 시작");
+
+        // 화면 클릭 차단 해제
+        blockScreenClick = false;
+
+        // 게임 일시정지
+        Time.timeScale = 0f;
 
         if (currentScriptUI != null)
         {
             currentScriptUI.gameObject.SetActive(true);
         }
 
-        // 현재 스크립트 정보 확인
-        if (currentScripts != null && currentScriptIndex < currentScripts.Count)
-        {
-            var script = currentScripts[currentScriptIndex];
-        }
-
         // 튜토리얼 다시 시작
         isPlaying = true;
 
-        NextScript();
+        // 현재 스크립트(BossAlert)의 텍스트를 표시 (NextScript 하지 않음)
+        var script = currentScripts[currentScriptIndex];
+        Debug.Log($"[TutorialStage] BossAlert 스크립트 표시: {script.Text}");
+        
+        // 음성 재생
+        PlayVoiceForCurrentScript(script);
+        
+        // 타이핑 효과로 텍스트 표시 (executeAction=false로 다시 BossAlert 액션 실행 방지)
+        StartTypingEffect(script.Text, false);
     }
 
     // StageClear 액션이 있는 스크립트 찾기
@@ -1089,6 +1155,9 @@ public class TutorialStage : MonoBehaviour
             tutorialCanvas.overrideSorting = true;
         }
 
+        // VictoryPanel보다 높은 Sort Order 설정
+        tutorialCanvas.sortingOrder = 1000;
+
         // 튜토리얼 스크립트 UI 다시 활성화
         if (currentScriptUI != null)
         {
@@ -1099,13 +1168,12 @@ public class TutorialStage : MonoBehaviour
             CreateScriptUI();
         }
 
-        // VictoryPanel보다 높은 Sort Order 설정
-        tutorialCanvas.sortingOrder = 1000;
-
         // 튜토리얼 다시 시작
         isPlaying = true;
 
-        NextScript();
+        // StageClear 스크립트 찾아서 표시 ("튜토리얼을 클리어했어!")
+        FindAndSetStageClearScriptIndex();
+        ShowCurrentScript();
     }
 
     #endregion
