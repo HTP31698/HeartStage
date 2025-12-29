@@ -33,7 +33,8 @@ public class TutorialStage : MonoBehaviour
     private bool isWaitingForCharacterClick = false; // 캐릭터 클릭 대기 상태
     private bool isWaitingForStartButton = false; // 스타트 버튼 대기 상태 추가
     private bool closeCharacterInfoOnce = false;
-    private bool isWaitingForSkillReady = false; // 스킬 준비 대기 상태 추가
+    private bool isWaitingForSkillReady = false;
+
 
     private bool isProcessingInput = false; // 입력 처리 중 플래그 추가
     private float lastClickTime = 0f; // 마지막 클릭 시간
@@ -54,8 +55,10 @@ public class TutorialStage : MonoBehaviour
     {
         // 캐릭터 배치 이벤트 구독
         DraggableSlot.OnAnySlotChanged += OnCharacterPlaced;
-
         characterInfoCloseButton.onClick.AddListener(OnCharacterInfoCloseButtonClicked);
+
+        // 스킬 준비 이벤트 구독 추가
+        ActiveSkillManager.OnAnySkillReady += OnSkillReady;
     }
 
     private void OnEnable()
@@ -72,6 +75,12 @@ public class TutorialStage : MonoBehaviour
             }
         }
     }
+    private void OnDestroy()
+    {
+        // 이벤트 해제
+        DraggableSlot.OnAnySlotChanged -= OnCharacterPlaced;
+        ActiveSkillManager.OnAnySkillReady -= OnSkillReady;
+    }
 
     public void Close()
     {
@@ -82,9 +91,9 @@ public class TutorialStage : MonoBehaviour
         isWaitingForCharacterClick = false;
         isWaitingForCharacterDrag = false;
         isWaitingForStartButton = false;
-        isWaitingForSkillReady = false;
         waitingCharacterSlot = null;
         isProcessingInput = false;
+        isWaitingForSkillReady = false;
         lastClickTime = 0f;
         characterPlaceCount = 0;
 
@@ -129,14 +138,9 @@ public class TutorialStage : MonoBehaviour
         if (isWaitingForCharacterClick) return;
         if (isWaitingForCharacterDrag) return;
         if (isWaitingForStartButton) return;
+        if (isWaitingForSkillReady) return; 
         if (isProcessingInput) return;
-        if (blockScreenClick) return;
-        
-        if (isWaitingForSkillReady)
-        {
-            CheckSkillReadyAndExecute();
-            return; // 스킬 대기 중일 때는 다른 입력 무시
-        }
+        if (blockScreenClick) return;       
 
         if (Time.unscaledTime - lastClickTime < clickCool)
             return;
@@ -341,10 +345,10 @@ public class TutorialStage : MonoBehaviour
                 ActionResumeBattle();
                 break;
             case "SkillGageArrow":
-                ActionWaitForSkillReady(); // 스킬 게이지 자동 대기로 변경
+                ActionSkillGageArrow();
                 break;
             case "SkillUse":
-                ActionSkillUse();
+                //ActionSkillUse();
                 break;
             case "BossAlert":
                 ActionBossAlert();
@@ -706,81 +710,74 @@ public class TutorialStage : MonoBehaviour
 
     #region Skill Actions
 
-    // 스킬 준비 대기 모드로 전환하는 액션
-    private void ActionWaitForSkillReady()
-    {
-        Time.timeScale = 0f; // 게임 일시정지
-
-        if (currentScriptUI != null)
-        {
-            currentScriptUI.gameObject.SetActive(false);
-        }
-
-        // 스킬 준비 대기 상태로 전환
-        isWaitingForSkillReady = true;
-    }
-
-    // 스킬이 준비되었는지 확인
-    private void CheckSkillReadyAndExecute()
-    {
-        if (ActiveSkillManager.Instance == null) return;
-
-        // 스킬이 준비된 캐릭터가 있는지 확인
-        var readyCasters = ActiveSkillManager.Instance.GetAllReadySkillCasters();
-
-        if (readyCasters.Count > 0)
-        {
-            isWaitingForSkillReady = false;
-            ActionSkillGageArrow();
-        }
-    }
-
     private void ActionSkillGageArrow()
     {
-        HideAllArrows();
-
-        if (currentScriptUI != null)
-        {
-            currentScriptUI.gameObject.SetActive(true);
-        }
-
         ActionSkillGageArrowAsync().Forget();
     }
 
     private async UniTaskVoid ActionSkillGageArrowAsync()
     {
-        // ActiveSkillManager 확인
-        if (ActiveSkillManager.Instance == null)
+        // 이미 준비된 스킬이 있는지 확인
+        Transform skillReadyCharacter = FindSkillReadyCharacter();
+
+        if (skillReadyCharacter != null)
         {
+            Debug.Log("[TutorialStage] 이미 준비된 스킬 발견 - 바로 표시");
+            ShowArrowOnSkillReadyCharacter(skillReadyCharacter);
             return;
         }
 
-        // 스킬이 준비될 때까지 대기 (이미 준비되어 있어야 함)
-        Transform skillReadyCharacter = null;
-        await UniTask.WaitUntil(() =>
-        {
-            skillReadyCharacter = FindSkillReadyCharacter();
-            return skillReadyCharacter != null;
-        });
+        isWaitingForSkillReady = true;
 
+        // 스킬이 준비될 때까지 대기
+        await UniTask.WaitUntil(() => !isWaitingForSkillReady);
+
+        // 스킬이 준비되면 다시 캐릭터 찾기 및 화살표 표시
+        skillReadyCharacter = FindSkillReadyCharacter();
         if (skillReadyCharacter != null)
         {
             ShowArrowOnSkillReadyCharacter(skillReadyCharacter);
         }
     }
 
-    // 스킬 준비된 캐릭터 위에 화살표 표시 
+    // 스킬이 준비되었을 때 호출되는 이벤트 핸들러
+    private void OnSkillReady()
+    {
+        if (isWaitingForSkillReady)
+        {
+            Debug.Log("[TutorialStage] 스킬 준비 완료! SkillGageArrow 액션 실행");
+            isWaitingForSkillReady = false;
+        }
+    }
+
+    // 스킬 준비된 캐릭터 위에 화살표 표시
     private void ShowArrowOnSkillReadyCharacter(Transform characterTransform)
     {
         if (arrow == null || characterTransform == null) return;
+
+        // 현재 스크립트 UI 표시
+        if (currentScriptUI != null)
+        {
+            currentScriptUI.gameObject.SetActive(true);
+        }
 
         arrow.gameObject.SetActive(true);
         ArrowSkillReadyCharacter(characterTransform);
         StartArrowAnimation().Forget();
 
-        if (currentScriptUI != null)
+        AutoProgressAfterSkillShow().Forget();
+    }
+
+    // 스킬 화살표 표시 후 자동으로 다음 스크립트로 진행
+    private async UniTaskVoid AutoProgressAfterSkillShow()
+    {
+        // 2초 후 자동으로 다음 스크립트로 진행
+        await UniTask.Delay(2000, DelayType.UnscaledDeltaTime);
+
+        if (isPlaying)
         {
-            currentScriptUI.gameObject.SetActive(true);
+            Debug.Log("[TutorialStage] 스킬 화살표 표시 완료 - 다음 스크립트로 진행");
+            NextScript();
         }
     }
 
@@ -791,77 +788,46 @@ public class TutorialStage : MonoBehaviour
         if (arrowRect == null) return;
 
         Camera uiCamera = Camera.main;
+        if (uiCamera == null) return;
 
-        if (uiCamera != null)
+        // 캐릭터의 상단 위치 계산
+        Vector3 characterTopPos = characterTransform.position;
+
+        Renderer characterRenderer = characterTransform.GetComponent<Renderer>();
+        if (characterRenderer != null)
         {
-            // 캐릭터의 상단 위치 계산 (Renderer 바운드 사용)
-            Vector3 characterTopPos = characterTransform.position;
-
-            Renderer characterRenderer = characterTransform.GetComponent<Renderer>();
-            if (characterRenderer != null)
-            {
-                characterTopPos.y += characterRenderer.bounds.size.y * 0.5f;
-            }
-
-            // 추가 오프셋
-            characterTopPos.y += 2.5f; // 캐릭터 위에 화살표 표시
-
-            Vector3 screenPos = uiCamera.WorldToScreenPoint(characterTopPos);
-
-            Vector2 localPos;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                arrowRect.parent as RectTransform,
-                screenPos,
-                null,
-                out localPos
-            );
-
-            arrowRect.localPosition = localPos;
+            characterTopPos.y += characterRenderer.bounds.size.y * 0.5f;
         }
+
+        // 추가 오프셋
+        characterTopPos.y += 2.5f;
+
+        Vector3 screenPos = uiCamera.WorldToScreenPoint(characterTopPos);
+
+        Vector2 localPos;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            arrowRect.parent as RectTransform,
+            screenPos,
+            null,
+            out localPos
+        );
+
+        arrowRect.localPosition = localPos;
     }
 
     // 스킬이 준비된 캐릭터를 찾는 메서드
     private Transform FindSkillReadyCharacter()
     {
-        if (ActiveSkillManager.Instance == null)
-        {
-            return null;
-        }
+        if (ActiveSkillManager.Instance == null) return null;
 
-        // 스킬이 준비된 모든 캐릭터 가져오기
         var readyCasters = ActiveSkillManager.Instance.GetAllReadySkillCasters();
 
-        // 스킬이 준비된 캐릭터가 있다면 첫 번째 것을 반환
         if (readyCasters.Count > 0)
         {
             return readyCasters[0].transform;
         }
 
         return null;
-    }
-
-    private void ActionSkillUse()
-    {
-        Time.timeScale = 1f;
-
-        isPlaying = false;
-
-        HideAllArrows();
-
-        if (currentScriptUI != null)
-        {
-            currentScriptUI.gameObject.SetActive(false);
-        }
-
-        SetPanelTransparent();
-        EnableOtherButtons();
-        EnableCharacterInteraction();
-
-        // BossAlert 스크립트 찾아서 인덱스 설정
-        FindAndSetBossAlertScriptIndex();
-
-        // 바로 BossAlert 대기 시작
-        ActionBossAlertAsync().Forget();
     }
 
     #endregion
@@ -986,21 +952,6 @@ public class TutorialStage : MonoBehaviour
     #endregion
 
     #region Boss and Stage Clear Methods
-
-    // BossAlert 액션이 있는 스크립트 찾기
-    private void FindAndSetBossAlertScriptIndex()
-    {
-        if (currentScripts == null) return;
-
-        for (int i = 0; i < currentScripts.Count; i++)
-        {
-            if (currentScripts[i].Action == "BossAlert")
-            {
-                currentScriptIndex = i;
-                return;
-            }
-        }
-    }
 
     private void ActionBossAlert()
     {
