@@ -21,13 +21,19 @@ public class QuestItemUIBase : MonoBehaviour
 
     [Header("완료 상태 텍스트 & 색상")]
     [SerializeField] protected TextMeshProUGUI stateText;  // 버튼 상태 텍스트 ("미완료" / "받기" / "완료")
-    [SerializeField] protected Color normalButtonColor = Color.white;          // 기본 색
-    [SerializeField] protected Color completedButtonColor = new Color(0.7f, 0.7f, 0.7f); // 완료 후 약간 어두운 색
+    [SerializeField] protected Color claimableButtonColor = Color.white;                     // 받기 가능 상태 색상
+    [SerializeField] protected Color notClearedButtonColor = new Color(0.6f, 0.6f, 0.6f, 1f); // 미완료 상태 색상
+    [SerializeField] protected Color completedButtonColor = new Color(0.5f, 0.5f, 0.5f, 1f);  // 완료 상태 색상
 
     [Header("아이콘 Addressables 키를 QuestData.Icon_image에서 읽음")]
     [SerializeField] protected bool useIconAddressable = true;
 
     public int QuestId => questData != null ? questData.Quest_ID : 0;
+
+    /// <summary>
+    /// 받기 버튼의 Transform (애니메이션 시작점용)
+    /// </summary>
+    public Transform ClaimButtonTransform => completeButton != null ? completeButton.transform : transform;
 
     protected IQuestItemOwner owner;
     protected QuestData questData;
@@ -74,9 +80,9 @@ public class QuestItemUIBase : MonoBehaviour
         this.currentProgress = progress;
         this.requiredProgress = required;
 
-        // 텍스트 ({Quest_required} 치환)
+        // 텍스트 ({Quest_required}, {Target_name} 치환)
         if (InfoText != null)
-            InfoText.text = FormatQuestInfo(data.Quest_info, data.Quest_required);
+            InfoText.text = FormatQuestInfo(data);
 
         // 아이콘
         if (useIconAddressable && iconImage != null && !string.IsNullOrEmpty(data.Icon_image))
@@ -143,20 +149,36 @@ public class QuestItemUIBase : MonoBehaviour
         // 버튼 인터랙션 & 색상
         if (completeButton != null)
         {
-            if (!isCleared)
+            // Unity의 자동 색상 전환 완전히 비활성화 (타이밍 이슈 방지)
+            completeButton.transition = Selectable.Transition.None;
+
+            // 버튼 인터랙션 설정
+            bool canInteract = isCleared && !isCompleted;
+            completeButton.interactable = canInteract;
+
+            // 상태에 따른 색상 결정
+            Color targetColor;
+            if (isCompleted)
             {
-                completeButton.interactable = false;
+                targetColor = completedButtonColor;
+            }
+            else if (isCleared)
+            {
+                targetColor = claimableButtonColor;
             }
             else
             {
-                // 조건만 충족되면, 아직 완료 안 되었을 때 한 번은 누를 수 있음
-                completeButton.interactable = !isCompleted;
+                targetColor = notClearedButtonColor;
             }
 
+            // 항상 불투명하게 설정
+            targetColor.a = 1f;
+
+            // targetGraphic 색상 적용
             var targetGraphic = completeButton.targetGraphic as Image;
             if (targetGraphic != null)
             {
-                targetGraphic.color = isCompleted ? completedButtonColor : normalButtonColor;
+                targetGraphic.color = targetColor;
             }
         }
 
@@ -193,14 +215,61 @@ public class QuestItemUIBase : MonoBehaviour
     }
 
     /// <summary>
-    /// Quest_info 텍스트에서 {Quest_required}를 실제 값으로 치환
+    /// Quest_info 텍스트에서 플레이스홀더 치환
+    /// - {Quest_required}: 필요 횟수
+    /// - {Target_name}: 대상 이름 (몬스터/스테이지)
     /// </summary>
-    private string FormatQuestInfo(string questInfo, int questRequired)
+    private string FormatQuestInfo(QuestData data)
     {
-        if (string.IsNullOrEmpty(questInfo))
-            return questInfo;
+        if (data == null || string.IsNullOrEmpty(data.Quest_info))
+            return data?.Quest_info ?? "";
 
-        return questInfo.Replace("{Quest_required}", questRequired.ToString());
+        string result = data.Quest_info;
+
+        // {Quest_required} 치환
+        result = result.Replace("{Quest_required}", data.Quest_required.ToString());
+
+        // {Target_name} 치환
+        if (result.Contains("{Target_name}") && data.Target_ID > 0)
+        {
+            string targetName = GetTargetName(data.Event_type, data.Target_ID);
+            result = result.Replace("{Target_name}", targetName);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Event_type과 Target_ID로 대상 이름 조회
+    /// </summary>
+    private string GetTargetName(QuestEventType eventType, int targetId)
+    {
+        switch (eventType)
+        {
+            case QuestEventType.BossKill:
+            case QuestEventType.MonsterKill:
+                var monsterTable = DataTableManager.Get<MonsterTable>(DataTableIds.Monster);
+                if (monsterTable != null)
+                {
+                    var monster = monsterTable.Get(targetId);
+                    if (monster != null)
+                        return monster.mon_name;
+                }
+                return $"몬스터({targetId})";
+
+            case QuestEventType.ClearStage:
+                var stageTable = DataTableManager.Get<StageTable>(DataTableIds.Stage);
+                if (stageTable != null)
+                {
+                    var stage = stageTable.GetStage(targetId);
+                    if (stage != null)
+                        return stage.stage_name;
+                }
+                return $"스테이지({targetId})";
+
+            default:
+                return targetId.ToString();
+        }
     }
 
     private void OnClickCompleteInternal()

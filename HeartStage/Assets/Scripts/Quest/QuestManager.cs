@@ -439,61 +439,42 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     public int GetAchievementQuestProgress(int questId)
     {
-        // 팬수 관련 업적은 현재 팬수 반환
-        if (questId == achievementFan100QuestId ||
-            questId == achievementFan1000QuestId ||
-            questId == achievementFan10000QuestId)
+        var table = QuestTable;
+        if (table == null)
+            return 0;
+
+        var quest = table.Get(questId);
+        if (quest == null)
+            return 0;
+
+        // 팬수 달성 퀘스트는 현재 팬수 반환
+        if (quest.Event_type == QuestEventType.FanAmountReach)
         {
             return SaveLoadManager.Data.fanAmount;
         }
 
-        // 튜토리얼/보스 업적은 완료 시 1, 미완료 시 0
-        if (questId == achievementTutorialClearQuestId ||
-            questId == achievementBossFirstKillQuestId)
-        {
-            return IsAchievementQuestCleared(questId) ? 1 : 0;
-        }
-
-        // ★ 새 시스템: questProgress에서 진행도 확인 (Target_ID가 있는 퀘스트용)
-        int progress = AchievementState.GetQuestProgress(questId);
-        if (progress > 0)
-            return progress;
-
         // 이미 완료된 업적은 required 값 반환
         if (IsAchievementQuestCleared(questId))
         {
-            var table = QuestTable;
-            if (table != null)
-            {
-                var quest = table.Get(questId);
-                if (quest != null)
-                    return quest.Quest_required;
-            }
+            return quest.Quest_required;
         }
 
-        return 0;
+        // 진행 중인 퀘스트는 저장된 진행도 반환
+        int progress = AchievementState.GetQuestProgress(questId);
+        return progress;
     }
 
     /// <summary>
     /// 특정 Achievement 퀘스트의 필요 진행도 반환 (UI 표시용)
-    /// 튜토리얼/보스 같은 1회성 퀘스트는 1 반환
     /// </summary>
     public int GetAchievementQuestRequired(int questId)
     {
-        // 튜토리얼/보스 업적은 1회성이므로 1 반환
-        if (questId == achievementTutorialClearQuestId ||
-            questId == achievementBossFirstKillQuestId)
-        {
-            return 1;
-        }
-
-        // 그 외는 QuestTable에서 Quest_required 값 사용
         var table = QuestTable;
         if (table != null)
         {
             var quest = table.Get(questId);
             if (quest != null)
-                return quest.Quest_required;
+                return quest.Quest_required > 0 ? quest.Quest_required : 1;
         }
 
         return 1;
@@ -594,6 +575,11 @@ public class QuestManager : MonoBehaviour
                 case QuestType.Daily:
                     return DailyState.GetTargetCount(eventType, targetId);
                 case QuestType.Achievement:
+                    // ★ 1회성 업적(Quest_required=1, 특정 대상)은 globalValue 사용
+                    // 예: "튜토리얼 최초 클리어", "보스 최초 처치" 등
+                    if (quest.Quest_required == 1)
+                        return globalValue;
+                    // N회 달성 업적은 questProgress 사용
                     return AchievementState.GetQuestProgress(quest.Quest_ID);
                 default:
                     return globalValue;
@@ -1125,7 +1111,60 @@ public class QuestManager : MonoBehaviour
         BuildAchievementQuestList();
         SyncAchievementCompletedSet();
 
+        // ★ 기존 저장 데이터에서 progress >= required인데 cleared 안 된 퀘스트 자동 완료
+        CheckAndCompleteUnmarkedAchievements();
+
         _initializedAchievement = true;
+    }
+
+    /// <summary>
+    /// 저장된 진행도가 목표치 이상인데 cleared로 마킹되지 않은 업적 자동 완료
+    /// (기존 버그로 인해 발생한 불일치 데이터 복구용)
+    /// </summary>
+    private void CheckAndCompleteUnmarkedAchievements()
+    {
+        var state = AchievementState;
+        bool anyCompleted = false;
+
+        foreach (var quest in _achievementQuestList)
+        {
+            int id = quest.Quest_ID;
+
+            // 이미 cleared 상태면 스킵
+            if (_clearedAchievementQuestIds.Contains(id))
+                continue;
+
+            // 현재 진행도 확인
+            int progress = state.GetQuestProgress(id);
+
+            // 팬수 달성 퀘스트는 현재 팬수로 체크
+            if (quest.Event_type == QuestEventType.FanAmountReach)
+            {
+                progress = SaveLoadManager.Data.fanAmount;
+            }
+
+            int required = quest.Quest_required > 0 ? quest.Quest_required : 1;
+
+            // progress >= required이면 완료 처리
+            if (progress >= required)
+            {
+                _clearedAchievementQuestIds.Add(id);
+
+                if (!state.clearedQuestIds.Contains(id))
+                    state.clearedQuestIds.Add(id);
+
+                Debug.Log($"[QuestManager] 누락된 업적 자동 완료: id={id}, progress={progress}/{required}");
+                anyCompleted = true;
+
+                // 이벤트 발생 (UI 갱신용)
+                AchievementQuestCompleted?.Invoke(quest);
+            }
+        }
+
+        if (anyCompleted)
+        {
+            MarkDirty(forceSave: true);
+        }
     }
 
     private void InitAchievementState()
@@ -1300,6 +1339,9 @@ public class QuestManager : MonoBehaviour
 
         // Weekly 보스 처치도 함께 체크
         OnWeeklyBossKill(monsterId);
+
+        // ★ 보스 최초 처치 업적 체크
+        OnBossFirstKill(monsterId);
     }
 
     // 가챠 결과 확정 시점에서 호출 (count: 1회/10회 등)
@@ -1626,65 +1668,78 @@ public class QuestManager : MonoBehaviour
 
     #endregion
 
-    #region 외부에서 호출할 이벤트 진입점 (Achievement) - Legacy
+    #region 외부에서 호출할 이벤트 진입점 (Achievement)
 
-    // 스테이지 최초 클리어 시 호출 (Achievement 전용 - 카운터 증가 없이 1회성 체크)
+    /// <summary>
+    /// 스테이지 최초 클리어 시 호출 (Achievement 전용)
+    /// CSV의 Event_type=2(ClearStage), Target_ID=스테이지ID, Quest_required=1 로 설정
+    /// </summary>
     public void OnStageFirstClear(int stageId)
     {
-        // ★ 새 시스템: ClearStage 이벤트로 처리 (카운터 증가 없이 1회성 체크)
-        ProcessQuestEventCheck(QuestEventType.ClearStage, stageId, 1);
-
-        // ★ Legacy 슬롯도 지원
-        if (achievementTutorialClearQuestId <= 0)
-            return;
+        Debug.Log($"[QuestManager] ★ OnStageFirstClear 호출됨: stageId={stageId}");
 
         EnsureAchievementInitialized();
 
-        var table = QuestTable;
-        if (table == null)
-            return;
-
-        QuestData quest = table.Get(achievementTutorialClearQuestId);
-        if (quest == null)
-            return;
-
-        // CSV의 Quest_required에서 튜토리얼 스테이지 ID를 읽어서 매칭
-        if (quest.Quest_required == stageId)
+        // ★ 디버그: 해당 이벤트 타입의 퀘스트 확인
+        var matchingQuests = new List<QuestData>();
+        foreach (var quest in GetQuestsByEventType(QuestEventType.ClearStage, stageId))
         {
-            TryCompleteLegacyAchievement(achievementTutorialClearQuestId, 1);
+            matchingQuests.Add(quest);
+            Debug.Log($"[QuestManager] 매칭된 퀘스트: ID={quest.Quest_ID}, Event_type={quest.Event_type}, Target_ID={quest.Target_ID}, Quest_required={quest.Quest_required}");
         }
+        Debug.Log($"[QuestManager] 총 매칭 퀘스트 수: {matchingQuests.Count}");
+
+        // ★ 1회성 업적은 바로 완료 처리 (globalValue=1 사용)
+        foreach (var quest in matchingQuests)
+        {
+            if (quest.Quest_type == QuestType.Achievement && quest.Target_ID == stageId)
+            {
+                // Quest_required=1인 1회성 업적은 바로 완료
+                if (quest.Quest_required == 1)
+                {
+                    Debug.Log($"[QuestManager] 1회성 업적 완료 시도: ID={quest.Quest_ID}");
+                    CompleteAchievementQuestInternal(quest);
+                }
+            }
+        }
+
+        MarkDirty(forceSave: true);
     }
 
-    // 보스 최초 처치 시 호출 (Achievement 전용 - 카운터 증가 없이 1회성 체크)
+    /// <summary>
+    /// 보스 최초 처치 시 호출 (Achievement 전용)
+    /// CSV의 Event_type=4(BossKill), Target_ID=몬스터ID, Quest_required=1 로 설정
+    /// </summary>
     public void OnBossFirstKill(int monsterId)
     {
-        // ★ 새 시스템: BossKill 이벤트로 처리 (카운터 증가 없이 1회성 체크)
-        ProcessQuestEventCheck(QuestEventType.BossKill, monsterId, 1);
-
-        // ★ Legacy 슬롯도 지원
-        if (achievementBossFirstKillQuestId <= 0)
-            return;
+        Debug.Log($"[QuestManager] ★ OnBossFirstKill 호출됨: monsterId={monsterId}");
 
         EnsureAchievementInitialized();
 
-        // 이미 달성한 업적이면 스킵
-        if (_clearedAchievementQuestIds.Contains(achievementBossFirstKillQuestId))
-            return;
-
-        var table = QuestTable;
-        if (table == null)
-            return;
-
-        QuestData quest = table.Get(achievementBossFirstKillQuestId);
-        if (quest == null)
-            return;
-
-        // Quest_required에 적힌 보스 ID와 일치하면 완료
-        if (quest.Quest_required == monsterId)
+        // ★ 디버그: 해당 이벤트 타입의 퀘스트 확인
+        var matchingQuests = new List<QuestData>();
+        foreach (var quest in GetQuestsByEventType(QuestEventType.BossKill, monsterId))
         {
-            Debug.Log($"[QuestManager] 보스 최초 처치 업적 달성! monsterId={monsterId}");
-            TryCompleteLegacyAchievement(achievementBossFirstKillQuestId, 1);
+            matchingQuests.Add(quest);
+            Debug.Log($"[QuestManager] 매칭된 퀘스트: ID={quest.Quest_ID}, Event_type={quest.Event_type}, Target_ID={quest.Target_ID}, Quest_required={quest.Quest_required}");
         }
+        Debug.Log($"[QuestManager] 총 매칭 퀘스트 수: {matchingQuests.Count}");
+
+        // ★ 1회성 업적은 바로 완료 처리
+        foreach (var quest in matchingQuests)
+        {
+            if (quest.Quest_type == QuestType.Achievement && quest.Target_ID == monsterId)
+            {
+                // Quest_required=1인 1회성 업적은 바로 완료
+                if (quest.Quest_required == 1)
+                {
+                    Debug.Log($"[QuestManager] 1회성 업적 완료 시도: ID={quest.Quest_ID}");
+                    CompleteAchievementQuestInternal(quest);
+                }
+            }
+        }
+
+        MarkDirty(forceSave: true);
     }
 
     #endregion
@@ -1717,19 +1772,7 @@ public class QuestManager : MonoBehaviour
             Debug.LogWarning($"[QuestManager] Quest_ID={questId} 는 Quest_Type={quest.Quest_type} 입니다. Achievement가 아닙니다.");
         }
 
-        int requiredValue = quest.Quest_required;
-
-        // ★ 튜토리얼/보스 업적은 Quest_required가 스테이지ID/몬스터ID로 사용되므로
-        //    진행도 비교 시에는 1회성(requiredValue = 1)으로 처리
-        if (questId == achievementTutorialClearQuestId ||
-            questId == achievementBossFirstKillQuestId)
-        {
-            requiredValue = 1;
-        }
-        else if (requiredValue <= 0)
-        {
-            requiredValue = 1;
-        }
+        int requiredValue = quest.Quest_required > 0 ? quest.Quest_required : 1;
 
         if (currentValue < requiredValue)
         {
