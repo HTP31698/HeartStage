@@ -38,5 +38,6 @@ public class CharacterInfoTab : MonoBehaviour, IPointerClickHandler
 
         WindowManager.Instance.OpenOverlay(WindowType.CharacterInfo);
         CharacterInfoWindow.Instance.Init(dragMe.characterData);
+        SoundManager.Instance.PlayUIButtonClickSound();
     }
 }

@@ -21,5 +21,6 @@ public class CharacterAcquirePanel : MonoBehaviour
     {
         gameObject.SetActive(false);
         PieceExchangePanel.Instance.AfterAcquirCharacter(characterId);
+        SoundManager.Instance.PlayUICloseClickSound();
     }
 }

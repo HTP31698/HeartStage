@@ -22,5 +22,6 @@ public class TrainingPointAcquirePanel : MonoBehaviour
     {
         gameObject.SetActive(false);
         PieceExchangePanel.Instance.AfterAcquireTrainingPoint();
+        SoundManager.Instance.PlayUICloseClickSound();
     }
 }

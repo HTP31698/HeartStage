@@ -666,6 +666,17 @@ public class StageManager : MonoBehaviour
 
         return stageData;
     }
+
+    public void PlayUIButtonClickSound()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click, 1f, 0.15f);
+    }
+
+    public void PlayUICloseClickSound()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click, 1f, 0.15f);
+    }
+
     // ========== 에디터 전용 디버그 메서드 ==========
 #if UNITY_EDITOR
     /// <summary>

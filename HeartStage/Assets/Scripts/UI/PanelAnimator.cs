@@ -32,6 +32,7 @@ public class PanelAnimator : MonoBehaviour
         panel.gameObject.SetActive(true);
         panel.localScale = new Vector3(1, 0, 1); 
         panel.DOScaleY(1f, duration).SetEase(easeOpen);
+        SoundManager.Instance.PlayUIButtonClickSound();
     }
 
     public void ClosePanel()

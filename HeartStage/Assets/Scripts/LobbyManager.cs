@@ -93,6 +93,16 @@ public class LobbyManager : MonoBehaviour
         fanAmountText.text = $"{SaveLoadManager.Data.fanAmount}";
     }
 
+    public void PlayUIButtonClickSound()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click, 1f, 0.15f);
+    }
+
+    public void PlayUICloseClickSound()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click, 1f, 0.15f);
+    }
+
     // 테스트용 함수
     public void GetMoney() // 라이트 스틱, 하트 스틱, 트레이닝 포인트
     {

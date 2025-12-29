@@ -113,7 +113,7 @@ public class SoundManager : MonoBehaviour
         // 쿨타임 확인
         if (soundCooldowns.ContainsKey(clipName))
         {
-            if (Time.time < soundCooldowns[clipName])
+            if (Time.unscaledTime < soundCooldowns[clipName])
                 return;
         }
 
@@ -123,7 +123,7 @@ public class SoundManager : MonoBehaviour
             sfxSource.PlayOneShot(clip, volume);
 
             float actualCooldown = cooldownTime > 0 ? cooldownTime : defaultCooldownTime;
-            soundCooldowns[clipName] = Time.time + actualCooldown;
+            soundCooldowns[clipName] = Time.unscaledTime + actualCooldown;
         }
     }
 
@@ -292,11 +292,12 @@ public class SoundManager : MonoBehaviour
         audioMixer.SetFloat("SFXVolume", sfxDB);
     }
 
+    // 얘네를 버튼에 연결하지 말기. 다른 씬 갖다 오면 연결 끊길 수 있음. LobbyManager 또는 StageManager껄로 연결하기
     public void PlayUIButtonClickSound()
     {
         PlaySFX(SoundName.SFX_UI_Button_Click, 1f, 0.15f);
     }
-
+    // 얘네를 버튼에 연결하지 말기. 다른 씬 갖다 오면 연결 끊길 수 있음. LobbyManager 또는 StageManager껄로 연결하기
     public void PlayUICloseClickSound()
     {
         PlaySFX(SoundName.SFX_UI_Exit_Button_Click, 1f, 0.15f);
