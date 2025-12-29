@@ -176,19 +176,47 @@ public class SkillCSVData
                 continue;
 
             // 프로퍼티 검색
-            PropertyInfo prop = typeof(SkillCSVData).GetProperty(key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            PropertyInfo prop = typeof(SkillCSVData)
+                .GetProperty(key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+
             object value = null;
             if (prop != null)
                 value = prop.GetValue(this);
             else
             {
                 // 필드 검색
-                FieldInfo field = typeof(SkillCSVData).GetField(key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                FieldInfo field = typeof(SkillCSVData)
+                    .GetField(key, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                 if (field != null)
                     value = field.GetValue(this);
             }
 
-            desc = desc.Replace("{" + key + "}", value != null ? value.ToString() : "0");
+            string replaceValue = "0";
+
+            if (value != null)
+            {
+                // skill_eff*_val 이면 퍼센트 처리
+                if ((key.Equals("skill_eff1_val", System.StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("skill_eff2_val", System.StringComparison.OrdinalIgnoreCase) ||
+                     key.Equals("skill_eff3_val", System.StringComparison.OrdinalIgnoreCase))
+                    && value is float f)
+                {
+                    if (f < 1f)
+                        f *= 100f;
+
+                    // 15 / 15.5 형태로 출력
+                    replaceValue = f % 1 == 0
+                        ? ((int)f).ToString()
+                        : f.ToString("0.#");
+                }
+                else
+                {
+                    // 기존 동작
+                    replaceValue = value.ToString();
+                }
+            }
+
+            desc = desc.Replace("{" + key + "}", replaceValue);
         }
 
         return desc;
