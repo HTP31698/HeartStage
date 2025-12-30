@@ -195,6 +195,15 @@ public class StageSetupWindow : MonoBehaviour
             Debug.Log($"[StageSetupWindow] 에너지 환불: {stageData.debut_stamina}");
         }
 
+        // 스토리 스테이지에서 전투 시작 전 뒤로 가기 시 스토리 진행 상태 리셋
+        // (전투를 시작하지 않았으므로 다음에 입장하면 처음부터 시작해야 함)
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null && stageData != null && stageData.stage_ID >= 66000 && stageData.stage_ID < 67000)
+        {
+            saveData.storyScriptResumeIndex = -1;
+            Debug.Log("[StageSetupWindow] 스토리 스테이지 전투 취소 - storyScriptResumeIndex 리셋");
+        }
+
         // 돌아가기 플래그 설정 (로비에서 StageInfoWindow 자동 오픈용)
         SaveLoadManager.Data.returnToStageInfo = true;
 
