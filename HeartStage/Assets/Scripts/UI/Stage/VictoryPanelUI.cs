@@ -21,7 +21,7 @@ public class VictoryPanel : GenericWindow
     {
         base.Open();
 
-        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_StageClear);
+        SoundManager.Instance.PlayBGM(SoundName.BGM_Victory, false);
 
         if (powerInfoWindow != null)
         {

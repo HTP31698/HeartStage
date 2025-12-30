@@ -34,6 +34,8 @@ public class StoryStageRewardUI : GenericWindow
         SetupStoryReward();
         // 보상 지급
         GiveStoryReward();
+
+        SoundManager.Instance.PlayBGM(SoundName.BGM_Victory, false);
     }
 
     public override void Close()

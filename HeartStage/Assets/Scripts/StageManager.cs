@@ -159,8 +159,6 @@ public class StageManager : MonoBehaviour
             //  스토리 스테이지인지 확인 
             if (stageID >= 66000 && stageID < 67000)
             {
-                Debug.Log($"[StageManager] 스토리 스테이지 로드: {stageID}");
-
                 // 스토리 스테이지 데이터를 StageData로 변환
                 var storyStageData = DataTableManager.StoryTable.GetStoryStage(stageID);
                 if (storyStageData != null)
@@ -180,7 +178,6 @@ public class StageManager : MonoBehaviour
                 SetBackgroundByStageData(stageData);
                 SetStagePosition(stageData);
 
-                // 튜토리얼 스테이지(601)는 BGM 재생 안함 (로비 음악 유지)
                 if (stageID != 601)
                 {
                     PlayStageBGM(stageData);
@@ -719,8 +716,6 @@ public class StageManager : MonoBehaviour
         stageData.fail_stamina = 0; 
         stageData.prefab = storyStage.prefab; // 배경 프리팹
         stageData.stage_position = 3; // 기본값
-
-        Debug.Log($"[StageManager] 스토리 스테이지 변환 완료: {storyStage.story_stage_name}");
 
         return stageData;
     }

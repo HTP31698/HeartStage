@@ -128,6 +128,11 @@ public class SoundName
     public static readonly string SFX_UI_StageClear = "stage_clear_01";
     public static readonly string SFX_Boss_Appear = "boss_alert";
 
+    public static readonly string SFX_Monster_Hit_01 = "monster_hit_01"; // 몬스터가 피격될 때 나는 효과음
+    public static readonly string SFX_Monster_Hit_02 = "monster_hit_02"; // 몬스터가 피격될 때 나는 효과음
+    public static readonly string SFX_Monster_Hit_03 = "monster_hit_03"; // 몬스터가 피격될 때 나는 효과음
+    public static readonly string SFX_Monster_Impact = "monster_impact_01"; // 몬스터가 사망할 때 나는 효과음
+
     public static readonly string SFX_UI_ChangeCloth = "equipment_01"; // 옷 바뀔떄 나는 효과음
     public static readonly string SFX_LobbyCharacter_Touch = string.Empty; // 숙소에서 캐릭터 터치시
     public static readonly string SFX_LobbyCharacter_Cheer = string.Empty; // 숙소에서 캐릭터 응원시
@@ -145,6 +150,7 @@ public class SoundName
     public static readonly string SFX_SonicAttack_Skill = string.Empty; // 엔터테이너 스킬(음파 공격), 세라 캐릭터 스킬
     public static readonly string SFX_ReverseCharm_Skill = string.Empty; // 반전매력 스킬(유혹), 리아 캐릭터 스킬
     public static readonly string SFX_HeartBomb_Skill = string.Empty; // 다이너마이트 스킬(광역 공격 + 스턴), 지안 캐릭터 스킬
+    public static readonly string SFX_Fever = string.Empty;
 
     public static readonly string BGM_Victory = "victory_bgm";
     public static readonly string BGM_Defeat = "defeat_bgm";
