@@ -199,33 +199,16 @@ public class StageManager : MonoBehaviour
     // 튜토리얼 스테이지 
     private void CheckAndOpenTutorialStage(int stageID)
     {
-        Debug.Log($"[StageManager] CheckAndOpenTutorialStage 호출 - stageID: {stageID}");
-
         // 601번 스테이지이고, 스테이지 튜토리얼을 아직 완료하지 않은 경우
         if (stageID == 601)
         {
-            Debug.Log($"[StageManager] 601번 스테이지 확인됨");
-
             var saveData = SaveLoadManager.Data as SaveDataV1;
             bool isStageTutorialCompleted = saveData?.isStageTutorialCompleted ?? false;
 
-            Debug.Log($"[StageManager] SaveData 체크 - saveData: {saveData != null}, isStageTutorialCompleted: {isStageTutorialCompleted}");
-            Debug.Log($"[StageManager] tutorialStage: {tutorialStage != null}");
-
             if (!isStageTutorialCompleted && tutorialStage != null)
             {
-                Debug.Log($"[StageManager] TutorialStage 활성화 시도");
                 tutorialStage.gameObject.SetActive(true);
-                Debug.Log($"[StageManager] TutorialStage 활성화 완료 - isActive: {tutorialStage.gameObject.activeSelf}");
             }
-            else
-            {
-                Debug.Log($"[StageManager] TutorialStage 활성화 조건 불충족 - completed: {isStageTutorialCompleted}, tutorialStage exists: {tutorialStage != null}");
-            }
-        }
-        else
-        {
-            Debug.Log($"[StageManager] 601번 스테이지가 아님 - stageID: {stageID}");
         }
     }
 
@@ -300,15 +283,16 @@ public class StageManager : MonoBehaviour
             if (storyStageData != null)
             {
                 string needChar = storyStageData.need_char ?? "";
-                int stageStep = stageData.stage_step1;
 
                 if (needChar.Contains("하나"))
                 {
-                    bgmName = (stageStep == 3) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
+                    // 하나 스토리: 66002(스테이지2), 66003(스테이지3)
+                    bgmName = (stageId == 66003) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
                 }
                 else if (needChar.Contains("세라"))
                 {
-                    bgmName = (stageStep == 3) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
+                    // 세라 스토리: 66006(스테이지2), 66007(스테이지3)
+                    bgmName = (stageId == 66007) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
                 }
             }
         }

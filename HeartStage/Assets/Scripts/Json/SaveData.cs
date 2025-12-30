@@ -103,7 +103,7 @@ public class SaveDataV1 : SaveData
 
     // ================== 8. 볼륨  ==================
     public float bgmVolume = 0.3f; // BGM 볼륨 (0~1)
-    public float sfxVolume = 0.6f; // SFX 볼륨 (0~1)
+    public float sfxVolume = 0.7f; // SFX 볼륨 (0~1)
 
     // ================== 9. 캐릭터 호감도 관련  ==================
     public Dictionary<string, int> likeabilityDict = new Dictionary<string, int>(); // 캐릭터 이름, 호감도 수치

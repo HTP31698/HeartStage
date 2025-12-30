@@ -262,8 +262,14 @@ public class StoryManager : MonoBehaviour
 
         var currentScript = currentScripts[currentScriptIndex];
         
-        // 66006 스테이지의 44번 라인 이후에 전투 시작
+        // 66006 스테이지(세라 스토리 2)의 44번 라인 이후에 전투 시작
         if (selectedStageId == 66006 && currentScript.Line == 44)
+        {
+            return true;
+        }
+
+        // 66007 스테이지(세라 스토리 3)의 69번 라인 이후에 전투 시작
+        if (selectedStageId == 66007 && currentScript.Line == 69)
         {
             return true;
         }
@@ -317,7 +323,6 @@ public class StoryManager : MonoBehaviour
     private void UpdateAutoButtonVisual()
     {
         if (autoButton == null) return;
-        // 이미지 교체 해야함
     }
 
     private void OnCutsceneComplete()
