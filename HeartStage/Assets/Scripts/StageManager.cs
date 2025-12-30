@@ -159,6 +159,8 @@ public class StageManager : MonoBehaviour
             //  스토리 스테이지인지 확인 
             if (stageID >= 66000 && stageID < 67000)
             {
+                Debug.Log($"[StageManager] 스토리 스테이지 로드: {stageID}");
+
                 // 스토리 스테이지 데이터를 StageData로 변환
                 var storyStageData = DataTableManager.StoryTable.GetStoryStage(stageID);
                 if (storyStageData != null)
@@ -178,6 +180,7 @@ public class StageManager : MonoBehaviour
                 SetBackgroundByStageData(stageData);
                 SetStagePosition(stageData);
 
+                // 튜토리얼 스테이지(601)는 BGM 재생 안함 (로비 음악 유지)
                 if (stageID != 601)
                 {
                     PlayStageBGM(stageData);
@@ -196,16 +199,33 @@ public class StageManager : MonoBehaviour
     // 튜토리얼 스테이지 
     private void CheckAndOpenTutorialStage(int stageID)
     {
+        Debug.Log($"[StageManager] CheckAndOpenTutorialStage 호출 - stageID: {stageID}");
+
         // 601번 스테이지이고, 스테이지 튜토리얼을 아직 완료하지 않은 경우
         if (stageID == 601)
         {
+            Debug.Log($"[StageManager] 601번 스테이지 확인됨");
+
             var saveData = SaveLoadManager.Data as SaveDataV1;
             bool isStageTutorialCompleted = saveData?.isStageTutorialCompleted ?? false;
 
+            Debug.Log($"[StageManager] SaveData 체크 - saveData: {saveData != null}, isStageTutorialCompleted: {isStageTutorialCompleted}");
+            Debug.Log($"[StageManager] tutorialStage: {tutorialStage != null}");
+
             if (!isStageTutorialCompleted && tutorialStage != null)
             {
+                Debug.Log($"[StageManager] TutorialStage 활성화 시도");
                 tutorialStage.gameObject.SetActive(true);
+                Debug.Log($"[StageManager] TutorialStage 활성화 완료 - isActive: {tutorialStage.gameObject.activeSelf}");
             }
+            else
+            {
+                Debug.Log($"[StageManager] TutorialStage 활성화 조건 불충족 - completed: {isStageTutorialCompleted}, tutorialStage exists: {tutorialStage != null}");
+            }
+        }
+        else
+        {
+            Debug.Log($"[StageManager] 601번 스테이지가 아님 - stageID: {stageID}");
         }
     }
 
@@ -280,16 +300,15 @@ public class StageManager : MonoBehaviour
             if (storyStageData != null)
             {
                 string needChar = storyStageData.need_char ?? "";
+                int stageStep = stageData.stage_step1;
 
                 if (needChar.Contains("하나"))
                 {
-                    // 하나 스토리: 66002(스테이지2), 66003(스테이지3)
-                    bgmName = (stageId == 66003) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
+                    bgmName = (stageStep == 3) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
                 }
                 else if (needChar.Contains("세라"))
                 {
-                    // 세라 스토리: 66006(스테이지2), 66007(스테이지3)
-                    bgmName = (stageId == 66007) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
+                    bgmName = (stageStep == 3) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
                 }
             }
         }
@@ -503,10 +522,9 @@ public class StageManager : MonoBehaviour
 
         if (windowManager != null)
         {
-            // 전투가 없는 스토리 스테이지인지 확인 (story_type이 1인 스테이지)
+            // 전투가 없는 스토리 스테이지인지 확인 
             bool isNonCombatStoryStage = currentStageData != null &&
-                                       (currentStageData.stage_ID == 66001 || currentStageData.stage_ID == 66004 ||
-                                        currentStageData.stage_ID == 66005 || currentStageData.stage_ID == 66008);
+                                       (currentStageData.stage_ID == 66001 || currentStageData.stage_ID == 66004);
 
             // 전투가 있는 스토리 스테이지인지 확인 
             bool isCombatStoryStage = currentStageData != null &&
@@ -523,21 +541,14 @@ public class StageManager : MonoBehaviour
                 // 전투 있는 스토리 스테이지 클리어 시
                 // 남은 스토리가 있으면 스토리 씬으로 돌아가기
                 var saveData = SaveLoadManager.Data as SaveDataV1;
-                Debug.Log($"[StageManager] 전투 스토리 스테이지 클리어 - storyScriptResumeIndex: {saveData?.storyScriptResumeIndex ?? -999}");
-                
                 if (saveData != null && saveData.storyScriptResumeIndex >= 0)
                 {
-                    // 보상 지급 후 스토리 씬으로 돌아가기
-                    Debug.Log("[StageManager] 남은 스토리가 있음 - 스토리 씬으로 복귀");
-                    Time.timeScale = 1f;
-                    GetReward();
+                    // 스토리 씬으로 돌아가서 이어서 진행
                     GameSceneManager.ChangeScene(SceneType.StoryScene);
-                    return; // 여기서 리턴하여 아래 GetReward() 중복 호출 방지
                 }
                 else
                 {
                     // 스토리 끝나면 보상창 표시
-                    Debug.Log("[StageManager] 스토리 완료 - 보상창 표시");
                     windowManager.OpenOverlay(WindowType.StoryStageReward);
                 }
             }
@@ -556,22 +567,21 @@ public class StageManager : MonoBehaviour
     public void Defeat()
     {
         var saveData = SaveLoadManager.Data as SaveDataV1;
-        
-        // 66006 스테이지(세라 스토리 2)는 패배가 연출의 일부 - 패배창 없이 스토리로 복귀
-        if (currentStageData != null && currentStageData.stage_ID == 66006)
+
+        // 세라 스토리 스테이지 66006에서만 패배해도 스토리 이어서 진행
+        bool isSeraStoryDefeatStage = currentStageData != null &&
+                                       currentStageData.stage_ID == 66006;
+
+        if (isSeraStoryDefeatStage && saveData != null && saveData.storyScriptResumeIndex >= 0)
         {
-            Debug.Log("[StageManager] 66006 스테이지 패배 연출 - 스토리로 복귀");
-            
-            // storyScriptResumeIndex는 이미 StartBattleFromStory에서 설정되어 있음
-            // 패배해도 다음 스토리로 이어가야 하므로 리셋하지 않음
-            
+            // 스토리 씬으로 돌아가서 이어서 진행
             Time.timeScale = 1f;
             GetReward();
             GameSceneManager.ChangeScene(SceneType.StoryScene);
             return;
         }
-        
-        // 다른 스토리 스테이지 패배 시 스토리 진행 상태 리셋 (처음부터 다시)
+
+        // 일반 스테이지 패배: storyScriptResumeIndex 리셋하고 패배 UI 표시
         if (saveData != null)
         {
             saveData.storyScriptResumeIndex = -1;
@@ -739,6 +749,8 @@ public class StageManager : MonoBehaviour
         stageData.fail_stamina = 0; 
         stageData.prefab = storyStage.prefab; // 배경 프리팹
         stageData.stage_position = 3; // 기본값
+
+        Debug.Log($"[StageManager] 스토리 스테이지 변환 완료: {storyStage.story_stage_name}");
 
         return stageData;
     }

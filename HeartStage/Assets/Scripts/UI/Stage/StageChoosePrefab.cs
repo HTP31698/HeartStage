@@ -45,12 +45,37 @@ public class StageChoosePrefab : MonoBehaviour
         };
     }
 
+    private CanvasGroup _canvasGroup;
+    private bool _isLocked = false;
+    public bool IsLocked => _isLocked;
+
     public void Initialize(StageData stageData)
     {
         if (stageData == null) return;
 
         SetStageImage(stageData.stage_step1);
         UpdateSpotLightImages(stageData);
+    }
+
+    /// <summary>
+    /// 스테이지 잠금 상태 설정 (반투명 처리)
+    /// </summary>
+    public void SetLocked(bool locked)
+    {
+        _isLocked = locked;
+
+        // CanvasGroup 없으면 자동 추가
+        if (_canvasGroup == null)
+        {
+            _canvasGroup = GetComponent<CanvasGroup>();
+            if (_canvasGroup == null)
+            {
+                _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
+        }
+
+        // 잠금 시 반투명 효과
+        _canvasGroup.alpha = locked ? 0.5f : 1f;
     }
 
     private void UpdateSpotLightImages(StageData stageData)

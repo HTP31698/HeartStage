@@ -894,8 +894,7 @@ public class TutorialStage : MonoBehaviour
         }
 
         // 게임 재개
-        Time.timeScale = 1f;
-
+        StageManager.Instance.RestoreTimeScale();
         // 다음 스크립트(BossAlert)로 인덱스 이동 (ShowCurrentScript 호출 안함)
         currentScriptIndex++;
         
@@ -1066,7 +1065,7 @@ public class TutorialStage : MonoBehaviour
         await WaitForVoiceComplete();
 
         // 게임 재개
-        Time.timeScale = 1f;
+        StageManager.Instance.RestoreTimeScale();
 
         if (currentScriptUI != null)
         {
@@ -1083,7 +1082,7 @@ public class TutorialStage : MonoBehaviour
         // 화면 클릭 차단 (스킬 준비될 때까지)
         blockScreenClick = true;
 
-        Time.timeScale = 1f;
+        StageManager.Instance.RestoreTimeScale();
 
         // 스킬이 이미 준비되었는지 확인
         Transform skillReadyCharacter = FindSkillReadyCharacter();

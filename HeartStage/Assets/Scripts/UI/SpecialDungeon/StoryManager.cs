@@ -171,16 +171,9 @@ public class StoryManager : MonoBehaviour
         {
             currentScriptIndex = 0;
         }
-        else
-        {
-            // 전투 복귀 시 storyScriptResumeIndex 리셋 (StartCutscene이 정상적으로 호출되었으므로)
-            var saveData = SaveLoadManager.Data as SaveDataV1;
-            if (saveData != null)
-            {
-                saveData.storyScriptResumeIndex = -1;
-                Debug.Log("[StoryManager] StartCutscene에서 storyScriptResumeIndex 리셋");
-            }
-        }
+        // 전투 복귀 시: storyScriptResumeIndex는 여기서 리셋하지 않음
+        // OnCutsceneComplete()에서 스토리가 완전히 끝난 후 리셋됨
+        
         Debug.Log($"[StoryManager] StartCutscene - isReturnedFromBattle: {isReturnedFromBattle}, currentScriptIndex: {currentScriptIndex}");
 
         ShowCurrentScript();
@@ -418,6 +411,14 @@ public class StoryManager : MonoBehaviour
 
         isPlaying = false;
         isTyping = false;
+
+        // 스토리 완료 시 storyScriptResumeIndex 리셋
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null)
+        {
+            saveData.storyScriptResumeIndex = -1;
+            Debug.Log("[StoryManager] OnCutsceneComplete에서 storyScriptResumeIndex 리셋");
+        }
 
         // 전투가 없는 스테이지인지 확인하여 분기 처리
         if (IsNonCombatStoryStage(selectedStageId))
