@@ -33,28 +33,19 @@ public class SoundManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
+        Instance = this;
+
+        if (sfxSource == null)
         {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-
-            if (sfxSource == null)
-            {
-                sfxSource = gameObject.AddComponent<AudioSource>();
-            }
-            sfxSource.outputAudioMixerGroup = sfxMixerGroup; // 믹서 그룹 할당
-
-            if (bgmSource == null)
-            {
-                bgmSource = gameObject.AddComponent<AudioSource>();
-            }
-            bgmSource.outputAudioMixerGroup = bgmMixerGroup; // 믹서 그룹 할당
-
+            sfxSource = gameObject.AddComponent<AudioSource>();
         }
-        else
+        sfxSource.outputAudioMixerGroup = sfxMixerGroup; // 믹서 그룹 할당
+
+        if (bgmSource == null)
         {
-            Destroy(gameObject);
+            bgmSource = gameObject.AddComponent<AudioSource>();
         }
+        bgmSource.outputAudioMixerGroup = bgmMixerGroup; // 믹서 그룹 할당
 
         LoadVolumeSettings();
         CreateHitSoundPool();

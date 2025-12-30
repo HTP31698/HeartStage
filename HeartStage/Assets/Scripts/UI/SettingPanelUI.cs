@@ -42,6 +42,11 @@ public class SettingPanelUI : GenericWindow
             logoutButton.onClick.AddListener(OnClickLogout);
     }
 
+    private void OnEnable()
+    {
+        LoadCurrentVolumeSettings();        
+    }
+
     public override void Open()
     {
         base.Open();
