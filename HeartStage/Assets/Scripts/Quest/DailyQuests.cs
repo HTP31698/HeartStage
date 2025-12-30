@@ -336,10 +336,7 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
         }
 
         if (State.progress < slot.data.progress_amount)
-        {
-            Debug.Log("[DailyQuests] 진행도 부족, 보상 수령 불가");
             return;
-        }
 
         // 버튼 팝 애니메이션
         if (progressAnimator != null)
@@ -766,9 +763,6 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
         if (questData.Quest_reward1 != 0 && questData.Quest_reward1_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
-            Debug.Log($"[DailyQuests] Reward1 지급: Item {questData.Quest_reward1} x {questData.Quest_reward1_A}");
-
-            // UI 표시
             if (acquirePanel != null)
                 acquirePanel.Open(questData.Quest_reward1, questData.Quest_reward1_A);
         }
@@ -776,8 +770,6 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
         if (questData.Quest_reward2 != 0 && questData.Quest_reward2_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
-            Debug.Log($"[DailyQuests] Reward2 지급: Item {questData.Quest_reward2} x {questData.Quest_reward2_A}");
-
             if (acquirePanel != null)
                 acquirePanel.Open(questData.Quest_reward2, questData.Quest_reward2_A);
         }
@@ -785,8 +777,6 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
         if (questData.Quest_reward3 != 0 && questData.Quest_reward3_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
-            Debug.Log($"[DailyQuests] Reward3 지급: Item {questData.Quest_reward3} x {questData.Quest_reward3_A}");
-
             if (acquirePanel != null)
                 acquirePanel.Open(questData.Quest_reward3, questData.Quest_reward3_A);
         }

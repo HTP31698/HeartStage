@@ -229,7 +229,6 @@ public static class FriendSearchService
             try
             {
                 await Root.Child("nicknameIndex").Child(uid).RemoveValueAsync();
-                Debug.Log($"[FriendSearchService] 탈퇴 유저 nicknameIndex에서 정리: {uid}");
             }
             catch (Exception e)
             {
