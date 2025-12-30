@@ -555,8 +555,23 @@ public class StageManager : MonoBehaviour
     // 패배시
     public void Defeat()
     {
-        // 스토리 스테이지 패배 시 스토리 진행 상태 리셋 (처음부터 다시)
         var saveData = SaveLoadManager.Data as SaveDataV1;
+        
+        // 66006 스테이지(세라 스토리 2)는 패배가 연출의 일부 - 패배창 없이 스토리로 복귀
+        if (currentStageData != null && currentStageData.stage_ID == 66006)
+        {
+            Debug.Log("[StageManager] 66006 스테이지 패배 연출 - 스토리로 복귀");
+            
+            // storyScriptResumeIndex는 이미 StartBattleFromStory에서 설정되어 있음
+            // 패배해도 다음 스토리로 이어가야 하므로 리셋하지 않음
+            
+            Time.timeScale = 1f;
+            GetReward();
+            GameSceneManager.ChangeScene(SceneType.StoryScene);
+            return;
+        }
+        
+        // 다른 스토리 스테이지 패배 시 스토리 진행 상태 리셋 (처음부터 다시)
         if (saveData != null)
         {
             saveData.storyScriptResumeIndex = -1;
