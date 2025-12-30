@@ -514,6 +514,9 @@ public class TutorialStage : MonoBehaviour
 
     private void ActionDragArrow()
     {
+        // 즉시 화면 클릭 차단 및 드래그 대기 상태 설정
+        blockScreenClick = true;
+        isWaitingForCharacterDrag = true;
         ActionDragArrowAsync().Forget();
     }
 
@@ -535,9 +538,6 @@ public class TutorialStage : MonoBehaviour
 
             // 캐릭터 드래그 활성화 (정상적인 드래그 허용)
             EnableCharacterDragForPlacement();
-
-            blockScreenClick = true;
-            isWaitingForCharacterDrag = true;
 
             // 화살표를 대상 위에 표시하고 드래그 애니메이션 시작
             ShowDragArrowOnTarget(nextCharacterSlot);
@@ -701,6 +701,9 @@ public class TutorialStage : MonoBehaviour
 
         if (isPlaying)
         {
+            // 다음 캐릭터 배치를 위해 상태 설정
+            blockScreenClick = true;
+            isWaitingForCharacterDrag = true;
             ActionDragArrowAsync().Forget();
         }
     }
@@ -934,6 +937,9 @@ public class TutorialStage : MonoBehaviour
 
     private void ActionStartArrow()
     {
+        // 즉시 화면 클릭 차단 및 스타트 버튼 대기 상태 설정
+        blockScreenClick = true;
+        isWaitingForStartButton = true;
         ActionStartArrowAsync().Forget();
     }
 
@@ -986,12 +992,6 @@ public class TutorialStage : MonoBehaviour
 
             // 스타트 버튼을 일시적으로 비활성화 (음성 재생이 끝날 때까지)
             startButton.interactable = false;
-
-            // 화면 클릭 차단 (음성 재생 중에 클릭 방지)
-            blockScreenClick = true;
-
-            // 스타트 버튼 대기 상태로 설정 (음성 재생 전에 미리 설정)
-            isWaitingForStartButton = true;
 
             // 음성 재생 완료까지 대기
             await WaitForVoiceComplete();
@@ -1053,6 +1053,8 @@ public class TutorialStage : MonoBehaviour
 
     private void ActionBossFight()
     {
+        // 화면 클릭 즉시 차단 (StageClear로 넘어가는 것 방지)
+        blockScreenClick = true;
         ActionBossFightAsync().Forget();
     }
 
@@ -1071,8 +1073,6 @@ public class TutorialStage : MonoBehaviour
             currentScriptUI.gameObject.SetActive(false);
         }
 
-        // 화면 클릭 차단 (보스를 처치할 때까지)
-        blockScreenClick = true;
         isPlaying = false;
 
         // 스테이지 클리어 대기 시작 (보스 처치까지)
@@ -1147,6 +1147,9 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionBossAlertAsync()
     {
+        // 화면 클릭 차단 (보스 알람이 나오고 닫힐 때까지)
+        blockScreenClick = true;
+
         // 스크립트 UI 숨기기 (보스 알람 나올 때까지)
         if (currentScriptUI != null)
         {
@@ -1219,6 +1222,9 @@ public class TutorialStage : MonoBehaviour
                    stageManager.VictoryPanel != null &&
                    stageManager.VictoryPanel.gameObject.activeInHierarchy;
         });
+
+        // 화면 클릭 차단 해제
+        blockScreenClick = false;
 
         this.transform.SetAsLastSibling();
 
