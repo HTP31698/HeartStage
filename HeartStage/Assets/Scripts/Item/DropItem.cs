@@ -39,7 +39,14 @@ public class DropItem : MonoBehaviour
         this.targetPos = target;
 
         // sprite setting
-        spriteRenderer.sprite = ResourceManager.Instance.GetSprite(DataTableManager.ItemTable.Get(id).prefab);
+        if(id == ItemID.LightStick)
+        {
+            spriteRenderer.sprite = ResourceManager.Instance.GetSprite("DropLightstickImage");
+        }
+        else
+        {
+            spriteRenderer.sprite = ResourceManager.Instance.GetSprite(DataTableManager.ItemTable.Get(id).prefab);
+        }
         NormalizeSpriteSize(); 
     }
 
