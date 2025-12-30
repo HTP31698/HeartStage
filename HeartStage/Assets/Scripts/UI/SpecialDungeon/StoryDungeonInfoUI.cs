@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 
 public class StoryDungeonInfoUI : GenericWindow
 {
@@ -11,8 +12,21 @@ public class StoryDungeonInfoUI : GenericWindow
     [SerializeField] private Transform content;
     [SerializeField] private GameObject storyInfoPrefab;
 
+    [Header("Animation")]
+    [SerializeField] private float duration = 0.25f;
+    [SerializeField] private Ease expandEase = Ease.OutCubic;
+    [SerializeField] private Ease collapseEase = Ease.InCubic;
+
     private List<StoryInfoPrefab> createdStoryPrefabs = new List<StoryInfoPrefab>();
     private bool needsPositionFix = false; // 위치 수정이 필요한지 플래그
+    private Tween _tween;
+    private RectTransform _rectTransform;
+
+    protected override void Awake()
+    {
+        base.Awake();
+        _rectTransform = GetComponent<RectTransform>();
+    }
 
     public override void Open()
     {
@@ -24,13 +38,41 @@ public class StoryDungeonInfoUI : GenericWindow
         AdjustSiblingIndex();
 
         CreateFilteredStoryStages();
+
+        // Scale Y 애니메이션 (0 → 1)
+        _tween?.Kill();
+        transform.localScale = new Vector3(1, 0, 1);
+        _tween = transform.DOScaleY(1f, duration)
+            .SetEase(expandEase)
+            .OnUpdate(RebuildLayout);
     }
 
     public override void Close()
     {
-        base.Close();
+        // Scale Y 애니메이션 (1 → 0) 후 닫기
+        _tween?.Kill();
         needsPositionFix = false; // 플래그 리셋
-        ClearAllStoryStages();
+
+        _tween = transform.DOScaleY(0f, duration)
+            .SetEase(collapseEase)
+            .OnUpdate(RebuildLayout)
+            .OnComplete(() =>
+            {
+                ClearAllStoryStages();
+                base.Close();
+            });
+    }
+
+    private void RebuildLayout()
+    {
+        var parentRect = transform.parent as RectTransform;
+        if (parentRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(parentRect);
+    }
+
+    private void OnDestroy()
+    {
+        _tween?.Kill();
     }
 
     private void LateUpdate()

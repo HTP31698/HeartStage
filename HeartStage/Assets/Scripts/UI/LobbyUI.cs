@@ -85,6 +85,7 @@ public class LobbyUI : MonoBehaviour
         RefreshProfileIcon();
         CheckReturnToStageInfo();
         CheckReturnToStoryDungeon();
+        CheckReturnToSpecialDungeon();
         UpdateButtonStates(WindowManager.currentWindow, immediate: true);
     }
 
@@ -111,6 +112,21 @@ public class LobbyUI : MonoBehaviour
             stageInfoWindow.SetStageData(stageData);
             windowManager.OpenOverlayNoDim(WindowType.StageInfo);
         }
+    }
+
+    private void CheckReturnToSpecialDungeon()
+    {
+        var saveData = SaveLoadManager.Data;
+        if (saveData == null || !saveData.returnToSpecialDungeon)
+            return;
+
+        saveData.returnToSpecialDungeon = false;
+
+        // SpecialDungeon 창 열기
+        windowManager.Open(WindowType.SpecialDungeon);
+
+        // 특별 스테이지(무한 스테이지) 오버레이 열기
+        windowManager.OpenOverlay(WindowType.SpecialStage);
     }
 
     private void CheckReturnToStoryDungeon()

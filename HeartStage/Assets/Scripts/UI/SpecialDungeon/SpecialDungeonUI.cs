@@ -44,7 +44,7 @@ public class SpecialDungeonUI : GenericWindow
 
         // 스토리 오버레이가 열려있으면 먼저 닫기
         WindowManager.Instance.CloseAllOverlays();
-        WindowManager.Instance.OpenOverlay(WindowType.SpecialStage);
+        WindowManager.Instance.OpenOverlayNoDim(WindowType.SpecialStage);
     }
 
     private void OnStoryButtonClicked()

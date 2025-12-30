@@ -59,8 +59,6 @@ public static class FriendService
             _cachedReceivedRequests = received;
             _cachedSentRequests = sent;
             _isCacheLoaded = true;
-
-            Debug.Log($"[FriendService] 캐시 갱신 완료 - 친구: {friends.Count}, 받은 요청: {received.Count}, 보낸 요청: {sent.Count}");
         }
         catch (Exception e)
         {
@@ -98,7 +96,6 @@ public static class FriendService
         // UID별 동시성 제어
         if (_processingUids.Contains(targetUid))
         {
-            Debug.Log($"[FriendService] {targetUid}에 대한 요청이 이미 처리 중입니다.");
             return (false, "ALREADY_PROCESSING");
         }
 
@@ -128,7 +125,6 @@ public static class FriendService
             var friendSnap = await myFriendRef.GetValueAsync();
             if (friendSnap.Exists)
             {
-                Debug.Log("[FriendService] 이미 친구 상태입니다.");
                 return (false, "ALREADY_FRIEND");
             }
 
@@ -137,7 +133,6 @@ public static class FriendService
             var mySentSnap = await mySentRef.GetValueAsync();
             if (mySentSnap.Exists)
             {
-                Debug.Log("[FriendService] 이미 친구 요청을 보냈습니다. (sentRequests)");
                 return (false, "ALREADY_SENT");
             }
 
@@ -145,7 +140,6 @@ public static class FriendService
             var requestSnap = await requestRef.GetValueAsync();
             if (requestSnap.Exists)
             {
-                Debug.Log("[FriendService] 이미 친구 요청을 보냈습니다. (friendRequests)");
                 return (false, "ALREADY_SENT");
             }
 
@@ -161,7 +155,6 @@ public static class FriendService
             if (!_cachedSentRequests.Contains(targetUid))
                 _cachedSentRequests.Add(targetUid);
 
-            Debug.Log($"[FriendService] 친구 요청 전송 완료: {targetUid}");
             return (true, "SUCCESS");
         }
         catch (Exception e)
@@ -221,8 +214,6 @@ public static class FriendService
             {
                 result = allUids;
             }
-
-            Debug.Log($"[FriendService] 받은 친구 요청: {result.Count}개");
         }
         catch (Exception e)
         {
@@ -243,7 +234,6 @@ public static class FriendService
         // UID별 동시성 제어
         if (_processingUids.Contains(fromUid))
         {
-            Debug.Log($"[FriendService] {fromUid}에 대한 요청이 이미 처리 중입니다.");
             return false;
         }
 
@@ -255,7 +245,6 @@ public static class FriendService
             bool exists = await PublicProfileService.ExistsAsync(fromUid);
             if (!exists)
             {
-                Debug.Log("[FriendService] 탈퇴한 유저의 요청입니다. 요청만 정리합니다.");
                 await CleanupOrphanRequestsAsync(myUid, new List<string> { fromUid }, isReceived: true);
                 return false;
             }
@@ -265,13 +254,11 @@ public static class FriendService
 
             if (currentCount >= MAX_FRIEND_COUNT)
             {
-                Debug.Log($"[FriendService] 친구 수가 최대치({MAX_FRIEND_COUNT}명)입니다.");
                 return false;
             }
 
             if (friendSnap.Exists && friendSnap.HasChild(fromUid))
             {
-                Debug.Log("[FriendService] 이미 친구 상태입니다. 요청만 정리합니다.");
 
                 var cleanupUpdates = new Dictionary<string, object>
                 {
@@ -293,7 +280,6 @@ public static class FriendService
 
             await Root.UpdateChildrenAsync(updates);
 
-            Debug.Log($"[FriendService] 친구 요청 수락 완료: {fromUid}");
             return true;
         }
         catch (Exception e)
@@ -326,7 +312,6 @@ public static class FriendService
 
             await Root.UpdateChildrenAsync(updates);
 
-            Debug.Log($"[FriendService] 친구 요청 거절 완료: {fromUid}");
             return true;
         }
         catch (Exception e)
@@ -424,7 +409,6 @@ public static class FriendService
 
             await DreamEnergyGiftService.CleanupGiftsWithFriendAsync(friendUid);
 
-            Debug.Log($"[FriendService] 친구 삭제 + 선물 정리 완료: {friendUid}");
             return true;
         }
         catch (Exception e)
@@ -484,8 +468,6 @@ public static class FriendService
             {
                 result = allUids;
             }
-
-            Debug.Log($"[FriendService] 보낸 친구 요청: {result.Count}개");
         }
         catch (Exception e)
         {
@@ -513,7 +495,6 @@ public static class FriendService
 
             await Root.UpdateChildrenAsync(updates);
 
-            Debug.Log($"[FriendService] 보낸 요청 취소 완료: {toUid}");
             return true;
         }
         catch (Exception e)
@@ -575,8 +556,6 @@ public static class FriendService
             }
 
             await Root.UpdateChildrenAsync(updates);
-
-            Debug.Log($"[FriendService] 탈퇴 유저 친구 관계 정리: {deletedUids.Count}명");
         }
         catch (Exception e)
         {
@@ -611,8 +590,6 @@ public static class FriendService
             }
 
             await Root.UpdateChildrenAsync(updates);
-
-            Debug.Log($"[FriendService] 탈퇴 유저 요청 정리 ({(isReceived ? "받은" : "보낸")}): {deletedUids.Count}개");
         }
         catch (Exception e)
         {
