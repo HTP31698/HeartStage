@@ -9,6 +9,7 @@ public class LobbyUI : MonoBehaviour
     [Header("Reference")]
     [SerializeField] private WindowManager windowManager;
     [SerializeField] private StageInfoWindow stageInfoWindow;
+    [SerializeField] private OptionPanelUI optionPanelUI;
 
     [Header("Button")]
     [SerializeField] private Button stageUiButton;
@@ -242,6 +243,9 @@ public class LobbyUI : MonoBehaviour
         bool isDungeon = (currentType == WindowType.SpecialDungeon);
         specialDungeonButton.interactable = !isDungeon;
         AnimateButton(specialDungeonButton, specialDungeonText, isDungeon, immediate);
+
+        // OptionPanelUI가 열려있으면 닫기 (Hide는 _isOpen일 때만 동작)
+        optionPanelUI?.Hide();
     }
 
     /// <summary>

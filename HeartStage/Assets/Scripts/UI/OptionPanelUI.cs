@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 
 public class OptionPanelUI : MonoBehaviour
 {
@@ -8,10 +9,26 @@ public class OptionPanelUI : MonoBehaviour
     [SerializeField] private Button settingButton;
     [SerializeField] private GameObject mailNotificationDot; // 빨간 점 알림용 GameObject
 
+    [Header("Panel Animation")]
+    [SerializeField] private float duration = 0.25f;
+    [SerializeField] private Ease easeOpen = Ease.OutCubic;
+    [SerializeField] private Ease easeClose = Ease.InCubic;
+
+    private RectTransform _rectTransform;
+    private Tween _tween;
+
     private void Awake()
     {
+        EnsureInitialized();
+
         mailButton.onClick.AddListener(OnMailButtonClicked);
         settingButton.onClick.AddListener(OnSettingButtonClicked);
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_rectTransform == null)
+            _rectTransform = GetComponent<RectTransform>();
     }
 
     private void OnEnable()
@@ -127,4 +144,55 @@ public class OptionPanelUI : MonoBehaviour
             mailNotificationDot.SetActive(show);
         }
     }
+
+    #region Panel Animation
+
+    public void Toggle()
+    {
+        if (gameObject.activeSelf)
+            Hide();
+        else
+            Show();
+    }
+
+    public void Hide()
+    {
+        if (!gameObject.activeSelf) return;
+
+        EnsureInitialized();
+        _tween?.Kill();
+        _tween = _rectTransform.DOScaleY(0f, duration)
+            .SetEase(easeClose)
+            .OnComplete(() => gameObject.SetActive(false));
+    }
+
+    public void Show()
+    {
+        if (gameObject.activeSelf) return;
+
+        EnsureInitialized();
+        gameObject.SetActive(true);
+        _rectTransform.localScale = new Vector3(1, 0, 1);
+        _tween?.Kill();
+        _tween = _rectTransform.DOScaleY(1f, duration).SetEase(easeOpen);
+        SoundManager.Instance.PlayUIButtonClickSound();
+    }
+
+    public void HideImmediate()
+    {
+        EnsureInitialized();
+        _tween?.Kill();
+        _rectTransform.localScale = new Vector3(1, 0, 1);
+        gameObject.SetActive(false);
+    }
+
+    public void ShowImmediate()
+    {
+        EnsureInitialized();
+        gameObject.SetActive(true);
+        _tween?.Kill();
+        _rectTransform.localScale = Vector3.one;
+    }
+
+    #endregion
 }

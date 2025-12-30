@@ -36,6 +36,11 @@ public class WindowManager : MonoBehaviour
     /// </summary>
     public event Action OnDimClicked;
 
+    /// <summary>
+    /// 모든 오버레이가 닫혔을 때 발생하는 이벤트
+    /// </summary>
+    public event Action OnAllOverlaysClosed;
+
     private CanvasGroup _dimCanvasGroup;
     private Image _dimImage;
     private float _dimTargetAlpha;
@@ -363,6 +368,12 @@ public class WindowManager : MonoBehaviour
         if (dimmedOverlays.Count == 0)
         {
             HideDimmedBackground();
+        }
+
+        // 모든 오버레이가 닫혔으면 이벤트 발생
+        if (activeOverlays.Count == 0)
+        {
+            OnAllOverlaysClosed?.Invoke();
         }
     }
 
