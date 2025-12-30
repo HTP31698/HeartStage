@@ -29,6 +29,8 @@ public class StoryManager : MonoBehaviour
     private bool isPlaying = false;
     private bool isTyping = false;
     private bool isAutoMode = false;
+    private bool isReturnedFromBattle = false; // 전투 복귀 플래그
+    private bool hasCompletedBattle = false; // 전투 완료 후 스토리 진행 중인지 여부
     public bool IsInitialized => isInitialized;
 
     private async void Start()
@@ -75,10 +77,22 @@ public class StoryManager : MonoBehaviour
 
         // 전투 후 복귀인 경우 저장된 인덱스부터 시작
         var saveData = SaveLoadManager.Data as SaveDataV1;
+        Debug.Log($"[StoryManager] LoadStageScript - storyScriptResumeIndex: {saveData?.storyScriptResumeIndex ?? -999}");
+        
         if (saveData != null && saveData.storyScriptResumeIndex >= 0)
         {
             currentScriptIndex = saveData.storyScriptResumeIndex;
+            isReturnedFromBattle = true; // 전투 복귀 플래그 설정
+            hasCompletedBattle = true; // 전투 완료 후 스토리 진행 중
+            Debug.Log($"[StoryManager] 전투 복귀 - currentScriptIndex를 {currentScriptIndex}로 설정");
             saveData.storyScriptResumeIndex = -1; // 복귀 후 리셋
+        }
+        else
+        {
+            currentScriptIndex = 0; // 처음부터 시작
+            isReturnedFromBattle = false;
+            hasCompletedBattle = false;
+            Debug.Log("[StoryManager] 처음부터 시작 - currentScriptIndex = 0");
         }
 
         if (currentScripts == null || currentScripts.Count == 0)
@@ -150,7 +164,13 @@ public class StoryManager : MonoBehaviour
         }
 
         isPlaying = true;
-        currentScriptIndex = 0;
+        
+        // 전투 복귀가 아닌 경우에만 처음부터 시작
+        if (!isReturnedFromBattle)
+        {
+            currentScriptIndex = 0;
+        }
+        Debug.Log($"[StoryManager] StartCutscene - isReturnedFromBattle: {isReturnedFromBattle}, currentScriptIndex: {currentScriptIndex}");
 
         ShowCurrentScript();
     }
@@ -257,6 +277,14 @@ public class StoryManager : MonoBehaviour
     /// 현재 라인에서 전투를 시작해야 하는지 체크
     private bool ShouldStartBattle()
     {
+        // 전투 복귀 후에는 전투 시작 조건 스킵 (무한 루프 방지)
+        if (isReturnedFromBattle)
+        {
+            Debug.Log("[StoryManager] 전투 복귀 상태 - 전투 시작 조건 스킵");
+            isReturnedFromBattle = false; // 플래그 리셋
+            return false;
+        }
+
         if (currentScripts == null || currentScriptIndex >= currentScripts.Count)
             return false;
 
@@ -278,14 +306,15 @@ public class StoryManager : MonoBehaviour
     }
 
     /// 스토리 중간에 전투 시작
-    private void StartBattleFromStory()
+    private async void StartBattleFromStory()
     {
         // 다음 라인 인덱스 저장 (전투 클리어 후 이어서 진행)
         var saveData = SaveLoadManager.Data as SaveDataV1;
         if (saveData != null)
         {
             saveData.storyScriptResumeIndex = currentScriptIndex + 1;
-            SaveLoadManager.SaveToServer().Forget();
+            Debug.Log($"[StoryManager] 전투 시작 - storyScriptResumeIndex 저장: {saveData.storyScriptResumeIndex}");
+            await SaveLoadManager.SaveToServer(); // 저장 완료까지 대기
         }
 
         // 컷씬 종료 시 음성 정지
@@ -337,6 +366,12 @@ public class StoryManager : MonoBehaviour
         if (IsNonCombatStoryStage(selectedStageId))
         {
             // 전투 없이 바로 보상창 표시
+            ShowStoryRewardDirectly(selectedStageId);
+        }
+        else if (hasCompletedBattle)
+        {
+            // 전투 완료 후 스토리가 끝난 경우 보상창 표시
+            Debug.Log("[StoryManager] 전투 완료 후 스토리 종료 - 보상창 표시");
             ShowStoryRewardDirectly(selectedStageId);
         }
         else

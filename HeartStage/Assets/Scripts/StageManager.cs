@@ -503,9 +503,10 @@ public class StageManager : MonoBehaviour
 
         if (windowManager != null)
         {
-            // 전투가 없는 스토리 스테이지인지 확인 
+            // 전투가 없는 스토리 스테이지인지 확인 (story_type이 1인 스테이지)
             bool isNonCombatStoryStage = currentStageData != null &&
-                                       (currentStageData.stage_ID == 66001 || currentStageData.stage_ID == 66004);
+                                       (currentStageData.stage_ID == 66001 || currentStageData.stage_ID == 66004 ||
+                                        currentStageData.stage_ID == 66005 || currentStageData.stage_ID == 66008);
 
             // 전투가 있는 스토리 스테이지인지 확인 
             bool isCombatStoryStage = currentStageData != null &&
@@ -522,14 +523,21 @@ public class StageManager : MonoBehaviour
                 // 전투 있는 스토리 스테이지 클리어 시
                 // 남은 스토리가 있으면 스토리 씬으로 돌아가기
                 var saveData = SaveLoadManager.Data as SaveDataV1;
+                Debug.Log($"[StageManager] 전투 스토리 스테이지 클리어 - storyScriptResumeIndex: {saveData?.storyScriptResumeIndex ?? -999}");
+                
                 if (saveData != null && saveData.storyScriptResumeIndex >= 0)
                 {
-                    // 스토리 씬으로 돌아가서 이어서 진행
+                    // 보상 지급 후 스토리 씬으로 돌아가기
+                    Debug.Log("[StageManager] 남은 스토리가 있음 - 스토리 씬으로 복귀");
+                    Time.timeScale = 1f;
+                    GetReward();
                     GameSceneManager.ChangeScene(SceneType.StoryScene);
+                    return; // 여기서 리턴하여 아래 GetReward() 중복 호출 방지
                 }
                 else
                 {
                     // 스토리 끝나면 보상창 표시
+                    Debug.Log("[StageManager] 스토리 완료 - 보상창 표시");
                     windowManager.OpenOverlay(WindowType.StoryStageReward);
                 }
             }

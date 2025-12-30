@@ -167,6 +167,12 @@ public class OwnedCharacterSetup : MonoBehaviour
             return null;
         }
 
+        // member_count가 1보다 크면 모든 캐릭터 표시 (필터링 안 함)
+        if (storyStageData.member_count > 1)
+        {
+            return null;
+        }
+
         // need_char 필드에서 필요한 캐릭터 이름 추출
         string needChar = storyStageData.need_char;
         if (string.IsNullOrEmpty(needChar) || needChar.Equals("none", System.StringComparison.OrdinalIgnoreCase))
