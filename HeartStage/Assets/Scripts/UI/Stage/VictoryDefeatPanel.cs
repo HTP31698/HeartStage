@@ -186,8 +186,22 @@ public class VictoryDefeatPanel : GenericWindow
             return;
         }
 
-        // ✅ 원래 게임 동작
-        WindowManager.currentWindow = WindowType.StageSelect;
+        // StageManager.isInfiniteMode 사용 (SaveData.isInfiniteMode는 InitStage에서 이미 리셋됨)
+        var saveData = SaveLoadManager.Data;
+        bool isInfinite = StageManager.Instance != null && StageManager.Instance.isInfiniteMode;
+
+        if (isInfinite)
+        {
+            saveData.returnToSpecialDungeon = true;
+            saveData.returnToStageInfo = false;
+            WindowManager.currentWindow = WindowType.SpecialDungeon;
+        }
+        else
+        {
+            // ✅ 원래 게임 동작
+            WindowManager.currentWindow = WindowType.StageSelect;
+        }
+
         LoadSceneManager.Instance.GoLobby();
     }
 }

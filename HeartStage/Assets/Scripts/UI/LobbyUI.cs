@@ -9,6 +9,7 @@ public class LobbyUI : MonoBehaviour
     [Header("Reference")]
     [SerializeField] private WindowManager windowManager;
     [SerializeField] private StageInfoWindow stageInfoWindow;
+    [SerializeField] private OptionPanelUI optionPanelUI;
 
     [Header("Button")]
     [SerializeField] private Button stageUiButton;
@@ -84,6 +85,7 @@ public class LobbyUI : MonoBehaviour
         RefreshProfileIcon();
         CheckReturnToStageInfo();
         CheckReturnToStoryDungeon();
+        CheckReturnToSpecialDungeon();
         UpdateButtonStates(WindowManager.currentWindow, immediate: true);
     }
 
@@ -110,6 +112,21 @@ public class LobbyUI : MonoBehaviour
             stageInfoWindow.SetStageData(stageData);
             windowManager.OpenOverlayNoDim(WindowType.StageInfo);
         }
+    }
+
+    private void CheckReturnToSpecialDungeon()
+    {
+        var saveData = SaveLoadManager.Data;
+        if (saveData == null || !saveData.returnToSpecialDungeon)
+            return;
+
+        saveData.returnToSpecialDungeon = false;
+
+        // SpecialDungeon 창 열기
+        windowManager.Open(WindowType.SpecialDungeon);
+
+        // 특별 스테이지(무한 스테이지) 오버레이 열기
+        windowManager.OpenOverlay(WindowType.SpecialStage);
     }
 
     private void CheckReturnToStoryDungeon()
@@ -242,6 +259,9 @@ public class LobbyUI : MonoBehaviour
         bool isDungeon = (currentType == WindowType.SpecialDungeon);
         specialDungeonButton.interactable = !isDungeon;
         AnimateButton(specialDungeonButton, specialDungeonText, isDungeon, immediate);
+
+        // OptionPanelUI가 열려있으면 닫기 (Hide는 _isOpen일 때만 동작)
+        optionPanelUI?.Hide();
     }
 
     /// <summary>

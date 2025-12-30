@@ -38,7 +38,6 @@ public static class DreamEnergyGiftService
         _pendingGiftCount = 0;
         _pendingGiftCountLoaded = true;
         _pendingGiftsByFriend.Clear();
-        Debug.Log("[DreamEnergyGiftService] pending gift cache reset");
     }
 
     private static string GetMyUid()
@@ -177,7 +176,6 @@ public static class DreamEnergyGiftService
 
             if (!snap.Exists)
             {
-                Debug.Log("[DreamEnergyGiftService] dreamGifts 데이터 없음");
                 _pendingGiftCount = 0;
                 _pendingGiftCountLoaded = true;
                 return;
@@ -222,7 +220,6 @@ public static class DreamEnergyGiftService
     {
         if (_isSending)
         {
-            Debug.Log("[DreamEnergyGiftService] 이미 전송 중입니다.");
             return false;
         }
 
@@ -250,7 +247,6 @@ public static class DreamEnergyGiftService
 
             if (alreadySentSnap.Exists)
             {
-                Debug.Log($"[DreamEnergyGiftService] 오늘 이미 {friendUid}에게 선물을 보냈습니다.");
                 _sentTodayCache.Add(friendUid);
                 _sentTodayCacheDate = today;
                 return false;
@@ -287,7 +283,6 @@ public static class DreamEnergyGiftService
             data.dreamSendTodayCount++;
             SaveLoadManager.SaveToServer().Forget();
 
-            Debug.Log($"[DreamEnergyGiftService] 드림 에너지 선물 전송 완료: {friendUid}");
             return true;
         }
         catch (Exception e)
@@ -331,7 +326,6 @@ public static class DreamEnergyGiftService
     {
         if (_isClaiming)
         {
-            Debug.Log("[DreamEnergyGiftService] 이미 수령 중입니다.");
             return 0;
         }
 
@@ -356,7 +350,6 @@ public static class DreamEnergyGiftService
 
             if (!snap.Exists)
             {
-                Debug.Log("[DreamEnergyGiftService] 받을 선물이 없습니다.");
                 ResetPendingGiftCache();
                 return 0;
             }
@@ -378,7 +371,6 @@ public static class DreamEnergyGiftService
                     // ★ 일일 제한 체크
                     if (data.dreamReceiveTodayCount + (totalReceived / GiftAmountPerSend) >= data.dreamReceiveDailyLimit)
                     {
-                        Debug.Log($"[DreamEnergyGiftService] 일일 받기 한도({data.dreamReceiveDailyLimit}) 도달. 일부만 받거나 중단합니다.");
                         break;
                     }
 
@@ -415,12 +407,9 @@ public static class DreamEnergyGiftService
                 }
 
                 ResetPendingGiftCache();
-
-                Debug.Log($"[DreamEnergyGiftService] 드림 에너지 수령 완료: +{totalReceived}");
             }
             else
             {
-                Debug.Log("[DreamEnergyGiftService] 받을 수 있는 선물이 없습니다.");
                 ResetPendingGiftCache();
             }
 
@@ -530,7 +519,6 @@ public static class DreamEnergyGiftService
             if (updates.Count > 0)
             {
                 await Root.UpdateChildrenAsync(updates);
-                Debug.Log($"[DreamEnergyGiftService] 하루 기준 초과한 선물/보낸 로그 정리 완료 ({updates.Count}개 항목)");
             }
         }
         catch (Exception e)
@@ -588,7 +576,6 @@ public static class DreamEnergyGiftService
             if (updates.Count > 0)
             {
                 await Root.UpdateChildrenAsync(updates);
-                Debug.Log($"[DreamEnergyGiftService] 친구 삭제에 따라 {friendUid}와 관련된 선물 정리 완료 ({updates.Count}개 항목)");
             }
         }
         catch (Exception e)
@@ -605,7 +592,6 @@ public static class DreamEnergyGiftService
     {
         if (_isClaiming)
         {
-            Debug.Log("[DreamEnergyGiftService] 이미 수령 중입니다.");
             return 0;
         }
 
@@ -630,7 +616,6 @@ public static class DreamEnergyGiftService
 
             if (!snap.Exists)
             {
-                Debug.Log("[DreamEnergyGiftService] 받을 선물이 없습니다.");
                 return 0;
             }
 
@@ -656,7 +641,6 @@ public static class DreamEnergyGiftService
                     // ★ 일일 제한 체크
                     if (data.dreamReceiveTodayCount + (totalReceived / GiftAmountPerSend) >= data.dreamReceiveDailyLimit)
                     {
-                        Debug.Log($"[DreamEnergyGiftService] 일일 받기 한도({data.dreamReceiveDailyLimit}) 도달.");
                         break;
                     }
 
@@ -695,12 +679,6 @@ public static class DreamEnergyGiftService
                     _pendingGiftsByFriend[fromUid] = Math.Max(0, _pendingGiftsByFriend[fromUid] - changedCount);
 
                 _pendingGiftCount = Math.Max(0, _pendingGiftCount - changedCount);
-
-                Debug.Log($"[DreamEnergyGiftService] {fromUid}에게 받은 선물 수령 완료: +{totalReceived}");
-            }
-            else
-            {
-                Debug.Log($"[DreamEnergyGiftService] {fromUid}에게 받은 선물이 없습니다.");
             }
 
             return totalReceived;

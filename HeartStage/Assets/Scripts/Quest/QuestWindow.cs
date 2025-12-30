@@ -92,7 +92,9 @@ public class QuestWindow : GenericWindow
         _isOpen = false;
 
         CloseAllContents();
-        gameObject.SetActive(false);
+
+        // base.Close()를 호출하여 WindowManager에게 딤 처리 알림
+        base.Close();
     }
 
     /// <summary>

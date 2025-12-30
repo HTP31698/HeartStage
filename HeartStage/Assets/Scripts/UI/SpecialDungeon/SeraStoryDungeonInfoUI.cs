@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
+using DG.Tweening;
 
 public class SeraStoryDungeonInfoUI : GenericWindow
 {
@@ -8,7 +10,13 @@ public class SeraStoryDungeonInfoUI : GenericWindow
     [SerializeField] private Transform content;
     [SerializeField] private GameObject seraStoryInfoPrefab;
 
+    [Header("Animation")]
+    [SerializeField] private float duration = 0.25f;
+    [SerializeField] private Ease expandEase = Ease.OutCubic;
+    [SerializeField] private Ease collapseEase = Ease.InCubic;
+
     private List<StoryInfoPrefab> createdStoryPrefabs = new List<StoryInfoPrefab>();
+    private Tween _tween;
 
     public override void Open()
     {
@@ -17,12 +25,40 @@ public class SeraStoryDungeonInfoUI : GenericWindow
         AdjustSiblingIndex();
 
         CreateFilteredStoryStages();
+
+        // Scale Y 애니메이션 (0 → 1)
+        _tween?.Kill();
+        transform.localScale = new Vector3(1, 0, 1);
+        _tween = transform.DOScaleY(1f, duration)
+            .SetEase(expandEase)
+            .OnUpdate(RebuildLayout);
     }
 
     public override void Close()
     {
-        base.Close();
-        ClearAllStoryStages();
+        // Scale Y 애니메이션 (1 → 0) 후 닫기
+        _tween?.Kill();
+
+        _tween = transform.DOScaleY(0f, duration)
+            .SetEase(collapseEase)
+            .OnUpdate(RebuildLayout)
+            .OnComplete(() =>
+            {
+                ClearAllStoryStages();
+                base.Close();
+            });
+    }
+
+    private void RebuildLayout()
+    {
+        var parentRect = transform.parent as RectTransform;
+        if (parentRect != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(parentRect);
+    }
+
+    private void OnDestroy()
+    {
+        _tween?.Kill();
     }
 
     /// 세라 스토리 프리팹 바로 뒤에 위치하도록

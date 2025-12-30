@@ -187,16 +187,31 @@ public class StageSetupWindow : MonoBehaviour
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
 
-        // 사용한 에너지 환불
-        var stageData = StageManager.Instance?.GetCurrentStageData();
-        if (stageData != null && stageData.debut_stamina > 0)
-        {
-            ItemInvenHelper.AddItem(ItemID.DreamEnergy, stageData.debut_stamina);
-            Debug.Log($"[StageSetupWindow] 에너지 환불: {stageData.debut_stamina}");
-        }
+        var saveData = SaveLoadManager.Data;
 
-        // 돌아가기 플래그 설정 (로비에서 StageInfoWindow 자동 오픈용)
-        SaveLoadManager.Data.returnToStageInfo = true;
+        // StageManager.isInfiniteMode 사용 (SaveData.isInfiniteMode는 InitStage에서 이미 리셋됨)
+        bool isInfinite = StageManager.Instance != null && StageManager.Instance.isInfiniteMode;
+
+        if (isInfinite)
+        {
+            // 무한 스테이지 취소 - SpecialDungeon으로 복귀
+            saveData.returnToSpecialDungeon = true;
+            saveData.returnToStageInfo = false;
+        }
+        else
+        {
+            // 일반 스테이지 - 사용한 에너지 환불
+            var stageData = StageManager.Instance?.GetCurrentStageData();
+            if (stageData != null && stageData.debut_stamina > 0)
+            {
+                ItemInvenHelper.AddItem(ItemID.DreamEnergy, stageData.debut_stamina);
+                Debug.Log($"[StageSetupWindow] 에너지 환불: {stageData.debut_stamina}");
+            }
+
+            // 돌아가기 플래그 설정 (로비에서 StageInfoWindow 자동 오픈용)
+            saveData.returnToStageInfo = true;
+            saveData.returnToSpecialDungeon = false;
+        }
 
         // 타임스케일 복원 후 로비로 이동
         Time.timeScale = 1f;
@@ -316,6 +331,9 @@ public class StageSetupWindow : MonoBehaviour
         await UniTask.Yield();
 
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+        // 무한 스테이지일 때 횟수 차감
+        DeductInfiniteStageCount();
 
         StageManager.Instance.SetTimeScale(1f);
 
@@ -761,6 +779,39 @@ public class StageSetupWindow : MonoBehaviour
             buffs[statType] = 0f;
 
         buffs[statType] += value;
+    }
+
+    #endregion
+
+    #region 무한 스테이지 횟수 관리
+
+    /// <summary>
+    /// 무한 스테이지 시작 시 횟수 차감
+    /// </summary>
+    private void DeductInfiniteStageCount()
+    {
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+
+        // StageManager.isInfiniteMode 사용 (SaveData.isInfiniteMode는 InitStage에서 이미 리셋됨)
+        bool isInfinite = StageManager.Instance != null && StageManager.Instance.isInfiniteMode;
+
+        Debug.Log($"[StageSetupWindow] DeductInfiniteStageCount 호출 - saveData: {saveData != null}, StageManager.isInfiniteMode: {isInfinite}");
+
+        if (saveData == null || !isInfinite) return;
+
+        // 날짜 체크 - 새로운 날이면 리셋
+        int today = int.Parse(System.DateTime.Now.ToString("yyyyMMdd"));
+        if (saveData.infiniteStageLastPlayDate != today)
+        {
+            saveData.infiniteStageLastPlayDate = today;
+            saveData.infiniteStagePlayCountToday = 0;
+        }
+
+        // 횟수 증가 (사용 횟수)
+        saveData.infiniteStagePlayCountToday++;
+        SaveLoadManager.SaveToServer().Forget();
+
+        Debug.Log($"[StageSetupWindow] 무한 스테이지 횟수 차감 완료: {saveData.infiniteStagePlayCountToday}회 사용");
     }
 
     #endregion
