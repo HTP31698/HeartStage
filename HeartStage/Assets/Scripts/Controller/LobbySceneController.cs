@@ -279,6 +279,8 @@ public class LobbySceneController : MonoBehaviour
 
         // 🔹 로딩 UI 닫기
         await SceneLoader.HideLoadingWithDelay(0);
+
+        SoundManager.Instance?.PlayBGM(SoundName.BGM_Lobby);
     }
 
     #endregion

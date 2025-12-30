@@ -928,11 +928,45 @@ public class TutorialStage : MonoBehaviour
         HideAllArrows();
         if (returnButton != null)
         {
-            ShowArrowOnTarget(returnButton.transform);
+            ShowArrowOnTarget(returnButton.transform); 
         }
     }
 
     private void ActionStartArrow()
+    {
+        ActionStartArrowAsync().Forget();
+    }
+
+
+    //private void ActionStartArrow()
+    //{
+    //    HideAllArrows();
+
+    //    if (startButton != null)
+    //    {
+    //        // 패널을 투명하게 설정
+    //        SetPanelTransparent();
+
+    //        // 다른 버튼들 비활성화
+    //        DisableOtherButtons();
+
+    //        // 캐릭터 드래그/클릭 비활성화
+    //        DisableCharacterInteraction();
+
+    //        // 배치된 캐릭터들을 빼는 것 방지
+    //        DisableCharacterSlotDragging();
+
+    //        // 스타트 버튼 클릭 이벤트 등록
+    //        startButton.onClick.AddListener(OnStartButtonClicked);
+
+    //        // 스타트 버튼 대기 상태로 설정
+    //        isWaitingForStartButton = true;
+
+    //        ShowArrowOnTarget(startButton.transform);
+    //    }
+    //}
+
+    private async UniTaskVoid ActionStartArrowAsync()
     {
         HideAllArrows();
 
@@ -950,13 +984,29 @@ public class TutorialStage : MonoBehaviour
             // 배치된 캐릭터들을 빼는 것 방지
             DisableCharacterSlotDragging();
 
-            // 스타트 버튼 클릭 이벤트 등록
-            startButton.onClick.AddListener(OnStartButtonClicked);
+            // 스타트 버튼을 일시적으로 비활성화 (음성 재생이 끝날 때까지)
+            startButton.interactable = false;
 
-            // 스타트 버튼 대기 상태로 설정
+            // 화면 클릭 차단 (음성 재생 중에 클릭 방지)
+            blockScreenClick = true;
+
+            // 스타트 버튼 대기 상태로 설정 (음성 재생 전에 미리 설정)
             isWaitingForStartButton = true;
 
-            ShowArrowOnTarget(startButton.transform);
+            // 음성 재생 완료까지 대기
+            await WaitForVoiceComplete();
+
+            // 음성이 끝난 후에 스타트 버튼 활성화 및 이벤트 등록
+            if (startButton != null)
+            {
+                startButton.interactable = true;
+                startButton.onClick.AddListener(OnStartButtonClicked);
+
+                ShowArrowOnTarget(startButton.transform);
+            }
+
+            // 화면 클릭 차단 해제는 하지 않음 (스타트 버튼 클릭할 때까지 차단 유지)
+            // blockScreenClick은 OnStartButtonClicked에서 해제
         }
     }
 
@@ -983,9 +1033,35 @@ public class TutorialStage : MonoBehaviour
         }
     }
 
+    //private void ActionBossFight()
+    //{
+    //    HideAllArrows();
+
+    //    // 게임 재개
+    //    Time.timeScale = 1f;
+
+    //    if (currentScriptUI != null)
+    //    {
+    //        currentScriptUI.gameObject.SetActive(false);
+    //    }
+
+    //    isPlaying = false;
+
+    //    // 바로 StageClear 대기 시작
+    //    ActionStageClearAsync().Forget();
+    //}
+
     private void ActionBossFight()
     {
+        ActionBossFightAsync().Forget();
+    }
+
+    private async UniTaskVoid ActionBossFightAsync()
+    {
         HideAllArrows();
+
+        // 음성 재생 완료까지 대기 (대사 재생)
+        await WaitForVoiceComplete();
 
         // 게임 재개
         Time.timeScale = 1f;
@@ -995,12 +1071,13 @@ public class TutorialStage : MonoBehaviour
             currentScriptUI.gameObject.SetActive(false);
         }
 
+        // 화면 클릭 차단 (보스를 처치할 때까지)
+        blockScreenClick = true;
         isPlaying = false;
 
-        // 바로 StageClear 대기 시작
+        // 스테이지 클리어 대기 시작 (보스 처치까지)
         ActionStageClearAsync().Forget();
     }
-
     private void ActionResumeBattle()
     {
         // 화면 클릭 차단 (스킬 준비될 때까지)
@@ -1070,8 +1147,6 @@ public class TutorialStage : MonoBehaviour
 
     private async UniTaskVoid ActionBossAlertAsync()
     {
-        Debug.Log("[TutorialStage] BossAlert 대기 시작...");
-
         // 스크립트 UI 숨기기 (보스 알람 나올 때까지)
         if (currentScriptUI != null)
         {
@@ -1112,13 +1187,12 @@ public class TutorialStage : MonoBehaviour
 
         // 현재 스크립트(BossAlert)의 텍스트를 표시 (NextScript 하지 않음)
         var script = currentScripts[currentScriptIndex];
-        Debug.Log($"[TutorialStage] BossAlert 스크립트 표시: {script.Text}");
         
         // 음성 재생
         PlayVoiceForCurrentScript(script);
         
         // 타이핑 효과로 텍스트 표시 (executeAction=false로 다시 BossAlert 액션 실행 방지)
-        StartTypingEffect(script.Text, false);
+        StartTypingEffect(script.Text, false).Forget();
     }
 
     // StageClear 액션이 있는 스크립트 찾기
@@ -1672,8 +1746,9 @@ public class TutorialStage : MonoBehaviour
 
             EnableCharacterSlotDragging();
 
-            // 스타트 버튼 대기 상태 해제
+            // 스타트 버튼 대기 상태 해제 및 화면 클릭 차단 해제
             isWaitingForStartButton = false;
+            blockScreenClick = false; // 추가: 화면 클릭 차단 해제
 
             if (currentScriptUI != null)
             {

@@ -145,6 +145,18 @@ public class SoundName
     public static readonly string SFX_SonicAttack_Skill = string.Empty; // 엔터테이너 스킬(음파 공격), 세라 캐릭터 스킬
     public static readonly string SFX_ReverseCharm_Skill = string.Empty; // 반전매력 스킬(유혹), 리아 캐릭터 스킬
     public static readonly string SFX_HeartBomb_Skill = string.Empty; // 다이너마이트 스킬(광역 공격 + 스턴), 지안 캐릭터 스킬
+
+    public static readonly string BGM_Victory = "victory_bgm";
+    public static readonly string BGM_Defeat = "defeat_bgm";
+    public static readonly string BGM_Stage1 = "stage_1_bgm";
+    public static readonly string BGM_Stage2 = "stage_2_bgm";
+    public static readonly string BGM_Stage3 = "stage_3_bgm";
+    public static readonly string BGM_Stage4 = "stage_4_bgm";
+    public static readonly string BGM_Lobby = "lobby_bgm";
+    public static readonly string BGM_hanaStage2 = "hana_stage2_bgm";
+    public static readonly string BGM_hanaStage3 = "hana_stage3_bgm";
+    public static readonly string BGM_seraStage2 = "sera_stage2_bgm";
+    public static readonly string BGM_seraStage3 = "sera_stage3_bgm";
 }
 
 public class ItemID

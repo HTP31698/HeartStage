@@ -114,8 +114,6 @@ public class StageManager : MonoBehaviour
         string activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
         bool isInfinityScene = activeSceneName == "InfinityStage";
 
-        Debug.Log($"[StageManager] 씬: {activeSceneName}, 무한모드씬: {isInfinityScene}, infiniteStageId: {gameData.infiniteStageId}");
-
         // 무한 모드 체크 (InfinityStage 씬일 때만)
         if (isInfinityScene && gameData.infiniteStageId > 0)
         {
@@ -140,6 +138,7 @@ public class StageManager : MonoBehaviour
 
                 // 위치는 SO의 stage_position 직접 사용
                 SetStagePosition(infiniteData.stage_position);
+
 
                 // 플래그 리셋 (다음 씬에서 일반 모드로)
                 gameData.isInfiniteMode = false;
@@ -180,6 +179,8 @@ public class StageManager : MonoBehaviour
                 SetCurrentStageData(stageData);
                 SetBackgroundByStageData(stageData);
                 SetStagePosition(stageData);
+
+                PlayStageBGM(stageData);
 
                 // 현재 웨이브 설정
                 int startingWave = gameData.startingWave;
@@ -276,6 +277,35 @@ public class StageManager : MonoBehaviour
         {
             infiniteStageStarted = true;
         }
+    }
+
+    private void PlayStageBGM(StageData stageData)
+    {
+        if (stageData == null || SoundManager.Instance == null)
+            return;
+
+        Debug.Log($"[PlayStageBGM] stage_step1: {stageData.stage_step1}");
+
+        SoundManager.Instance.StopBGM();
+
+        string bgmName = SoundName.BGM_Stage1;
+        switch (stageData.stage_step1)
+        {
+            case 1:
+                bgmName = SoundName.BGM_Stage1;
+                break;
+            case 2:
+                bgmName = SoundName.BGM_Stage2;
+                break;
+            case 3:
+                bgmName = SoundName.BGM_Stage3;
+                break;
+            case 4:
+                bgmName = SoundName.BGM_Stage4;
+                break;
+        }
+
+        SoundManager.Instance.PlayBGM(bgmName);
     }
 
     // ========== 무한 모드 메서드 ==========
@@ -577,8 +607,6 @@ public class StageManager : MonoBehaviour
             backGroundSprite.sprite = sprite;
             return;
         }
-
-        Debug.LogWarning($"[StageManager] 배경 프리팹을 찾을 수 없음: {prefabName}");
     }
 
     private void SetStagePosition(StageData stageData)
