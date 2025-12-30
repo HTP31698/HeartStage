@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class SeraStoryDungeonInfoUI : GenericWindow
 {
@@ -9,10 +10,13 @@ public class SeraStoryDungeonInfoUI : GenericWindow
     [SerializeField] private GameObject seraStoryInfoPrefab;
 
     private List<StoryInfoPrefab> createdStoryPrefabs = new List<StoryInfoPrefab>();
+    private bool needsPositionFix = false; // 위치 수정이 필요한지 플래그
 
     public override void Open()
     {
         base.Open();
+
+        needsPositionFix = true; // 위치 수정 플래그 설정
 
         AdjustSiblingIndex();
 
@@ -22,7 +26,52 @@ public class SeraStoryDungeonInfoUI : GenericWindow
     public override void Close()
     {
         base.Close();
+        needsPositionFix = false; // 플래그 리셋
         ClearAllStoryStages();
+    }
+
+    private void LateUpdate()
+    {
+        // 위치 수정이 필요한 경우에만 계속 체크
+        if (needsPositionFix)
+        {
+            ForceCorrectPosition();
+        }
+    }
+
+    /// 강제로 올바른 위치에 배치
+    private void ForceCorrectPosition()
+    {
+        Transform parent = transform.parent;
+        if (parent == null) return;
+
+        // 세라 프리팹 찾기
+        int seraIndex = -1;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            if (parent.GetChild(i).name == "SeraStoryPrefab")
+            {
+                seraIndex = i;
+                break;
+            }
+        }
+
+        if (seraIndex == -1) return;
+
+        int targetIndex = seraIndex + 1;
+        int currentIndex = transform.GetSiblingIndex();
+
+        // 목표 위치가 아니면 계속 수정
+        if (currentIndex != targetIndex)
+        {
+            transform.SetSiblingIndex(targetIndex);
+
+            // 레이아웃 강제 업데이트
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(parent as RectTransform);
+
+            Debug.Log($"[SeraStoryDungeonInfoUI] 위치 강제 수정: {currentIndex} -> {targetIndex}");
+        }
     }
 
     /// 세라 스토리 프리팹 바로 뒤에 위치하도록

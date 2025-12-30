@@ -66,12 +66,25 @@ public class StoryStageRewardUI : GenericWindow
 
     private void RestoreStoryDungeonUI()
     {
+        // 기존에 열려있는 던전 인포 창 먼저 닫기
+        WindowManager.Instance.CloseOverlay(WindowType.StoryDungeonInfo);
+        WindowManager.Instance.CloseOverlay(WindowType.SeraStoryDungeonInfo);
+
         // 로비에서 바로 스토리 던전 UI 계층 열기
         WindowManager.Instance.Open(WindowType.SpecialDungeon);
         WindowManager.Instance.OpenOverlay(WindowType.StoryDungeon);
-        WindowManager.Instance.OpenOverlay(WindowType.StoryDungeonInfo);
 
-        Debug.Log("[StoryStageRewardUI] 로비에서 스토리 던전 UI 계층 복원");
+        // 현재 필터에 따라 적절한 던전 인포 열기
+        if (StoryDungeonUI.currentStoryFilter == "세라")
+        {
+            WindowManager.Instance.OpenOverlayNoDim(WindowType.SeraStoryDungeonInfo);
+        }
+        else
+        {
+            WindowManager.Instance.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
+        }
+
+        Debug.Log($"[StoryStageRewardUI] 로비에서 스토리 던전 UI 계층 복원 (필터: {StoryDungeonUI.currentStoryFilter})");
     }
 
     /// 스토리 스테이지 보상 정보 설정
