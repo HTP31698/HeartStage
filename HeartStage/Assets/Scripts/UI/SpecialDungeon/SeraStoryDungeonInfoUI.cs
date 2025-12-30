@@ -2,7 +2,6 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using DG.Tweening;
 
 public class SeraStoryDungeonInfoUI : GenericWindow
 {
@@ -10,55 +9,69 @@ public class SeraStoryDungeonInfoUI : GenericWindow
     [SerializeField] private Transform content;
     [SerializeField] private GameObject seraStoryInfoPrefab;
 
-    [Header("Animation")]
-    [SerializeField] private float duration = 0.25f;
-    [SerializeField] private Ease expandEase = Ease.OutCubic;
-    [SerializeField] private Ease collapseEase = Ease.InCubic;
-
     private List<StoryInfoPrefab> createdStoryPrefabs = new List<StoryInfoPrefab>();
-    private Tween _tween;
+    private bool needsPositionFix = false; // 위치 수정이 필요한지 플래그
 
     public override void Open()
     {
         base.Open();
 
+        needsPositionFix = true; // 위치 수정 플래그 설정
+
         AdjustSiblingIndex();
 
         CreateFilteredStoryStages();
-
-        // Scale Y 애니메이션 (0 → 1)
-        _tween?.Kill();
-        transform.localScale = new Vector3(1, 0, 1);
-        _tween = transform.DOScaleY(1f, duration)
-            .SetEase(expandEase)
-            .OnUpdate(RebuildLayout);
     }
 
     public override void Close()
     {
-        // Scale Y 애니메이션 (1 → 0) 후 닫기
-        _tween?.Kill();
+        base.Close();
+        needsPositionFix = false; // 플래그 리셋
+        ClearAllStoryStages();
+    }
 
-        _tween = transform.DOScaleY(0f, duration)
-            .SetEase(collapseEase)
-            .OnUpdate(RebuildLayout)
-            .OnComplete(() =>
+    private void LateUpdate()
+    {
+        // 위치 수정이 필요한 경우에만 계속 체크
+        if (needsPositionFix)
+        {
+            ForceCorrectPosition();
+        }
+    }
+
+    /// 강제로 올바른 위치에 배치
+    private void ForceCorrectPosition()
+    {
+        Transform parent = transform.parent;
+        if (parent == null) return;
+
+        // 세라 프리팹 찾기
+        int seraIndex = -1;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            if (parent.GetChild(i).name == "SeraStoryPrefab")
             {
-                ClearAllStoryStages();
-                base.Close();
-            });
-    }
+                seraIndex = i;
+                break;
+            }
+        }
 
-    private void RebuildLayout()
-    {
-        var parentRect = transform.parent as RectTransform;
-        if (parentRect != null)
-            LayoutRebuilder.ForceRebuildLayoutImmediate(parentRect);
-    }
+        if (seraIndex == -1) return;
 
-    private void OnDestroy()
-    {
-        _tween?.Kill();
+        int targetIndex = seraIndex + 1;
+        int currentIndex = transform.GetSiblingIndex();
+
+        // 목표 위치가 아니면 계속 수정
+        if (currentIndex != targetIndex)
+        {
+            transform.SetSiblingIndex(targetIndex);
+
+            // 레이아웃 강제 업데이트
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(parent as RectTransform);
+
+            Debug.Log($"[SeraStoryDungeonInfoUI] 위치 강제 수정: {currentIndex} -> {targetIndex}");
+        }
     }
 
     /// 세라 스토리 프리팹 바로 뒤에 위치하도록

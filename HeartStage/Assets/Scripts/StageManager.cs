@@ -180,7 +180,11 @@ public class StageManager : MonoBehaviour
                 SetBackgroundByStageData(stageData);
                 SetStagePosition(stageData);
 
-                PlayStageBGM(stageData);
+                // 튜토리얼 스테이지(601)는 BGM 재생 안함 (로비 음악 유지)
+                if (stageID != 601)
+                {
+                    PlayStageBGM(stageData);
+                }
 
                 // 현재 웨이브 설정
                 int startingWave = gameData.startingWave;
@@ -284,25 +288,48 @@ public class StageManager : MonoBehaviour
         if (stageData == null || SoundManager.Instance == null)
             return;
 
-        Debug.Log($"[PlayStageBGM] stage_step1: {stageData.stage_step1}");
-
         SoundManager.Instance.StopBGM();
 
         string bgmName = SoundName.BGM_Stage1;
-        switch (stageData.stage_step1)
+        int stageId = stageData.stage_ID;
+
+        // 하나/세라 스토리 스테이지 BGM 처리
+        if (stageId >= 66000 && stageId < 67000)
         {
-            case 1:
-                bgmName = SoundName.BGM_Stage1;
-                break;
-            case 2:
-                bgmName = SoundName.BGM_Stage2;
-                break;
-            case 3:
-                bgmName = SoundName.BGM_Stage3;
-                break;
-            case 4:
-                bgmName = SoundName.BGM_Stage4;
-                break;
+            var storyStageData = DataTableManager.StoryTable.GetStoryStage(stageId);
+            if (storyStageData != null)
+            {
+                string needChar = storyStageData.need_char ?? "";
+                int stageStep = stageData.stage_step1;
+
+                if (needChar.Contains("하나"))
+                {
+                    bgmName = (stageStep == 3) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
+                }
+                else if (needChar.Contains("세라"))
+                {
+                    bgmName = (stageStep == 3) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
+                }
+            }
+        }
+        else
+        {
+            // 일반 스테이지 BGM
+            switch (stageData.stage_step1)
+            {
+                case 1:
+                    bgmName = SoundName.BGM_Stage1;
+                    break;
+                case 2:
+                    bgmName = SoundName.BGM_Stage2;
+                    break;
+                case 3:
+                    bgmName = SoundName.BGM_Stage3;
+                    break;
+                case 4:
+                    bgmName = SoundName.BGM_Stage4;
+                    break;
+            }
         }
 
         SoundManager.Instance.PlayBGM(bgmName);
@@ -501,7 +528,8 @@ public class StageManager : MonoBehaviour
 
             // 전투가 있는 스토리 스테이지인지 확인 
             bool isCombatStoryStage = currentStageData != null &&
-                                    (currentStageData.stage_ID == 66002 || currentStageData.stage_ID == 66003);
+                                    currentStageData.stage_ID >= 66000 && currentStageData.stage_ID < 67000 &&
+                                    !isNonCombatStoryStage;
 
             if (isNonCombatStoryStage)
             {
@@ -510,8 +538,19 @@ public class StageManager : MonoBehaviour
             }
             else if (isCombatStoryStage)
             {
-                // 전투 있는 스토리 스테이지 클리어 시 
-                windowManager.OpenOverlay(WindowType.StoryStageReward);
+                // 전투 있는 스토리 스테이지 클리어 시
+                // 남은 스토리가 있으면 스토리 씬으로 돌아가기
+                var saveData = SaveLoadManager.Data as SaveDataV1;
+                if (saveData != null && saveData.storyScriptResumeIndex >= 0)
+                {
+                    // 스토리 씬으로 돌아가서 이어서 진행
+                    GameSceneManager.ChangeScene(SceneType.StoryScene);
+                }
+                else
+                {
+                    // 스토리 끝나면 보상창 표시
+                    windowManager.OpenOverlay(WindowType.StoryStageReward);
+                }
             }
             else
             {
@@ -527,6 +566,27 @@ public class StageManager : MonoBehaviour
     // 패배시
     public void Defeat()
     {
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+
+        // 세라 스토리 스테이지 66006에서만 패배해도 스토리 이어서 진행
+        bool isSeraStoryDefeatStage = currentStageData != null &&
+                                       currentStageData.stage_ID == 66006;
+
+        if (isSeraStoryDefeatStage && saveData != null && saveData.storyScriptResumeIndex >= 0)
+        {
+            // 스토리 씬으로 돌아가서 이어서 진행
+            Time.timeScale = 1f;
+            GetReward();
+            GameSceneManager.ChangeScene(SceneType.StoryScene);
+            return;
+        }
+
+        // 일반 스테이지 패배: storyScriptResumeIndex 리셋하고 패배 UI 표시
+        if (saveData != null)
+        {
+            saveData.storyScriptResumeIndex = -1;
+        }
+
         if (windowManager != null)
         {
             windowManager.OpenOverlay(WindowType.LosePanelUI);

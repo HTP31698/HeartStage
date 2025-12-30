@@ -145,11 +145,24 @@ public class LobbyUI : MonoBehaviour
 
         SaveLoadManager.SaveToServer().Forget();
 
+        // 기존에 열려있는 던전 인포 창 먼저 닫기
+        windowManager.CloseOverlay(WindowType.StoryDungeonInfo);
+        windowManager.CloseOverlay(WindowType.SeraStoryDungeonInfo);
+
         windowManager.Open(WindowType.SpecialDungeon);
         UpdateButtonStates(WindowType.SpecialDungeon);
 
         windowManager.OpenOverlayNoDim(WindowType.StoryDungeon);
-        windowManager.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
+
+        // 현재 필터에 따라 적절한 던전 인포 열기
+        if (StoryDungeonUI.currentStoryFilter == "세라")
+        {
+            windowManager.OpenOverlayNoDim(WindowType.SeraStoryDungeonInfo);
+        }
+        else
+        {
+            windowManager.OpenOverlayNoDim(WindowType.StoryDungeonInfo);
+        }
 
         if (showReward)
         {
@@ -157,7 +170,7 @@ public class LobbyUI : MonoBehaviour
             Debug.Log("[LobbyUI] 스토리 보상창 표시");
         }
 
-        Debug.Log("[LobbyUI] 스토리 던전 UI 계층 복원 완료");
+        Debug.Log($"[LobbyUI] 스토리 던전 UI 계층 복원 완료 (필터: {StoryDungeonUI.currentStoryFilter})");
     }
 
     private void OnShopUiButtonClicked()

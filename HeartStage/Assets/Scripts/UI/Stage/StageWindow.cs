@@ -105,13 +105,25 @@ public class StageWindow : GenericWindow
                 stageChoosePrefab.Initialize(stageData);
             }
 
+            // 스테이지 잠금 여부 확인 (이전 스테이지 클리어 필요)
+            bool isUnlocked = IsStageUnlocked(allStages, i);
+
             var button = stageObj.GetComponent<Button>();
             if (button != null)
             {
+                // 잠금 상태면 버튼 비활성화
+                button.interactable = isUnlocked;
+
                 // 지역 변수에 복사하여 각각의 값을 캡처
                 var capturedStageData = stageData; // 클로저 문제 해결
                 var capturedButton = button; // 버튼 참조도 캡처
                 button.onClick.AddListener(() => OnStageInfoButtonClicked(capturedStageData, capturedButton));
+            }
+
+            // StageChoosePrefab 잠금 UI 설정
+            if (stageChoosePrefab != null)
+            {
+                stageChoosePrefab.SetLocked(!isUnlocked);
             }
 
             // 스테이지 ID → 인덱스 맵핑 저장 (스크롤 위치 계산용)
@@ -125,6 +137,57 @@ public class StageWindow : GenericWindow
         Vector2 size = contentParent.sizeDelta;
         size.y = contentHeight;
         contentParent.sizeDelta = size;
+    }
+
+    /// <summary>
+    /// 스테이지가 잠금 해제 상태인지 확인
+    /// 첫 번째 스테이지(튜토리얼)는 항상 열림
+    /// 이후 스테이지는 이전 스테이지 클리어 시 열림
+    /// </summary>
+    private bool IsStageUnlocked(List<StageData> allStages, int currentIndex)
+    {
+        // 첫 번째 스테이지(튜토리얼)는 항상 열림
+        if (currentIndex == 0)
+            return true;
+
+        // 이전 스테이지 데이터 가져오기
+        var previousStage = allStages[currentIndex - 1];
+
+        // 이전 스테이지가 클리어되었는지 확인 (웨이브 기반)
+        return IsStageCleared(previousStage);
+    }
+
+    /// <summary>
+    /// 스테이지의 모든 웨이브가 클리어되었는지 확인
+    /// </summary>
+    private bool IsStageCleared(StageData stageData)
+    {
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData == null || saveData.clearWaveList == null)
+        {
+            return false;
+        }
+
+        // 웨이브 ID
+        int[] waveIds = {
+            stageData.wave1_id,
+            stageData.wave2_id,
+            stageData.wave3_id,
+            stageData.wave4_id
+        };
+
+        foreach (int waveId in waveIds)
+        {
+            if (waveId > 0)
+            {
+                if (!saveData.clearWaveList.Contains(waveId))
+                {
+                    return false; // 하나라도 클리어되지 않았으면 false
+                }
+            }
+        }
+
+        return true; // 모든 웨이브가 클리어되었으면 true
     }
 
     private void OnStageInfoButtonClicked(StageData stageData, Button fromButton)

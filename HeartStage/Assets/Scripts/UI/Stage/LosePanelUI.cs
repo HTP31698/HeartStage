@@ -11,6 +11,8 @@ public class LosePanelUI : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        SoundManager.Instance.PlayBGM(SoundName.BGM_Defeat, false);
     }
 
     public override void Close()

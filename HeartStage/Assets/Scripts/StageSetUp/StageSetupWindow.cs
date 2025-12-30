@@ -188,7 +188,17 @@ public class StageSetupWindow : MonoBehaviour
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
 
         var saveData = SaveLoadManager.Data;
+        var stageData2 = StageManager.Instance?.GetCurrentStageData();
+        // 스토리 스테이지에서 전투 시작 전 뒤로 가기 시 스토리 진행 상태 리셋
+        // (전투를 시작하지 않았으므로 다음에 입장하면 처음부터 시작해야 함)
+        if (saveData != null && stageData2 != null && stageData2.stage_ID >= 66000 && stageData2.stage_ID < 67000)
+        {
+            saveData.storyScriptResumeIndex = -1;
+            Debug.Log("[StageSetupWindow] 스토리 스테이지 전투 취소 - storyScriptResumeIndex 리셋");
+        }
 
+        // 돌아가기 플래그 설정 (로비에서 StageInfoWindow 자동 오픈용)
+        SaveLoadManager.Data.returnToStageInfo = true;
         // StageManager.isInfiniteMode 사용 (SaveData.isInfiniteMode는 InitStage에서 이미 리셋됨)
         bool isInfinite = StageManager.Instance != null && StageManager.Instance.isInfiniteMode;
 

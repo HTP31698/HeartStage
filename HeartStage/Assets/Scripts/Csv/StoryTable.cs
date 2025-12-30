@@ -8,9 +8,10 @@ public class StoryStageCSVData
 {
     public int story_stage_id { get; set; }
     public string story_stage_name { get; set; }
-    public int stage_type { get; set; }
+    public int story_type { get; set; }  // 스토리 타입 (1: 대화, 2: 전투)
     public string need_char { get; set; }
     public int need_rank { get; set; }
+    public int stage_type { get; set; }  // 스테이지 레이아웃 타입 (11, 12 등)
     public int member_count { get; set; }
     public int level_max { get; set; }
     public int Fever_Time_stack { get; set; }

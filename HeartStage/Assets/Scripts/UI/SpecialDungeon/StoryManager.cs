@@ -29,6 +29,8 @@ public class StoryManager : MonoBehaviour
     private bool isPlaying = false;
     private bool isTyping = false;
     private bool isAutoMode = false;
+    private bool isReturnedFromBattle = false; // 전투 복귀 플래그
+    private bool hasCompletedBattle = false; // 전투 완료 후 스토리 진행 중인지 여부
     public bool IsInitialized => isInitialized;
 
     private async void Start()
@@ -54,6 +56,12 @@ public class StoryManager : MonoBehaviour
             await UniTask.Yield();
         }
 
+        // BGM 정지 (로비 음악 포함)
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.StopBGM();
+        }
+
         var gameData = SaveLoadManager.Data;
         selectedStageId = gameData.selectedStageID;
 
@@ -66,6 +74,27 @@ public class StoryManager : MonoBehaviour
     private void LoadStageScript()
     {
         currentScripts = DataTableManager.StoryScriptTable.GetStageScripts(selectedStageId);
+
+        // 전투 후 복귀인 경우 저장된 인덱스부터 시작
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        Debug.Log($"[StoryManager] LoadStageScript - storyScriptResumeIndex: {saveData?.storyScriptResumeIndex ?? -999}");
+        
+        if (saveData != null && saveData.storyScriptResumeIndex >= 0)
+        {
+            currentScriptIndex = saveData.storyScriptResumeIndex;
+            isReturnedFromBattle = true; // 전투 복귀 플래그 설정
+            hasCompletedBattle = true; // 전투 완료 후 스토리 진행 중
+            Debug.Log($"[StoryManager] 전투 복귀 - currentScriptIndex를 {currentScriptIndex}로 설정");
+            // 주의: storyScriptResumeIndex는 여기서 리셋하지 않음
+            // StartCutscene()이 정상적으로 호출된 후에 리셋됨
+        }
+        else
+        {
+            currentScriptIndex = 0; // 처음부터 시작
+            isReturnedFromBattle = false;
+            hasCompletedBattle = false;
+            Debug.Log("[StoryManager] 처음부터 시작 - currentScriptIndex = 0");
+        }
 
         if (currentScripts == null || currentScripts.Count == 0)
         {
@@ -136,7 +165,16 @@ public class StoryManager : MonoBehaviour
         }
 
         isPlaying = true;
-        currentScriptIndex = 0;
+        
+        // 전투 복귀가 아닌 경우에만 처음부터 시작
+        if (!isReturnedFromBattle)
+        {
+            currentScriptIndex = 0;
+        }
+        // 전투 복귀 시: storyScriptResumeIndex는 여기서 리셋하지 않음
+        // OnCutsceneComplete()에서 스토리가 완전히 끝난 후 리셋됨
+        
+        Debug.Log($"[StoryManager] StartCutscene - isReturnedFromBattle: {isReturnedFromBattle}, currentScriptIndex: {currentScriptIndex}");
 
         ShowCurrentScript();
     }
@@ -227,10 +265,70 @@ public class StoryManager : MonoBehaviour
         }
         else
         {
+            // 전투 시작 라인인지 체크
+            if (ShouldStartBattle())
+            {
+                StartBattleFromStory();
+                return;
+            }
+
             // 다음 대사로 진행
             currentScriptIndex++;
             ShowCurrentScript();
         }
+    }
+
+    /// 현재 라인에서 전투를 시작해야 하는지 체크
+    private bool ShouldStartBattle()
+    {
+        // 전투 복귀 후에는 전투 시작 조건 스킵 (무한 루프 방지)
+        if (isReturnedFromBattle)
+        {
+            Debug.Log("[StoryManager] 전투 복귀 상태 - 전투 시작 조건 스킵");
+            isReturnedFromBattle = false; // 플래그 리셋
+            return false;
+        }
+
+        if (currentScripts == null || currentScriptIndex >= currentScripts.Count)
+            return false;
+
+        var currentScript = currentScripts[currentScriptIndex];
+        
+        // 66006 스테이지(세라 스토리 2)의 44번 라인 이후에 전투 시작
+        if (selectedStageId == 66006 && currentScript.Line == 44)
+        {
+            return true;
+        }
+
+        // 66007 스테이지(세라 스토리 3)의 69번 라인 이후에 전투 시작
+        if (selectedStageId == 66007 && currentScript.Line == 69)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    /// 스토리 중간에 전투 시작
+    private async void StartBattleFromStory()
+    {
+        // 다음 라인 인덱스 저장 (전투 클리어 후 이어서 진행)
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null)
+        {
+            saveData.storyScriptResumeIndex = currentScriptIndex + 1;
+            Debug.Log($"[StoryManager] 전투 시작 - storyScriptResumeIndex 저장: {saveData.storyScriptResumeIndex}");
+            await SaveLoadManager.SaveToServer(); // 저장 완료까지 대기
+        }
+
+        // 컷씬 종료 시 음성 정지
+        SoundManager.Instance?.StopVoiceSFX();
+
+        isPlaying = false;
+        isTyping = false;
+
+        // 전투 스테이지로 이동
+        GameSceneManager.ChangeScene(SceneType.StageScene);
     }
 
     private void OnAutoButtonClicked()
@@ -252,13 +350,58 @@ public class StoryManager : MonoBehaviour
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
 
-        OnCutsceneComplete();
+        // 전투 복귀 후에는 남은 스토리만 스킵 (보상창으로 이동)
+        if (hasCompletedBattle)
+        {
+            OnCutsceneComplete();
+            return;
+        }
+
+        // 전투 시작 라인 찾기
+        int battleStartIndex = FindBattleStartIndex();
+        
+        if (battleStartIndex >= 0)
+        {
+            // 전투 시작 라인까지 스킵하고 전투 시작
+            currentScriptIndex = battleStartIndex;
+            StartBattleFromStory();
+        }
+        else
+        {
+            // 전투가 없는 스테이지는 전체 스킵
+            OnCutsceneComplete();
+        }
+    }
+
+    /// 전투 시작 라인의 인덱스 찾기
+    private int FindBattleStartIndex()
+    {
+        if (currentScripts == null || currentScripts.Count == 0)
+            return -1;
+
+        for (int i = 0; i < currentScripts.Count; i++)
+        {
+            var script = currentScripts[i];
+            
+            // 66006 스테이지(세라 스토리 2)의 44번 라인
+            if (selectedStageId == 66006 && script.Line == 44)
+            {
+                return i;
+            }
+
+            // 66007 스테이지(세라 스토리 3)의 69번 라인
+            if (selectedStageId == 66007 && script.Line == 69)
+            {
+                return i;
+            }
+        }
+
+        return -1; // 전투 시작 라인 없음
     }
 
     private void UpdateAutoButtonVisual()
     {
         if (autoButton == null) return;
-        // 이미지 교체 해야함
     }
 
     private void OnCutsceneComplete()
@@ -269,10 +412,24 @@ public class StoryManager : MonoBehaviour
         isPlaying = false;
         isTyping = false;
 
+        // 스토리 완료 시 storyScriptResumeIndex 리셋
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null)
+        {
+            saveData.storyScriptResumeIndex = -1;
+            Debug.Log("[StoryManager] OnCutsceneComplete에서 storyScriptResumeIndex 리셋");
+        }
+
         // 전투가 없는 스테이지인지 확인하여 분기 처리
         if (IsNonCombatStoryStage(selectedStageId))
         {
             // 전투 없이 바로 보상창 표시
+            ShowStoryRewardDirectly(selectedStageId);
+        }
+        else if (hasCompletedBattle)
+        {
+            // 전투 완료 후 스토리가 끝난 경우 보상창 표시
+            Debug.Log("[StoryManager] 전투 완료 후 스토리 종료 - 보상창 표시");
             ShowStoryRewardDirectly(selectedStageId);
         }
         else
