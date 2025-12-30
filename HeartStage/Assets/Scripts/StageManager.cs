@@ -299,14 +299,14 @@ public class StageManager : MonoBehaviour
             var storyStageData = DataTableManager.StoryTable.GetStoryStage(stageId);
             if (storyStageData != null)
             {
-                string needChar = storyStageData.need_char?.ToLower() ?? "";
+                string needChar = storyStageData.need_char ?? "";
                 int stageStep = stageData.stage_step1;
 
-                if (needChar.Contains("hana"))
+                if (needChar.Contains("하나"))
                 {
                     bgmName = (stageStep == 3) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
                 }
-                else if (needChar.Contains("sera"))
+                else if (needChar.Contains("세라"))
                 {
                     bgmName = (stageStep == 3) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
                 }
@@ -528,7 +528,8 @@ public class StageManager : MonoBehaviour
 
             // 전투가 있는 스토리 스테이지인지 확인 
             bool isCombatStoryStage = currentStageData != null &&
-                                    (currentStageData.stage_ID == 66002 || currentStageData.stage_ID == 66003);
+                                    currentStageData.stage_ID >= 66000 && currentStageData.stage_ID < 67000 &&
+                                    !isNonCombatStoryStage;
 
             if (isNonCombatStoryStage)
             {
@@ -537,8 +538,19 @@ public class StageManager : MonoBehaviour
             }
             else if (isCombatStoryStage)
             {
-                // 전투 있는 스토리 스테이지 클리어 시 
-                windowManager.OpenOverlay(WindowType.StoryStageReward);
+                // 전투 있는 스토리 스테이지 클리어 시
+                // 남은 스토리가 있으면 스토리 씬으로 돌아가기
+                var saveData = SaveLoadManager.Data as SaveDataV1;
+                if (saveData != null && saveData.storyScriptResumeIndex >= 0)
+                {
+                    // 스토리 씬으로 돌아가서 이어서 진행
+                    GameSceneManager.ChangeScene(SceneType.StoryScene);
+                }
+                else
+                {
+                    // 스토리 끝나면 보상창 표시
+                    windowManager.OpenOverlay(WindowType.StoryStageReward);
+                }
             }
             else
             {
@@ -554,6 +566,13 @@ public class StageManager : MonoBehaviour
     // 패배시
     public void Defeat()
     {
+        // 스토리 스테이지 패배 시 스토리 진행 상태 리셋 (처음부터 다시)
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null)
+        {
+            saveData.storyScriptResumeIndex = -1;
+        }
+
         if (windowManager != null)
         {
             windowManager.OpenOverlay(WindowType.LosePanelUI);

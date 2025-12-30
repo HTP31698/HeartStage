@@ -53,6 +53,9 @@ public class SaveDataV1 : SaveData
     // 클리어한 스토리 스테이지 ID 목록 (보상 중복 지급 방지용)
     public List<int> clearedStoryStages = new List<int>();
 
+    // 스토리 스크립트 진행 상태 (전투 후 복귀용)
+    public int storyScriptResumeIndex = -1; // -1이면 처음부터 시작, 양수면 해당 인덱스부터 재개
+
     // ================== 5. 퀘스트 진행 상태 ==================
     public DailyQuestState dailyQuest = new DailyQuestState();
     public WeeklyQuestState weeklyQuest = new WeeklyQuestState();

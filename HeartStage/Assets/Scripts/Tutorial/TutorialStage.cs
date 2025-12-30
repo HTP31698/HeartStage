@@ -722,7 +722,7 @@ public class TutorialStage : MonoBehaviour
         // 이미 스킬 대기 중이면 무시
         if (isWaitingForSkillReady)
         {
-            return;
+            return; 
         }
 
         // 이미 준비된 스킬이 있는지 확인

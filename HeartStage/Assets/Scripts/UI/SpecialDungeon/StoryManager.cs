@@ -73,6 +73,14 @@ public class StoryManager : MonoBehaviour
     {
         currentScripts = DataTableManager.StoryScriptTable.GetStageScripts(selectedStageId);
 
+        // 전투 후 복귀인 경우 저장된 인덱스부터 시작
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null && saveData.storyScriptResumeIndex >= 0)
+        {
+            currentScriptIndex = saveData.storyScriptResumeIndex;
+            saveData.storyScriptResumeIndex = -1; // 복귀 후 리셋
+        }
+
         if (currentScripts == null || currentScripts.Count == 0)
         {
             GameSceneManager.ChangeScene(SceneType.LobbyScene);
@@ -233,10 +241,55 @@ public class StoryManager : MonoBehaviour
         }
         else
         {
+            // 전투 시작 라인인지 체크
+            if (ShouldStartBattle())
+            {
+                StartBattleFromStory();
+                return;
+            }
+
             // 다음 대사로 진행
             currentScriptIndex++;
             ShowCurrentScript();
         }
+    }
+
+    /// 현재 라인에서 전투를 시작해야 하는지 체크
+    private bool ShouldStartBattle()
+    {
+        if (currentScripts == null || currentScriptIndex >= currentScripts.Count)
+            return false;
+
+        var currentScript = currentScripts[currentScriptIndex];
+        
+        // 66006 스테이지의 44번 라인 이후에 전투 시작
+        if (selectedStageId == 66006 && currentScript.Line == 44)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    /// 스토리 중간에 전투 시작
+    private void StartBattleFromStory()
+    {
+        // 다음 라인 인덱스 저장 (전투 클리어 후 이어서 진행)
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null)
+        {
+            saveData.storyScriptResumeIndex = currentScriptIndex + 1;
+            SaveLoadManager.SaveToServer().Forget();
+        }
+
+        // 컷씬 종료 시 음성 정지
+        SoundManager.Instance?.StopVoiceSFX();
+
+        isPlaying = false;
+        isTyping = false;
+
+        // 전투 스테이지로 이동
+        GameSceneManager.ChangeScene(SceneType.StageScene);
     }
 
     private void OnAutoButtonClicked()
