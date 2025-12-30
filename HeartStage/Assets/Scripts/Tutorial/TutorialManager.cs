@@ -53,6 +53,12 @@ public class TutorialManager : MonoBehaviour
             await UniTask.Yield();
         }
 
+        // BGM 정지 (로비 음악 포함)
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.StopBGM();
+        }
+
         // 튜토리얼은 기본적으로 location 0부터 시작
         selectedLocationId = 0;
 

@@ -54,6 +54,12 @@ public class StoryManager : MonoBehaviour
             await UniTask.Yield();
         }
 
+        // BGM 정지 (로비 음악 포함)
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.StopBGM();
+        }
+
         var gameData = SaveLoadManager.Data;
         selectedStageId = gameData.selectedStageID;
 
