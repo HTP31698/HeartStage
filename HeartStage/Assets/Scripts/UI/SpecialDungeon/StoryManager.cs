@@ -522,7 +522,6 @@ public class StoryManager : MonoBehaviour
 
         string bgmName = "BGM_DefaultStory"; 
 
-        // 예시: 하나/세라 스토리별로 BGM 지정
         switch (stageId)
         {
             case 66001: // 하나 스토리1 컷씬
