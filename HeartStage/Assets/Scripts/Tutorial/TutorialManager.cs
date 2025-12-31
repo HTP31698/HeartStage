@@ -57,6 +57,8 @@ public class TutorialManager : MonoBehaviour
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.StopBGM();
+
+            SoundManager.Instance.PlayBGM(SoundName.BGM_TutorialCutScene, true);
         }
 
         // 튜토리얼은 기본적으로 location 0부터 시작

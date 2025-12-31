@@ -154,15 +154,27 @@ public class SoundName
 
     public static readonly string BGM_Victory = "victory_bgm";
     public static readonly string BGM_Defeat = "defeat_bgm";
+
     public static readonly string BGM_Stage1 = "stage_1_bgm";
     public static readonly string BGM_Stage2 = "stage_2_bgm";
     public static readonly string BGM_Stage3 = "stage_3_bgm";
     public static readonly string BGM_Stage4 = "stage_4_bgm";
     public static readonly string BGM_Lobby = "lobby_bgm";
+
     public static readonly string BGM_hanaStage2 = "hana_stage2_bgm";
     public static readonly string BGM_hanaStage3 = "hana_stage3_bgm";
     public static readonly string BGM_seraStage2 = "sera_stage2_bgm";
     public static readonly string BGM_seraStage3 = "sera_stage3_bgm";
+
+    public static readonly string BGM_TutorialCutScene = "tutorial_cutscene_bgm"; // 튜토리얼 컷신 BGM
+    public static readonly string BGM_TutorialStage = "tutorial_stage_bgm"; // 튜토리얼 스테이지 BGM
+    public static readonly string BGM_StoryScript_1 = "story_stage1_script1_bgm"; // 하나,세라 스토리 컷씬 1 스테이지 공통 BGM
+    public static readonly string BGM_HanaStoryScript_2 = "hana_story_stage2_script_bgm"; // 하나 스토리 컷씬 2 BGM
+    public static readonly string BGM_SeraStoryScript_2 = "sera_story_stage2_script_bgm"; // 세라 스토리 컷씬 2 BGM
+    public static readonly string BGM_StoryScript_2_BattleAfter = "story_stage2_battle_after_script_bgm"; // 하나,세라 스토리 컷씬 2 전투 후 BGM
+    public static readonly string BGM_StoryScript_3 = "story_stage3_script1_bgm"; // 하나,세라 스토리 컷씬 3 BGM
+    public static readonly string BGM_StoryScript_3_BattleAfter = "story_stage3_battle_after_script_bgm"; // 하나,세라 스토리 컷씬 3 전투 후 BGM
+    public static readonly string BGM_StoryScript_4 = "story_stage4_script_bgm"; // 하나,세라 스토리 컷씬 4 BGM
 }
 
 public class ItemID
