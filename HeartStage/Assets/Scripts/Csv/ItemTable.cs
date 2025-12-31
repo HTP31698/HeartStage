@@ -16,6 +16,8 @@ public class ItemCSVData
     public int item_dup { get; set; }
     public string item_desc { get; set; }
     public string prefab { get; set; }
+    public string prefab_frame { get; set; }  // 스테이지 배치용 Frame 버전
+    public string char_code { get; set; }
 }
 
 public class ItemTable : DataTable
@@ -81,5 +83,39 @@ public class ItemTable : DataTable
     public IEnumerable<int> GetAllItemIds()
     {
         return table.Keys;
+    }
+
+    /// <summary>
+    /// 특정 캐릭터의 모든 포토카드 반환 (item_id 순 정렬)
+    /// </summary>
+    public List<ItemCSVData> GetPhotocardsByCharCode(string charCode)
+    {
+        var result = new List<ItemCSVData>();
+        foreach (var kvp in table)
+        {
+            if (kvp.Value.item_type == 4 && kvp.Value.char_code == charCode)
+            {
+                result.Add(kvp.Value);
+            }
+        }
+        // item_id 오름차순 정렬 (기본 포토카드가 먼저 오도록)
+        result.Sort((a, b) => a.item_id.CompareTo(b.item_id));
+        return result;
+    }
+
+    /// <summary>
+    /// 모든 포토카드 반환
+    /// </summary>
+    public List<ItemCSVData> GetAllPhotocards()
+    {
+        var result = new List<ItemCSVData>();
+        foreach (var kvp in table)
+        {
+            if (kvp.Value.item_type == 4)
+            {
+                result.Add(kvp.Value);
+            }
+        }
+        return result;
     }
 }

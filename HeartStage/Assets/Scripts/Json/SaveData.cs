@@ -116,6 +116,12 @@ public class SaveDataV1 : SaveData
     // 의상 보유 여부는 기존 itemList에서 확인 (itemList[costumeId] > 0)
     public Dictionary<string, EquippedCostume> equippedCostumeByChar = new Dictionary<string, EquippedCostume>();
 
+    // ================== 11. 포토카드 시스템 ==================
+    // 캐릭터별 장착 포토카드 (캐릭터 코드 → 포토카드 아이템 ID)
+    // 포토카드 보유 여부는 기존 itemList에서 확인 (itemList[photocardId] > 0)
+    // 0이면 기본 포토카드 (CharacterTable.card_imageName) 사용
+    public Dictionary<string, int> equippedPhotocardByChar = new Dictionary<string, int>();
+
     // ================== 생성자 / 버전업 ==================
     public SaveDataV1()
     {

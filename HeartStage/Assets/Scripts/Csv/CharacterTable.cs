@@ -205,4 +205,24 @@ public class CharacterTable : DataTable
     {
         return table.Values;
     }
+
+    /// <summary>
+    /// char_code로 캐릭터 데이터 반환 (레벨1, 랭크1 기준)
+    /// char_code는 char_id의 마지막 4자리 (예: 0101, 0502)
+    /// </summary>
+    public CharacterCSVData GetByCharCode(string charCode)
+    {
+        if (string.IsNullOrEmpty(charCode)) return null;
+
+        // char_code가 일치하는 첫 번째 row 반환 (lv1, rank1)
+        foreach (var data in table.Values)
+        {
+            string code = (data.char_id % 10000).ToString("D4");
+            if (code == charCode && data.char_lv == 1 && data.char_rank == 1)
+            {
+                return data;
+            }
+        }
+        return null;
+    }
 }

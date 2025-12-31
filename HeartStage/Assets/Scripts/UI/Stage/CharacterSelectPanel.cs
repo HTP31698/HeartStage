@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,6 +35,25 @@ public class CharacterSelectPanel : MonoBehaviour
         idolPowerCount.text = $"{characterData.GetTotalPower()}";
         levelText.text = $"LV {characterData.char_lv}";
         CharacterAttributeIcon.ChangeIcon(attributeIcon,characterData.char_type);
-        cardImage.sprite = ResourceManager.Instance.GetSprite(characterData.card_imageName);
+
+        // 포토카드 교체 반영
+        LoadPhotocardAsync(characterData).Forget();
+    }
+
+    private async UniTaskVoid LoadPhotocardAsync(CharacterData characterData)
+    {
+        string charCode = PhotocardHelper.ExtractCharCode(characterData.char_id);
+        // 스테이지 배치 UI에서는 Frame 버전 사용
+        var sprite = await PhotocardHelper.LoadDisplaySpriteWithFrame(charCode);
+
+        if (sprite != null)
+        {
+            cardImage.sprite = sprite;
+        }
+        else
+        {
+            // fallback: 기존 방식
+            cardImage.sprite = ResourceManager.Instance.GetSprite(characterData.card_imageName);
+        }
     }
 }

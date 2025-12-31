@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class CharacterButtonView : MonoBehaviour
@@ -42,7 +43,24 @@ public class CharacterButtonView : MonoBehaviour
             return;
         }
 
-        iconImage.sprite = ResourceManager.Instance.GetSprite(data.card_imageName);
+        // 포토카드 교체 반영: 장착된 포토카드가 있으면 해당 이미지, 없으면 기본 카드
+        LoadPhotocardAsync(data).Forget();
+    }
+
+    private async UniTaskVoid LoadPhotocardAsync(CharacterCSVData data)
+    {
+        string charCode = PhotocardHelper.ExtractCharCode(data.char_id);
+        var sprite = await PhotocardHelper.LoadDisplaySprite(charCode);
+
+        if (sprite != null)
+        {
+            iconImage.sprite = sprite;
+        }
+        else
+        {
+            // fallback: 기존 방식
+            iconImage.sprite = ResourceManager.Instance.GetSprite(data.card_imageName);
+        }
     }
 
     // ⭐ 잠김(회색) / 해금(정상)

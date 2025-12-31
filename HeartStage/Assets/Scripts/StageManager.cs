@@ -511,11 +511,8 @@ public class StageManager : MonoBehaviour
                         saveData.completedStoryStages.Add(stageId);
                     }
 
-                    // 클리어 목록에도 추가 (보상 중복 방지용)
-                    if (!saveData.clearedStoryStages.Contains(stageId))
-                    {
-                        saveData.clearedStoryStages.Add(stageId);
-                    }
+                    // clearedStoryStages는 StoryStageRewardUI.GiveStoryReward()에서 보상 지급 후 추가됨
+                    // 여기서 미리 추가하면 보상이 중복 방지로 스킵됨
                 }
             }
         }

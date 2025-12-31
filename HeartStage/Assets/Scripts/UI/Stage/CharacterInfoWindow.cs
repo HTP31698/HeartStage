@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -37,7 +38,8 @@ public class CharacterInfoWindow : GenericWindow
 
     public void Init(CharacterData data)
     {
-        characterImage.sprite = ResourceManager.Instance.GetSprite(data.card_imageName);
+        // 포토카드 교체 반영
+        LoadPhotocardAsync(data).Forget();
         characterName.text = data.char_name;
         // 캐릭터 속성 아이콘 변경
         CharacterAttributeIcon.ChangeIcon(attributeIcon, data.char_type);
@@ -133,6 +135,22 @@ public class CharacterInfoWindow : GenericWindow
         if (WindowManager.Instance != null)
         {
             WindowManager.Instance.HideDimManual();
+        }
+    }
+
+    private async UniTaskVoid LoadPhotocardAsync(CharacterData data)
+    {
+        string charCode = PhotocardHelper.ExtractCharCode(data.char_id);
+        var sprite = await PhotocardHelper.LoadDisplaySprite(charCode);
+
+        if (sprite != null)
+        {
+            characterImage.sprite = sprite;
+        }
+        else
+        {
+            // fallback: 기존 방식
+            characterImage.sprite = ResourceManager.Instance.GetSprite(data.card_imageName);
         }
     }
 }
