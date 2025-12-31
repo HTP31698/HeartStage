@@ -260,7 +260,6 @@ public class QuestWindow : GenericWindow
         catch (System.OperationCanceledException)
         {
             // 창이 닫혀서 취소됨 - 정상
-            Debug.Log("[QuestWindow] 보상 수령 취소됨");
         }
         catch (System.Exception ex)
         {

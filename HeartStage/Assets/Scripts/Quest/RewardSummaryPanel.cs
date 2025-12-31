@@ -43,10 +43,7 @@ public class RewardSummaryPanel : MonoBehaviour
     public void Open(Dictionary<int, int> rewards)
     {
         if (rewards == null || rewards.Count == 0)
-        {
-            Debug.Log("[RewardSummaryPanel] 표시할 보상이 없습니다.");
             return;
-        }
 
         // 기존 아이템들 정리
         ClearItems();
@@ -114,10 +111,7 @@ public class RewardSummaryPanel : MonoBehaviour
         }
 
         if (!hasAnyItem)
-        {
-            Debug.Log("[RewardSummaryPanel] 표시할 보상이 없습니다.");
             return;
-        }
 
         gameObject.SetActive(true);
         // WindowAnimator가 autoPlayOnEnable이면 자동으로 열기 애니메이션 재생

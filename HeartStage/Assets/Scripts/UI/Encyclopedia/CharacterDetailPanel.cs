@@ -70,6 +70,13 @@ public class CharacterDetailPanel : MonoBehaviour
     [Header("의상 선택 팝업")]
     [SerializeField] private CostumeSelectPopup costumeSelectPopup;
 
+    [Header("포토카드 슬롯")]
+    [SerializeField] private Button photocardSlot;        // 포토카드 슬롯 버튼
+    [SerializeField] private Image photocardImage;        // 포토카드 썸네일
+
+    [Header("포토카드 선택 팝업")]
+    [SerializeField] private PhotocardSelectPopup photocardSelectPopup;
+
     [Header("등급 강화 확인 팝업")]
     [SerializeField] private RankUpConfirmPopup rankUpConfirmPopup;
 
@@ -102,6 +109,7 @@ public class CharacterDetailPanel : MonoBehaviour
     private int _currentCharacterId;
     // 랭크업 아이콘 애니메이션
     private Tweener _rankUpIconTween;
+    private float _rankUpIconOriginalY;  // 원래 Y 위치 저장
 
     [Header("종료 버튼")]
     [SerializeField] Button ExitButton;
@@ -115,6 +123,12 @@ public class CharacterDetailPanel : MonoBehaviour
 
     private void Awake()
     {
+        // 랭크업 아이콘 원래 Y 위치 저장
+        if (rankUpUpIcon != null)
+        {
+            _rankUpIconOriginalY = rankUpUpIcon.transform.localPosition.y;
+        }
+
         if (statModeToggleButton != null)
         {
             statModeToggleButton.onClick.RemoveAllListeners();
@@ -129,9 +143,16 @@ public class CharacterDetailPanel : MonoBehaviour
         if (shoesCostumeSlot != null)
             shoesCostumeSlot.onClick.AddListener(() => OpenCostumePopup(CostumeType.Shoes));
 
+        // 포토카드 슬롯 버튼 리스너
+        if (photocardSlot != null)
+            photocardSlot.onClick.AddListener(OpenPhotocardPopup);
+
         // 팝업 콜백 등록
         if (costumeSelectPopup != null)
             costumeSelectPopup.OnCostumeChanged += RefreshCostumeSlots;
+
+        if (photocardSelectPopup != null)
+            photocardSelectPopup.OnPhotocardChanged += RefreshPhotocardSlot;
 
         // 등급 강화 팝업 콜백 등록
         if (rankUpConfirmPopup != null)
@@ -249,6 +270,9 @@ public class CharacterDetailPanel : MonoBehaviour
 
         // 의상 슬롯 새로고침
         RefreshCostumeSlots();
+
+        // 포토카드 슬롯 새로고침
+        RefreshPhotocardSlot();
 
         // 탭 초기화 및 데이터 업데이트
         ResetTabToDefault();
@@ -411,12 +435,18 @@ public class CharacterDetailPanel : MonoBehaviour
         // 기존 애니메이션 정지
         _rankUpIconTween?.Kill();
 
+        // 항상 원래 위치로 리셋
+        var pos = rankUpUpIcon.transform.localPosition;
+        pos.y = _rankUpIconOriginalY;
+        rankUpUpIcon.transform.localPosition = pos;
+
         if (active)
         {
             rankUpUpIcon.SetActive(true);
             // 위아래로 살짝 흔들리는 애니메이션 (5px, 0.5초 주기, 무한 반복)
+            // 원래 위치 기준으로 애니메이션
             _rankUpIconTween = rankUpUpIcon.transform
-                .DOLocalMoveY(rankUpUpIcon.transform.localPosition.y + 5f, 0.5f)
+                .DOLocalMoveY(_rankUpIconOriginalY + 5f, 0.5f)
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo);
         }
@@ -1058,6 +1088,70 @@ public class CharacterDetailPanel : MonoBehaviour
 
         slotImage.sprite = null;
         slotImage.color = new Color(1f, 1f, 1f, 0.3f); // 빈 슬롯 표시
+    }
+
+    #endregion
+
+    #region 포토카드 시스템
+
+    /// <summary>
+    /// 포토카드 선택 팝업 열기
+    /// </summary>
+    private void OpenPhotocardPopup()
+    {
+        if (_currentCharacterData == null)
+            return;
+
+        // 미보유 캐릭터는 포토카드 변경 불가
+        if (!CharacterHelper.HasCharacter(_currentCharacterId))
+        {
+            ToastUI.Show("보유한 캐릭터만 포토카드를 변경할 수 있습니다.");
+            return;
+        }
+
+        // 이미 팝업이 열려있으면 무시 (더블 터치 방지)
+        if (photocardSelectPopup != null && photocardSelectPopup.IsOpen)
+            return;
+
+        if (SoundManager.Instance != null)
+            SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+        if (photocardSelectPopup == null)
+            return;
+
+        string charCode = PhotocardHelper.ExtractCharCode(_currentCharacterId);
+        photocardSelectPopup.Open(charCode);
+    }
+
+    /// <summary>
+    /// 포토카드 슬롯 새로고침
+    /// </summary>
+    private void RefreshPhotocardSlot()
+    {
+        if (_currentCharacterData == null)
+            return;
+
+        RefreshPhotocardSlotAsync().Forget();
+    }
+
+    private async UniTaskVoid RefreshPhotocardSlotAsync()
+    {
+        if (photocardImage == null || _currentCharacterData == null)
+            return;
+
+        string charCode = PhotocardHelper.ExtractCharCode(_currentCharacterId);
+        var sprite = await PhotocardHelper.LoadDisplaySprite(charCode);
+
+        if (sprite != null)
+        {
+            photocardImage.sprite = sprite;
+            photocardImage.color = Color.white;
+        }
+        else
+        {
+            photocardImage.sprite = null;
+            photocardImage.color = new Color(1f, 1f, 1f, 0.3f);
+        }
     }
 
     #endregion

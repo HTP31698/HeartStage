@@ -331,7 +331,7 @@ public class StoryManager : MonoBehaviour
         isTyping = false;
 
         // 전투 스테이지로 이동
-        GameSceneManager.ChangeScene(SceneType.StageScene);
+        GameSceneManager.ChangeScene(SceneType.StageScene).Forget();
     }
 
     private void OnAutoButtonClicked()
@@ -492,11 +492,8 @@ public class StoryManager : MonoBehaviour
                 saveData.completedStoryStages.Add(storyStageId);
             }
 
-            // 클리어 목록에도 추가 (보상 중복 방지용)
-            if (!saveData.clearedStoryStages.Contains(storyStageId))
-            {
-                saveData.clearedStoryStages.Add(storyStageId);
-            }
+            // clearedStoryStages는 StoryStageRewardUI.GiveStoryReward()에서 보상 지급 후 추가됨
+            // 여기서 미리 추가하면 보상이 중복 방지로 스킵됨
         }
 
         // 씬 전환 후 보상창 표시를 위한 플래그 설정

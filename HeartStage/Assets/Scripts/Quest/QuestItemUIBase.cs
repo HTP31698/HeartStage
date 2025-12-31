@@ -278,18 +278,12 @@ public class QuestItemUIBase : MonoBehaviour
             return;
 
         if (isCompleted)
-        {
-            Debug.Log("[QuestItemUIBase] 이미 완료된 퀘스트입니다.");
             return;
-        }
 
         // ★ 클리어 여부는 탭 쪽에서 관리
         //  → 이건 SaveData + 외부 이벤트로 SetState(cleared, ...)에서 들어온 값만 믿는다.
         if (!isCleared)
-        {
-            Debug.Log("[QuestItemUIBase] 아직 클리어 조건을 만족하지 않은 퀘스트입니다.");
             return;
-        }
 
         // 여기까지 왔으면:
         // - 조건은 이미 충족(cleared == true)

@@ -62,7 +62,6 @@ public class QuestManager : MonoBehaviour
             SaveLoadManager.Save(0);
             SaveLoadManager.SaveToServer().Forget();
             _isDirty = false;
-            Debug.Log("[QuestManager] 에디터 종료 - 로컬 + 서버 저장 요청");
         }
 #else
         SaveDailyStateIfDirty();
@@ -232,8 +231,6 @@ public class QuestManager : MonoBehaviour
         _clearedAchievementQuestIds.Clear();
 
         _isDirty = false;
-
-        Debug.Log("[QuestManager] 계정 변경으로 초기화 플래그 리셋");
     }
 
     #region Daily 상태 접근자
@@ -797,10 +794,7 @@ public class QuestManager : MonoBehaviour
         int requiredCount = quest.Quest_required > 0 ? quest.Quest_required : 1;
 
         if (currentCount < requiredCount)
-        {
-            Debug.Log($"[QuestManager] Daily 진행도 {currentCount}/{requiredCount} - {quest.Quest_name}");
             return;
-        }
 
         CompleteDailyQuestInternal(quest);
     }
@@ -813,10 +807,7 @@ public class QuestManager : MonoBehaviour
         int requiredCount = quest.Quest_required > 0 ? quest.Quest_required : 1;
 
         if (currentCount < requiredCount)
-        {
-            Debug.Log($"[QuestManager] Weekly 진행도 {currentCount}/{requiredCount} - {quest.Quest_name}");
             return;
-        }
 
         CompleteWeeklyQuestInternal(quest);
     }
@@ -912,8 +903,6 @@ public class QuestManager : MonoBehaviour
 
         // ★ 대상별 카운터도 리셋
         state.targetCounts?.Clear();
-
-        Debug.Log($"[QuestManager] DailyQuest 리셋. date={todayKey}");
     }
 
 
@@ -1040,8 +1029,6 @@ public class QuestManager : MonoBehaviour
 
         // ★ 대상별 카운터도 리셋
         state.targetCounts?.Clear();
-
-        Debug.Log($"[QuestManager] WeeklyQuest 리셋. weekKey={weekKey}");
     }
 
     private void BuildWeeklyQuestList()
@@ -1153,7 +1140,6 @@ public class QuestManager : MonoBehaviour
                 if (!state.clearedQuestIds.Contains(id))
                     state.clearedQuestIds.Add(id);
 
-                Debug.Log($"[QuestManager] 누락된 업적 자동 완료: id={id}, progress={progress}/{required}");
                 anyCompleted = true;
 
                 // 이벤트 발생 (UI 갱신용)
@@ -1237,8 +1223,6 @@ public class QuestManager : MonoBehaviour
         // ★ 카운터는 항상 여기서 증가 (새 시스템/레거시 모두 동일 카운터 사용)
         state.attendanceCount++;
         MarkDirty(forceSave: true);
-
-        Debug.Log($"[QuestManager] 출석 이벤트 발생: attendanceCount = {state.attendanceCount}");
 
         // ★ 새 통합 시스템 사용 (카운터 증가 없이 체크만)
         ProcessQuestEventCheck(QuestEventType.Attendance, 0, state.attendanceCount);
@@ -1482,8 +1466,6 @@ public class QuestManager : MonoBehaviour
         // 퀘스트 완료는 즉시 저장 (중요한 이벤트)
         MarkDirty(forceSave: true);
 
-        Debug.Log($"[QuestManager] Daily Quest 조건 충족: id={id}, info={quest.Quest_info}");
-
         // UI에게 "이 퀘스트는 이제 완료 버튼을 눌러서 보상을 받을 수 있다" 를 알림
         DailyQuestCompleted?.Invoke(quest);
     }
@@ -1636,10 +1618,7 @@ public class QuestManager : MonoBehaviour
             requiredCount = 1;
 
         if (currentCount < requiredCount)
-        {
-            Debug.Log($"[QuestManager] Weekly 진행도 {currentCount}/{requiredCount}");
             return;
-        }
 
         CompleteWeeklyQuestInternal(quest);
     }
@@ -1661,8 +1640,6 @@ public class QuestManager : MonoBehaviour
 
         MarkDirty(forceSave: true);
 
-        Debug.Log($"[QuestManager] Weekly Quest 조건 충족: id={id}, info={quest.Quest_info}");
-
         WeeklyQuestCompleted?.Invoke(quest);
     }
 
@@ -1676,28 +1653,16 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     public void OnStageFirstClear(int stageId)
     {
-        Debug.Log($"[QuestManager] ★ OnStageFirstClear 호출됨: stageId={stageId}");
-
         EnsureAchievementInitialized();
 
-        // ★ 디버그: 해당 이벤트 타입의 퀘스트 확인
-        var matchingQuests = new List<QuestData>();
-        foreach (var quest in GetQuestsByEventType(QuestEventType.ClearStage, stageId))
-        {
-            matchingQuests.Add(quest);
-            Debug.Log($"[QuestManager] 매칭된 퀘스트: ID={quest.Quest_ID}, Event_type={quest.Event_type}, Target_ID={quest.Target_ID}, Quest_required={quest.Quest_required}");
-        }
-        Debug.Log($"[QuestManager] 총 매칭 퀘스트 수: {matchingQuests.Count}");
-
         // ★ 1회성 업적은 바로 완료 처리 (globalValue=1 사용)
-        foreach (var quest in matchingQuests)
+        foreach (var quest in GetQuestsByEventType(QuestEventType.ClearStage, stageId))
         {
             if (quest.Quest_type == QuestType.Achievement && quest.Target_ID == stageId)
             {
                 // Quest_required=1인 1회성 업적은 바로 완료
                 if (quest.Quest_required == 1)
                 {
-                    Debug.Log($"[QuestManager] 1회성 업적 완료 시도: ID={quest.Quest_ID}");
                     CompleteAchievementQuestInternal(quest);
                 }
             }
@@ -1712,28 +1677,16 @@ public class QuestManager : MonoBehaviour
     /// </summary>
     public void OnBossFirstKill(int monsterId)
     {
-        Debug.Log($"[QuestManager] ★ OnBossFirstKill 호출됨: monsterId={monsterId}");
-
         EnsureAchievementInitialized();
 
-        // ★ 디버그: 해당 이벤트 타입의 퀘스트 확인
-        var matchingQuests = new List<QuestData>();
-        foreach (var quest in GetQuestsByEventType(QuestEventType.BossKill, monsterId))
-        {
-            matchingQuests.Add(quest);
-            Debug.Log($"[QuestManager] 매칭된 퀘스트: ID={quest.Quest_ID}, Event_type={quest.Event_type}, Target_ID={quest.Target_ID}, Quest_required={quest.Quest_required}");
-        }
-        Debug.Log($"[QuestManager] 총 매칭 퀘스트 수: {matchingQuests.Count}");
-
         // ★ 1회성 업적은 바로 완료 처리
-        foreach (var quest in matchingQuests)
+        foreach (var quest in GetQuestsByEventType(QuestEventType.BossKill, monsterId))
         {
             if (quest.Quest_type == QuestType.Achievement && quest.Target_ID == monsterId)
             {
                 // Quest_required=1인 1회성 업적은 바로 완료
                 if (quest.Quest_required == 1)
                 {
-                    Debug.Log($"[QuestManager] 1회성 업적 완료 시도: ID={quest.Quest_ID}");
                     CompleteAchievementQuestInternal(quest);
                 }
             }
@@ -1798,8 +1751,6 @@ public class QuestManager : MonoBehaviour
             state.clearedQuestIds.Add(id);
 
         MarkDirty(forceSave: true);
-
-        Debug.Log($"[QuestManager] Achievement Quest 조건 충족: id={id}, info={quest.Quest_info}");
 
         AchievementQuestCompleted?.Invoke(quest);
     }
