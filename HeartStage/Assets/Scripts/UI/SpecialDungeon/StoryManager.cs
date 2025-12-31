@@ -161,7 +161,15 @@ public class StoryManager : MonoBehaviour
 
         isPlaying = true;
 
-        PlayStoryBGM(selectedStageId);
+        // 전투 후 복귀 컷씬 BGM 처리 (2, 3스테이지 공통)
+        if (isReturnedFromBattle)
+        {
+            PlayBattleAfterBGM(selectedStageId);
+        }
+        else
+        {
+            PlayStoryBGM(selectedStageId);
+        }
 
         // 전투 복귀가 아닌 경우에만 처음부터 시작
         if (!isReturnedFromBattle)
@@ -542,5 +550,30 @@ public class StoryManager : MonoBehaviour
         }
 
         SoundManager.Instance.PlayBGM(bgmName);
+    }
+
+    private void PlayBattleAfterBGM(int stageId)
+    {
+        if (SoundManager.Instance == null)
+            return;
+
+        SoundManager.Instance.StopBGM();
+
+        string bgmName = null;
+        switch (stageId)
+        {
+            case 66006: // 세라 스토리2 전투 후
+            case 66002: // 하나 스토리2 전투 후
+                bgmName = SoundName.BGM_StoryScript_2_BattleAfter;
+                break;
+
+            case 66007: // 세라 스토리3 전투 후
+            case 66003: // 하나 스토리3 전투 후
+                bgmName = SoundName.BGM_StoryScript_3_BattleAfter;
+                break;
+        }
+
+        if (!string.IsNullOrEmpty(bgmName))
+            SoundManager.Instance.PlayBGM(bgmName);
     }
 }

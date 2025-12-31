@@ -175,7 +175,6 @@ public class SoundName
     public static readonly string BGM_StoryScript_3 = "story_stage3_script1_bgm"; // 하나,세라 스토리 컷씬 3 BGM
     public static readonly string BGM_StoryScript_3_BattleAfter = "story_stage3_battle_after_script_bgm"; // 하나,세라 스토리 컷씬 3 전투 후 BGM
     public static readonly string BGM_StoryScript_4 = "story_stage4_script_bgm"; // 하나,세라 스토리 컷씬 4 BGM
-
 }
 
 public class ItemID
