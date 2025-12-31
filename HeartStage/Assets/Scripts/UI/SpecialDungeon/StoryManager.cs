@@ -77,23 +77,18 @@ public class StoryManager : MonoBehaviour
 
         // 전투 후 복귀인 경우 저장된 인덱스부터 시작
         var saveData = SaveLoadManager.Data as SaveDataV1;
-        Debug.Log($"[StoryManager] LoadStageScript - storyScriptResumeIndex: {saveData?.storyScriptResumeIndex ?? -999}");
         
         if (saveData != null && saveData.storyScriptResumeIndex >= 0)
         {
             currentScriptIndex = saveData.storyScriptResumeIndex;
             isReturnedFromBattle = true; // 전투 복귀 플래그 설정
             hasCompletedBattle = true; // 전투 완료 후 스토리 진행 중
-            Debug.Log($"[StoryManager] 전투 복귀 - currentScriptIndex를 {currentScriptIndex}로 설정");
-            // 주의: storyScriptResumeIndex는 여기서 리셋하지 않음
-            // StartCutscene()이 정상적으로 호출된 후에 리셋됨
         }
         else
         {
             currentScriptIndex = 0; // 처음부터 시작
             isReturnedFromBattle = false;
             hasCompletedBattle = false;
-            Debug.Log("[StoryManager] 처음부터 시작 - currentScriptIndex = 0");
         }
 
         if (currentScripts == null || currentScripts.Count == 0)
@@ -165,16 +160,16 @@ public class StoryManager : MonoBehaviour
         }
 
         isPlaying = true;
-        
+
+        PlayStoryBGM(selectedStageId);
+
         // 전투 복귀가 아닌 경우에만 처음부터 시작
         if (!isReturnedFromBattle)
         {
             currentScriptIndex = 0;
         }
-        // 전투 복귀 시: storyScriptResumeIndex는 여기서 리셋하지 않음
-        // OnCutsceneComplete()에서 스토리가 완전히 끝난 후 리셋됨
-        
-        Debug.Log($"[StoryManager] StartCutscene - isReturnedFromBattle: {isReturnedFromBattle}, currentScriptIndex: {currentScriptIndex}");
+
+        // OnCutsceneComplete()에서 스토리가 완전히 끝난 후 리셋됨       
 
         ShowCurrentScript();
     }
@@ -508,5 +503,44 @@ public class StoryManager : MonoBehaviour
 
         // 로비 씬으로 이동하면서 보상창 표시 예약
         GameSceneManager.ChangeScene(SceneType.LobbyScene);
+    }
+
+    private void PlayStoryBGM(int stageId)
+    {
+        if (SoundManager.Instance == null)
+            return;
+
+        SoundManager.Instance.StopBGM();
+
+        string bgmName = "BGM_DefaultStory"; 
+
+        // 예시: 하나/세라 스토리별로 BGM 지정
+        switch (stageId)
+        {
+            case 66001: // 하나 스토리1 컷씬
+            case 66005: // 세라 스토리1 컷씬
+                bgmName = SoundName.BGM_StoryScript_1;
+                break;
+
+            case 66002: // 하나 스토리2 컷씬
+                bgmName = SoundName.BGM_HanaStoryScript_2;
+                break;
+
+            case 66006: // 세라 스토리2 컷씬
+                bgmName = SoundName.BGM_SeraStoryScript_2;
+                break;
+
+            case 66003: // 하나 스토리3 컷씬
+            case 66007: // 세라 스토리3 컷씬
+                bgmName = SoundName.BGM_StoryScript_3;
+                break;
+
+            case 66004: // 하나 스토리4 컷씬
+            case 66008: // 세라 스토리4 컷씬
+                bgmName = SoundName.BGM_StoryScript_4;
+                break;
+        }
+
+        SoundManager.Instance.PlayBGM(bgmName);
     }
 }
