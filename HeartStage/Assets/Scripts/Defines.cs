@@ -57,13 +57,6 @@ public class Layer
 public class AddressableLabel
 {
     public static readonly string Stage = "StageAssets";
-    public static readonly string PNG = "PNG";
-    public static readonly string Costume = "Costume";
-    public static readonly string SFX = "SFX";
-    public static readonly string BGM = "BGM";
-    public static readonly string SeraScript = "SeraScript";
-    public static readonly string HanaScript = "HanaScript";
-    public static readonly string TutorialScript = "TutorialScript";
 }
 
 public enum WindowType
