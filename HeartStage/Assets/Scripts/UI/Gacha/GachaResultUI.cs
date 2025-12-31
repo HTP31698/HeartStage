@@ -41,7 +41,7 @@ public class GachaResultUI : GenericWindow
     public override void Close()
     {
         base.Close();
-        ClearCurrentSprite(); // 창 닫을 때 스프라이트 정리
+        //ClearCurrentSprite(); // 창 닫을 때 스프라이트 정리
     }
 
     public void SetGachaResult(GachaResult result)
@@ -94,20 +94,20 @@ public class GachaResultUI : GenericWindow
         }
 
         // 기존 스프라이트 정리
-        ClearCurrentSprite();
+        //ClearCurrentSprite();
 
         currentSprite = ResourceManager.Instance.GetSprite(imageName);
         characterImage.sprite = currentSprite;
     }
 
-    private void ClearCurrentSprite()
-    {
-        if (currentSprite != null)
-        {
-            DestroyImmediate(currentSprite);
-            currentSprite = null;
-        }
-    }
+    //private void ClearCurrentSprite()
+    //{
+    //    if (currentSprite != null)
+    //    {
+    //        DestroyImmediate(currentSprite);
+    //        currentSprite = null;
+    //    }
+    //}
 
     private void OnCloseButtonClicked()
     {
@@ -143,6 +143,6 @@ public class GachaResultUI : GenericWindow
     private void OnDestroy()
     {
         // 컴포넌트 파괴시 스프라이트 정리
-        ClearCurrentSprite();
+        //ClearCurrentSprite();
     }
 }

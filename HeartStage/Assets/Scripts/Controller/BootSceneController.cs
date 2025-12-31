@@ -45,7 +45,13 @@ public class BootSceneController : MonoBehaviour
             // 2. 리소스 프리로드 + 데이터테이블 병렬 로드
             await UniTask.WhenAll(
                 ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.Stage),
-                ResourceManager.Instance.PreloadLabelAsync("SFX"),
+                ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.BGM),
+                ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.SFX),
+                ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.PNG),
+                ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.Costume),
+                ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.SeraScript),
+                ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.HanaScript),
+                ResourceManager.Instance.PreloadLabelAsync(AddressableLabel.TutorialScript),
                 DataTableManager.Initialization
             );
 

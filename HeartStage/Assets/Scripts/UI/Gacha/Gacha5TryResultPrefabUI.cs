@@ -69,11 +69,11 @@ public class Gacha5TryResultPrefabUI : MonoBehaviour
         }
 
         // 기존 스프라이트 정리
-        if (currentSprite != null)
-        {
-            DestroyImmediate(currentSprite);
-            currentSprite = null;
-        }
+        //if (currentSprite != null)
+        //{
+        //    DestroyImmediate(currentSprite);
+        //    currentSprite = null;
+        //}
 
         characterImage.sprite = ResourceManager.Instance.GetSprite(imageName);
     }
@@ -81,10 +81,10 @@ public class Gacha5TryResultPrefabUI : MonoBehaviour
     private void OnDestroy()
     {
         // 컴포넌트 파괴시 스프라이트 정리
-        if (currentSprite != null)
-        {
-            DestroyImmediate(currentSprite);
-            currentSprite = null;
-        }
+        //if (currentSprite != null)
+        //{
+        //    DestroyImmediate(currentSprite);
+        //    currentSprite = null;
+        //}
     }
 }
