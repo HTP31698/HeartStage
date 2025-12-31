@@ -42,7 +42,7 @@ public class GachaManager : MonoBehaviour
         }
 
         // 재화 차감
-        if (!ItemInvenHelper.TryConsumeItem(ItemID.HeartStick, 50))
+        if (!ItemInvenHelper.TryConsumeItem(ItemID.HeartStick, 200))
         {
             return null;
         }
@@ -123,7 +123,7 @@ public class GachaManager : MonoBehaviour
             return result;
         }
 
-        if (!ItemInvenHelper.TryConsumeItem(ItemID.HeartStick, 250))
+        if (!ItemInvenHelper.TryConsumeItem(ItemID.HeartStick, 1000))
         {
             return result;
         }

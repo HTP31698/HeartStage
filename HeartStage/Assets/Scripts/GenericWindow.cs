@@ -1,11 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class GenericWindow : MonoBehaviour
 {
     protected WindowManager manager;
     protected WindowType windowType = WindowType.None;
     protected bool isOverlayWindow = false;
-    private WindowAnimator _windowAnimator;
+    protected WindowAnimator _windowAnimator;
 
     protected virtual void Awake()
     {
