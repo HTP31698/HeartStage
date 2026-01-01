@@ -35,8 +35,10 @@ public class BootSceneController : MonoBehaviour
 
     private static async UniTask PreLoginInitInternalAsync()
     {
-        // 타겟 프레임 올리니까 로딩시간 빨라짐
-        Application.targetFrameRate = 200;
+        // 로딩 시간 올리는 꼼수 로딩 후에 다시 정상으로
+        var vsyncCount = QualitySettings.vSyncCount;
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 300;
 
         if (!BootStrap.IsInitialized)
         {
@@ -59,8 +61,9 @@ public class BootSceneController : MonoBehaviour
 
             BootStrap.IsInitialized = true;
         }
-
+        // 정상으로 세팅
         Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = vsyncCount; 
         s_initialized = true;
     }
 }
