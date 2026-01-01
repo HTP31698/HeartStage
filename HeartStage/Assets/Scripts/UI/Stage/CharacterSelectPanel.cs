@@ -34,7 +34,7 @@ public class CharacterSelectPanel : MonoBehaviour
         characterName.text = characterData.char_name;
         idolPowerCount.text = $"{characterData.GetTotalPower()}";
         levelText.text = $"LV {characterData.char_lv}";
-        CharacterAttributeIcon.ChangeIcon(attributeIcon,characterData.char_type);
+        CharacterAttributeIcon.ChangeIcon(attributeIcon, characterData.char_type);
 
         // 포토카드 교체 반영
         LoadPhotocardAsync(characterData).Forget();
@@ -42,6 +42,12 @@ public class CharacterSelectPanel : MonoBehaviour
 
     private async UniTaskVoid LoadPhotocardAsync(CharacterData characterData)
     {
+        if (characterData == null)
+        {
+            cardImage.sprite = null;
+            return;
+        }
+
         string charCode = PhotocardHelper.ExtractCharCode(characterData.char_id);
         // 스테이지 배치 UI에서는 Frame 버전 사용
         var sprite = await PhotocardHelper.LoadDisplaySpriteWithFrame(charCode);

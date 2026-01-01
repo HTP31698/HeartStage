@@ -1,6 +1,7 @@
-﻿using UnityEngine;
-using UnityEngine.UI;
+﻿using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class MonitoringCharacterSlot : MonoBehaviour, IDropHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
@@ -110,7 +111,30 @@ public class MonitoringCharacterSlot : MonoBehaviour, IDropHandler, IBeginDragHa
 
     private void UpdateCharacterImage()
     {
-        CharacterImageHelper.SetCharacterImage(characterImage, currentCharacterData);
+        LoadPhotocardAsync(currentCharacterData).Forget();
+    }
+
+    private async UniTaskVoid LoadPhotocardAsync(CharacterData characterData)
+    {
+        if (characterData == null)
+        {
+            characterImage.sprite = null;
+            return;
+        }
+
+        string charCode = PhotocardHelper.ExtractCharCode(characterData.char_id);
+        // 스테이지 배치 UI에서는 Frame 버전 사용
+        var sprite = await PhotocardHelper.LoadDisplaySpriteWithFrame(charCode);
+
+        if (sprite != null)
+        {
+            characterImage.sprite = sprite;
+        }
+        else
+        {
+            // fallback: 기존 방식
+            characterImage.sprite = ResourceManager.Instance.GetSprite(characterData.card_imageName);
+        }
     }
 
     private void UpdateVisualState()

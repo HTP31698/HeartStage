@@ -93,7 +93,24 @@ public class MonitoringCharacterPrefab : MonoBehaviour, IBeginDragHandler, IDrag
 
     private void SetCharacterImage()
     {
-        CharacterImageHelper.SetCharacterImage(characterImage, characterData);
+        LoadPhotocardAsync(characterData).Forget();
+    }
+
+    private async UniTaskVoid LoadPhotocardAsync(CharacterData characterData)
+    {
+        string charCode = PhotocardHelper.ExtractCharCode(characterData.char_id);
+        // 스테이지 배치 UI에서는 Frame 버전 사용
+        var sprite = await PhotocardHelper.LoadDisplaySpriteWithFrame(charCode);
+
+        if (sprite != null)
+        {
+            characterImage.sprite = sprite;
+        }
+        else
+        {
+            // fallback: 기존 방식
+            characterImage.sprite = ResourceManager.Instance.GetSprite(characterData.card_imageName);
+        }
     }
 
     private void UpdateDispatchCountUI()
