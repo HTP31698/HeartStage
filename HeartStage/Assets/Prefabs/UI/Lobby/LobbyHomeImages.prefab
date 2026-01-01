@@ -46,13 +46,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba9f96a98505a454f95f42d37703abef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lobbyUI: {fileID: 0}
   windowManager: {fileID: 0}
   lobbyUiCanvasGroup: {fileID: 0}
   returnButton: {fileID: 0}
   hideObjects:
-  - {fileID: 0}
-  - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
@@ -77,6 +74,7 @@ MonoBehaviour:
     showStoryRewardAfterScene: 0
     StoryAfterLobby: 0
     clearedStoryStages: 
+    storyScriptResumeIndex: -1
     weeklyQuest:
       weekKey: 
       progress: 0
@@ -116,8 +114,13 @@ MonoBehaviour:
     friendUidList: []
     lastSeenNoticeId: 0
     returnToStageInfo: 0
+    returnToSpecialDungeon: 0
+    isTutorialCompleted: 0
+    isTutorialCutsceneCompleted: 0
+    isStageTutorialCompleted: 0
     bgmVolume: 1
     sfxVolume: 1
+  friendUID: 
 --- !u!1 &8518252317065780944
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 /// <summary>
@@ -40,8 +40,19 @@ public class CostumeController : MonoBehaviour
     /// </summary>
     public void LoadEquippedCostume()
     {
-        var saveData = SaveLoadManager.Data;
-        if (saveData == null) return;
+        SaveDataV1 saveData;
+
+        if (LobbyHomeInitializer.Instance != null && LobbyHomeInitializer.Instance.isFriendHome)
+        {
+            saveData = LobbyHomeInitializer.Instance.friendSaveData;
+        }
+        else
+        {
+            saveData = SaveLoadManager.Data;
+        }
+
+        if (saveData == null)
+            return;
 
         if (saveData.equippedCostumeByChar.TryGetValue(characterName, out var costume))
         {

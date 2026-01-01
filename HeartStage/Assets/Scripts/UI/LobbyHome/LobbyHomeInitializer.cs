@@ -39,8 +39,8 @@ public class LobbyHomeInitializer : MonoBehaviour
 
     public void Init()
     {
-        Init(SaveLoadManager.Data);
         isFriendHome = false;
+        Init(SaveLoadManager.Data);
         friendSaveData = null;
         friendUID = string.Empty;
     }

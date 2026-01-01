@@ -34,10 +34,10 @@ RectTransform:
   - {fileID: 8825035183337143580}
   m_Father: {fileID: 3534408685310252301}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 47.399963, y: -232.5}
-  m_SizeDelta: {x: 85, y: 85}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8588144556911397587
 CanvasRenderer:
@@ -120,7 +120,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 4285952608746859746}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 3649833337892769370}
+        m_TargetAssemblyTypeName: OptionPanelUI, Assembly-CSharp
+        m_MethodName: Toggle
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1209646336845166476
 GameObject:
   m_ObjectHideFlags: 0
@@ -250,10 +262,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 3534408685310252301}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 47.399963, y: -322.5}
-  m_SizeDelta: {x: 85, y: 85}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3483719993906940618
 CanvasRenderer:
@@ -337,21 +349,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UnityEngine.UI.Image, UnityEngine.UI
-        m_MethodName: set_enabled
-        m_Mode: 6
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 1
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Ricimi.Popup, Assembly-CSharp
-        m_MethodName: Open
+      - m_Target: {fileID: 3649833337892769370}
+        m_TargetAssemblyTypeName: OptionPanelUI, Assembly-CSharp
+        m_MethodName: Toggle
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -359,7 +359,7 @@ MonoBehaviour:
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
-          m_BoolArgument: 1
+          m_BoolArgument: 0
         m_CallState: 2
 --- !u!1 &3131717872376063326
 GameObject:
@@ -401,7 +401,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0.84455675}
   m_AnchoredPosition: {x: 0, y: 0.6928711}
-  m_SizeDelta: {x: 0, y: -10.050589}
+  m_SizeDelta: {x: 0, y: -10.050486}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4166605901719215820
 CanvasRenderer:
@@ -622,10 +622,10 @@ RectTransform:
   - {fileID: 767681127548307197}
   m_Father: {fileID: 3534408685310252301}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 47.399963, y: -142.5}
-  m_SizeDelta: {x: 85, y: 85}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6175329319722339073
 CanvasRenderer:
@@ -723,7 +723,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 766117195541106038}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 3649833337892769370}
+        m_TargetAssemblyTypeName: OptionPanelUI, Assembly-CSharp
+        m_MethodName: Toggle
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1390117363111544484
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -909,10 +921,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 3534408685310252301}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 47.399963, y: -52.5}
-  m_SizeDelta: {x: 85, y: 85}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3621628632518585049
 CanvasRenderer:
@@ -1008,7 +1020,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 132256542688237664}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 3649833337892769370}
+        m_TargetAssemblyTypeName: OptionPanelUI, Assembly-CSharp
+        m_MethodName: Toggle
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &9115737323910430815
 GameObject:
   m_ObjectHideFlags: 0
@@ -1138,6 +1162,9 @@ MonoBehaviour:
   mailButton: {fileID: 8678113359955020722}
   settingButton: {fileID: 315833164647377542}
   mailNotificationDot: {fileID: 4400214325632326158}
+  duration: 0.25
+  easeOpen: 9
+  easeClose: 8
 --- !u!1001 &2871059041143654670
 PrefabInstance:
   m_ObjectHideFlags: 0
