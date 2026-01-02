@@ -197,13 +197,39 @@ public class StoryManager : MonoBehaviour
 
         SetCutsceneImage(selectedStageId);
 
+        // 화자 이름 설정 (user_name인 경우 실제 닉네임으로 대체)
         if (nameText != null)
-            nameText.text = script.Name;
+        {
+            nameText.text = GetDisplayName(script.Name);
+        }
 
         // 음성 재생 - Voice 필드에 값이 있는 경우에만
         PlayVoiceForCurrentScript(script);
 
         StartTypingEffect(script.Text).Forget();
+    }
+
+    /// <summary>
+    /// user_name을 실제 유저 닉네임으로 대체
+    /// </summary>
+    private string GetDisplayName(string originalName)
+    {
+        if (string.IsNullOrEmpty(originalName))
+            return "";
+
+        // user_name 실제 닉네임으로 대체
+        string lowerName = originalName.ToLower().Replace("(", "").Replace(")", "").Trim();
+        if (lowerName == "user_name")
+        {
+            var saveData = SaveLoadManager.Data as SaveDataV1;
+            if (saveData != null && !string.IsNullOrEmpty(saveData.nickname))
+            {
+                return saveData.nickname;
+            }
+            return "프로듀서"; // 닉네임이 없을 경우 기본값
+        }
+
+        return originalName;
     }
 
     /// 현재 스크립트의 음성 재생
