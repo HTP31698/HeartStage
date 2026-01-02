@@ -4,13 +4,17 @@ public struct GachaResult
 {
     public GachaData gachaData; // 뽑힌 가챠 데이터
     public CharacterCSVData characterData; // 뽑힌 캐릭터 데이터
-    public bool isDuplicate; // 중복 여부 
+    public bool isDuplicate; // 중복 여부
+    public bool isMaxRank; // 4등급 여부 (조각 → 트레이닝 포인트 변환)
+    public int trainingPointAmount; // 변환된 트레이닝 포인트 수량
 
-    public GachaResult(GachaData gachaData, CharacterCSVData characterData, bool isDuplicate = false)
+    public GachaResult(GachaData gachaData, CharacterCSVData characterData, bool isDuplicate = false, bool isMaxRank = false, int trainingPointAmount = 0)
     {
         this.gachaData = gachaData;
         this.characterData = characterData;
         this.isDuplicate = isDuplicate;
+        this.isMaxRank = isMaxRank;
+        this.trainingPointAmount = trainingPointAmount;
     }
 }
 
@@ -78,21 +82,59 @@ public class GachaManager : MonoBehaviour
             else
             {
                 // 중복 캐릭터 보상 처리
+                int maxRank = CharacterHelper.GetOwnedMaxRankByBaseId(characterData.char_id);
+                Debug.Log($"[Gacha] 중복 캐릭터: {characterData.char_name}, char_id={characterData.char_id}, maxRank={maxRank}, Gacha_have={selectedItem.Gacha_have}");
+
                 if (selectedItem.Gacha_have > 0)
                 {
-                    var itemData = DataTableManager.ItemTable.Get(selectedItem.Gacha_have);
-                    if (itemData != null)
+                    // 4등급(인기) 체크
+                    if (maxRank >= 4)
                     {
-                        ItemInvenHelper.AddItem(selectedItem.Gacha_have, selectedItem.Gacha_have_amount);
+                        // 4등급이면 트레이닝 포인트로 변환
+                        int trainingAmount = selectedItem.Gacha_have_amount;
+                        ItemInvenHelper.AddItem(ItemID.TrainingPoint, trainingAmount);
                         QuestManager.Instance.OnGachaDraw();
-                        Debug.Log($"중복 보상 아이템 획득: {itemData.item_name} x{selectedItem.Gacha_have_amount}");
+                        Debug.Log($"4등급 중복 - 트레이닝 포인트 획득: x{trainingAmount}");
+
+                        return new GachaResult(selectedItem, characterData, true, true, trainingAmount);
+                    }
+                    else
+                    {
+                        // 4등급 미만이면 조각 지급
+                        var itemData = DataTableManager.ItemTable.Get(selectedItem.Gacha_have);
+                        if (itemData != null)
+                        {
+                            ItemInvenHelper.AddItem(selectedItem.Gacha_have, selectedItem.Gacha_have_amount);
+                            QuestManager.Instance.OnGachaDraw();
+                            Debug.Log($"중복 보상 아이템 획득: {itemData.item_name} x{selectedItem.Gacha_have_amount}");
+                        }
                     }
                 }
             }
         }
         else
         {
-            // 일반 아이템 획득 처리
+            // 조각 아이템인 경우 4등급 체크
+            var pieceData = DataTableManager.PieceTable.Get(selectedItem.Gacha_item);
+            if (pieceData != null)
+            {
+                // 해당 캐릭터가 4등급인지 확인
+                int maxRank = CharacterHelper.GetOwnedMaxRankByBaseId(pieceData.piece_result);
+                Debug.Log($"[Gacha] 조각 아이템: {selectedItem.Gacha_item}, 대상 캐릭터={pieceData.piece_result}, maxRank={maxRank}");
+
+                if (maxRank >= 4)
+                {
+                    // 4등급이면 트레이닝 포인트로 변환
+                    int trainingAmount = selectedItem.Gacha_item_amount;
+                    ItemInvenHelper.AddItem(ItemID.TrainingPoint, trainingAmount);
+                    QuestManager.Instance.OnGachaDraw();
+                    Debug.Log($"4등급 조각 - 트레이닝 포인트 획득: x{trainingAmount}");
+
+                    return new GachaResult(selectedItem, null, false, true, trainingAmount);
+                }
+            }
+
+            // 일반 아이템이거나 4등급 미만 조각
             ItemInvenHelper.AddItem(selectedItem.Gacha_item, selectedItem.Gacha_item_amount);
             QuestManager.Instance.OnGachaDraw();
 
@@ -104,12 +146,7 @@ public class GachaManager : MonoBehaviour
         }
 
         // 결과 반환
-        return new GachaResult
-        {
-            gachaData = selectedItem,
-            characterData = characterData,
-            isDuplicate = alreadyOwned
-        };
+        return new GachaResult(selectedItem, characterData, alreadyOwned, false, 0);
     }
 
     // 5회 뽑기
@@ -157,27 +194,63 @@ public class GachaManager : MonoBehaviour
                     }
                     else
                     {
+                        int maxRank = CharacterHelper.GetOwnedMaxRankByBaseId(characterData.char_id);
+                        Debug.Log($"[Gacha5] 중복 캐릭터: {characterData.char_name}, char_id={characterData.char_id}, maxRank={maxRank}, Gacha_have={selectedItem.Gacha_have}");
+
                         if (selectedItem.Gacha_have > 0)
                         {
-                            var itemData = DataTableManager.ItemTable.Get(selectedItem.Gacha_have);
-                            if (itemData != null)
+                            // 4등급(인기) 체크
+                            if (maxRank >= 4)
                             {
-                                ItemInvenHelper.AddItem(selectedItem.Gacha_have, selectedItem.Gacha_have_amount); // 중복 보상 아이템 추가
-
-                                //뽑기 퀘스트 완료 처리
+                                // 4등급이면 트레이닝 포인트로 변환
+                                int trainingAmount = selectedItem.Gacha_have_amount;
+                                ItemInvenHelper.AddItem(ItemID.TrainingPoint, trainingAmount);
                                 QuestManager.Instance.OnGachaDraw();
+                                Debug.Log($"4등급 중복 - 트레이닝 포인트 획득: x{trainingAmount}");
+
+                                result.Add(new GachaResult(selectedItem, characterData, true, true, trainingAmount));
+                                continue;
+                            }
+                            else
+                            {
+                                // 4등급 미만이면 조각 지급
+                                var itemData = DataTableManager.ItemTable.Get(selectedItem.Gacha_have);
+                                if (itemData != null)
+                                {
+                                    ItemInvenHelper.AddItem(selectedItem.Gacha_have, selectedItem.Gacha_have_amount);
+                                    QuestManager.Instance.OnGachaDraw();
+                                }
                             }
                         }
                     }
-                    result.Add(new GachaResult(selectedItem, characterData, alreadyOwned));
+                    result.Add(new GachaResult(selectedItem, characterData, alreadyOwned, false, 0));
                 }
 
                 else
                 {
+                    // 조각 아이템인 경우 4등급 체크
+                    var pieceData = DataTableManager.PieceTable.Get(selectedItem.Gacha_item);
+                    if (pieceData != null)
+                    {
+                        int maxRank = CharacterHelper.GetOwnedMaxRankByBaseId(pieceData.piece_result);
+                        Debug.Log($"[Gacha5] 조각 아이템: {selectedItem.Gacha_item}, 대상 캐릭터={pieceData.piece_result}, maxRank={maxRank}");
+
+                        if (maxRank >= 4)
+                        {
+                            int trainingAmount = selectedItem.Gacha_item_amount;
+                            ItemInvenHelper.AddItem(ItemID.TrainingPoint, trainingAmount);
+                            QuestManager.Instance.OnGachaDraw();
+                            Debug.Log($"4등급 조각 - 트레이닝 포인트 획득: x{trainingAmount}");
+
+                            result.Add(new GachaResult(selectedItem, null, false, true, trainingAmount));
+                            continue;
+                        }
+                    }
+
+                    // 일반 아이템이거나 4등급 미만 조각
                     ItemInvenHelper.AddItem(selectedItem.Gacha_item, selectedItem.Gacha_item_amount);
                     QuestManager.Instance.OnGachaDraw();
 
-                    var itemData = DataTableManager.ItemTable.Get(selectedItem.Gacha_item);
                     result.Add(new GachaResult(selectedItem, null, false));
                 }
             }

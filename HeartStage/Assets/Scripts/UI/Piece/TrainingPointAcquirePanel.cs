@@ -21,7 +21,7 @@ public class TrainingPointAcquirePanel : MonoBehaviour
     public void Close()
     {
         gameObject.SetActive(false);
-        PieceExchangePanel.Instance.AfterAcquireTrainingPoint();
+        // 4등급 변환 로직이 가챠로 이동되어 더 이상 사용되지 않음
         SoundManager.Instance.PlayUICloseClickSound();
     }
 }
