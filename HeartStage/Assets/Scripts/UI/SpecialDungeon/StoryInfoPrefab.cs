@@ -12,9 +12,11 @@ public class StoryInfoPrefab : MonoBehaviour
     [SerializeField] private Image rewardIconImage; // 보상 아이콘 이미지
     [SerializeField] private Image stampImage; // 완료 도장 및 알림 이미지
     [SerializeField] private Button stageButton; // 스테이지 선택 버튼
+    [SerializeField] private CanvasGroup canvasGroup; // 잠금 처리용 CanvasGroup
 
     private StoryStageCSVData stageData;
     private Action<int> onStageSelected;
+    private bool isLocked = false;
 
     private void Awake()
     {
@@ -50,6 +52,69 @@ public class StoryInfoPrefab : MonoBehaviour
 
         // 완료 상태 표시
         UpdateStampImage();
+
+        // 등급 잠금 체크
+        CheckRankLock(data);
+    }
+
+    /// <summary>
+    /// 캐릭터 등급에 따른 잠금 처리
+    /// </summary>
+    private void CheckRankLock(StoryStageCSVData data)
+    {
+        if (data == null) return;
+
+        // 현재 캐릭터의 등급 가져오기
+        int currentRank = GetOwnedCharacterRank(data.need_char);
+        int requiredRank = data.need_rank;
+
+        // 등급이 부족하면 잠금 처리
+        isLocked = currentRank < requiredRank;
+
+        // CanvasGroup으로 반투명 + 클릭 불가 처리
+        if (canvasGroup != null)
+        {
+            if (isLocked)
+            {
+                canvasGroup.alpha = 0.5f; 
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
+            else
+            {
+                canvasGroup.alpha = 1f;
+                canvasGroup.interactable = true;
+                canvasGroup.blocksRaycasts = true;
+            }
+        }
+
+        // 버튼 상호작용도 비활성화
+        if (stageButton != null)
+        {
+            stageButton.interactable = !isLocked;
+        }
+    }
+
+    /// <summary>
+    /// 캐릭터 이름으로 보유 중인 캐릭터의 등급 반환
+    /// </summary>
+    private int GetOwnedCharacterRank(string characterName)
+    {
+        if (SaveLoadManager.Data == null || string.IsNullOrEmpty(characterName)) 
+            return 0;
+
+        int maxRank = 0;
+
+        foreach (var ownedId in SaveLoadManager.Data.ownedIds)
+        {
+            var charData = DataTableManager.CharacterTable.Get(ownedId);
+            if (charData != null && charData.char_name == characterName)
+            {
+                maxRank = Mathf.Max(maxRank, charData.char_rank);
+            }
+        }
+
+        return maxRank;
     }
 
     private void SetRewardInfo(int itemId, int count)
