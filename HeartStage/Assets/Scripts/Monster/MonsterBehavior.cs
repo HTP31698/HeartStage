@@ -246,6 +246,7 @@ public class MonsterBehavior : MonoBehaviour, IAttack, IDamageable
             var ondamageEvents = GetComponents<IDamaged>();
             foreach (var ondamageEvent in ondamageEvents)
             {
+                SoundManager.Instance.PlaySFX(SoundName.SFX_Impact, 0.7f);
                 ondamageEvent.OnDamaged(damage, gameObject, isCritical);
             }
         }

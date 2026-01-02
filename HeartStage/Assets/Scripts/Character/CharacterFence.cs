@@ -114,6 +114,7 @@ public class CharacterFence : MonoBehaviour, IDamageable
     public void OnDamage(int damage, bool isCritical = false)
     {
         hp -= damage;
+        SoundManager.Instance.PlaySFX(SoundName.SFX_Impact, 0.7f);
         StartShake();
 
         if (hp <= 0)
