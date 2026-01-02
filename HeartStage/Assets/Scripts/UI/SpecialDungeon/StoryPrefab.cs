@@ -21,9 +21,7 @@ public class StoryPrefab : MonoBehaviour
         UpdateGradeText();
     }
 
-    /// <summary>
     /// 등급 텍스트 업데이트
-    /// </summary>
     public void UpdateGradeText()
     {
         if (gradeText == null || string.IsNullOrEmpty(characterName)) return;
@@ -33,15 +31,9 @@ public class StoryPrefab : MonoBehaviour
         {
             gradeText.text = $"LV.{charData.char_lv} {RankName.Get(charData.char_rank)}";
         }
-        else
-        {
-            gradeText.text = "미보유";
-        }
     }
 
-    /// <summary>
     /// 캐릭터 이름으로 현재 보유 중인 캐릭터의 등급을 표시
-    /// </summary>
     public void SetGradeByCharacterName(string characterName)
     {
         if (gradeText == null) return;
@@ -57,9 +49,7 @@ public class StoryPrefab : MonoBehaviour
         }
     }
 
-    /// <summary>
     /// 캐릭터 이름으로 보유 중인 캐릭터 데이터 반환 (가장 높은 등급)
-    /// </summary>
     private CharacterCSVData GetOwnedCharacterData(string characterName)
     {
         if (SaveLoadManager.Data == null) return null;
