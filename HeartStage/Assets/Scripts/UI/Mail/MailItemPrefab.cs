@@ -8,8 +8,6 @@ public class MailItemPrefab : MonoBehaviour
     [SerializeField] private TextMeshProUGUI itemNameText;
     [SerializeField] private TextMeshProUGUI itemCountText;
 
-    private Sprite dynamicSprite; // 메모리 관리용
-
     public void Setup(ItemAttachment itemAttachment)
     {
         if (itemAttachment == null) return;
@@ -29,7 +27,7 @@ public class MailItemPrefab : MonoBehaviour
             itemNameText.text = itemData.item_name;
 
         if (itemCountText != null)
-            itemCountText.text = count.ToString();
+            itemCountText.text = $"x{count}";
 
         SetItemIcon(itemData.prefab);
     }
@@ -38,31 +36,6 @@ public class MailItemPrefab : MonoBehaviour
     {
         if (itemIcon == null || string.IsNullOrEmpty(prefabName)) return;
 
-        var texture = ResourceManager.Instance.Get<Texture2D>(prefabName);
-        if (texture != null)
-        {
-            // 기존 동적 스프라이트 정리
-            if (dynamicSprite != null)
-            {
-                DestroyImmediate(dynamicSprite);
-            }
-
-            dynamicSprite = Sprite.Create(
-                texture,
-                new Rect(0, 0, texture.width, texture.height),
-                new Vector2(0.5f, 0.5f)
-            );
-            itemIcon.sprite = dynamicSprite;
-        }
-    }
-
-    // 메모리 정리
-    private void OnDestroy()
-    {
-        if (dynamicSprite != null)
-        {
-            DestroyImmediate(dynamicSprite);
-            dynamicSprite = null;
-        }
+        itemIcon.sprite = ResourceManager.Instance.GetSprite(prefabName);
     }
 }
