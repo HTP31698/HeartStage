@@ -18,6 +18,9 @@ public class LobbySceneController : MonoBehaviour
     [Header("친구 UI")]
     [SerializeField] private FriendWindow friendWindow;
 
+    [Header("상점 UI")]
+    [SerializeField] private ShoppingWindow shoppingWindow;
+
     // 친구 프로필 캐시 (uid → PublicProfileData)
     private static Dictionary<string, PublicProfileData> _friendProfileCache = new Dictionary<string, PublicProfileData>();
 
@@ -248,6 +251,11 @@ public class LobbySceneController : MonoBehaviour
         if (friendWindow != null)
         {
             tasks.Add(friendWindow.PrewarmAsync());
+        }
+
+        if (shoppingWindow != null)
+        {
+            tasks.Add(shoppingWindow.PrewarmAsync());
         }
 
         if (tasks.Count == 0)

@@ -8,6 +8,7 @@ public class GachaResultUI : GenericWindow
     [Header("Reference")]
     [SerializeField] private Image characterImage;
     [SerializeField] private TextMeshProUGUI characterNameText;
+    [SerializeField] private TextMeshProUGUI itemCountText;  // 아이템 개수 (별도 표시)
 
     [Header("Button")]
     [SerializeField] private Button closeButton;
@@ -62,13 +63,15 @@ public class GachaResultUI : GenericWindow
                 if (itemData != null)
                 {
                     SetImage(itemData.prefab);
-                    SetCharacterNameText($"{itemData.item_name} x{gachaData.Gacha_have_amount}");
+                    SetCharacterNameText(itemData.item_name);
+                    SetItemCountText(gachaData.Gacha_have_amount);
                     return;
                 }
             }
 
             SetImage(characterData.card_imageName);
             SetCharacterNameText(characterData.char_name);
+            SetItemCountText(0);  // 캐릭터는 개수 표시 안함
         }
 
         else
@@ -77,11 +80,13 @@ public class GachaResultUI : GenericWindow
             if (itemData != null)
             {
                 SetImage(itemData.prefab);
-                SetCharacterNameText($"{itemData.item_name}x{gachaData.Gacha_item_amount}");
+                SetCharacterNameText(itemData.item_name);
+                SetItemCountText(gachaData.Gacha_item_amount);
             }
             else
             {
                 SetCharacterNameText($"아이템 ID: {gachaData.Gacha_item}");
+                SetItemCountText(0);
             }
         }
     }
@@ -136,7 +141,23 @@ public class GachaResultUI : GenericWindow
     {
         if (characterNameText != null)
         {
-            characterNameText.text = name; 
+            characterNameText.text = name;
+        }
+    }
+
+    private void SetItemCountText(int count)
+    {
+        if (itemCountText != null)
+        {
+            if (count > 0)
+            {
+                itemCountText.gameObject.SetActive(true);
+                itemCountText.text = $"x{count}";
+            }
+            else
+            {
+                itemCountText.gameObject.SetActive(false);
+            }
         }
     }
 

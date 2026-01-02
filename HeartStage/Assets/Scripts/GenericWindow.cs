@@ -47,4 +47,12 @@ public class GenericWindow : MonoBehaviour
             gameObject.SetActive(false);
         }
     }
+
+    /// <summary>
+    /// 네비게이션 전환 시 윈도우 숨기기 (서브클래스에서 오버라이드 가능)
+    /// </summary>
+    public virtual void HideForNavigation()
+    {
+        gameObject.SetActive(false);
+    }
 }

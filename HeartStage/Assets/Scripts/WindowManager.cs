@@ -217,7 +217,7 @@ public class WindowManager : MonoBehaviour
         // 일반 전환 (슬라이드 없음)
         if (IsValidWindow(currentWindow))
         {
-            windows[currentWindow].gameObject.SetActive(false);
+            windows[currentWindow].HideForNavigation();
         }
 
         currentWindow = id;
@@ -234,7 +234,7 @@ public class WindowManager : MonoBehaviour
             // 이전 윈도우 정리 (OnComplete가 실행되지 않으므로 여기서 처리)
             if (_slidePrevWindow != null)
             {
-                _slidePrevWindow.gameObject.SetActive(false);
+                _slidePrevWindow.HideForNavigation();
                 _slidePrevWindow = null;
             }
             _slideTween.Kill(false);
@@ -281,10 +281,10 @@ public class WindowManager : MonoBehaviour
                 // 원래 offset으로 확실히 복원
                 nextRect.offsetMin = originalOffsetMin;
                 nextRect.offsetMax = originalOffsetMax;
-                // 이전 창 끄기
+                // 이전 창 숨기기
                 if (_slidePrevWindow != null)
                 {
-                    _slidePrevWindow.gameObject.SetActive(false);
+                    _slidePrevWindow.HideForNavigation();
                     _slidePrevWindow = null;
                 }
                 _isTransitioning = false;
