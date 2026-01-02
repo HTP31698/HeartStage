@@ -8,16 +8,11 @@ public class PieceExchangePanel : MonoBehaviour
     public static PieceExchangePanel Instance;
 
     public CharacterAcquirePanel characterAcquirePanel;
-    public TrainingPointAcquirePanel trainingPointAcquirePanel;
 
     [HideInInspector]
     public List<int> acquireCharacterIds = new List<int>();
-    [HideInInspector]
-    public int acquireTrainingPoint = 0;
 
     private Image background;
-
-    private const int pieceToTrainingPoint = 1;
 
     private void Awake()
     {
@@ -48,16 +43,7 @@ public class PieceExchangePanel : MonoBehaviour
                     SaveLoadManager.SaveToServer().Forget();
                 }
             }
-            // 해당 캐릭터의 등급이 4등급이고, 조각 개수가 0개 이상일 때
-            if (!pieceData.IsUseful())
-            {
-                int trainingAmount = itemInven[pieceId] * pieceToTrainingPoint;
-                if(ItemInvenHelper.TryConsumeItem(pieceId, itemInven[pieceId]))
-                {
-                    ItemInvenHelper.AddItem(ItemID.TrainingPoint, trainingAmount);
-                    acquireTrainingPoint += trainingAmount;
-                }
-            }
+            // 4등급 변환 로직은 가챠에서 직접 처리하므로 제거됨
         }
 
         UpdatePanel();
@@ -70,13 +56,6 @@ public class PieceExchangePanel : MonoBehaviour
         UpdatePanel();
     }
 
-    // 트레이닝 포인트 획득 후 호출
-    public void AfterAcquireTrainingPoint()
-    {
-        acquireTrainingPoint = 0;
-        UpdatePanel();
-    }
-
     // 패널 On/Off 업데이트
     private void UpdatePanel()
     {
@@ -86,16 +65,6 @@ public class PieceExchangePanel : MonoBehaviour
         {
             characterAcquirePanel.gameObject.SetActive(true);
             characterAcquirePanel.Open(acquireCharacterIds[0]);
-            background.enabled = true;
-            // 다른 UI 위에 표시되도록 맨 앞으로 이동
-            transform.SetAsLastSibling();
-            return;
-        }
-
-        if(acquireTrainingPoint > 0)
-        {
-            trainingPointAcquirePanel.gameObject.SetActive(true);
-            trainingPointAcquirePanel.Open(acquireTrainingPoint);
             background.enabled = true;
             // 다른 UI 위에 표시되도록 맨 앞으로 이동
             transform.SetAsLastSibling();
