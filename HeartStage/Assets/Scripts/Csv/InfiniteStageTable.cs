@@ -49,6 +49,7 @@ public class InfiniteStageCSVData
     // ========== 보상 설정 ==========
     public int reward_per_second { get; set; }          // 보상 누적 시간 (초)
     public int reward_item_id { get; set; }             // 보상 아이템 ID
+    public int fan_per_second { get; set; }             // 팬수 보상 주기 (초, 예: 10이면 10초당 1팬)
 
     // ========== 기타 ==========
     public string prefab { get; set; }                  // 프리팹 이름

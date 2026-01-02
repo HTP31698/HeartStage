@@ -47,6 +47,7 @@ public class InfiniteStageData : ScriptableObject
     [Header("보상")]
     public int reward_per_second; // 초당 보상
     public int reward_item_id;    // 보상 아이템 ID
+    public int fan_per_second;    // 팬수 보상 주기 (초, 예: 10이면 10초당 1팬)
 
     [Header("배경/위치")]
     public string prefab;         // 배경 프리팹 이름
@@ -82,6 +83,7 @@ public class InfiniteStageData : ScriptableObject
             strong_spawn_interval = (int)strong_spawn_interval,
             reward_per_second = reward_per_second,
             reward_item_id = reward_item_id,
+            fan_per_second = fan_per_second,
             prefab = prefab,
             stage_position = stage_position
         };
@@ -115,6 +117,7 @@ public class InfiniteStageData : ScriptableObject
         strong_spawn_interval = csv.strong_spawn_interval;
         reward_per_second = csv.reward_per_second;
         reward_item_id = csv.reward_item_id;
+        fan_per_second = csv.fan_per_second;
         prefab = csv.prefab;
         stage_position = csv.stage_position;
     }

@@ -50,10 +50,23 @@ public class VictoryPanel : GenericWindow
 
     private void Init()
     {
+        // 무한 모드 체크
+        bool isInfiniteMode = StageManager.Instance != null && StageManager.Instance.isInfiniteMode;
+
         if (nextStageButton != null)
         {
             nextStageButton.onClick.RemoveAllListeners();
-            nextStageButton.onClick.AddListener(OnNextStageButtonClicked);
+
+            if (isInfiniteMode)
+            {
+                // 무한 모드: 다음 스테이지 버튼 숨기기
+                nextStageButton.gameObject.SetActive(false);
+            }
+            else
+            {
+                nextStageButton.gameObject.SetActive(true);
+                nextStageButton.onClick.AddListener(OnNextStageButtonClicked);
+            }
         }
 
         if (StageManager.Instance != null && StageManager.Instance.GetCurrentStageData() != null)
@@ -126,8 +139,23 @@ public class VictoryPanel : GenericWindow
 
     private void OnGoStageChoiceButtonClicked()
     {
-        // 스테이지 선택으로 이동
-        WindowManager.currentWindow = WindowType.StageSelect;
+        // 무한 모드 체크
+        bool isInfiniteMode = StageManager.Instance != null && StageManager.Instance.isInfiniteMode;
+
+        if (isInfiniteMode)
+        {
+            // 무한 모드: SpecialDungeon으로 복귀
+            var saveData = SaveLoadManager.Data;
+            saveData.returnToSpecialDungeon = true;
+            saveData.returnToStageInfo = false;
+            WindowManager.currentWindow = WindowType.SpecialDungeon;
+        }
+        else
+        {
+            // 일반 스테이지: 스테이지 선택으로 이동
+            WindowManager.currentWindow = WindowType.StageSelect;
+        }
+
         LoadSceneManager.Instance.GoLobby();
     }
 }

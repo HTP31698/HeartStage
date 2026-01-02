@@ -49,6 +49,7 @@ public class StageManager : MonoBehaviour
     [HideInInspector] public int infiniteEnhanceLevel = 0;        // 강화 레벨
     private float nextEnhanceTime = 0f;                           // 다음 강화 시간
     private bool infiniteStageStarted = false;                    // 배치 완료 후 시작 여부
+    [HideInInspector] public bool isGameOver = false;             // 게임 오버 상태 (무한모드)
 
     public float feverDuration = 6.0f;
     public float feverValue = 0.9f; // 피버 타임시 액티브 스킬 쿨타임이 줄어드는 퍼센트 0.9 -> 90% 감소
@@ -327,6 +328,7 @@ public class StageManager : MonoBehaviour
         infiniteElapsedTime = 0f;
         infiniteEnhanceLevel = 1; // Lv.1부터 시작
         nextEnhanceTime = data.enhance_interval;
+        isGameOver = false; // 게임 오버 상태 리셋
     }
 
     public void ResetInfiniteMode()
@@ -337,6 +339,7 @@ public class StageManager : MonoBehaviour
         infiniteEnhanceLevel = 0;
         nextEnhanceTime = 0f;
         infiniteStageStarted = false;
+        isGameOver = false; // 게임 오버 상태 리셋
     }
 
     public float GetInfiniteAtkMultiplier()
@@ -357,10 +360,19 @@ public class StageManager : MonoBehaviour
         return Mathf.Pow(infiniteStageData.speed_mul, infiniteEnhanceLevel);
     }
 
-    // 무한 모드 게임 오버
+    // 무한 모드 게임 오버 → 승리 처리
     public void InfiniteDefeat()
     {
         if (!isInfiniteMode) return;
+
+        // 게임 오버 상태로 설정 (몬스터 스폰 중지용)
+        isGameOver = true;
+
+        // 무한 스테이지 타이머 중지
+        infiniteStageStarted = false;
+
+        // 모든 몬스터 삭제
+        ClearAllMonsters();
 
         // 보상 계산 (초당 보상)
         int rewardAmount = (int)(infiniteElapsedTime / infiniteStageData.reward_per_second);
@@ -369,8 +381,32 @@ public class StageManager : MonoBehaviour
             ItemInvenHelper.AddItem(infiniteStageData.reward_item_id, rewardAmount);
         }
 
-        // 패배 UI 표시
-        Defeat();
+        // 팬수 보상 계산 (CSV에서 fan_per_second 사용, 기본값 10초당 1명)
+        int fanPerSecond = infiniteStageData.fan_per_second > 0 ? infiniteStageData.fan_per_second : 10;
+        fanReward = (int)(infiniteElapsedTime / fanPerSecond);
+
+        // 승리 UI 표시 (무한모드는 패배 대신 승리 화면)
+        if (windowManager != null)
+        {
+            windowManager.OpenOverlay(WindowType.VictoryPanelUI);
+        }
+
+        // Time.timeScale = 1f 유지 (왕관 애니메이션 등 UI 애니메이션 동작)
+        Time.timeScale = 1f;
+        GetReward();
+    }
+
+    // 모든 활성 몬스터 삭제
+    private void ClearAllMonsters()
+    {
+        var monsters = GameObject.FindGameObjectsWithTag(Tag.Monster);
+        foreach (var monster in monsters)
+        {
+            if (monster != null && monster.activeInHierarchy)
+            {
+                monster.SetActive(false);
+            }
+        }
     }
 
     // 스테이지 관련 추가 한 것

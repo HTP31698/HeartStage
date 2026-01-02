@@ -1358,7 +1358,7 @@ public class MonsterSpawner : MonoBehaviour
         if (data.base_mon_id1 > 0) infiniteBaseMonsterIds.Add(data.base_mon_id1);
         if (data.base_mon_id2 > 0) infiniteBaseMonsterIds.Add(data.base_mon_id2);
 
-        while (isInfiniteSpawning)
+        while (isInfiniteSpawning && !StageManager.Instance.isGameOver)
         {
             float elapsed = StageManager.Instance.infiniteElapsedTime;
 
