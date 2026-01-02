@@ -58,6 +58,11 @@ public class DragZoomPanManager : MonoBehaviour
     public void LockInput() => inputLocked = true;
     public void UnlockInput() => inputLocked = false;
 
+    // 튜토리얼 전용 잠금 (일반 잠금과 별도 관리)
+    private bool tutorialLocked;
+    public void LockForTutorial() => tutorialLocked = true;
+    public void UnlockForTutorial() => tutorialLocked = false;
+
     private void Awake()
     {
         Instance = this;
@@ -67,7 +72,7 @@ public class DragZoomPanManager : MonoBehaviour
 
     private void Update()
     {
-        if (inputLocked)
+        if (inputLocked || tutorialLocked)
             return;
 
 #if UNITY_EDITOR

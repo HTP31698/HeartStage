@@ -87,6 +87,8 @@ public class PieceExchangePanel : MonoBehaviour
             characterAcquirePanel.gameObject.SetActive(true);
             characterAcquirePanel.Open(acquireCharacterIds[0]);
             background.enabled = true;
+            // 다른 UI 위에 표시되도록 맨 앞으로 이동
+            transform.SetAsLastSibling();
             return;
         }
 
@@ -95,6 +97,8 @@ public class PieceExchangePanel : MonoBehaviour
             trainingPointAcquirePanel.gameObject.SetActive(true);
             trainingPointAcquirePanel.Open(acquireTrainingPoint);
             background.enabled = true;
+            // 다른 UI 위에 표시되도록 맨 앞으로 이동
+            transform.SetAsLastSibling();
         }
     }
 }

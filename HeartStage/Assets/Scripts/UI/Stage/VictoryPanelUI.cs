@@ -114,6 +114,9 @@ public class VictoryPanel : GenericWindow
 
     private void OnNextStageButtonClicked()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+
         if (monsterSpawner == null)
             return;
 
@@ -139,6 +142,7 @@ public class VictoryPanel : GenericWindow
 
     private void OnGoStageChoiceButtonClicked()
     {
+    	SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
         // 무한 모드 체크
         bool isInfiniteMode = StageManager.Instance != null && StageManager.Instance.isInfiniteMode;
 

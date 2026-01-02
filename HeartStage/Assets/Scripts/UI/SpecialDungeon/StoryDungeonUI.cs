@@ -6,6 +6,10 @@ public class StoryDungeonUI : GenericWindow
     [SerializeField] private Button stroyButton;
     [SerializeField] private Button seraStoryButton;
 
+    // StoryPrefab 컴포넌트 (등급 표시용)
+    [SerializeField] private StoryPrefab hanaStoryPrefab;
+    [SerializeField] private StoryPrefab seraStoryPrefab;
+
     // 현재 필터된 스토리 타입을 저장
     public static string currentStoryFilter = "";
 
@@ -25,6 +29,22 @@ public class StoryDungeonUI : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        // 하나/세라 캐릭터 등급 표시 업데이트
+        UpdateCharacterGrades();
+    }
+
+    private void UpdateCharacterGrades()
+    {
+        if (hanaStoryPrefab != null)
+        {
+            hanaStoryPrefab.SetGradeByCharacterName("하나");
+        }
+
+        if (seraStoryPrefab != null)
+        {
+            seraStoryPrefab.SetGradeByCharacterName("세라");
+        }
     }
 
     public override void Close()

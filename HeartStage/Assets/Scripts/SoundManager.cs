@@ -205,6 +205,14 @@ public class SoundManager : MonoBehaviour
         bgmSource.Stop();
     }
 
+    /// <summary>
+    /// BGM이 현재 재생 중인지 확인
+    /// </summary>
+    public bool IsBGMPlaying()
+    {
+        return bgmSource != null && bgmSource.isPlaying;
+    }
+
     public void SetSFXVolume(float volume) // 개인 오디오 볼륨 조절
     {
         sfxSource.volume = Mathf.Clamp01(volume);

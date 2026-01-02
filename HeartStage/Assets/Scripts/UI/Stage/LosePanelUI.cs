@@ -52,6 +52,7 @@ public class LosePanelUI : GenericWindow
 
     private void OnRetryButtonClicked()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         // 재도전
         LoadSceneManager.Instance.GoStage();
         Time.timeScale = 1f;
@@ -60,6 +61,8 @@ public class LosePanelUI : GenericWindow
 
     private void OnGoStageChoiceButtonClicked()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+
         // 현재 스테이지가 스토리 스테이지인지 확인
         bool isStoryStage = IsCurrentStageStoryStage();
 

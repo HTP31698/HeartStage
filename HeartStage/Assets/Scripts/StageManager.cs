@@ -48,6 +48,7 @@ public class StageManager : MonoBehaviour
     [HideInInspector] public float infiniteElapsedTime = 0f;      // 경과 시간
     [HideInInspector] public int infiniteEnhanceLevel = 0;        // 강화 레벨
     private float nextEnhanceTime = 0f;                           // 다음 강화 시간
+    private int currentInfiniteBgmIndex = 0;                      // 현재 BGM 인덱스 (0~3)
     private bool infiniteStageStarted = false;                    // 배치 완료 후 시작 여부
     [HideInInspector] public bool isGameOver = false;             // 게임 오버 상태 (무한모드)
 
@@ -139,8 +140,8 @@ public class StageManager : MonoBehaviour
 
                 // 위치는 SO의 stage_position 직접 사용
                 SetStagePosition(infiniteData.stage_position);
-
-
+                // 무한 모드 BGM 재생 (첫 번째 BGM)
+                PlayInfiniteBGM();
                 // 플래그 리셋 (다음 씬에서 일반 모드로)
                 gameData.isInfiniteMode = false;
                 gameData.infiniteStageId = 0;
@@ -242,6 +243,13 @@ public class StageManager : MonoBehaviour
             nextEnhanceTime += infiniteStageData.enhance_interval;
         }
 
+        // BGM이 끝나면 다음 BGM으로 넘어가기 (1→2→3→4→1 순환)
+        if (SoundManager.Instance != null && !SoundManager.Instance.IsBGMPlaying())
+        {
+            currentInfiniteBgmIndex = (currentInfiniteBgmIndex + 1) % 4;
+            PlayInfiniteBGM();
+        }
+
         // UI 시간 표시
         if (stageUI != null)
         {
@@ -282,15 +290,17 @@ public class StageManager : MonoBehaviour
             if (storyStageData != null)
             {
                 string needChar = storyStageData.need_char ?? "";
-                int stageStep = stageData.stage_step1;
+                
+                // 실제 스토리 스테이지 번호 계산
+                int storyStageNumber = (stageId >= 66005) ? (stageId - 66004) : (stageId - 66000);
 
                 if (needChar.Contains("하나"))
                 {
-                    bgmName = (stageStep == 3) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
+                    bgmName = (storyStageNumber == 3) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
                 }
                 else if (needChar.Contains("세라"))
                 {
-                    bgmName = (stageStep == 3) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
+                    bgmName = (storyStageNumber == 3) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
                 }
             }
         }
@@ -320,6 +330,26 @@ public class StageManager : MonoBehaviour
         SoundManager.Instance.PlayBGM(bgmName);
     }
 
+    /// <summary>
+    /// 무한 모드 BGM 재생 (1→2→3→4 순환, 끝나면 다음으로)
+    /// </summary>
+    private void PlayInfiniteBGM()
+    {
+        if (SoundManager.Instance == null) return;
+
+        string bgmName = currentInfiniteBgmIndex switch
+        {
+            0 => SoundName.BGM_Stage1,
+            1 => SoundName.BGM_Stage2,
+            2 => SoundName.BGM_Stage3,
+            3 => SoundName.BGM_Stage4,
+            _ => SoundName.BGM_Stage1
+        };
+
+        // loop=false로 설정하여 BGM이 끝나면 자동으로 멈춤
+        SoundManager.Instance.PlayBGM(bgmName, loop: false);
+    }
+
     // ========== 무한 모드 메서드 ==========
     public void InitInfiniteMode(InfiniteStageData data)
     {
@@ -340,6 +370,7 @@ public class StageManager : MonoBehaviour
         nextEnhanceTime = 0f;
         infiniteStageStarted = false;
         isGameOver = false; // 게임 오버 상태 리셋
+        currentInfiniteBgmIndex = 0;
     }
 
     public float GetInfiniteAtkMultiplier()
