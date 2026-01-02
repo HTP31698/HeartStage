@@ -169,6 +169,7 @@ MonoBehaviour:
   infiniteStageData: {fileID: 0}
   infiniteElapsedTime: 0
   infiniteEnhanceLevel: 0
+  isGameOver: 0
   feverDuration: 6
   feverValue: 0.9
   stageNumber: 1
@@ -820,13 +821,25 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 895152386}
     m_Modifications:
+    - target: {fileID: 426732673708408473, guid: 6c09a3ba01b9db74188a95dbe2dbc1d6, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 6937817954938267909, guid: 6c4e9838e04ce8849a15e7f48c65fef0, type: 3}
+    - target: {fileID: 944697619640135956, guid: 6c09a3ba01b9db74188a95dbe2dbc1d6, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.9622605
+      objectReference: {fileID: 0}
+    - target: {fileID: 944697619640135956, guid: 6c09a3ba01b9db74188a95dbe2dbc1d6, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.7780852
+      objectReference: {fileID: 0}
     - target: {fileID: 944697619640135956, guid: 6c09a3ba01b9db74188a95dbe2dbc1d6, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.0391
+      value: -0.0226
       objectReference: {fileID: 0}
     - target: {fileID: 944697619640135956, guid: 6c09a3ba01b9db74188a95dbe2dbc1d6, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.5
+      value: -0.7585
       objectReference: {fileID: 0}
     - target: {fileID: 944697619640135956, guid: 6c09a3ba01b9db74188a95dbe2dbc1d6, type: 3}
       propertyPath: m_LocalPosition.z
@@ -9101,7 +9114,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 805425678950857380, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.00000644891
+      value: -0.0000047813623
       objectReference: {fileID: 0}
     - target: {fileID: 808235204874162976, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
       propertyPath: m_AnchorMax.y
