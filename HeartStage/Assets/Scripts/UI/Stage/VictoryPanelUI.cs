@@ -101,6 +101,9 @@ public class VictoryPanel : GenericWindow
 
     private void OnNextStageButtonClicked()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+
         if (monsterSpawner == null)
             return;
 
@@ -126,7 +129,8 @@ public class VictoryPanel : GenericWindow
 
     private void OnGoStageChoiceButtonClicked()
     {
-        // 스테이지 선택으로 이동
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+        
         WindowManager.currentWindow = WindowType.StageSelect;
         LoadSceneManager.Instance.GoLobby();
     }
