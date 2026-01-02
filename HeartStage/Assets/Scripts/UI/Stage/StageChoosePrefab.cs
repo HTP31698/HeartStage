@@ -75,7 +75,7 @@ public class StageChoosePrefab : MonoBehaviour
         }
 
         // 잠금 시 반투명 효과
-        _canvasGroup.alpha = locked ? 0.5f : 1f;
+        _canvasGroup.alpha = locked ? 1f : 1f;
     }
 
     private void UpdateSpotLightImages(StageData stageData)
