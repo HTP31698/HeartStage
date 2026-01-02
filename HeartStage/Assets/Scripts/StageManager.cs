@@ -281,15 +281,17 @@ public class StageManager : MonoBehaviour
             if (storyStageData != null)
             {
                 string needChar = storyStageData.need_char ?? "";
-                int stageStep = stageData.stage_step1;
+                
+                // 실제 스토리 스테이지 번호 계산
+                int storyStageNumber = (stageId >= 66005) ? (stageId - 66004) : (stageId - 66000);
 
                 if (needChar.Contains("하나"))
                 {
-                    bgmName = (stageStep == 3) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
+                    bgmName = (storyStageNumber == 3) ? SoundName.BGM_hanaStage3 : SoundName.BGM_hanaStage2;
                 }
                 else if (needChar.Contains("세라"))
                 {
-                    bgmName = (stageStep == 3) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
+                    bgmName = (storyStageNumber == 3) ? SoundName.BGM_seraStage3 : SoundName.BGM_seraStage2;
                 }
             }
         }
