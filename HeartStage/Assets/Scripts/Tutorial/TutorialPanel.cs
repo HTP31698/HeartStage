@@ -58,6 +58,12 @@ public class TutorialPanel : GenericWindow
 
         base.Open();
 
+        // 튜토리얼 중 로비 캐릭터 터치 비활성화
+        if (DragZoomPanManager.Instance != null)
+        {
+            DragZoomPanManager.Instance.LockForTutorial();
+        }
+
         // 스킵 버튼 이벤트 등록
         if (skipButton != null)
         {
@@ -72,6 +78,12 @@ public class TutorialPanel : GenericWindow
     public override void Close()
     {
         SoundManager.Instance?.StopVoiceSFX();
+
+        // 튜토리얼 종료 시 로비 캐릭터 터치 다시 활성화
+        if (DragZoomPanManager.Instance != null)
+        {
+            DragZoomPanManager.Instance.UnlockForTutorial();
+        }
 
         base.Close();
 
