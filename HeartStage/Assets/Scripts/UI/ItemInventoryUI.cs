@@ -36,6 +36,21 @@ public class ItemInventoryUI : MonoBehaviour
     private void OnEnable()
     {
         ShowInventoryWithSorting();
+
+        // 딤 배경 표시
+        if (WindowManager.Instance != null)
+        {
+            WindowManager.Instance.ShowDimManual();
+        }
+    }
+
+    private void OnDisable()
+    {
+        // 딤 배경 숨기기
+        if (WindowManager.Instance != null)
+        {
+            WindowManager.Instance.HideDimManual();
+        }
     }
 
     public void ShowInventoryWithSorting()

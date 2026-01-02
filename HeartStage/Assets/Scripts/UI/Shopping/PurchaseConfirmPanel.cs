@@ -1,22 +1,27 @@
-﻿using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PurchaseConfirmPanel : MonoBehaviour
+public class PurchaseConfirmPanel : GenericWindow
 {
     public static PurchaseConfirmPanel Instance;
 
-    [SerializeField] private GameObject wholePanel;
+    // WindowManager.OpenOverlay() 호출 전에 설정할 파라미터
+    private static int PendingTableID;
+    private static ShopItemSlot PendingSlot;
+
     [SerializeField] private TextMeshProUGUI confirmText;
     [SerializeField] private TextMeshProUGUI descText;
     [SerializeField] private TextMeshProUGUI currentAmountText;
     [SerializeField] private Button purchaseButton;
 
     private int tableID = 0;
+    private ShopItemSlot currentSlot;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         Instance = this;
     }
 
@@ -30,32 +35,27 @@ public class PurchaseConfirmPanel : MonoBehaviour
         purchaseButton.onClick.AddListener(OnPurchaseButtonClicked);
     }
 
-    public void Open(int shopTableID)
+    /// <summary>
+    /// WindowManager.OpenOverlay() 호출 전에 파라미터 설정
+    /// </summary>
+    public static void Prepare(int shopTableID, ShopItemSlot slot = null)
     {
-        tableID = shopTableID;
-        var shopTableData = DataTableManager.ShopTable.Get(shopTableID);
-        confirmText.text = $"{shopTableData.Shop_item_name}\n을 구매하시겠습니까?";
-        descText.text = shopTableData.Shop_info;
-
-        // Shop_item_type1 이 표시되게 일단
-        if (SaveLoadManager.Data.itemList.ContainsKey(shopTableData.Shop_item_type1))
-        {
-            currentAmountText.text = $"현재 보유량 : {SaveLoadManager.Data.itemList[shopTableData.Shop_item_type1]}";
-        }
-        else
-        {
-            currentAmountText.text = "현재 보유량 : 0";
-        }
-
-        wholePanel.gameObject.SetActive(true);
+        PendingTableID = shopTableID;
+        PendingSlot = slot;
     }
 
-    private ShopItemSlot currentSlot;
-    public void Open(int shopTableID, ShopItemSlot slot)
+    /// <summary>
+    /// GenericWindow.Open() 오버라이드 - Prepare()에서 설정한 데이터로 초기화
+    /// </summary>
+    public override void Open()
     {
-        tableID = shopTableID;
-        currentSlot = slot;
-        var shopTableData = DataTableManager.ShopTable.Get(shopTableID);
+        base.Open();
+
+        // Prepare()에서 설정한 값 사용
+        tableID = PendingTableID;
+        currentSlot = PendingSlot;
+
+        var shopTableData = DataTableManager.ShopTable.Get(tableID);
         confirmText.text = $"{shopTableData.Shop_item_name}\n을 구매하시겠습니까?";
         descText.text = shopTableData.Shop_info;
 
@@ -68,8 +68,6 @@ public class PurchaseConfirmPanel : MonoBehaviour
         {
             currentAmountText.text = "현재 보유량 : 0";
         }
-
-        wholePanel.gameObject.SetActive(true);
     }
 
     private void OnPurchaseButtonClicked()
@@ -109,9 +107,8 @@ public class PurchaseConfirmPanel : MonoBehaviour
         SoundManager.Instance.PlaySFX(SoundName.SFX_Purchase_Success);
         ToastUI.Show("구매 완료!");
 
-        // 3) 끝
-        wholePanel.gameObject.SetActive(false);
-        if(currentSlot != null)
+        // 3) 슬롯 업데이트
+        if (currentSlot != null)
         {
             currentSlot.MarkAsPurchased();
 
@@ -121,11 +118,9 @@ public class PurchaseConfirmPanel : MonoBehaviour
                 UpdateDailyShopPurchase(currentSlot.shopTableID);
             }
         }
-    }
 
-    public void Close()
-    {
-        wholePanel.SetActive(false);
+        // 4) 창 닫기 (GenericWindow.Close() → WindowManager.NotifyOverlayClosed() → 딤 자동 처리)
+        Close();
     }
 
     // 데일리 샵의 아이템을 샀으면 구매 여부 저장

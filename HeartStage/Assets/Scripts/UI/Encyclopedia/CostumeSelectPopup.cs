@@ -37,9 +37,6 @@ public class CostumeSelectPopup : MonoBehaviour
     [SerializeField] private Button applyButton;
     [SerializeField] private Button closeButton;
 
-    [Header("디버그")]
-    [SerializeField] private Button debugGetAllCostumesButton;
-
     public bool IsOpen => _isOpen;
     private bool _isOpen;
     private int _openFrame;  // 열린 프레임 (같은 프레임에 Close 방지)
@@ -79,11 +76,6 @@ public class CostumeSelectPopup : MonoBehaviour
             applyButton.onClick.AddListener(OnClickApply);
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
-
-        if (debugGetAllCostumesButton != null)
-            debugGetAllCostumesButton.onClick.AddListener(DebugGetAllCostumes);
-        // 주의: 에디터에서 오브젝트를 미리 비활성화해두세요
-        // Awake()에서 SetActive(false) 호출하면 Open()에서 활성화가 안 됨
     }
 
     private void OnDisable()
@@ -577,73 +569,5 @@ public class CostumeSelectPopup : MonoBehaviour
         _isOpen = false;
         _costumeController = null;
         gameObject.SetActive(false);
-    }
-
-    private void DebugGetAllCostumes()
-    {
-        ToastUI.Show("치트 버튼 클릭됨!");
-
-        var saveData = SaveLoadManager.Data;
-        if (saveData == null)
-        {
-            ToastUI.Show("실패: SaveData가 null입니다");
-            Debug.LogWarning("[CostumeSelectPopup] SaveData is null");
-            return;
-        }
-
-        var itemTable = DataTableManager.ItemTable;
-        if (itemTable == null)
-        {
-            ToastUI.Show("실패: ItemTable이 null입니다");
-            Debug.LogWarning("[CostumeSelectPopup] ItemTable is null");
-            return;
-        }
-
-        // 잘못된 의상 아이템 정리 (ItemTable에 없는 의상 제거)
-        var invalidItems = new List<int>();
-        foreach (var kvp in saveData.itemList)
-        {
-            if (CostumeItemID.IsCostumeItem(kvp.Key) && itemTable.Get(kvp.Key) == null)
-            {
-                invalidItems.Add(kvp.Key);
-            }
-        }
-        foreach (var invalidId in invalidItems)
-        {
-            saveData.itemList.Remove(invalidId);
-            Debug.Log($"[CostumeSelectPopup] Removed invalid costume: {invalidId}");
-        }
-
-        int addedCount = 0;
-        int costumeItemCount = 0;
-        int totalItemCount = 0;
-        int alreadyOwnedCount = 0;
-
-        // ItemTable에 존재하는 의상만 추가 (CSV 데이터 기반)
-        foreach (int itemId in itemTable.GetAllItemIds())
-        {
-            totalItemCount++;
-            if (CostumeItemID.IsCostumeItem(itemId))
-            {
-                costumeItemCount++;
-                if (!saveData.itemList.ContainsKey(itemId) || saveData.itemList[itemId] == 0)
-                {
-                    saveData.itemList[itemId] = 1;
-                    addedCount++;
-                }
-                else
-                {
-                    alreadyOwnedCount++;
-                }
-            }
-        }
-
-        SaveLoadManager.SaveToServer().Forget();
-
-        Debug.Log($"[CostumeSelectPopup] Debug: ItemTable total={totalItemCount}, costumeItems={costumeItemCount}, added={addedCount}, alreadyOwned={alreadyOwnedCount}");
-        ToastUI.Show($"전체:{totalItemCount} 의상:{costumeItemCount} 추가:{addedCount} 보유:{alreadyOwnedCount}");
-
-        // 리스트 새로고침
-        RebuildListAsync().Forget();
     }
 }

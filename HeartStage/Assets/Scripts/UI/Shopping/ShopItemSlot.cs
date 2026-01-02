@@ -24,7 +24,11 @@ public class ShopItemSlot : MonoBehaviour
 
     private void Start()
     {
-        clickButton.onClick.AddListener(() => PurchaseConfirmPanel.Instance.Open(shopTableID, this));
+        clickButton.onClick.AddListener(() =>
+        {
+            PurchaseConfirmPanel.Prepare(shopTableID, this);
+            WindowManager.Instance.OpenOverlay(WindowType.PurchaseConfirm);
+        });
         clickButton.onClick.AddListener(() => SoundManager.Instance.PlayUIButtonClickSound());
     }
 

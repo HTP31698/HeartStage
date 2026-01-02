@@ -22,6 +22,10 @@ public class FeaturePurchase : MonoBehaviour
 
     private void Start()
     {
-        clickButton.onClick.AddListener(() => PurchaseConfirmPanel.Instance.Open(shopTableID));
+        clickButton.onClick.AddListener(() =>
+        {
+            PurchaseConfirmPanel.Prepare(shopTableID);
+            WindowManager.Instance.OpenOverlay(WindowType.PurchaseConfirm);
+        });
     }
 }
