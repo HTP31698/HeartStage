@@ -22,9 +22,6 @@ public class DailyShop : MonoBehaviour
     public TextMeshProUGUI remainTimeText;
     public List<ShopItemSlot> dailyItemSlots;
 
-    private int resetIntervalSeconds = 86400;
-    // 실제: 24시간 → 86400
-
     // 다음에 상점이 리셋될 남은 시간
     private DateTime nextResetTime;
     private const string ResetKey = "DailyShopNextResetTime";
@@ -71,7 +68,8 @@ public class DailyShop : MonoBehaviour
         if (needReset)
         {
             ResetDailyShop();  // 슬롯 새로 생성
-            nextResetTime = serverNow.AddSeconds(resetIntervalSeconds);
+            // 다음 날 00:00:00으로 설정
+            nextResetTime = serverNow.Date.AddDays(1);
             PlayerPrefs.SetString(ResetKey, nextResetTime.ToBinary().ToString());
         }
         else
@@ -102,7 +100,8 @@ public class DailyShop : MonoBehaviour
         if (remain.TotalSeconds <= 0)
         {
             ResetDailyShop();
-            nextResetTime = serverNow.AddSeconds(resetIntervalSeconds);
+            // 다음 날 00:00:00으로 설정
+            nextResetTime = serverNow.Date.AddDays(1);
             PlayerPrefs.SetString(ResetKey, nextResetTime.ToBinary().ToString());
             remain = nextResetTime - serverNow;
         }
@@ -123,7 +122,7 @@ public class DailyShop : MonoBehaviour
             SaveLoadManager.Data.dailyShopSlotList.Add(new DailyShopSlot(randIds[i],false));
         }
         // 구매 확인 창이 열려 있는 도중 바뀌는 경우 대처
-        PurchaseConfirmPanel.Instance.Close();
+        PurchaseConfirmPanel.Instance?.Close();
         // 저장
         SaveLoadManager.SaveToServer().Forget();
     }
