@@ -297,6 +297,18 @@ public class StoryManager : MonoBehaviour
 
         var currentScript = currentScripts[currentScriptIndex];
         
+        // 66002 스테이지(하나 스토리 2)의 39번 라인 이후에 전투 시작
+        if (selectedStageId == 66002 && currentScript.Line == 39)
+        {
+            return true;
+        }
+
+        // 66003 스테이지(하나 스토리 3)의 65번 라인 이후에 전투 시작
+        if (selectedStageId == 66003 && currentScript.Line == 65)
+        {
+            return true;
+        }
+
         // 66006 스테이지(세라 스토리 2)의 44번 라인 이후에 전투 시작
         if (selectedStageId == 66006 && currentScript.Line == 44)
         {
@@ -386,6 +398,18 @@ public class StoryManager : MonoBehaviour
         {
             var script = currentScripts[i];
             
+            // 66002 스테이지(하나 스토리 2)의 39번 라인
+            if (selectedStageId == 66002 && script.Line == 39)
+            {
+                return i;
+            }
+
+            // 66003 스테이지(하나 스토리 3)의 65번 라인
+            if (selectedStageId == 66003 && script.Line == 65)
+            {
+                return i;
+            }
+
             // 66006 스테이지(세라 스토리 2)의 44번 라인
             if (selectedStageId == 66006 && script.Line == 44)
             {
