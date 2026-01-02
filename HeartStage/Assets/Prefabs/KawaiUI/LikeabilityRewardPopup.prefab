@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6511646380135716946}
   - component: {fileID: 6365451662208246977}
   - component: {fileID: 9063588859133815522}
+  - component: {fileID: 5824672802281605116}
   m_Layer: 5
   m_Name: LikeabilityRewardPopup
   m_TagString: Untagged
@@ -68,6 +69,29 @@ MonoBehaviour:
   itemImage: {fileID: 8481183780564811016}
   amountText: {fileID: 4420383562856613919}
   receiveButton: {fileID: 3099245373587468256}
+--- !u!114 &5824672802281605116
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 546111061628169760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a33e258cd12504a8398e0f05f90f6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animationTarget: {fileID: 0}
+  _openType: 3
+  _openStartScale: 0.8
+  _openDuration: 0.25
+  _openEase: 27
+  _closeType: 3
+  _closeEndScale: 0.8
+  _closeDuration: 0.15
+  _closeEase: 26
+  _origin: 0
+  _autoPlayOnEnable: 1
 --- !u!1 &618778294127233441
 GameObject:
   m_ObjectHideFlags: 0

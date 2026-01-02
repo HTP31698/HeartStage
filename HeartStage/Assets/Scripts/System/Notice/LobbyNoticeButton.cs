@@ -1,4 +1,3 @@
-﻿using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,9 +8,6 @@ public class LobbyNoticeButton : MonoBehaviour
 
     [Header("NEW 뱃지 오브젝트")]
     [SerializeField] private GameObject newBadge;
-
-    [Header("공지창 UI")]
-    [SerializeField] private NoticeWindowUI noticeWindow;
 
     private void Awake()
     {
@@ -27,13 +23,10 @@ public class LobbyNoticeButton : MonoBehaviour
 
     private void OnClickNotice()
     {
-        if (noticeWindow != null)
-        {
-            noticeWindow.Show();
-        }
+        WindowManager.Instance?.OpenOverlay(WindowType.Notice);
 
         // NEW 뱃지는 공지창 닫을 때 저장 후 꺼질 예정이지만,
         // UX상 "눌렀으면 바로 꺼지게" 하고 싶으면 아래 한 줄 활성화
-         if (newBadge != null) newBadge.SetActive(false);
+        if (newBadge != null) newBadge.SetActive(false);
     }
 }

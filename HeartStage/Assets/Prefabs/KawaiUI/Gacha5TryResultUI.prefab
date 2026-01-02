@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2024433353714825782}
+  - component: {fileID: 462014833977375836}
   m_Layer: 5
   m_Name: case 4
   m_TagString: Untagged
@@ -37,6 +38,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &462014833977375836
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 218535773521894620}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &308911882168348588
 GameObject:
   m_ObjectHideFlags: 0
@@ -363,13 +376,14 @@ GameObject:
   - component: {fileID: 3399851125044443469}
   - component: {fileID: 4223427066306554072}
   - component: {fileID: 2276640979916747847}
+  - component: {fileID: 3441515319891968909}
   m_Layer: 5
   m_Name: Gacha5TryResultUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3399851125044443469
 RectTransform:
   m_ObjectHideFlags: 0
@@ -437,8 +451,41 @@ MonoBehaviour:
   - {fileID: 8557106367384414828}
   - {fileID: 3289567476509673449}
   - {fileID: 323097465099331532}
+  slotTransforms:
+  - {fileID: 4442702094968971153}
+  - {fileID: 2390523556552903636}
+  - {fileID: 1908297741896370931}
+  - {fileID: 2024433353714825782}
+  - {fileID: 2162257615818763671}
   closeButton: {fileID: 2345053619793486882}
   retryButton: {fileID: 5738294063821373693}
+  popInterval: 0.15
+  popDuration: 0.3
+  convertDelay: 0.3
+  convertDuration: 0.25
+--- !u!114 &3441515319891968909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 643713712741280965}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a33e258cd12504a8398e0f05f90f6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animationTarget: {fileID: 0}
+  _openType: 3
+  _openStartScale: 0.8
+  _openDuration: 0.25
+  _openEase: 27
+  _closeType: 3
+  _closeEndScale: 0.8
+  _closeDuration: 0.15
+  _closeEase: 26
+  _origin: 0
+  _autoPlayOnEnable: 1
 --- !u!1 &894647193294683360
 GameObject:
   m_ObjectHideFlags: 0
@@ -1063,6 +1110,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2390523556552903636}
+  - component: {fileID: 8257404646199439795}
   m_Layer: 5
   m_Name: case 2
   m_TagString: Untagged
@@ -1091,6 +1139,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &8257404646199439795
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873030036807329010}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &2064227082340856339
 GameObject:
   m_ObjectHideFlags: 0
@@ -3095,6 +3155,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4442702094968971153}
+  - component: {fileID: 2806280361248520721}
   m_Layer: 5
   m_Name: case 1
   m_TagString: Untagged
@@ -3123,6 +3184,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &2806280361248520721
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5028916994993434984}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &5346318252481571749
 GameObject:
   m_ObjectHideFlags: 0
@@ -3678,6 +3751,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1908297741896370931}
+  - component: {fileID: 463875538525387125}
   m_Layer: 5
   m_Name: case 3
   m_TagString: Untagged
@@ -3706,6 +3780,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &463875538525387125
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6703697978287581292}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &7054282963547084965
 GameObject:
   m_ObjectHideFlags: 0
@@ -4369,6 +4455,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2162257615818763671}
+  - component: {fileID: 3096839671409011902}
   m_Layer: 5
   m_Name: case 5
   m_TagString: Untagged
@@ -4397,6 +4484,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &3096839671409011902
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8081081825999268292}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &8112791079854041933
 GameObject:
   m_ObjectHideFlags: 0

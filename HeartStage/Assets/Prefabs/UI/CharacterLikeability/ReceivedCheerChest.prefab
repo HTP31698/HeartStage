@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6364499628135778099}
   - component: {fileID: 4359288355332610370}
   - component: {fileID: 5691970149325870983}
+  - component: {fileID: 4023578170002735628}
   m_Layer: 5
   m_Name: ReceivedCheerChest
   m_TagString: Untagged
@@ -93,6 +94,29 @@ MonoBehaviour:
   receivedCheerItemPrefab: {fileID: 9162120110148693938, guid: cee15cfe5f7d51e45bd95dcc8aa88fe5, type: 3}
   itemParent: {fileID: 5558840971465213366}
   getAllButton: {fileID: 5954421529223541042}
+--- !u!114 &4023578170002735628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2345825617136535159}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a33e258cd12504a8398e0f05f90f6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animationTarget: {fileID: 0}
+  _openType: 3
+  _openStartScale: 0.8
+  _openDuration: 0.25
+  _openEase: 27
+  _closeType: 3
+  _closeEndScale: 0.8
+  _closeDuration: 0.15
+  _closeEase: 26
+  _origin: 0
+  _autoPlayOnEnable: 1
 --- !u!1 &3710496423291269711
 GameObject:
   m_ObjectHideFlags: 0

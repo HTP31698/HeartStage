@@ -515,13 +515,14 @@ GameObject:
   - component: {fileID: 5845496036343885167}
   - component: {fileID: 5577279308243924489}
   - component: {fileID: 453225542391249865}
+  - component: {fileID: 5690990779345811413}
   m_Layer: 5
   m_Name: StoryStageRewardUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5845496036343885167
 RectTransform:
   m_ObjectHideFlags: 0
@@ -529,7 +530,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4846464301363063773}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -571,6 +572,29 @@ MonoBehaviour:
   itemIcon: {fileID: 5211760095206345299}
   itemCountText: {fileID: 3177854272713222942}
   exitButton: {fileID: 8720730199152115490}
+--- !u!114 &5690990779345811413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4846464301363063773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a33e258cd12504a8398e0f05f90f6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animationTarget: {fileID: 0}
+  _openType: 3
+  _openStartScale: 0.8
+  _openDuration: 0.25
+  _openEase: 27
+  _closeType: 3
+  _closeEndScale: 0.8
+  _closeDuration: 0.15
+  _closeEase: 26
+  _origin: 0
+  _autoPlayOnEnable: 1
 --- !u!1 &5128880782585865234
 GameObject:
   m_ObjectHideFlags: 0
@@ -1173,10 +1197,10 @@ RectTransform:
   - {fileID: 4084666937665064218}
   m_Father: {fileID: 5845496036343885167}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.33942676, y: 0.062454548}
-  m_AnchorMax: {x: 0.6715733, y: 0.27436364}
-  m_AnchoredPosition: {x: -0.000030517578, y: 1.5}
-  m_SizeDelta: {x: -1.8188019, y: -1.3080006}
+  m_AnchorMin: {x: 0.33942676, y: 0.1294628}
+  m_AnchorMax: {x: 0.6693714, y: 0.27436364}
+  m_AnchoredPosition: {x: 0.9999695, y: 0.41052246}
+  m_SizeDelta: {x: 0.18120003, y: 0.87120056}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5436120873516714990
 MonoBehaviour:
@@ -2675,6 +2699,10 @@ PrefabInstance:
     - target: {fileID: 4479052712109577662, guid: 2bdf038a8d80842f4a7fe9d30fcea5f5, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5677123181747020673, guid: 2bdf038a8d80842f4a7fe9d30fcea5f5, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -138.24924
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

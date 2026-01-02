@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class NoticeItemUI : MonoBehaviour
 {
@@ -19,14 +20,16 @@ public class NoticeItemUI : MonoBehaviour
     [Header("레이아웃 갱신용 (상위 Content 등)")]
     [SerializeField] private RectTransform layoutRoot;     // 비워두면 자기 RectTransform 사용
 
-    [Header("애니메이션 (선택사항)")]
-    [Tooltip("ExpandablePanel 컴포넌트가 있으면 애니메이션 사용")]
-    [SerializeField] private ExpandablePanel expandablePanel;
+    [Header("애니메이션 설정")]
+    [SerializeField] private float expandDuration = 0.25f;
+    [SerializeField] private float collapseDuration = 0.2f;
+    [SerializeField] private Ease expandEase = Ease.OutCubic;
+    [SerializeField] private Ease collapseEase = Ease.InCubic;
 
     private NoticeData _data;
     private bool _expanded = false;
     private RectTransform _selfRect;
-    private bool _useExpandablePanel = false;
+    private Tween _tween;
 
     private void Awake()
     {
@@ -36,12 +39,11 @@ public class NoticeItemUI : MonoBehaviour
         // 인스펙터에서 layoutRoot 안 넣어줬으면 자기 자신으로 사용
         if (layoutRoot == null)
             layoutRoot = _selfRect;
+    }
 
-        // ExpandablePanel 자동 검색
-        if (expandablePanel == null)
-            expandablePanel = GetComponent<ExpandablePanel>();
-
-        _useExpandablePanel = expandablePanel != null;
+    private void OnDestroy()
+    {
+        _tween?.Kill();
     }
 
     /// <summary>
@@ -89,16 +91,14 @@ public class NoticeItemUI : MonoBehaviour
 
         // 처음에는 접힌 상태
         _expanded = false;
-
-        // ExpandablePanel 사용 시 초기화는 ExpandablePanel이 처리
-        if (!_useExpandablePanel && bodyRoot != null)
+        if (bodyRoot != null)
         {
+            bodyRoot.transform.localScale = new Vector3(1, 0, 1);
             bodyRoot.SetActive(false);
         }
 
         // 헤더 클릭 → 펼치기/접기 토글
-        // ExpandablePanel이 있으면 자체 버튼 리스너를 사용하므로 여기서는 등록 안함
-        if (!_useExpandablePanel && headerButton != null)
+        if (headerButton != null)
         {
             headerButton.onClick.RemoveAllListeners();
             headerButton.onClick.AddListener(ToggleExpanded);
@@ -123,20 +123,54 @@ public class NoticeItemUI : MonoBehaviour
 
     private void ToggleExpanded()
     {
-        // ExpandablePanel 사용 시 ExpandablePanel.Toggle() 호출
-        if (_useExpandablePanel)
-        {
-            expandablePanel.Toggle();
-            _expanded = expandablePanel.IsExpanded;
-            return;
-        }
+        if (_expanded)
+            Collapse();
+        else
+            Expand();
+    }
 
-        // 기존 로직 (애니메이션 없이 즉시 토글)
-        _expanded = !_expanded;
+    private void Expand()
+    {
+        if (_expanded) return;
+
+        _tween?.Kill();
+        _expanded = true;
+
+        // 본문 활성화
+        if (bodyRoot != null)
+        {
+            bodyRoot.SetActive(true);
+            bodyRoot.transform.localScale = new Vector3(1, 0, 1);
+
+            // Scale Y 애니메이션 (0 → 1)
+            _tween = bodyRoot.transform.DOScaleY(1f, expandDuration)
+                .SetEase(expandEase)
+                .OnUpdate(RebuildLayout);
+        }
+    }
+
+    private void Collapse()
+    {
+        if (!_expanded) return;
+
+        _tween?.Kill();
+        _expanded = false;
 
         if (bodyRoot != null)
-            bodyRoot.SetActive(_expanded);
+        {
+            // Scale Y 애니메이션 (1 → 0)
+            _tween = bodyRoot.transform.DOScaleY(0f, collapseDuration)
+                .SetEase(collapseEase)
+                .OnUpdate(RebuildLayout)
+                .OnComplete(() =>
+                {
+                    bodyRoot.SetActive(false);
+                });
+        }
+    }
 
+    private void RebuildLayout()
+    {
         // 레이아웃 강제 갱신
         // 1) 일단 자기(또는 layoutRoot) 먼저
         if (layoutRoot != null)
@@ -155,5 +189,5 @@ public class NoticeItemUI : MonoBehaviour
     /// <summary>
     /// 현재 펼침 상태 반환
     /// </summary>
-    public bool IsExpanded => _useExpandablePanel ? expandablePanel.IsExpanded : _expanded;
+    public bool IsExpanded => _expanded;
 }

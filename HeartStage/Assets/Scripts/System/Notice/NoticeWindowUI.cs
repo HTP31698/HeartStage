@@ -1,13 +1,10 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class NoticeWindowUI : MonoBehaviour
+public class NoticeWindowUI : GenericWindow
 {
-    [Header("루트 패널")]
-    [SerializeField] private GameObject root;
-
     [Header("리스트 컨테이너 (ScrollView Content)")]
     [SerializeField] private RectTransform listContent;
 
@@ -20,15 +17,14 @@ public class NoticeWindowUI : MonoBehaviour
     private bool _initialized = false;
     private readonly List<NoticeItemUI> _spawned = new();
 
-    private void Awake()
+    protected override void Awake()
     {
-        if (root != null)
-            root.SetActive(false);   // 처음엔 꺼두기
+        base.Awake();
 
         if (closeButton != null)
         {
             closeButton.onClick.RemoveAllListeners();
-            closeButton.onClick.AddListener(Hide);
+            closeButton.onClick.AddListener(Close);
         }
     }
 
@@ -71,7 +67,7 @@ public class NoticeWindowUI : MonoBehaviour
         }
     }
 
-    public void Show()
+    public override void Open()
     {
         if (!_initialized)
         {
@@ -80,13 +76,6 @@ public class NoticeWindowUI : MonoBehaviour
             _initialized = true;
         }
 
-        if (root != null)
-            root.SetActive(true);
-    }
-
-    public void Hide()
-    {
-        if (root != null)
-            root.SetActive(false);
+        base.Open();
     }
 }

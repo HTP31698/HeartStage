@@ -92,6 +92,7 @@ public enum WindowType
     // 친구 관련 오버레이
     Friend = 30,            // 통합 친구 창 (목록/요청/추가 탭)
     FriendProfile = 33,     // 친구 프로필 팝업
+    Notice = 35,            // 공지사항 창
 
     // 인게임 윈도우
     VictoryDefeat = 50, // 위에 추가해도 안바뀌게 큰 값으로 해두기
