@@ -140,8 +140,8 @@ public class SoundName
     public static readonly string SFX_Meteor_Melody_Skill = "meteor_melody_skill"; // 유성의 멜로디 스킬, 승아 캐릭터 스킬
     public static readonly string SFX_Fairy_Skill = "fairy_skill"; // 입덕 요정 스킬(부메랑), 에리 캐릭터 스킬
     public static readonly string SFX_Twinkle_Skill = "twinkle_skill"; // 시선을 끄는 눈빛 스킬(블랙홀), 레나 캐릭터 스킬    
-    public static readonly string SFX_Acrobat_Skill = "acrobat_skill"; // 곡예사 스킬(단일로 여러발 발사 관통 x), 지우 캐릭터 스킬    
-    public static readonly string SFX_AbsolutePitch_Skill = "absolutepitch_skill"; // 절대음감 스킬(단일로 여러발 발사 관통 o), 아윤 캐릭터 스킬
+    public static readonly string SFX_Acrobat_Skill = "acrobat_02_skill"; // 곡예사 스킬(단일로 여러발 발사 관통 x), 지우 캐릭터 스킬    
+    public static readonly string SFX_AbsolutePitch_Skill = "absolutepitch_02_skill"; // 절대음감 스킬(단일로 여러발 발사 관통 o), 아윤 캐릭터 스킬
     public static readonly string SFX_FaceGenius_Skill = "facegenius_skill"; // 얼굴천재 스킬(맞으면 실명시킴), 하나 캐릭터 스킬
     public static readonly string SFX_HeartBomb_Skill = "heartbomb_skill"; // 다이너마이트 스킬(광역 공격 + 스턴), 지안 캐릭터 스킬
 
