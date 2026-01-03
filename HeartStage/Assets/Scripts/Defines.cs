@@ -93,6 +93,8 @@ public enum WindowType
     Friend = 30,            // 통합 친구 창 (목록/요청/추가 탭)
     FriendProfile = 33,     // 친구 프로필 팝업
     Notice = 35,            // 공지사항 창
+    Profile = 36,           // 프로필 창
+    ProfileModal = 37,      // 프로필 내부 팝업 (닉네임/상태메시지/아이콘 변경)
 
     // 인게임 윈도우
     VictoryDefeat = 50, // 위에 추가해도 안바뀌게 큰 값으로 해두기
@@ -103,6 +105,14 @@ public enum WindowType
     BossAlert,
     StoryStageReward,
     TutorialStage,
+}
+
+public enum ProfileModalType
+{
+    None = 0,
+    Nickname,       // 닉네임 변경
+    StatusMessage,  // 상태 메시지 변경
+    Icon,           // 아이콘 변경
 }
 
 public enum SceneType

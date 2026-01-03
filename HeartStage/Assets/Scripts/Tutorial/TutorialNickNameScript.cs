@@ -59,11 +59,6 @@ public class TutorialNickNameScript : GenericWindow
         base.Close();
 
         gameObject.SetActive(false);
-        // "팝업 하나 닫혔음"을 ProfileWindow에 알려서 모달Panel 제어
-        if (ProfileWindow.Instance != null && ProfileWindow.Instance.gameObject.activeSelf)
-        {
-            ProfileWindow.Instance.OnPopupClosed();
-        }
 
         onClosed?.Invoke();
         onClosed = null; // 한 번만 실행

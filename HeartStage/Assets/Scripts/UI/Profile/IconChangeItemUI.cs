@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,10 +10,10 @@ public class IconChangeItemUI : MonoBehaviour
     [SerializeField] private Image selectionFrame;   // 초록 테두리
     [SerializeField] private Button button;          // 클릭 버튼
 
-    private IconChangeWindow _owner;
+    private ProfileModalPanel _owner;
     public string IconKey { get; private set; }
 
-    public void Setup(IconChangeWindow owner, string key, Sprite sprite)
+    public void Setup(ProfileModalPanel owner, string key, Sprite sprite)
     {
         _owner = owner;
         IconKey = key;
@@ -35,7 +35,7 @@ public class IconChangeItemUI : MonoBehaviour
 
     private void OnClick()
     {
-        _owner?.OnClickItem(this);
+        _owner?.OnClickIconItem(this);
     }
 
     public void SetSelected(bool selected)

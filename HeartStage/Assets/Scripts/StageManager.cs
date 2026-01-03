@@ -402,6 +402,17 @@ public class StageManager : MonoBehaviour
         // 무한 스테이지 타이머 중지
         infiniteStageStarted = false;
 
+        // 팬미팅 최고 기록 저장
+        var saveData = SaveLoadManager.Data as SaveDataV1;
+        if (saveData != null)
+        {
+            int elapsedSeconds = (int)infiniteElapsedTime;
+            if (elapsedSeconds > saveData.bestFanMeetingSeconds)
+            {
+                saveData.bestFanMeetingSeconds = elapsedSeconds;
+            }
+        }
+
         // 모든 몬스터 삭제
         ClearAllMonsters();
 
@@ -550,10 +561,11 @@ public class StageManager : MonoBehaviour
         {
             int stageId = currentStageData.stage_ID;
 
+            var saveData = SaveLoadManager.Data as SaveDataV1;
+
             // 스토리 스테이지인지 확인
             if (stageId >= 66000 && stageId < 67000)
             {
-                var saveData = SaveLoadManager.Data as SaveDataV1;
                 if (saveData != null)
                 {
                     // 완료 목록에 추가 (UI 표시용)
@@ -564,6 +576,20 @@ public class StageManager : MonoBehaviour
 
                     // clearedStoryStages는 StoryStageRewardUI.GiveStoryReward()에서 보상 지급 후 추가됨
                     // 여기서 미리 추가하면 보상이 중복 방지로 스킵됨
+                }
+            }
+            // 일반 메인 스테이지 진행도 업데이트
+            else if (saveData != null && stageId < 66000)
+            {
+                int step1 = currentStageData.stage_step1;
+                int step2 = currentStageData.stage_step2;
+
+                // 현재 클리어한 스테이지가 기존 기록보다 높으면 업데이트
+                if (step1 > saveData.mainStageStep1 ||
+                    (step1 == saveData.mainStageStep1 && step2 > saveData.mainStageStep2))
+                {
+                    saveData.mainStageStep1 = step1;
+                    saveData.mainStageStep2 = step2;
                 }
             }
         }
