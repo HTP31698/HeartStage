@@ -48,6 +48,7 @@ public class ReceivedCheerItem : MonoBehaviour
             return;
         }
 
+        SoundManager.Instance.PlaySFX(SoundName.SFX_LobbyCharacter_Cheer);
         int current = CharacterHelper.GetLikeability(characterName);
         int add = CharacterLikeabilityPanel.Instance.likeabilityData.like_point;
         CharacterHelper.SetLikeability(characterName, current + add);
