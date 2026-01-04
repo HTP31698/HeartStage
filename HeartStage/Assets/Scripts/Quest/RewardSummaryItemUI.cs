@@ -70,8 +70,12 @@ public class RewardSummaryItemUI : MonoBehaviour
             amountText.text = "칭호";
         }
 
-        // 칭호 아이콘이 있다면 표시
-        // iconImage.sprite = ...
+        // 칭호 이미지 표시
+        if (iconImage != null && !string.IsNullOrEmpty(titleData.prefab))
+        {
+            iconImage.sprite = ResourceManager.Instance.GetSprite(titleData.prefab);
+            iconImage.enabled = true;
+        }
 
         gameObject.SetActive(true);
     }

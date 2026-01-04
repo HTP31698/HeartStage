@@ -9,6 +9,13 @@ public class MonitoringCharacterSelectUI : GenericWindow
     [Header("Character List")]
     [SerializeField] private Transform content;
     [SerializeField] private GameObject characterPrefab;
+    [SerializeField] private GridLayoutGroup gridLayout;
+    [SerializeField] private ScrollRect scrollRect;
+
+    [Header("Grid 설정")]
+    [SerializeField] private int columnCount = 4;
+    [SerializeField] private float cellSpacing = 10f;
+    [SerializeField] private float cellAspectRatio = 1.4f;  // 세로가 조금 더 긴 비율
 
     [Header("Selected Character Slots")]
     [SerializeField] private MonitoringCharacterSlot[] selectedSlots = new MonitoringCharacterSlot[3];
@@ -38,9 +45,41 @@ public class MonitoringCharacterSelectUI : GenericWindow
     public override void Open()
     {
         base.Open();
+        AdjustGridCellSize();
         UpdateDispatchMemberCount();
         Display(); // 창이 열릴 때 캐릭터들을 표시
         UpdateStartButton();
+    }
+
+    /// <summary>
+    /// 화면 크기에 맞게 그리드 셀 크기 자동 조절
+    /// </summary>
+    private void AdjustGridCellSize()
+    {
+        if (gridLayout == null) return;
+
+        float containerWidth = 0f;
+        if (scrollRect != null && scrollRect.viewport != null)
+        {
+            containerWidth = scrollRect.viewport.rect.width;
+        }
+        else if (content is RectTransform contentRect)
+        {
+            containerWidth = contentRect.rect.width;
+        }
+
+        if (containerWidth <= 0) return;
+
+        float totalSpacing = cellSpacing * (columnCount - 1);
+        float padding = gridLayout.padding.left + gridLayout.padding.right;
+        float availableWidth = containerWidth - totalSpacing - padding;
+        float cellWidth = availableWidth / columnCount;
+        float cellHeight = cellWidth * cellAspectRatio;
+
+        gridLayout.cellSize = new Vector2(cellWidth, cellHeight);
+        gridLayout.spacing = new Vector2(cellSpacing, cellSpacing);
+        gridLayout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        gridLayout.constraintCount = columnCount;
     }
 
     public override void Close()

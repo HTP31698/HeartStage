@@ -1,39 +1,36 @@
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
 /// 모두 받기 후 획득한 보상 요약 표시 패널
 /// 가로 스크롤로 보상 카드들을 보여줌
-/// WindowAnimator로 페이드인 + 스케일 팝 애니메이션 처리
 /// </summary>
 public class RewardSummaryPanel : MonoBehaviour
 {
+    [Header("배경")]
+    [SerializeField] private CanvasGroup dimBackground;
+
     [Header("UI References")]
     [SerializeField] private Transform rewardItemContainer;  // HorizontalLayoutGroup이 붙은 Content
     [SerializeField] private RewardSummaryItemUI itemPrefab;
     [SerializeField] private Button closeButton;
-    [SerializeField] private Button backgroundButton;       // 배경 클릭으로 닫기
-
-    [Header("애니메이션")]
-    [SerializeField] private WindowAnimator windowAnimator;  // WindowAnimator 사용
 
     private readonly List<RewardSummaryItemUI> _spawnedItems = new List<RewardSummaryItemUI>();
+    private Tween _dimTween;
+    private const float DimDuration = 0.2f;
 
     private void OnEnable()
     {
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
-        if (backgroundButton != null)
-            backgroundButton.onClick.AddListener(Close);
     }
 
     private void OnDisable()
     {
         if (closeButton != null)
             closeButton.onClick.RemoveListener(Close);
-        if (backgroundButton != null)
-            backgroundButton.onClick.RemoveListener(Close);
     }
 
     /// <summary>
@@ -62,9 +59,10 @@ public class RewardSummaryPanel : MonoBehaviour
             _spawnedItems.Add(item);
         }
 
+        // 딤 페이드 인
+        FadeDim(true);
+
         gameObject.SetActive(true);
-        // WindowAnimator가 autoPlayOnEnable이면 자동으로 열기 애니메이션 재생
-        // 수동으로 재생하려면: windowAnimator?.PlayOpen();
     }
 
     /// <summary>
@@ -113,24 +111,38 @@ public class RewardSummaryPanel : MonoBehaviour
         if (!hasAnyItem)
             return;
 
+        // 딤 페이드 인
+        FadeDim(true);
+
         gameObject.SetActive(true);
-        // WindowAnimator가 autoPlayOnEnable이면 자동으로 열기 애니메이션 재생
     }
 
     public void Close()
     {
-        if (windowAnimator != null)
+        // 딤 페이드 아웃
+        FadeDim(false);
+
+        ClearItems();
+        gameObject.SetActive(false);
+    }
+
+    private void FadeDim(bool show)
+    {
+        if (dimBackground == null) return;
+
+        _dimTween?.Kill();
+
+        if (show)
         {
-            windowAnimator.PlayClose(() =>
-            {
-                ClearItems();
-                gameObject.SetActive(false);
-            });
+            dimBackground.alpha = 0f;
+            dimBackground.gameObject.SetActive(true);
+            _dimTween = dimBackground.DOFade(1f, DimDuration).SetEase(Ease.OutQuad);
         }
         else
         {
-            ClearItems();
-            gameObject.SetActive(false);
+            _dimTween = dimBackground.DOFade(0f, DimDuration)
+                .SetEase(Ease.InQuad)
+                .OnComplete(() => dimBackground.gameObject.SetActive(false));
         }
     }
 

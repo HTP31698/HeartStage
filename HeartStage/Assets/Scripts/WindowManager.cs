@@ -98,16 +98,8 @@ public class WindowManager : MonoBehaviour
                 _dimTargetAlpha = _dimImage.color.a;
             }
 
-            // 딤 배경 클릭 시 모든 오버레이 닫기
-            var dimButton = sharedDimmedBackground.GetComponent<Button>();
-            if (dimButton == null)
-            {
-                dimButton = sharedDimmedBackground.AddComponent<Button>();
-                // 버튼 시각적 효과 제거 (색상 변화 없이 투명하게)
-                dimButton.transition = Selectable.Transition.None;
-            }
-            dimButton.onClick.RemoveAllListeners();
-            dimButton.onClick.AddListener(CloseAllOverlays);
+            // 딤 배경은 클릭 차단만 하고 창을 닫지 않음
+            // (기존: 클릭 시 CloseAllOverlays 호출 → 삭제됨)
         }
 
         // ConfirmDialog 초기화 (비활성 상태여도 초기화)

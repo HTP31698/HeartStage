@@ -95,9 +95,6 @@ public class ProfileModalPanel : MonoBehaviour
         // 아이콘 적용 버튼
         if (iconApplyButton != null)
             iconApplyButton.onClick.AddListener(() => OnClickIconApply().Forget());
-
-        // 시작 시 모든 콘텐츠 비활성화
-        HideAllContents();
     }
 
     #endregion
@@ -119,12 +116,14 @@ public class ProfileModalPanel : MonoBehaviour
         _currentType = type;
         _isOpen = true;
 
+        // 먼저 패널 활성화
+        gameObject.SetActive(true);
+
         // 딤 페이드 인
         FadeDim(true);
 
-        // 콘텐츠 세팅 후 활성화
+        // 콘텐츠 세팅
         SwitchContent(type);
-        gameObject.SetActive(true);
     }
 
     public void Close()
@@ -208,11 +207,20 @@ public class ProfileModalPanel : MonoBehaviour
         if (nicknameContent == null) return;
 
         // 현재 닉네임 로드
+        bool isFirstSet = false;
         if (SaveLoadManager.Data is SaveDataV1 data && nicknameInputField != null)
+        {
             nicknameInputField.text = data.nickname;
+            isFirstSet = string.IsNullOrEmpty(data.nickname);
+        }
 
         if (nicknameMessageText != null)
-            nicknameMessageText.text = "사용할 닉네임을 입력해 주세요.";
+        {
+            if (isFirstSet)
+                nicknameMessageText.text = "사용할 닉네임을 입력해 주세요.";
+            else
+                nicknameMessageText.text = "사용할 닉네임을 입력해 주세요.\n(변경 시 라이트스틱 2,000개 소모)";
+        }
 
         nicknameContent.SetActive(true);
         nicknameInputField?.ActivateInputField();
@@ -238,8 +246,20 @@ public class ProfileModalPanel : MonoBehaviour
         if (iconContent == null) return;
 
         iconContent.SetActive(true);
+        RebuildIconListAsync().Forget();
+    }
+
+    private async UniTaskVoid RebuildIconListAsync()
+    {
+        NoteLoadingUI.Show();
+
+        await UniTask.Yield();
+        Canvas.ForceUpdateCanvases();
+
         RebuildIconList();
         InitIconSelectionFromSave();
+
+        NoteLoadingUI.Hide();
     }
 
     #endregion
