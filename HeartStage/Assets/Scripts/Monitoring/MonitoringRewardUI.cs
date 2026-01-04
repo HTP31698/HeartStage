@@ -1,16 +1,23 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 
 public class MonitoringRewardUI : GenericWindow
 {
+    [Header("배경")]
+    [SerializeField] private CanvasGroup dimBackground;
+
+    [Header("UI References")]
     [SerializeField] private Button rewardButton;
     [SerializeField] private GameObject itemPrefab;
     [SerializeField] private Transform rewardTransform;
 
     // 생성된 아이템 프리팹들을 관리하기 위한 리스트
     private List<GameObject> spawnedRewardItems = new List<GameObject>();
+    private Tween _dimTween;
+    private const float DimDuration = 0.2f;
 
     protected override void Awake()
     {
@@ -21,6 +28,9 @@ public class MonitoringRewardUI : GenericWindow
     public override void Open()
     {
         base.Open();
+
+        // 딤 페이드 인
+        FadeDim(true);
 
         // 열릴 때 자동으로 현재 선택된 스테이지의 보상 표시
         var gameData = SaveLoadManager.Data;
@@ -39,8 +49,31 @@ public class MonitoringRewardUI : GenericWindow
 
     public override void Close()
     {
+        // 딤 페이드 아웃
+        FadeDim(false);
+
         base.Close();
         ClearRewardItems();
+    }
+
+    private void FadeDim(bool show)
+    {
+        if (dimBackground == null) return;
+
+        _dimTween?.Kill();
+
+        if (show)
+        {
+            dimBackground.alpha = 0f;
+            dimBackground.gameObject.SetActive(true);
+            _dimTween = dimBackground.DOFade(1f, DimDuration).SetEase(Ease.OutQuad);
+        }
+        else
+        {
+            _dimTween = dimBackground.DOFade(0f, DimDuration)
+                .SetEase(Ease.InQuad)
+                .OnComplete(() => dimBackground.gameObject.SetActive(false));
+        }
     }
 
 
@@ -111,6 +144,6 @@ public class MonitoringRewardUI : GenericWindow
     private void OnRewardButtonClicked()
     {
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
-        base.Close();
+        Close();
     }
 }

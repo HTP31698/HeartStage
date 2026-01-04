@@ -317,31 +317,34 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
 
     private void GiveQuestReward(QuestData questData)
     {
-        // 보상 UI 패널 찾기
-        var acquirePanel = FindFirstObjectByType<ItemAcquirePanel>();
+        var rewards = new Dictionary<int, int>();
+        List<int> titleIds = null;
 
         if (questData.Quest_reward1 != 0 && questData.Quest_reward1_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
-            if (acquirePanel != null)
-                acquirePanel.Open(questData.Quest_reward1, questData.Quest_reward1_A);
+            rewards[questData.Quest_reward1] = questData.Quest_reward1_A;
         }
 
         if (questData.Quest_reward2 != 0 && questData.Quest_reward2_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
-            if (acquirePanel != null)
-                acquirePanel.Open(questData.Quest_reward2, questData.Quest_reward2_A);
+            if (rewards.ContainsKey(questData.Quest_reward2))
+                rewards[questData.Quest_reward2] += questData.Quest_reward2_A;
+            else
+                rewards[questData.Quest_reward2] = questData.Quest_reward2_A;
         }
 
         if (questData.Quest_reward3 != 0 && questData.Quest_reward3_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
-            if (acquirePanel != null)
-                acquirePanel.Open(questData.Quest_reward3, questData.Quest_reward3_A);
+            if (rewards.ContainsKey(questData.Quest_reward3))
+                rewards[questData.Quest_reward3] += questData.Quest_reward3_A;
+            else
+                rewards[questData.Quest_reward3] = questData.Quest_reward3_A;
         }
 
-        // ★ 칭호(Title_ID) 지급
+        // 칭호(Title_ID) 지급
         if (questData.Title_ID > 0)
         {
             var data = SaveLoadManager.Data;
@@ -351,8 +354,17 @@ public class ArchivementQuests : MonoBehaviour, IQuestItemOwner
             if (!data.ownedTitleIds.Contains(questData.Title_ID))
             {
                 data.ownedTitleIds.Add(questData.Title_ID);
+                titleIds = new List<int> { questData.Title_ID };
                 SaveLoadManager.SaveToServer().Forget();
             }
+        }
+
+        // 보상 요약 패널 표시
+        if (rewards.Count > 0 || titleIds != null)
+        {
+            var rewardPanel = FindFirstObjectByType<RewardSummaryPanel>();
+            if (rewardPanel != null)
+                rewardPanel.Open(rewards, titleIds);
         }
     }
 

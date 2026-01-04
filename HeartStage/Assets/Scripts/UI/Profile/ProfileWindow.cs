@@ -3,14 +3,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
-using System.Linq;
 
-public class ProfileWindow : MonoBehaviour
+public class ProfileWindow : GenericWindow
 {
     public static ProfileWindow Instance;
-
-    [Header("Root")]
-    [SerializeField] private GameObject root;
 
     [Header("모달 패널")]
     [SerializeField] private ProfileModalPanel modalPanel;
@@ -35,20 +31,13 @@ public class ProfileWindow : MonoBehaviour
     [SerializeField] private Button changeStatusButton;
     [SerializeField] private Button changeIconButton;
 
-    [Header("팝업들")]
-    [SerializeField] private NicknameWindow nicknameWindow;
-    [SerializeField] private StatusMessageWindow statusMessageWindow;
-    [SerializeField] private IconChangeWindow iconChangeWindow;
-
     private readonly List<int> _titleIdByIndex = new();
     private bool _prewarmed = false;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         Instance = this;
-
-        if (root != null)
-            root.SetActive(false);
 
         if (modalPanel != null)
             modalPanel.Hide();
@@ -71,24 +60,32 @@ public class ProfileWindow : MonoBehaviour
 
     private void OnEnable()
     {
-        if (root != null && root.activeSelf)
+        if (gameObject.activeSelf)
         {
             RefreshAll();
         }
     }
 
-    public void Open()
+    public override void Open()
     {
-        if (root != null)
-            root.SetActive(true);
+        // 직접 호출 시 딤 배경과 함께 열기 (WindowManager 경유)
+        // isOverlayWindow가 false면 WindowManager를 통하지 않고 직접 호출된 것
+        if (WindowManager.Instance != null && !isOverlayWindow)
+        {
+            WindowManager.Instance.OpenOverlay(WindowType.Profile);
+            return;
+        }
 
+        base.Open();
         RefreshAll();
     }
 
-    public void Close()
+    public override void Close()
     {
-        if (root != null)
-            root.SetActive(false);
+        base.Close();
+
+        // 다음 Open() 시 WindowManager 경유하도록 리셋
+        SetAsOverlay(false);
 
         if (modalPanel != null)
             modalPanel.Hide();
@@ -101,21 +98,16 @@ public class ProfileWindow : MonoBehaviour
             return;
         _prewarmed = true;
 
-        if (root == null)
-            return;
-
-        bool wasRootActive = root.activeSelf;
-        root.SetActive(true);
+        bool wasActive = gameObject.activeSelf;
+        gameObject.SetActive(true);
         RefreshAll();
 
-        // 팝업들 예열
-        nicknameWindow?.Prewarm();
-        statusMessageWindow?.Prewarm();
-        iconChangeWindow?.Prewarm();
+        // 모달 패널 예열
+        modalPanel?.Prewarm();
 
         await UniTask.Yield(); // 레이아웃 한 프레임 확보
 
-        root.SetActive(wasRootActive);
+        gameObject.SetActive(wasActive);
     }
 
     public void RefreshAll()
@@ -305,73 +297,35 @@ public class ProfileWindow : MonoBehaviour
 
     private void OnClickChangeNickname()
     {
-        if (nicknameWindow == null)
+        if (modalPanel == null)
         {
-            Debug.LogWarning("[ProfileWindow] nicknameWindow 참조가 없습니다.");
+            Debug.LogWarning("[ProfileWindow] modalPanel 참조가 없습니다.");
             return;
         }
 
-        OpenPopupSafely(nicknameWindow).Forget();
+        modalPanel.Show(ProfileModalType.Nickname);
     }
 
     private void OnClickChangeStatusMessage()
     {
-        if (statusMessageWindow == null)
+        if (modalPanel == null)
         {
-            Debug.LogWarning("[ProfileWindow] statusMessageWindow 참조가 없습니다.");
+            Debug.LogWarning("[ProfileWindow] modalPanel 참조가 없습니다.");
             return;
         }
 
-        OpenPopupSafely(statusMessageWindow).Forget();
+        modalPanel.Show(ProfileModalType.StatusMessage);
     }
 
     private void OnClickChangeIcon()
     {
-        if (iconChangeWindow == null)
+        if (modalPanel == null)
         {
-            Debug.LogWarning("[ProfileWindow] iconChangeWindow 참조가 없습니다.");
+            Debug.LogWarning("[ProfileWindow] modalPanel 참조가 없습니다.");
             return;
         }
 
-        OpenPopupSafely(iconChangeWindow).Forget();
-    }
-
-    private async UniTaskVoid OpenPopupSafely(MonoBehaviour window)
-    {
-        // 1) 먼저 모달만 켠다
-        if (modalPanel != null)
-            modalPanel.Show();
-
-        // 2) 한 프레임 양보해서 이번 클릭 이벤트 완전히 끝나게 한 뒤
-        await UniTask.Yield();
-
-        // 3) 그 다음 팝업 오픈 (실제 타입에 따라 캐스팅해서 Open 호출)
-        switch (window)
-        {
-            case NicknameWindow nick:
-                nick.Open();
-                break;
-            case StatusMessageWindow status:
-                status.Open();
-                break;
-            case IconChangeWindow icon:
-                icon.Open();
-                break;
-        }
-    }
-
-    // 팝업 하나가 닫힐 때마다 호출 → 모두 닫히면 모달도 닫기
-    public void OnPopupClosed()
-    {
-        bool anyOpen =
-            (nicknameWindow != null && nicknameWindow.IsOpen) ||
-            (statusMessageWindow != null && statusMessageWindow.IsOpen) ||
-            (iconChangeWindow != null && iconChangeWindow.IsOpen);
-
-        if (!anyOpen && modalPanel != null)
-        {
-            modalPanel.Hide();
-        }
+        modalPanel.Show(ProfileModalType.Icon);
     }
 
     private void OnTitleDropdownChanged(int index)

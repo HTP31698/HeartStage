@@ -757,28 +757,38 @@ public class DailyQuests : QuestTabBase<DailyQuestItemUI>, IQuestItemOwner
     /// </summary>
     private void GiveQuestReward(QuestData questData)
     {
-        // 보상 UI 패널 찾기
-        var acquirePanel = FindFirstObjectByType<ItemAcquirePanel>();
+        var rewards = new Dictionary<int, int>();
 
         if (questData.Quest_reward1 != 0 && questData.Quest_reward1_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward1, questData.Quest_reward1_A);
-            if (acquirePanel != null)
-                acquirePanel.Open(questData.Quest_reward1, questData.Quest_reward1_A);
+            rewards[questData.Quest_reward1] = questData.Quest_reward1_A;
         }
 
         if (questData.Quest_reward2 != 0 && questData.Quest_reward2_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward2, questData.Quest_reward2_A);
-            if (acquirePanel != null)
-                acquirePanel.Open(questData.Quest_reward2, questData.Quest_reward2_A);
+            if (rewards.ContainsKey(questData.Quest_reward2))
+                rewards[questData.Quest_reward2] += questData.Quest_reward2_A;
+            else
+                rewards[questData.Quest_reward2] = questData.Quest_reward2_A;
         }
 
         if (questData.Quest_reward3 != 0 && questData.Quest_reward3_A > 0)
         {
             ItemInvenHelper.AddItem(questData.Quest_reward3, questData.Quest_reward3_A);
-            if (acquirePanel != null)
-                acquirePanel.Open(questData.Quest_reward3, questData.Quest_reward3_A);
+            if (rewards.ContainsKey(questData.Quest_reward3))
+                rewards[questData.Quest_reward3] += questData.Quest_reward3_A;
+            else
+                rewards[questData.Quest_reward3] = questData.Quest_reward3_A;
+        }
+
+        // 보상 요약 패널 표시
+        if (rewards.Count > 0)
+        {
+            var rewardPanel = FindFirstObjectByType<RewardSummaryPanel>();
+            if (rewardPanel != null)
+                rewardPanel.Open(rewards);
         }
     }
 

@@ -182,6 +182,7 @@ GameObject:
   - component: {fileID: 8546980843049942031}
   - component: {fileID: 6000784934740200458}
   - component: {fileID: 4449567222004258054}
+  - component: {fileID: 3139395380403343555}
   m_Layer: 5
   m_Name: GachaCancelUI
   m_TagString: Untagged
@@ -265,6 +266,29 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   exitButton: {fileID: 5569339598199348349}
+--- !u!114 &3139395380403343555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2708301503546368532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a33e258cd12504a8398e0f05f90f6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animationTarget: {fileID: 0}
+  _openType: 3
+  _openStartScale: 0.8
+  _openDuration: 0.25
+  _openEase: 27
+  _closeType: 3
+  _closeEndScale: 0.8
+  _closeDuration: 0.15
+  _closeEase: 26
+  _origin: 0
+  _autoPlayOnEnable: 1
 --- !u!1 &6129974670891386009
 GameObject:
   m_ObjectHideFlags: 0

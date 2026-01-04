@@ -147,13 +147,14 @@ GameObject:
   - component: {fileID: 2568971306176167885}
   - component: {fileID: 3370115535939546025}
   - component: {fileID: 1099762994101727574}
+  - component: {fileID: 902941511327064402}
   m_Layer: 5
   m_Name: PurchaseConfirmPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2568971306176167885
 RectTransform:
   m_ObjectHideFlags: 0
@@ -206,6 +207,29 @@ MonoBehaviour:
   descText: {fileID: 8134234741249326126}
   currentAmountText: {fileID: 5349325590772494045}
   purchaseButton: {fileID: 1479812316033905874}
+--- !u!114 &902941511327064402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2723679320355825906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0a33e258cd12504a8398e0f05f90f6a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _animationTarget: {fileID: 0}
+  _openType: 3
+  _openStartScale: 0.8
+  _openDuration: 0.25
+  _openEase: 27
+  _closeType: 3
+  _closeEndScale: 0.8
+  _closeDuration: 0.15
+  _closeEase: 26
+  _origin: 0
+  _autoPlayOnEnable: 1
 --- !u!1 &2887723717892267313
 GameObject:
   m_ObjectHideFlags: 0
@@ -395,7 +419,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -40, y: -39.999996}
+  m_SizeDelta: {x: -20, y: -20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &9068365871369169597
 CanvasRenderer:

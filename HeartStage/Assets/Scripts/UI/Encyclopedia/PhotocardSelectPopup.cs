@@ -87,7 +87,6 @@ public class PhotocardSelectPopup : MonoBehaviour
             WindowManager.Instance.OnDimClicked += OnDimClicked;
         }
 
-        AdjustGridCellSize();
         RebuildListAsync().Forget();
     }
 
@@ -159,6 +158,10 @@ public class PhotocardSelectPopup : MonoBehaviour
 
         try
         {
+            // 레이아웃 강제 갱신 후 그리드 셀 크기 조절
+            Canvas.ForceUpdateCanvases();
+            AdjustGridCellSize();
+
             // 기존 아이템 정리
             foreach (var go in _spawnedItems)
             {
