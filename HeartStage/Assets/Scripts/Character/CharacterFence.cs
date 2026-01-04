@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Threading;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CharacterFence : MonoBehaviour, IDamageable
 {
     public static CharacterFence Instance;
     public static List<CharacterFence> allFences = new List<CharacterFence>(); // 모든 펜스 관리 중앙 팬스 추가 떄문에 사용
 
+    public Slider hpSlider;
     public TextMeshProUGUI currentHPText;
     public Transform imageGo;
 
@@ -88,6 +90,7 @@ public class CharacterFence : MonoBehaviour, IDamageable
     public void SetHpText()
     {
         currentHPText.text = $"HP: {hp} / {maxHp}";
+        UpdateHpSlider();
     }
 
     private static void UpdateAllFencesHpText()
@@ -184,6 +187,16 @@ public class CharacterFence : MonoBehaviour, IDamageable
                 isShaking = false;
             }
         }
+    }
+
+    // hp 슬라이드 업데이트
+    private void UpdateHpSlider()
+    {
+        if (hpSlider == null)
+            return;
+
+        hpSlider.maxValue = maxHp;
+        hpSlider.value = hp;
     }
 #if UNITY_EDITOR
     // 테스트 코드
