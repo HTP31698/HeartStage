@@ -36,6 +36,11 @@ public static class FriendSearchService
     {
         var nicknameIndexRef = Root.Child("nicknameIndex");
 
+        // 캐시 강제 새로고침 (서버에서 최신 데이터 가져오기)
+        FirebaseDatabase.DefaultInstance.GoOffline();
+        await UniTask.Delay(100);
+        FirebaseDatabase.DefaultInstance.GoOnline();
+
         // 이미 동기화 중이면 데이터만 새로 가져옴
         if (_isSyncing)
         {

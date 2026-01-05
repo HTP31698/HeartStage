@@ -5,7 +5,24 @@ using UnityEngine.UI;
 
 public class FriendProfileWindow : GenericWindow
 {
-    public static FriendProfileWindow Instance { get; private set; }
+    private static FriendProfileWindow _instance;
+
+    public static FriendProfileWindow Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindAnyObjectByType<FriendProfileWindow>(FindObjectsInactive.Include);
+                if (_instance != null)
+                {
+                    _instance.Initialize();
+                }
+            }
+            return _instance;
+        }
+        private set => _instance = value;
+    }
 
     [Header("프로필 정보")]
     [SerializeField] private Image iconImage;
@@ -34,12 +51,12 @@ public class FriendProfileWindow : GenericWindow
         if (_initialized) return;
         _initialized = true;
 
-        if (Instance != null && Instance != this)
+        if (_instance != null && _instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        Instance = this;
+        _instance = this;
 
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
@@ -57,6 +74,7 @@ public class FriendProfileWindow : GenericWindow
 
         SetLoadingState();
         gameObject.SetActive(true);
+        transform.SetAsLastSibling(); // 다른 창 위에 표시
         // WindowAnimator가 OnEnable에서 자동 재생
 
         LoadAsync(uid).Forget();
