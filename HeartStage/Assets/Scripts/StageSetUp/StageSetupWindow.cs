@@ -170,10 +170,10 @@ public class StageSetupWindow : MonoBehaviour
     }
 
     private void TogglePowerInfoPanel()
-    {
-        if (powerInfoPanel == null) return;
-
+    {        
         SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
+
+        if (powerInfoPanel == null) return;
 
         bool isActive = powerInfoPanel.gameObject.activeSelf;
         powerInfoPanel.gameObject.SetActive(!isActive);

@@ -8,12 +8,21 @@ public class StageUI : MonoBehaviour
     public TextMeshProUGUI remainMonsterCountText;
     public Button feverButton;
     public GameObject feverEffects;
+    public Button[] speedButton;
 
     private void Start()
     {
         feverButton.onClick.AddListener(OnFeverButtonClicked);
     }
 
+    private void Awake()
+    {
+        foreach (var button in speedButton)
+        {
+            button.onClick.AddListener(OnSpeedButtonClicked);
+        }
+    }
+    
     public void SetWaveCount(int stageNumber, int waveOrder)
     {
         if (stageNumber == 0)
@@ -49,6 +58,12 @@ public class StageUI : MonoBehaviour
 
     public void OnFeverButtonClicked()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         StageManager.Instance.FeverStartAsync().Forget();
+    }
+
+    private void OnSpeedButtonClicked()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
     }
 }

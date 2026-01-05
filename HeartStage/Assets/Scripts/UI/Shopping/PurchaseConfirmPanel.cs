@@ -15,6 +15,7 @@ public class PurchaseConfirmPanel : GenericWindow
     [SerializeField] private TextMeshProUGUI descText;
     [SerializeField] private TextMeshProUGUI currentAmountText;
     [SerializeField] private Button purchaseButton;
+    [SerializeField] private Button cancelButton;
 
     private int tableID = 0;
     private ShopItemSlot currentSlot;
@@ -23,6 +24,8 @@ public class PurchaseConfirmPanel : GenericWindow
     {
         base.Awake();
         Instance = this;
+
+        cancelButton.onClick.AddListener(OnCancelButtonClicked);
     }
 
     private void OnDisable()
@@ -138,5 +141,11 @@ public class PurchaseConfirmPanel : GenericWindow
         }
 
         SaveLoadManager.SaveToServer().Forget();
+    }
+
+    private void OnCancelButtonClicked()
+    {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Exit_Button_Click);
+        Close();
     }
 }
