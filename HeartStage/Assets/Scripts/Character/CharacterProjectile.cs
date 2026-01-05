@@ -182,6 +182,8 @@ public class CharacterProjectile : MonoBehaviour
     // 히트이펙트 발동
     private async UniTask HitEffectAsync(Vector3 hitPos)
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_Impact);
+
         if (PoolManager.Instance == null) 
             return;
 
