@@ -25,7 +25,7 @@ public class SoundManager : MonoBehaviour
 
     private Dictionary<string, float> soundCooldowns = new Dictionary<string, float>();
 
-    [SerializeField] private float defaultCooldownTime = 0.2f; // 기본 쿨타임 
+   private float defaultCooldownTime = 0.1f; // 기본 쿨타임 
     private float lastHitSoundTime = 0f;
 
     // 현재 재생 중인 음성 추적
