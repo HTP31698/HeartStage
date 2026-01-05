@@ -25,7 +25,7 @@ public class TutorialPanel : GenericWindow
     [SerializeField] private Button itemChestButton; // 아이템 보관함 버튼
     [SerializeField] private Button iconButton; // 아이콘 버튼
     [SerializeField] private Button boardButton; // 게시판 버튼
-    [SerializeField] private Button optionButton; // 옵션 버튼
+    [SerializeField] private Toggle optionButton; // 옵션 버튼
 
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
