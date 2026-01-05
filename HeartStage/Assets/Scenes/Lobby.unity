@@ -1599,6 +1599,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1144807073}
+  - {fileID: 7358743824786919766}
   - {fileID: 2147322023616676101}
   - {fileID: 1914259027941811821}
   - {fileID: 1748133774}
@@ -3534,7 +3535,6 @@ RectTransform:
   - {fileID: 3073789304064760806}
   - {fileID: 1064421806692906543}
   - {fileID: 6463935526757033275}
-  - {fileID: 7358743824786919766}
   - {fileID: 136746933}
   - {fileID: 6115360373616779732}
   - {fileID: 2460649483389194349}
@@ -5053,8 +5053,12 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1313649394}
+    m_TransformParent: {fileID: 620342086}
     m_Modifications:
+    - target: {fileID: 1328384802439724218, guid: 203154b4db5c9a248abb9952b55729d6, type: 3}
+      propertyPath: dimBackground
+      value: 
+      objectReference: {fileID: 1144807076}
     - target: {fileID: 8441232872762901691, guid: 203154b4db5c9a248abb9952b55729d6, type: 3}
       propertyPath: m_Name
       value: FriendProfileWindow
@@ -5089,11 +5093,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8541890641216433594, guid: 203154b4db5c9a248abb9952b55729d6, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 8.333252
       objectReference: {fileID: 0}
     - target: {fileID: 8541890641216433594, guid: 203154b4db5c9a248abb9952b55729d6, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
+      value: -240.0022
       objectReference: {fileID: 0}
     - target: {fileID: 8541890641216433594, guid: 203154b4db5c9a248abb9952b55729d6, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5125,11 +5129,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8541890641216433594, guid: 203154b4db5c9a248abb9952b55729d6, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: -0.031219482
       objectReference: {fileID: 0}
     - target: {fileID: 8541890641216433594, guid: 203154b4db5c9a248abb9952b55729d6, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: 15.78595
       objectReference: {fileID: 0}
     - target: {fileID: 8541890641216433594, guid: 203154b4db5c9a248abb9952b55729d6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -6326,6 +6330,10 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0.000078719495
       objectReference: {fileID: 0}
+    - target: {fileID: 7995149421578561541, guid: d20f02d902c56824f9f3af19239d29d1, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 2.499878
+      objectReference: {fileID: 0}
     - target: {fileID: 8443059726082754810, guid: d20f02d902c56824f9f3af19239d29d1, type: 3}
       propertyPath: m_Name
       value: Mail
@@ -7019,6 +7027,10 @@ PrefabInstance:
     - target: {fileID: 2817584643434238111, guid: c301fbcb4e5624e4095364953583a481, type: 3}
       propertyPath: m_Name
       value: LobbyHomeWindow
+      objectReference: {fileID: 0}
+    - target: {fileID: 2817584643434238111, guid: c301fbcb4e5624e4095364953583a481, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2824836989538595770, guid: c301fbcb4e5624e4095364953583a481, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -11130,6 +11142,10 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 6090
       objectReference: {fileID: 0}
+    - target: {fileID: 3013201553721751453, guid: 6780645a3beb48b4d8b4a3682defd140, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0.00056927704
+      objectReference: {fileID: 0}
     - target: {fileID: 3060377882934805874, guid: 6780645a3beb48b4d8b4a3682defd140, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -11185,6 +11201,10 @@ PrefabInstance:
     - target: {fileID: 3073747138352227087, guid: 6780645a3beb48b4d8b4a3682defd140, type: 3}
       propertyPath: m_SizeDelta.y
       value: 6090
+      objectReference: {fileID: 0}
+    - target: {fileID: 3073747138352227087, guid: 6780645a3beb48b4d8b4a3682defd140, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0.00022773359
       objectReference: {fileID: 0}
     - target: {fileID: 3161813092665138218, guid: 6780645a3beb48b4d8b4a3682defd140, type: 3}
       propertyPath: m_AnchorMax.y

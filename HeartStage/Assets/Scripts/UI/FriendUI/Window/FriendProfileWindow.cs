@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -37,8 +38,13 @@ public class FriendProfileWindow : GenericWindow
     [Header("버튼")]
     [SerializeField] private Button closeButton;
 
+    [Header("딤 배경")]
+    [SerializeField] private CanvasGroup dimBackground;
+
     private string _currentUid;
     private bool _initialized;
+    private Tween _dimTween;
+    private const float DimDuration = 0.2f;
 
     protected override void Awake()
     {
@@ -73,6 +79,7 @@ public class FriendProfileWindow : GenericWindow
         _currentUid = uid;
 
         SetLoadingState();
+        FadeDim(true);
         gameObject.SetActive(true);
         transform.SetAsLastSibling(); // 다른 창 위에 표시
         // WindowAnimator가 OnEnable에서 자동 재생
@@ -82,7 +89,28 @@ public class FriendProfileWindow : GenericWindow
 
     public override void Close()
     {
+        FadeDim(false);
         base.Close();
+    }
+
+    private void FadeDim(bool show)
+    {
+        if (dimBackground == null) return;
+
+        _dimTween?.Kill();
+
+        if (show)
+        {
+            dimBackground.alpha = 0f;
+            dimBackground.gameObject.SetActive(true);
+            _dimTween = dimBackground.DOFade(1f, DimDuration).SetEase(Ease.OutQuad);
+        }
+        else
+        {
+            _dimTween = dimBackground.DOFade(0f, DimDuration)
+                .SetEase(Ease.InQuad)
+                .OnComplete(() => dimBackground.gameObject.SetActive(false));
+        }
     }
 
     private void SetLoadingState()
