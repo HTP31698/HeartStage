@@ -50,7 +50,6 @@ public class TutorialPanel : GenericWindow
             var saveData = SaveLoadManager.Data as SaveDataV1;
             if (saveData != null && saveData.isTutorialCompleted)
             {
-                Debug.Log("[TutorialPanel] 로비 튜토리얼이 이미 완료되었습니다.");
                 Close();
                 return;
             }

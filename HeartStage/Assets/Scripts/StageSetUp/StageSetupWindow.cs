@@ -194,7 +194,8 @@ public class StageSetupWindow : MonoBehaviour
         if (saveData != null && stageData2 != null && stageData2.stage_ID >= 66000 && stageData2.stage_ID < 67000)
         {
             saveData.storyScriptResumeIndex = -1;
-            Debug.Log("[StageSetupWindow] 스토리 스테이지 전투 취소 - storyScriptResumeIndex 리셋");
+            saveData.storyBattleScriptIndex = -1; // 전투 시작 인덱스도 리셋
+            saveData.StoryAfterLobby = true; // 로비에서 스토리 던전 UI 복원
         }
 
         // 돌아가기 플래그 설정 (로비에서 StageInfoWindow 자동 오픈용)

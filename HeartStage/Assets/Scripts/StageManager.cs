@@ -161,8 +161,6 @@ public class StageManager : MonoBehaviour
             //  스토리 스테이지인지 확인 
             if (stageID >= 66000 && stageID < 67000)
             {
-                Debug.Log($"[StageManager] 스토리 스테이지 로드: {stageID}");
-
                 // 스토리 스테이지 데이터를 StageData로 변환
                 var storyStageData = DataTableManager.StoryTable.GetStoryStage(stageID);
                 if (storyStageData != null)
@@ -615,8 +613,13 @@ public class StageManager : MonoBehaviour
                 // 전투 있는 스토리 스테이지 클리어 시
                 // 남은 스토리가 있으면 스토리 씬으로 돌아가기
                 var saveData = SaveLoadManager.Data as SaveDataV1;
-                if (saveData != null && saveData.storyScriptResumeIndex >= 0)
+                if (saveData != null && saveData.storyBattleScriptIndex >= 0)
                 {
+                    // 전투 클리어 완료 - 이제 다음 대사로 진행 가능
+                    saveData.storyScriptResumeIndex = saveData.storyBattleScriptIndex;
+                    saveData.storyBattleScriptIndex = -1; // 사용 후 리셋
+                    Debug.Log($"[StageManager] 스토리 전투 클리어 - storyScriptResumeIndex 업데이트: {saveData.storyScriptResumeIndex}");
+                    
                     // 스토리 씬으로 돌아가서 이어서 진행
                     GameSceneManager.ChangeScene(SceneType.StoryScene);
                 }
@@ -646,8 +649,14 @@ public class StageManager : MonoBehaviour
         bool isSeraStoryDefeatStage = currentStageData != null &&
                                        currentStageData.stage_ID == 66006;
 
-        if (isSeraStoryDefeatStage && saveData != null && saveData.storyScriptResumeIndex >= 0)
+        if (isSeraStoryDefeatStage && saveData != null && saveData.storyBattleScriptIndex >= 0)
         {
+            // 패배해도 스토리 진행 - 다음 대사로 이동
+            saveData.storyScriptResumeIndex = saveData.storyBattleScriptIndex;
+            saveData.storyBattleScriptIndex = -1;
+            
+            Debug.Log($"[StageManager] 세라 스토리 2 패배 - 스토리 씬으로 복귀, storyScriptResumeIndex: {saveData.storyScriptResumeIndex}");
+            
             // 스토리 씬으로 돌아가서 이어서 진행
             Time.timeScale = 1f;
             GetReward();
@@ -655,10 +664,11 @@ public class StageManager : MonoBehaviour
             return;
         }
 
-        // 일반 스테이지 패배: storyScriptResumeIndex 리셋하고 패배 UI 표시
+        // 일반 스테이지 패배: storyScriptResumeIndex, storyBattleScriptIndex 리셋하고 패배 UI 표시
         if (saveData != null)
         {
             saveData.storyScriptResumeIndex = -1;
+            saveData.storyBattleScriptIndex = -1;
         }
 
         if (windowManager != null)
@@ -823,8 +833,6 @@ public class StageManager : MonoBehaviour
         stageData.fail_stamina = 0; 
         stageData.prefab = storyStage.prefab; // 배경 프리팹
         stageData.stage_position = 3; // 기본값
-
-        Debug.Log($"[StageManager] 스토리 스테이지 변환 완료: {storyStage.story_stage_name}");
 
         return stageData;
     }
