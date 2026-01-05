@@ -22,6 +22,7 @@ public class TutorialPanel : GenericWindow
     [Header("Tutorial UI Control")]
     [SerializeField] private GameObject backgroundPanel; // BackGroundPanel GameObject
     [SerializeField] private GameObject tutorialSelectWindowPanel; // 스테이지선택용 패널
+    [SerializeField] private Button itemChestButton; // 아이템 보관함 버튼
 
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
@@ -63,6 +64,12 @@ public class TutorialPanel : GenericWindow
             DragZoomPanManager.Instance.LockForTutorial();
         }
 
+        // 아이템 보관함 버튼 비활성화
+        if (itemChestButton != null)
+        {
+            itemChestButton.interactable = false;
+        }
+
         // 스킵 버튼 이벤트 등록
         if (skipButton != null)
         {
@@ -82,6 +89,12 @@ public class TutorialPanel : GenericWindow
         if (DragZoomPanManager.Instance != null)
         {
             DragZoomPanManager.Instance.UnlockForTutorial();
+        }
+
+        // 아이템 보관함 버튼 다시 활성화
+        if (itemChestButton != null)
+        {
+            itemChestButton.interactable = true;
         }
 
         base.Close();
