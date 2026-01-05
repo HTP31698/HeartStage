@@ -339,6 +339,14 @@ public class MonitoringCharacterSelectUI : GenericWindow
         bool canStart = selectedCharacters.Count >= currentDipatchMemberCount;
 
         startButton.interactable = canStart;
+
+        // 버튼 이미지 색상 강제 업데이트
+        var buttonImage = startButton.GetComponent<Image>();
+        if (buttonImage != null)
+        {
+            var colors = startButton.colors;
+            buttonImage.color = canStart ? colors.normalColor : colors.disabledColor;
+        }
     }
     private void OnStartButtonClicked()
     {      

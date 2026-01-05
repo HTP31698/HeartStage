@@ -353,12 +353,12 @@ public class StoryManager : MonoBehaviour
     /// 스토리 중간에 전투 시작
     private async void StartBattleFromStory()
     {
-        // 다음 라인 인덱스 저장 (전투 클리어 후 이어서 진행)
+        // 다음 라인 인덱스를 임시 저장 (전투 클리어 시에만 적용)
         var saveData = SaveLoadManager.Data as SaveDataV1;
         if (saveData != null)
         {
-            saveData.storyScriptResumeIndex = currentScriptIndex + 1;
-            Debug.Log($"[StoryManager] 전투 시작 - storyScriptResumeIndex 저장: {saveData.storyScriptResumeIndex}");
+            saveData.storyBattleScriptIndex = currentScriptIndex + 1;
+            Debug.Log($"[StoryManager] 전투 시작 - storyBattleScriptIndex 저장: {saveData.storyBattleScriptIndex}");
             await SaveLoadManager.SaveToServer(); // 저장 완료까지 대기
         }
 
@@ -470,6 +470,7 @@ public class StoryManager : MonoBehaviour
         if (saveData != null)
         {
             saveData.storyScriptResumeIndex = -1;
+            saveData.storyBattleScriptIndex = -1; // 전투 시작 인덱스도 리셋
             Debug.Log("[StoryManager] OnCutsceneComplete에서 storyScriptResumeIndex 리셋");
         }
 

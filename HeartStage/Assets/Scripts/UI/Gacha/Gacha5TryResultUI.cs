@@ -38,8 +38,6 @@ public class Gacha5TryResultUI : GenericWindow
     {
         base.Open();
 
-        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Gacha_Result);
-
         if (GachaUI.gachaFiveResultReceiver != null && GachaUI.gachaFiveResultReceiver.Count > 0)
         {
             _currentResults = new List<GachaResult>(GachaUI.gachaFiveResultReceiver);
@@ -160,6 +158,8 @@ public class Gacha5TryResultUI : GenericWindow
     /// </summary>
     private void DisplaySlotInitial(int index, GachaResult result)
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Gacha_Result);
+
         var characterData = result.characterData;
         var gachaData = result.gachaData;
 

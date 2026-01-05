@@ -2258,6 +2258,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a14739b962fc0a4d8c1d12986369c17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &565184538 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8278789327995201076, guid: a9896f9f7c9626845bd7bdf75b7c1781, type: 3}
+  m_PrefabInstance: {fileID: 5489233029386602566}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &585647907
 GameObject:
   m_ObjectHideFlags: 0
@@ -3258,7 +3269,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 9.6
+  orthographic size: 11.400001
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -4856,6 +4867,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1649022223 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 178643964777976411, guid: a9896f9f7c9626845bd7bdf75b7c1781, type: 3}
+  m_PrefabInstance: {fileID: 5489233029386602566}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1651860519 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7205396057884562717, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
@@ -5616,6 +5638,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a9b4bd545acd523438804a61fe0cff69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2042396036 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1826830867517671519, guid: a9896f9f7c9626845bd7bdf75b7c1781, type: 3}
+  m_PrefabInstance: {fileID: 5489233029386602566}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &2050111786 stripped
@@ -8922,6 +8955,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6324914185884888421, guid: a9896f9f7c9626845bd7bdf75b7c1781, type: 3}
+      propertyPath: speedButton.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6324914185884888421, guid: a9896f9f7c9626845bd7bdf75b7c1781, type: 3}
+      propertyPath: 'speedButton.Array.data[0]'
+      value: 
+      objectReference: {fileID: 565184538}
+    - target: {fileID: 6324914185884888421, guid: a9896f9f7c9626845bd7bdf75b7c1781, type: 3}
+      propertyPath: 'speedButton.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1649022223}
+    - target: {fileID: 6324914185884888421, guid: a9896f9f7c9626845bd7bdf75b7c1781, type: 3}
+      propertyPath: 'speedButton.Array.data[2]'
+      value: 
+      objectReference: {fileID: 2042396036}
     - target: {fileID: 6587704623018949339, guid: a9896f9f7c9626845bd7bdf75b7c1781, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -9201,7 +9250,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 805425678950857380, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0.00024911083
+      value: 0.000065482556
       objectReference: {fileID: 0}
     - target: {fileID: 808235204874162976, guid: 5ee854a9e09ab224eac2c8afdd373674, type: 3}
       propertyPath: m_AnchorMax.y

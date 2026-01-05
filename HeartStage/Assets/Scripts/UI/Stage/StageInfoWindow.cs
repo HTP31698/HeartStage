@@ -338,6 +338,7 @@ public class StageInfoWindow : GenericWindow
     
     private void OnMonitoringButtonClicked()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Button_Click);
         SaveSelectedStageDataForMonitoring();
 
         if (windowManager != null)

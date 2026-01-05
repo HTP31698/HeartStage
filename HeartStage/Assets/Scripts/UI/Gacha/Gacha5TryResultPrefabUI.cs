@@ -47,7 +47,6 @@ public class Gacha5TryResultPrefabUI : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"아이템 데이터를 찾을 수 없습니다: {gachaData.Gacha_item}");
                 SetCharacterNameText($"아이템 ID: {gachaData.Gacha_item}");
             }
         }

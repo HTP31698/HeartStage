@@ -55,6 +55,7 @@ public class SaveDataV1 : SaveData
 
     // 스토리 스크립트 진행 상태 (전투 후 복귀용)
     public int storyScriptResumeIndex = -1; // -1이면 처음부터 시작, 양수면 해당 인덱스부터 재개
+    public int storyBattleScriptIndex = -1; // 전투 시작 시 저장하는 다음 대사 인덱스 (클리어 시 적용)
 
     // ================== 5. 퀘스트 진행 상태 ==================
     public DailyQuestState dailyQuest = new DailyQuestState();

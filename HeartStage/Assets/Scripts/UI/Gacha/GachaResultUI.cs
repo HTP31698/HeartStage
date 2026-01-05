@@ -36,8 +36,6 @@ public class GachaResultUI : GenericWindow
     {
         base.Open();
 
-        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Gacha_Result);
-
         if (GachaUI.gachaResultReciever.HasValue)
         {
             SetGachaResult(GachaUI.gachaResultReciever.Value);
@@ -68,6 +66,8 @@ public class GachaResultUI : GenericWindow
 
     private void DisPlayResult()
     {
+        SoundManager.Instance.PlaySFX(SoundName.SFX_UI_Gacha_Result);
+
         // 기존 애니메이션 정리
         KillAnimations();
 

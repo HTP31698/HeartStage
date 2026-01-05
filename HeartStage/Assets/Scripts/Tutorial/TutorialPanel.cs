@@ -22,6 +22,10 @@ public class TutorialPanel : GenericWindow
     [Header("Tutorial UI Control")]
     [SerializeField] private GameObject backgroundPanel; // BackGroundPanel GameObject
     [SerializeField] private GameObject tutorialSelectWindowPanel; // 스테이지선택용 패널
+    [SerializeField] private Button itemChestButton; // 아이템 보관함 버튼
+    [SerializeField] private Button iconButton; // 아이콘 버튼
+    [SerializeField] private Button boardButton; // 게시판 버튼
+    [SerializeField] private Button optionButton; // 옵션 버튼
 
     private TutorialScriptPrefab currentScriptUI;
     private List<TutorialScriptCSVData> currentScripts;
@@ -50,7 +54,6 @@ public class TutorialPanel : GenericWindow
             var saveData = SaveLoadManager.Data as SaveDataV1;
             if (saveData != null && saveData.isTutorialCompleted)
             {
-                Debug.Log("[TutorialPanel] 로비 튜토리얼이 이미 완료되었습니다.");
                 Close();
                 return;
             }
@@ -62,6 +65,30 @@ public class TutorialPanel : GenericWindow
         if (DragZoomPanManager.Instance != null)
         {
             DragZoomPanManager.Instance.LockForTutorial();
+        }
+
+        // 아이템 보관함 버튼 비활성화
+        if (itemChestButton != null)
+        {
+            itemChestButton.interactable = false;
+        }
+
+        // 아이콘 버튼 비활성화
+        if (iconButton != null)
+        {
+            iconButton.interactable = false;
+        }
+
+        // 게시판 버튼 비활성화
+        if (boardButton != null)
+        {
+            boardButton.interactable = false;
+        }
+
+        // 옵션 버튼 비활성화
+        if (optionButton != null)
+        {
+            optionButton.interactable = false;
         }
 
         // 스킵 버튼 이벤트 등록
@@ -83,6 +110,30 @@ public class TutorialPanel : GenericWindow
         if (DragZoomPanManager.Instance != null)
         {
             DragZoomPanManager.Instance.UnlockForTutorial();
+        }
+
+        // 아이템 보관함 버튼 다시 활성화
+        if (itemChestButton != null)
+        {
+            itemChestButton.interactable = true;
+        }
+
+        // 아이콘 버튼 다시 활성화
+        if (iconButton != null)
+        {
+            iconButton.interactable = true;
+        }
+
+        // 게시판 버튼 다시 활성화
+        if (boardButton != null)
+        {
+            boardButton.interactable = true;
+        }
+
+        // 옵션 버튼 다시 활성화
+        if (optionButton != null)
+        {
+            optionButton.interactable = true;
         }
 
         base.Close();
