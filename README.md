@@ -119,3 +119,20 @@
 * 로그인 화면에서 익명 로그인 또는 이메일 회원가입 후 플레이 가능
 * 로비 상단 아이콘을 통해 프로필, 퀘스트, 옵션 확인 가능
 * 숙소에서 캐릭터 선택 시 호감도 기능 확인 가능
+
+---
+
+## 🖼️ 스크린샷
+
+> 게임 플레이 및 UI 예시
+
+| 로비 | 배치 | 전투 | 스토리 |
+|------|------|------|------|
+| ![](./images/lobby.png) | ![](./images/place.png) | ![](./images/battle.png) | ![](./images/story.png) |
+
+---
+
+## 🔗 링크
+
+* Google Play Store: https://play.google.com/store/apps/details?id=com.kyungil.heartstage
+* 시연 영상: https://www.youtube.com/watch?v=PdrB0NrwKFo
