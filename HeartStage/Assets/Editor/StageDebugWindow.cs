@@ -26,10 +26,10 @@ public class StageDebugWindow : EditorWindow
     private int[] stageIds;
     private bool stageListInitialized = false;
 
-    [MenuItem("Tools/Stage Debug", priority = 100)]
+    [MenuItem("Tools/Stage Editor", priority = 100)]
     public static void ShowWindow()
     {
-        var window = GetWindow<StageDebugWindow>("Stage Debug");
+        var window = GetWindow<StageDebugWindow>("Stage Editor");
         window.minSize = new Vector2(280, 450);
     }
 

@@ -78,6 +78,15 @@ public static class PassivePatternUtil
         _patternData = null;
     }
 
+    /// <summary>
+    /// typeId에 해당하는 오프셋 배열 반환 (SO 단일 진실원 경유)
+    /// </summary>
+    public static Vector2Int[] GetPattern(int typeId)
+    {
+        var data = GetPatternData();
+        return data != null ? data.GetPattern(typeId) : null;
+    }
+
 #if UNITY_EDITOR
     /// <summary>
     /// 에디터 전용: AssetDatabase로 직접 로드

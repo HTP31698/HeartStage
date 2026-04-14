@@ -11,6 +11,8 @@ public class ItemData : ScriptableObject
     public int item_dup;
     public string item_desc;
     public string prefab;
+    public string prefab_frame;
+    public string char_code;
 
     // CSV → ScriptableObject 업데이트
     public void UpdateData(ItemCSVData data)
@@ -23,6 +25,8 @@ public class ItemData : ScriptableObject
         item_dup = data.item_dup;
         item_desc = data.item_desc;
         prefab = data.prefab;
+        prefab_frame = data.prefab_frame;
+        char_code = data.char_code;
     }
 
     // ScriptableObject → CSV 데이터 변환
@@ -37,7 +41,9 @@ public class ItemData : ScriptableObject
             item_inv = item_inv,
             item_dup = item_dup,
             item_desc = item_desc,
-            prefab = prefab
+            prefab = prefab,
+            prefab_frame = prefab_frame,
+            char_code = char_code
         };
     }
 }

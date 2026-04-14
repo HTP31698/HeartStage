@@ -27,10 +27,8 @@ public static class CostumeHelper
         };
     }
 
-    /// <summary>
     /// 의상 스프라이트 주소 생성
     /// 예: Top/1/i/Top_1.png, Pants/2/i/Pants_3.png, Shoes/5/Shoes_1.png
-    /// </summary>
     public static string GetSpriteAddress(CostumeType type, int spriteId, int index)
     {
         string typeName = type.ToString();
@@ -46,9 +44,7 @@ public static class CostumeHelper
         return $"{typeName}/{spriteId}/i/{typeName}_{index + 1}.png";
     }
 
-    /// <summary>
     /// 의상 스프라이트 로드 및 적용
-    /// </summary>
     public static async UniTask ApplyCostume(CostumeController controller, CostumeType type, int itemId)
     {
         if (itemId <= 0) return;

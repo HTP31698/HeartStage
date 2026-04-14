@@ -33,8 +33,7 @@ public class PassiveTileDisplay : MonoBehaviour
 
     private int _currentCharType = 0;
 
-    [Header("패턴 데이터")]
-    [SerializeField] private PassivePatternData patternData;
+    // 패턴 데이터는 PassivePatternUtil을 통해 단일 SO(Assets/ScriptableObject/Tool/PassivePatterns.asset)에서 가져옴
 
     // 그리드 크기
     private const int GridWidth = 5;
@@ -64,22 +63,21 @@ public class PassiveTileDisplay : MonoBehaviour
             centerCharacterImage.color = GetTypeColor(charType);
 
         // 패턴이 없으면 중앙만 표시
-        if (passiveTypeId == 0 || patternData == null)
+        if (passiveTypeId == 0)
             return;
 
-        // 패턴 오프셋 가져오기
-        Vector2Int[] offsets = patternData.GetPattern(passiveTypeId);
+        // 패턴 오프셋 가져오기 (단일 SO: Assets/ScriptableObject/Tool/PassivePatterns.asset)
+        Vector2Int[] offsets = PassivePatternUtil.GetPattern(passiveTypeId);
         if (offsets == null || offsets.Length == 0)
             return;
 
         // 각 오프셋에 해당하는 타일 활성화
         foreach (var offset in offsets)
         {
-            // 오프셋은 중앙(0,0) 기준이므로 그리드 좌표로 변환
-            // X: -2~2 -> 0~4
-            // Y: -1~1 -> 0~2 (y축 반전: 위가 -, 아래가 +)
-            int gridX = CenterX + offset.x;
-            int gridY = CenterY - offset.y;  // y축 반전
+            // SO 저장 규약: offset.x = 행(세로, 위-/아래+), offset.y = 열(가로, 좌-/우+)
+            // 그리드 좌표: X = 열, Y = 행 (위가 0)
+            int gridX = CenterX + offset.y;
+            int gridY = CenterY + offset.x;
 
             // 범위 체크
             if (gridX < 0 || gridX >= GridWidth || gridY < 0 || gridY >= GridHeight)

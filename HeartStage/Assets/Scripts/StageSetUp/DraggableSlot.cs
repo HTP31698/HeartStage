@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -162,7 +162,7 @@ public class DraggableSlot : MonoBehaviour,
 
             characterData = droppedCD;
 
-            // ★★★ 여기서 DragMe 잠그기 ★★★
+            // 여기서 DragMe 잠그기
             var src = data.pointerDrag.GetComponent<DragMe>();
             if (src != null)
             {

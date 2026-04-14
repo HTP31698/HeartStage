@@ -251,6 +251,7 @@ public class SOBalancingWindow : EditorWindow
     private int _cachedFilterMonsterType = -1;
     private int _cachedFilterStageId = -1;
     private int _cachedFilterSkillType = -1;
+    private int _cachedFilterCharRank = -1;
     private string _cachedSearchFilter = "";
     private bool _filterDirty = true;
 
@@ -799,8 +800,8 @@ public class SOBalancingWindow : EditorWindow
 
                     // 랭크 필터
                     filterCharRank = EditorGUILayout.IntPopup("랭크", filterCharRank,
-                        new[] { "전체", "1", "2", "3", "4", "5" },
-                        new[] { -1, 1, 2, 3, 4, 5 });
+                        new[] { "전체", "1", "2", "3", "4" },
+                        new[] { -1, 1, 2, 3, 4 });
                     break;
 
                 case SOType.Monster:
@@ -2331,6 +2332,10 @@ public class SOBalancingWindow : EditorWindow
         }
 
         AssetDatabase.SaveAssets();
+
+        // 플레이 모드 중이면 런타임 테이블도 즉시 갱신
+        SyncRuntimeTables(modifiedObjects);
+
         modifiedObjects.Clear();
         pendingChanges.Clear();
 
@@ -2373,6 +2378,10 @@ public class SOBalancingWindow : EditorWindow
         }
 
         AssetDatabase.SaveAssets();
+
+        // 플레이 모드 중이면 런타임 테이블도 즉시 갱신
+        SyncRuntimeTables(modifiedObjects);
+
         modifiedObjects.Clear();
         pendingChanges.Clear();
 
@@ -2571,6 +2580,29 @@ public class SOBalancingWindow : EditorWindow
         }
     }
 
+    /// <summary>
+    /// 플레이 모드 중일 때 변경된 SO 데이터를 런타임 DataTableManager에 즉시 반영
+    /// </summary>
+    private void SyncRuntimeTables(IEnumerable<ScriptableObject> objects)
+    {
+        if (!EditorApplication.isPlaying) return;
+
+        foreach (var so in objects)
+        {
+            if (so == null) continue;
+
+            switch (so)
+            {
+                case CharacterData charData:
+                    DataTableManager.CharacterTable?.UpdateRuntime(charData.ToCSVData());
+                    break;
+                case SkillData skillData:
+                    DataTableManager.SkillTable?.UpdateRuntime(skillData.ToCSVData());
+                    break;
+            }
+        }
+    }
+
     #endregion
 
     #region CSV Import/Export
@@ -2656,6 +2688,14 @@ public class SOBalancingWindow : EditorWindow
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
+            // 플레이 모드 중이면 런타임 테이블도 즉시 갱신 (도감 등이 참조하는 DataTableManager 싱크)
+            SyncRuntimeTables(modifiedObjects);
+
+            // Import는 CSV가 정답 — 편집 중이던 임시값/변경표시 제거해서 UI가 SO 기준으로 다시 그리게
+            pendingChanges.Clear();
+            modifiedObjects.Clear();
+            Repaint();
+
             SetStatus($"{type} CSV 가져오기 완료!", MessageType.Info);
         }
         catch (Exception e)
@@ -2684,6 +2724,10 @@ public class SOBalancingWindow : EditorWindow
                 }
             }
         }
+        pendingChanges.Clear();
+        modifiedObjects.Clear();
+        Repaint();
+
         SetStatus($"{count}개 CSV 전체 가져오기 완료!", MessageType.Info);
     }
 
@@ -3215,6 +3259,7 @@ public class SOBalancingWindow : EditorWindow
             && _cachedFilterMonsterType == filterMonsterType
             && _cachedFilterStageId == filterStageId
             && _cachedFilterSkillType == filterSkillType
+            && _cachedFilterCharRank == filterCharRank
             && _cachedSearchFilter == searchFilter
             && !_filterDirty;
 
@@ -3299,6 +3344,7 @@ public class SOBalancingWindow : EditorWindow
         _cachedFilterMonsterType = filterMonsterType;
         _cachedFilterStageId = filterStageId;
         _cachedFilterSkillType = filterSkillType;
+        _cachedFilterCharRank = filterCharRank;
         _cachedSearchFilter = searchFilter;
         _filterDirty = false;
 

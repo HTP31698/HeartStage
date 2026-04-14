@@ -185,6 +185,44 @@ public class CharacterTable : DataTable
         return Unknown;
     }
 
+    /// <summary>
+    /// 런타임 중 SO 변경 시 메모리 내 CSVData를 즉시 갱신.
+    /// 기존 객체의 필드를 덮어써서 이미 참조 중인 곳에서도 반영됨.
+    /// </summary>
+    public void UpdateRuntime(CharacterCSVData csvData)
+    {
+        if (csvData == null) return;
+        if (!table.TryGetValue(csvData.char_id, out var existing)) return;
+
+        existing.char_name = csvData.char_name;
+        existing.char_lv = csvData.char_lv;
+        existing.char_rank = csvData.char_rank;
+        existing.char_type = csvData.char_type;
+        existing.atk_dmg = csvData.atk_dmg;
+        existing.atk_speed = csvData.atk_speed;
+        existing.atk_range = csvData.atk_range;
+        existing.atk_addcount = csvData.atk_addcount;
+        existing.bullet_count = csvData.bullet_count;
+        existing.bullet_speed = csvData.bullet_speed;
+        existing.char_hp = csvData.char_hp;
+        existing.crt_chance = csvData.crt_chance;
+        existing.crt_dmg = csvData.crt_dmg;
+        existing.skill_id1 = csvData.skill_id1;
+        existing.skill_id2 = csvData.skill_id2;
+        existing.skill_id3 = csvData.skill_id3;
+        existing.skill_id4 = csvData.skill_id4;
+        existing.skill_id5 = csvData.skill_id5;
+        existing.skill_id6 = csvData.skill_id6;
+        existing.Info = csvData.Info;
+        existing.image_PrefabName = csvData.image_PrefabName;
+        existing.data_AssetName = csvData.data_AssetName;
+        existing.bullet_PrefabName = csvData.bullet_PrefabName;
+        existing.projectile_AssetName = csvData.projectile_AssetName;
+        existing.hitEffect_AssetName = csvData.hitEffect_AssetName;
+        existing.card_imageName = csvData.card_imageName;
+        existing.icon_imageName = csvData.icon_imageName;
+    }
+
     public string GetIconImageNameByName(string charName)
     {
         if (string.IsNullOrEmpty(charName))
